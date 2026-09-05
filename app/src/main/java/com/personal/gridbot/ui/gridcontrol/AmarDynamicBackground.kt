@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.Color
 import kotlin.math.sin
 
 @Composable
-fun AmarDynamicBackground(
+public fun AmarDynamicBackground(
     modifier: Modifier = Modifier
 ) {
     val transition = rememberInfiniteTransition(
