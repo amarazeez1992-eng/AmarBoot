@@ -1,14 +1,9 @@
 package com.personal.gridbot.ui.gridcontrol
 
-/**
- * بيانات تجريبية للواجهة.
- *
- * لا يوجد أي اتصال بـ MT5 أو MetaApi هنا.
- * الهدف منها إظهار الشكل النهائي للواجهة قبل مرحلة الربط.
- */
 val PreviewGridControlState = GridControlState(
     botName = "AMAR GRID",
     symbol = "XAUUSD",
+    selectedTimeframe = "M5",
 
     isTrading = true,
     buyEnabled = true,
@@ -16,10 +11,21 @@ val PreviewGridControlState = GridControlState(
     gridEnabled = true,
 
     positions = 6,
+    winningTrades = 4,
+    losingTrades = 2,
     pendingOrders = 18,
 
-    floatingProfit = 12.84,
+    balance = 1000.0,
     equity = 1012.84,
+    margin = 120.0,
+    freeMargin = 892.84,
+
+    floatingProfit = 12.84,
+    dailyProfit = 18.40,
+    totalProfit = 127.40,
+
+    marketDirection = "BUY",
+    marketStrength = 82,
 
     lotStart = 0.02,
     gridStep = 40,
@@ -33,8 +39,15 @@ val PreviewGridControlState = GridControlState(
     individualSl = -1.5,
 
     enhancementEnabled = false,
-    trailingEnabled = false,
+    trailingEnabled = true,
     autoRebuildEnabled = true,
     newEntriesEnabled = true,
-    manageManualPositions = false
+    manageManualPositions = true,
+
+    accountAdded = true,
+    accountBroker = "JustMarkets",
+    accountName = "AMAR DEMO",
+    accountNumber = "12345678",
+
+    isDemoMode = true
 )
