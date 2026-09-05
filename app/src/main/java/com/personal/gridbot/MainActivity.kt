@@ -1,63 +1,101 @@
 package com.personal.gridbot
 
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
-import com.personal.gridbot.data.AppDatabase
-import com.personal.gridbot.data.Bot
-import com.personal.gridbot.ui.AddBotDialog
-import com.personal.gridbot.ui.BotListScreen
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.personal.gridbot.ui.gridcontrol.GridControlScreen
+import com.personal.gridbot.ui.gridcontrol.PreviewGridControlState
+import com.personal.gridbot.ui.gridcontrol.GridControlState
+import com.personal.gridbot.ui.theme.AmarTheme
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val dao = AppDatabase.getInstance(applicationContext).botDao()
 
         setContent {
-            var showDialog by remember { mutableStateOf(false) }
-            val bots by dao.getAllBots().collectAsState(initial = emptyList())
 
-            MaterialTheme {
-                Surface(modifier = Modifier) {
-                    BotListScreen(
-                        bots = bots,
-                        onAddBotClick = { showDialog = true },
-                        onToggleActive = { bot ->
-                            lifecycleScope.launch {
-                                dao.updateBot(bot.copy(isActive = !bot.isActive))
-                                ensureServiceRunning()
-                            }
-                        },
-                        onDeleteBot = { bot -> lifecycleScope.launch { dao.deleteBot(bot) } }
+            AmarTheme {
+
+                var state by remember {
+                    mutableStateOf(
+                        PreviewGridControlState
                     )
-                    if (showDialog) {
-                        AddBotDialog(
-                            onDismiss = { showDialog = false },
-                            onConfirm = { bot ->
-                                lifecycleScope.launch {
-                                    dao.insertBot(bot)
-                                    showDialog = false
-                                }
-                            }
-                        )
-                    }
+                }
+
+                Surface {
+
+                    GridControlScreen(
+                        state = state,
+
+                        onTradingToggle = {
+                            state = state.copy(
+                                isTrading = !state.isTrading
+                            )
+                        },
+
+                        onBuyToggle = {
+                            state = state.copy(
+                                buyEnabled = !state.buyEnabled
+                            )
+                        },
+
+                        onSellToggle = {
+                            state = state.copy(
+                                sellEnabled = !state.sellEnabled
+                            )
+                        },
+
+                        onGridToggle = {
+                            state = state.copy(
+                                gridEnabled = !state.gridEnabled
+                            )
+                        },
+
+                        onCloseAll = {
+                            state = state.copy(
+                                positions = 0,
+                                pendingOrders = 0,
+                                floatingProfit = 0.0
+                            )
+                        },
+
+                        onCloseBuy = {
+                            state = state.copy(
+                                positions = (
+                                    state.positions - 1
+                                ).coerceAtLeast(0)
+                            )
+                        },
+
+                        onCloseSell = {
+                            state = state.copy(
+                                positions = (
+                                    state.positions - 1
+                                ).coerceAtLeast(0)
+                            )
+                        },
+
+                        onDeletePending = {
+                            state = state.copy(
+                                pendingOrders = 0
+                            )
+                        },
+
+                        onRebuild = {
+                            state = state.copy(
+                                gridEnabled = true,
+                                pendingOrders = state.maxOrders
+                            )
+                        }
+                    )
                 }
             }
         }
-    }
-
-    private fun ensureServiceRunning() {
-        val intent = Intent(this, GridBotService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(intent)
-        else startService(intent)
     }
 }
