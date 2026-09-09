@@ -8,14 +8,14 @@ var camera: Camera3D
 var glow: OmniLight3D
 var metric_label: Label
 var status_label: Label
-var selected_zone := "المحور"
-var pulse := 0.0
-var dragging := false
-var last_touch := Vector2.ZERO
-var camera_yaw := 0.0
-var camera_pitch := -0.08
+var selected_zone: String = "المحور"
+var pulse: float = 0.0
+var dragging: bool = false
+var last_touch: Vector2 = Vector2.ZERO
+var camera_yaw: float = 0.0
+var camera_pitch: float = -0.08
 
-var zones = [
+var zones: Array[Dictionary] = [
     {"name":"السوق", "pos":Vector3(-3.6, 1.7, 0.4), "color":Color("35D6FF")},
     {"name":"الرسم البياني", "pos":Vector3(3.6, 1.7, 0.4), "color":Color("FFC857")},
     {"name":"البوت", "pos":Vector3(-3.9, -1.8, 0.6), "color":Color("62E6A7")},
@@ -74,8 +74,8 @@ func _build_world() -> void:
     ring_c = _ring(3.15, 0.018, Color("9A7CFF"))
     ring_c.rotation_degrees = Vector3(18, 52, 18)
 
-    for zone in zones:
-        _add_zone(zone["name"], zone["pos"], zone["color"])
+    for zone: Dictionary in zones:
+        _add_zone(String(zone["name"]), zone["pos"] as Vector3, zone["color"] as Color)
 
 func _ring(radius: float, tube: float, color: Color) -> MeshInstance3D:
     var mesh_instance := MeshInstance3D.new()
@@ -148,7 +148,7 @@ func _build_hud() -> void:
     root.add_child(top)
 
     status_label = Label.new()
-    status_label.text = "●  عمار حي  ·  الحساب تجريبي"
+    status_label.text = "عمار حي  ·  الحساب تجريبي"
     status_label.position = Vector2(26, 18)
     status_label.add_theme_font_size_override("font_size", 28)
     status_label.modulate = Color("62E6A7")
@@ -184,7 +184,7 @@ func _process(delta: float) -> void:
     ring_a.rotation.z += delta * 0.22
     ring_b.rotation.y -= delta * 0.18
     ring_c.rotation.x += delta * 0.13
-    var breathe := 1.0 + sin(pulse * 1.6) * 0.055
+    var breathe: float = 1.0 + sin(pulse * 1.6) * 0.055
     core.scale = Vector3.ONE * breathe
     glow.light_energy = 6.0 + sin(pulse * 1.8) * 1.8
     camera.position.x = lerp(camera.position.x, sin(camera_yaw) * 1.5, delta * 1.8)
@@ -194,8 +194,8 @@ func _process(delta: float) -> void:
 
 func _zone_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, area: Area3D) -> void:
     if event is InputEventScreenTouch and event.pressed:
-        selected_zone = area.get_meta("title", "المحور")
-        status_label.text = "●  عمار حي  ·  " + selected_zone
+        selected_zone = String(area.get_meta("title", "المحور"))
+        status_label.text = "عمار حي  ·  " + selected_zone
 
 func _input(event: InputEvent) -> void:
     if event is InputEventScreenTouch:
@@ -205,7 +205,7 @@ func _input(event: InputEvent) -> void:
         else:
             dragging = false
     elif event is InputEventScreenDrag and dragging:
-        var delta := event.position - last_touch
+        var touch_delta: Vector2 = event.position - last_touch
         last_touch = event.position
-        camera_yaw = clamp(camera_yaw - delta.x * 0.004, -0.8, 0.8)
-        camera_pitch = clamp(camera_pitch + delta.y * 0.0025, -0.45, 0.45)
+        camera_yaw = clamp(camera_yaw - touch_delta.x * 0.004, -0.8, 0.8)
+        camera_pitch = clamp(camera_pitch + touch_delta.y * 0.0025, -0.45, 0.45)
