@@ -8,14 +8,16 @@
 
     <application
         android:allowBackup="true"
-        android:label="Grid Trade Bot"
+        android:label="عمار — منصة التداول الذكية"
+        android:icon="@drawable/amar_launcher"
+        android:roundIcon="@drawable/amar_launcher"
         android:theme="@style/Theme.GridBotApp"
         android:usesCleartextTraffic="false">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="Grid Trade Bot">
+            android:label="عمار — منصة التداول الذكية">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
