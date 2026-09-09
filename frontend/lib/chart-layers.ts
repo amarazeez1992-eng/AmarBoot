@@ -1,0 +1,26 @@
+export type AmarChartLayer = { id: string; label: string; enabled: boolean; group: 'PRICE' | 'INDICATOR' | 'STRUCTURE' | 'TRADING' | 'DRAWING' };
+
+export const AMAR_CHART_LAYERS: AmarChartLayer[] = [
+  { id: 'candles', label: 'Candles', enabled: true, group: 'PRICE' },
+  { id: 'volume', label: 'Volume', enabled: true, group: 'PRICE' },
+  { id: 'ema', label: 'EMA', enabled: true, group: 'INDICATOR' },
+  { id: 'vwap', label: 'VWAP', enabled: true, group: 'INDICATOR' },
+  { id: 'rsi', label: 'RSI', enabled: false, group: 'INDICATOR' },
+  { id: 'macd', label: 'MACD', enabled: false, group: 'INDICATOR' },
+  { id: 'atr', label: 'ATR', enabled: false, group: 'INDICATOR' },
+  { id: 'fvg', label: 'FVG', enabled: true, group: 'STRUCTURE' },
+  { id: 'order-blocks', label: 'Order Blocks', enabled: true, group: 'STRUCTURE' },
+  { id: 'liquidity', label: 'Liquidity', enabled: true, group: 'STRUCTURE' },
+  { id: 'bos', label: 'BOS', enabled: true, group: 'STRUCTURE' },
+  { id: 'choch', label: 'CHoCH', enabled: true, group: 'STRUCTURE' },
+  { id: 'entry', label: 'Entry', enabled: true, group: 'TRADING' },
+  { id: 'tp', label: 'Take Profit', enabled: true, group: 'TRADING' },
+  { id: 'sl', label: 'Stop Loss', enabled: true, group: 'TRADING' },
+  { id: 'trailing', label: 'Trailing', enabled: true, group: 'TRADING' },
+  { id: 'pending-orders', label: 'Pending Orders', enabled: true, group: 'TRADING' },
+  { id: 'open-positions', label: 'Open Positions', enabled: true, group: 'TRADING' },
+  { id: 'risk-zones', label: 'Risk Zones', enabled: true, group: 'TRADING' },
+  { id: 'trendline', label: 'Trendline', enabled: false, group: 'DRAWING' },
+  { id: 'horizontal-line', label: 'Horizontal Line', enabled: false, group: 'DRAWING' },
+  { id: 'measurement', label: 'Measurement', enabled: false, group: 'DRAWING' },
+];
