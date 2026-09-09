@@ -1,0 +1,56 @@
+name: Build AMAR Living UI
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'godot_ui/**'
+      - '.github/workflows/build-godot-living-ui.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Download Godot 4.5.2
+        run: |
+          curl -L --fail --retry 3 -o godot.zip https://downloads.tuxfamily.org/godotengine/4.5.2/Godot_v4.5.2-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.5.2-stable_linux.x86_64 godot
+          chmod +x godot
+
+      - name: Install Godot export templates
+        run: |
+          curl -L --fail --retry 3 -o templates.tpz https://downloads.tuxfamily.org/godotengine/4.5.2/Godot_v4.5.2-stable_export_templates.tpz
+          unzip -q templates.tpz -d templates_unpack
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.5.2.stable"
+          cp -R templates_unpack/templates/. "$HOME/.local/share/godot/export_templates/4.5.2.stable/"
+
+      - name: Validate Godot project
+        run: ./godot --headless --path godot_ui --editor --quit --check-only
+
+      - name: Export Android APK
+        run: |
+          mkdir -p godot_ui/build
+          ./godot --headless --path godot_ui --export-debug "Android" godot_ui/build/AmarLivingUI-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AmarLivingUI-debug-apk
+          path: godot_ui/build/AmarLivingUI-debug.apk
+          if-no-files-found: error
