@@ -1,0 +1,2 @@
+export type AmarPerformance = { daily: number; weekly: number; monthly: number; yearly: number; total: number; winRate: number; profitFactor: number; expectancy: number; maxDrawdown: number; recovery: number };
+export const DEMO_PERFORMANCE: AmarPerformance = { daily: 18.4, weekly: 64.2, monthly: 241.8, yearly: 1240.6, total: 1240.6, winRate: 72.4, profitFactor: 1.86, expectancy: 4.12, maxDrawdown: 4.8, recovery: 3.2 };
