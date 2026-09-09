@@ -1,282 +1,68 @@
 package com.personal.gridbot.amaros.shell
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
 import com.personal.gridbot.amaros.navigation.AmarRoom
-import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
+import kotlin.math.cos
+import kotlin.math.sin
 
-private val Void = Color(0xFF040611)
-private val Cyan = Color(0xFF42E8FF)
-private val Violet = Color(0xFF9B6BFF)
-private val Emerald = Color(0xFF45F0A0)
-private val Gold = Color(0xFFFFD166)
-private val Magenta = Color(0xFFFF5BBE)
+private val BG=Color(0xFF02030A); private val ICE=Color(0xFFEFFFFF); private val CYAN=Color(0xFF32E9FF); private val VIOLET=Color(0xFFA86BFF); private val GREEN=Color(0xFF45F0A1); private val GOLD=Color(0xFFFFD166); private val PINK=Color(0xFFFF55C5); private val RED=Color(0xFFFF6575)
 
 @Composable
-fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
-    var state by remember { mutableStateOf(initialState) }
-    var orbit by remember { mutableFloatStateOf(0f) }
-    val transition = rememberInfiniteTransition(label = "aurora-motion")
-    val drift by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(10000), RepeatMode.Reverse), label = "aurora-drift")
-    val pulse by transition.animateFloat(.82f, 1f, infiniteRepeatable(tween(1500), RepeatMode.Reverse), label = "pulse")
-
-    Box(Modifier.fillMaxSize().background(Void)) {
-        AuroraBackdrop(drift)
-        Row(Modifier.fillMaxSize().padding(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoomOrbit(
-                selected = state.selectedRoom,
-                orbit = orbit,
-                onDrag = { orbit += it / 90f },
-                onSelect = {
-                    state = state.copy(selectedRoom = it)
-                    AmarEventBus.publish(AmarEvent.RoomSelected(it.name))
-                }
-            )
-            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                LiveHud(state.selectedRoom, pulse, onOpenLegacyGrid)
-                AnimatedContent(targetState = state.selectedRoom, label = "room") { room ->
-                    RoomStage(room, drift, onOpenLegacyGrid)
-                }
-            }
-        }
-    }
+fun AmarAuroraShell(initialState: AmarAppState=AmarAppState(),onOpenLegacyGrid:()->Unit={}){
+ var entered by remember{mutableStateOf(false)}; var selected by remember{mutableIntStateOf(0)}; var spin by remember{mutableFloatStateOf(0f)}; var focus by remember{mutableIntStateOf(0)}; var state by remember{mutableStateOf(initialState)}
+ val rooms=AmarRoom.entries; val tr=rememberInfiniteTransition(label="AMAR_NEXUS"); val t by tr.animateFloat(0f,1f,infiniteRepeatable(tween(9000),RepeatMode.Reverse),label="flow"); val p by tr.animateFloat(.72f,1f,infiniteRepeatable(tween(1300),RepeatMode.Reverse),label="pulse")
+ Box(Modifier.fillMaxSize().background(BG)){Background(t,p);if(!entered)Portal(t,p){entered=true}else{World(rooms,selected,spin,t,p,focus,{spin+=it/160f},{i->{selected=i;focus=0;state=state.copy(selectedRoom=rooms[i]);AmarEventBus.publish(AmarEvent.RoomSelected(rooms[i].name))}},{focus=it},onOpenLegacyGrid)}}
 }
 
-@Composable
-private fun AuroraBackdrop(drift: Float) {
-    Canvas(Modifier.fillMaxSize()) {
-        val w = size.width
-        val h = size.height
-        drawRect(Brush.radialGradient(listOf(Cyan.copy(.18f), Color.Transparent), androidx.compose.ui.geometry.Offset(w * (.18f + drift * .22f), h * .15f), w * .7f))
-        drawRect(Brush.radialGradient(listOf(Violet.copy(.15f), Color.Transparent), androidx.compose.ui.geometry.Offset(w * (.82f - drift * .18f), h * .78f), w * .65f))
-        drawRect(Brush.radialGradient(listOf(Emerald.copy(.07f), Color.Transparent), androidx.compose.ui.geometry.Offset(w * .48f, h * .48f), w * .5f))
-        for (i in 0..12) {
-            val y = h * i / 12f
-            drawLine(Color.White.copy(.025f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(w, y), 1f)
-        }
-    }
-}
+@Composable private fun Background(t:Float,p:Float){Canvas(Modifier.fillMaxSize()){val w=size.width;val h=size.height;drawRect(Brush.radialGradient(listOf(CYAN.copy(.19f*p),Color.Transparent),Offset(w*(.18f+t*.16f),h*.15f),w*.72f));drawRect(Brush.radialGradient(listOf(VIOLET.copy(.16f),Color.Transparent),Offset(w*(.82f-t*.16f),h*.82f),w*.68f));drawRect(Brush.radialGradient(listOf(PINK.copy(.06f),Color.Transparent),Offset(w*.5f,h*.5f),w*.42f));for(i in 0..20){val y=h*i/20f;drawLine(Color.White.copy(.018f),Offset(0f,y),Offset(w,y),1f)}for(i in 0..16){val x=w*i/16f;drawLine(Color.White.copy(.012f),Offset(x,0f),Offset(x,h),1f)}}}
 
-@Composable
-private fun RoomOrbit(selected: AmarRoom, orbit: Float, onDrag: (Float) -> Unit, onSelect: (AmarRoom) -> Unit) {
-    Box(Modifier.width(92.dp).fillMaxHeight().clip(RoundedCornerShape(30.dp)).background(Color.White.copy(.045f)).pointerInput(Unit) { detectDragGestures { _, drag -> onDrag(drag.y) } }) {
-        Column(Modifier.fillMaxSize().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("A", color = Cyan, style = MaterialTheme.typography.headlineSmall)
-            Text("AMAR", color = Color.White.copy(.55f), style = MaterialTheme.typography.labelSmall)
-            Spacer(Modifier.height(10.dp))
-            AmarRoom.entries.forEachIndexed { index, room ->
-                val active = room == selected
-                val shift = kotlin.math.sin((index + orbit) * .65f).toFloat() * if (active) 3f else 1f
-                TextButton(onClick = { onSelect(room) }, modifier = Modifier.width(82.dp).graphicsLayer { translationX = shift; scaleX = if (active) 1.08f else 1f; scaleY = if (active) 1.08f else 1f }) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(room.emoji, style = MaterialTheme.typography.titleMedium)
-                        Text(room.titleAr.take(8), color = if (active) Cyan else Color.White.copy(.48f), style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-        }
-    }
-}
+@Composable private fun Portal(t:Float,p:Float,enter:()->Unit){Box(Modifier.fillMaxSize().pointerInput(Unit){detectTapGestures{enter()}}){Canvas(Modifier.fillMaxSize()){val c=Offset(size.width/2,size.height/2);val r=size.minDimension*.23f;for(i in 0..7)drawCircle(CYAN.copy(.025f+i*.012f),r+i*34f,c,style=Stroke(1.2f));drawCircle(CYAN.copy(.3f),r,c,style=Stroke(3f));drawCircle(VIOLET.copy(.18f),r*.72f,c,style=Stroke(2f));for(i in 0..15){val a=t*6.28f+i*.4f;drawCircle(if(i%2==0)CYAN else VIOLET,3f+p*2f,Offset(c.x+cos(a)*r*1.27f,c.y+sin(a)*r*1.27f))}};Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally){Text("A M A R",color=ICE,fontSize=42.sp,fontWeight=FontWeight.Bold,letterSpacing=9.sp);Spacer(Modifier.height(5.dp));Text("AURORA NEXUS",color=CYAN,fontSize=13.sp,letterSpacing=4.sp);Spacer(Modifier.height(28.dp));Box(Modifier.clip(CircleShape).background(CYAN.copy(.13f)).padding(horizontal=32.dp,vertical=15.dp)){Text("دخول إلى النظام  ›",color=ICE,fontSize=16.sp,fontWeight=FontWeight.Bold)};Spacer(Modifier.height(12.dp));Text("DEMO • LOCAL • SAFE",color=Color.White.copy(.4f),fontSize=9.sp,letterSpacing=2.sp)}}}
 
-@Composable
-private fun LiveHud(room: AmarRoom, pulse: Float, onOpenLegacyGrid: () -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Color.White.copy(.055f)).padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Box(Modifier.size(11.dp * pulse).clip(CircleShape).background(Emerald))
-        Column(Modifier.weight(1f)) {
-            Text("AMAR // TRADING OS", color = Color.White, style = MaterialTheme.typography.titleLarge)
-            Text("${room.emoji} ${room.titleAr}  •  XAUUSD  •  M5  •  DEMO", color = Color.White.copy(.55f), style = MaterialTheme.typography.labelMedium)
-        }
-        HudMetric("82", "SCORE", Cyan)
-        HudMetric("+12.84", "FLOAT", Emerald)
-        HudMetric("30", "GRID", Gold)
-        if (room == AmarRoom.BOT_LAB) TextButton(onClick = onOpenLegacyGrid) { Text("GRID", color = Gold) }
-    }
-}
+@Composable private fun World(rooms:List<AmarRoom>,sel:Int,spin:Float,t:Float,p:Float,focus:Int,drag:(Float)->Unit,choose:(Int)->Unit,setFocus:(Int)->Unit,legacy:()->Unit){Column(Modifier.fillMaxSize().padding(12.dp)){Top(rooms[sel],p);Spacer(Modifier.height(10.dp));Box(Modifier.fillMaxSize()){Orbit(rooms,sel,spin,t,drag,choose,Modifier.align(Alignment.Start).width(118.dp).fillMaxHeight());AnimatedContent(rooms[sel],label="room",modifier=Modifier.fillMaxSize().padding(start=128.dp)){RoomCockpit(it,t,p,focus,setFocus,legacy)}}}}
 
-@Composable
-private fun HudMetric(value: String, label: String, accent: Color) {
-    Column(horizontalAlignment = Alignment.End) {
-        Text(value, color = accent, style = MaterialTheme.typography.titleMedium)
-        Text(label, color = Color.White.copy(.4f), style = MaterialTheme.typography.labelSmall)
-    }
-}
+@Composable private fun Top(r:AmarRoom,p:Float){Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Color.White.copy(.055f)).padding(14.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(9.dp*p).clip(CircleShape).background(GREEN));Spacer(Modifier.width(9.dp));Column(Modifier.weight(1f)){Text("AMAR / NEXUS",color=ICE,fontSize=18.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp);Text("${r.emoji} ${r.titleAr} • XAUUSD • M5",color=Color.White.copy(.48f),fontSize=10.sp)}Text("DEMO",color=GOLD,fontSize=10.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.width(15.dp));Text("82% AI SCORE",color=CYAN,fontSize=10.sp,fontWeight=FontWeight.Bold)}}
 
-@Composable
-private fun RoomStage(room: AmarRoom, drift: Float, onOpenLegacyGrid: () -> Unit) {
-    when (room) {
-        AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-        AmarRoom.BOT_LAB -> GridDeck(drift, onOpenLegacyGrid)
-        AmarRoom.MARKET -> MarketDeck(drift)
-        AmarRoom.CHART -> ChartDeck(drift)
-        AmarRoom.RISK -> RiskDeck()
-        AmarRoom.PERFORMANCE -> MetricsDeck("PERFORMANCE FLOW", listOf("+18.40", "+127.40", "66.7%", "2.1%"), listOf("TODAY", "TOTAL", "WIN RATE", "DRAWDOWN"), Violet)
-        AmarRoom.POSITIONS -> MetricsDeck("POSITIONS MATRIX", listOf("6", "18", "+12.84", "0.12"), listOf("OPEN", "PENDING", "FLOAT", "SPREAD"), Emerald)
-        AmarRoom.INDICATORS -> MetricsDeck("INDICATOR MATRIX", listOf("EMA", "RSI", "VWAP", "ATR"), listOf("TREND", "MOMENTUM", "PRICE", "VOLATILITY"), Violet)
-        AmarRoom.ANALYSIS -> MetricsDeck("ANALYSIS ENGINE", listOf("BUY", "82%", "MOMENTUM", "M5"), listOf("BIAS", "SCORE", "REGIME", "FRAME"), Cyan)
-        AmarRoom.TESTING -> MetricsDeck("TEST LAB", listOf("BACKTEST", "FORWARD", "MONTE", "READY"), listOf("ENGINE", "MODE", "SIM", "STATE"), Gold)
-        AmarRoom.TOOLS -> MetricsDeck("TRADING TOOLS", listOf("RISK", "LOT", "TP/SL", "GRID"), listOf("CALC", "SIZE", "CONTROL", "TOOLS"), Cyan)
-        AmarRoom.ALERTS -> MetricsDeck("ALERT MATRIX", listOf("LIVE", "0", "ARMED", "SAFE"), listOf("LINK", "ACTIVE", "RULES", "RISK"), Magenta)
-        AmarRoom.LIBRARY -> MetricsDeck("AMAR LIBRARY", listOf("CORE", "14", "READY", "EXT"), listOf("SYSTEM", "MODULES", "STATE", "HOOKS"), Cyan)
-        AmarRoom.SETTINGS -> MetricsDeck("CONTROL DECK", listOf("HIGH", "AURORA", "DEMO", "SAFE"), listOf("MOTION", "THEME", "MODE", "GUARD"), Violet)
-    }
-}
+@Composable private fun Orbit(rooms:List<AmarRoom>,sel:Int,spin:Float,t:Float,drag:(Float)->Unit,choose:(Int)->Unit,m:Modifier){Box(m.clip(RoundedCornerShape(32.dp)).background(Color.White.copy(.035f)).pointerInput(Unit){detectDragGestures{_,d->drag(d.y)}}){Canvas(Modifier.fillMaxSize()){val c=Offset(size.width/2,size.height/2);drawOval(CYAN.copy(.08f),center=c,radiusX=size.width*.32f,radiusY=size.height*.36f,style=Stroke(1.5f));drawOval(VIOLET.copy(.06f),center=c,radiusX=size.width*.24f,radiusY=size.height*.27f,style=Stroke(1f))};rooms.forEachIndexed{i,r->val a=(i-sel)*.72f+spin+t*.14f;val depth=(cos(a)+1f)/2f;val y=.5f+sin(a)*.39f;val active=i==sel;Box(Modifier.align(Alignment.TopCenter).offset(y=(y*1000f-500f).dp).graphicsLayer{val s=.72f+depth*.34f;scaleX=s+(if(active).1f else 0f);scaleY=scaleX;alpha=.35f+depth*.65f;rotationY=sin(a)*22f;cameraDistance=25f*density}.clip(RoundedCornerShape(20.dp)).background(if(active)CYAN.copy(.13f)else Color.Black.copy(.18f)).pointerInput(i){detectTapGestures{choose(i)}}.padding(9.dp)){Column(horizontalAlignment=Alignment.CenterHorizontally){Text(r.emoji,fontSize=if(active)24.sp else 18.sp);Text(r.titleAr.take(8),color=if(active)ICE else Color.White.copy(.45f),fontSize=8.sp,fontWeight=if(active)FontWeight.Bold else FontWeight.Normal)}}}}}
 
-@Composable
-private fun GridDeck(drift: Float, onOpenLegacyGrid: () -> Unit) = Stage("GRID COMMAND DECK", Gold) {
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        RobotNode(drift, Modifier.weight(1.2f))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Dial("LOT", "0.02", .30f, Gold)
-            Dial("STEP", "40", .48f, Cyan)
-            Dial("MAX", "30", .72f, Violet)
-            Dial("MART", "2.00", .60f, Magenta)
-            TextButton(onClick = onOpenLegacyGrid) { Text("فتح محرك Grid الحالي", color = Gold) }
-        }
-    }
-}
+@Composable private fun RoomCockpit(r:AmarRoom,t:Float,p:Float,f:Int,s:(Int)->Unit,legacy:()->Unit){Column(Modifier.fillMaxSize()){Text(r.titleAr,color=ICE,fontSize=28.sp,fontWeight=FontWeight.Bold);Text("${r.name.replace('_',' ')} • LIVING COCKPIT",color=CYAN,fontSize=9.sp,letterSpacing=2.sp);Spacer(Modifier.height(12.dp));when(r){AmarRoom.COMMAND_CENTER->CoreRoom(t,p,f,s);AmarRoom.MARKET->MarketRoom(t,f,s);AmarRoom.CHART->ChartRoom(t,f,s);AmarRoom.BOT_LAB->BotRoom(t,p,f,s,legacy);AmarRoom.RISK->RiskRoom(t,p,f,s);else->GenericRoom(r,f,s)}}}
 
-@Composable
-private fun RobotNode(drift: Float, modifier: Modifier) = Box(modifier.fillMaxHeight().clip(RoundedCornerShape(28.dp)).background(Color.White.copy(.035f)), contentAlignment = Alignment.Center) {
-    Canvas(Modifier.fillMaxSize()) {
-        val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + kotlin.math.sin(drift * 6.28f) * 12f)
-        drawCircle(Cyan.copy(.08f), size.minDimension * .36f, c)
-        drawCircle(Cyan.copy(.22f), size.minDimension * .24f, c, style = Stroke(3f))
-        drawCircle(Violet.copy(.18f), size.minDimension * .31f, c, style = Stroke(1.5f))
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("AMAR", color = Color.White, style = MaterialTheme.typography.headlineMedium)
-        Text("ANALYZING • DEMO", color = Cyan, style = MaterialTheme.typography.labelMedium)
-        Text("82%", color = Emerald, style = MaterialTheme.typography.displaySmall)
-    }
-}
+@Composable private fun CoreRoom(t:Float,p:Float,f:Int,s:(Int)->Unit){Row(Modifier.fillMaxSize(),horizontalArrangement=Arrangement.spacedBy(12.dp)){Core("AMAR CORE","MONITORING",CYAN,t,p,Modifier.weight(1.3f));Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(9.dp)){Panel("MARKET","BUY • 82%",CYAN,f==0){s(0)};Panel("BOT","ACTIVE / DEMO",GREEN,f==1){s(1)};Panel("RISK","SAFE / 5%",GOLD,f==2){s(2)};Panel("EQUITY","$1,012.84",VIOLET,f==3){s(3)}}}}
+@Composable private fun MarketRoom(t:Float,f:Int,s:(Int)->Unit){Row(Modifier.fillMaxSize(),horizontalArrangement=Arrangement.spacedBy(12.dp)){Chart(t,CYAN,Modifier.weight(1.5f));Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(9.dp)){Panel("DIRECTION","BUY",CYAN,f==0){s(0)};Panel("STRENGTH","82%",GREEN,f==1){s(1)};Panel("VOLATILITY","HIGH",PINK,f==2){s(2)};Panel("SESSION","LONDON",GOLD,f==3){s(3)}}}}
+@Composable private fun ChartRoom(t:Float,f:Int,s:(Int)->Unit){Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(9.dp)){Chart(t,CYAN,Modifier.weight(1f));Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)){listOf("EMA","VWAP","FVG","BOS","TP","SL").forEachIndexed{i,x->Panel(x,if(i%2==0)"ON" else "LIVE",if(i%3==0)CYAN else VIOLET,f==i,Modifier.width(100.dp)){s(i)}}}}}
+@Composable private fun BotRoom(t:Float,p:Float,f:Int,s:(Int)->Unit,legacy:()->Unit){Row(Modifier.fillMaxSize(),horizontalArrangement=Arrangement.spacedBy(12.dp)){Core("AMAR GRID","ANALYZING",GOLD,t,p,Modifier.weight(1.15f));Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)){Dial("LOT","0.02",GOLD,f==0){s(0)};Dial("GRID STEP","40",CYAN,f==1){s(1)};Dial("MAX ORDERS","30",VIOLET,f==2){s(2)};Dial("MULTIPLIER","2.00",PINK,f==3){s(3)};Panel("EXISTING GRID ENGINE","OPEN",GOLD,f==4){s(4);legacy()}}}}
+@Composable private fun RiskRoom(t:Float,p:Float,f:Int,s:(Int)->Unit){Row(Modifier.fillMaxSize(),horizontalArrangement=Arrangement.spacedBy(12.dp)){Core("RISK RADAR","PROTECTED",GREEN,t,p,Modifier.weight(1.1f));Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(7.dp)){Dial("RISK","5%",GREEN,f==0){s(0)};Dial("DAILY LOSS","10%",GOLD,f==1){s(1)};Dial("MAX LOT","0.20",CYAN,f==2){s(2)};Dial("BASKET SL","$100",RED,f==3){s(3)}}}}
 
-@Composable
-private fun MarketDeck(drift: Float) = Stage("MARKET PULSE", Emerald) {
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        ChartDeck(drift, Modifier.weight(1.7f))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Tile("XAUUSD", "BUY", "82%", Cyan)
-            Tile("SPREAD", "0.12", "LOW", Emerald)
-            Tile("SESSION", "LONDON", "OPEN", Gold)
-            Tile("VOLATILITY", "HIGH", "ATR", Magenta)
-        }
-    }
-}
+@Composable private fun GenericRoom(r:AmarRoom,f:Int,s:(Int)->Unit){val v=when(r){AmarRoom.POSITIONS->listOf("6 OPEN","18 PENDING","+12.84 FLOAT","0.12 SPREAD");AmarRoom.PERFORMANCE->listOf("+18.40 TODAY","+127.40 TOTAL","66.7% WIN","2.1% DD");AmarRoom.INDICATORS->listOf("EMA TREND","RSI 64","VWAP ABOVE","ATR HIGH");AmarRoom.ANALYSIS->listOf("BUY BIAS","82 SCORE","MOMENTUM","M5 REGIME");AmarRoom.TESTING->listOf("BACKTEST","FORWARD","MONTE CARLO","PARAMETERS");AmarRoom.TOOLS->listOf("RISK SIZE","LOT SIZE","TP / SL","GRID CALC");AmarRoom.ALERTS->listOf("CONNECTION","RISK ARMED","TP / SL","REBUILD");AmarRoom.LIBRARY->listOf("CORE","INDICATORS","STRATEGIES","EXTENSIONS");else->listOf("MOTION HIGH","AURORA","DEMO SAFE","SECURITY")};val a=when(r){AmarRoom.ALERTS->PINK;AmarRoom.RISK->GREEN;AmarRoom.PERFORMANCE->GOLD;else->VIOLET};Column(Modifier.fillMaxSize()){Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(9.dp)){v.forEachIndexed{i,x->Panel("NODE ${i+1}",x,a,f==i,Modifier.width(175.dp)){s(i)}}};Spacer(Modifier.height(12.dp));Core("${r.name} SPACE","LIVE DATA",a,0f,1f,Modifier.fillMaxSize())}}
 
-@Composable
-private fun ChartDeck(drift: Float, modifier: Modifier = Modifier.fillMaxSize()) = Stage("XAUUSD • M5 • LIVE CANVAS", Cyan, modifier) {
-    Canvas(Modifier.fillMaxSize().padding(12.dp)) {
-        val base = size.height * .72f
-        for (i in 0..10) {
-            val y = size.height * i / 10f
-            drawLine(Color.White.copy(.055f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 1f)
-        }
-        val path = Path()
-        for (i in 0..80) {
-            val x = size.width * i / 80f
-            val y = base - kotlin.math.sin(i * .34f + drift * 2f) * size.height * .055f - i * size.height * .0028f
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            if (i % 5 == 0) drawLine(Cyan.copy(.3f), androidx.compose.ui.geometry.Offset(x, y - 10), androidx.compose.ui.geometry.Offset(x, y + 10), 1.5f)
-        }
-        drawPath(path, Cyan, style = Stroke(3f, cap = StrokeCap.Round))
-        drawCircle(Emerald, 6f, androidx.compose.ui.geometry.Offset(size.width * .86f, base - size.height * .24f))
-    }
-}
+@Composable private fun Core(title:String,status:String,a:Color,t:Float,p:Float,m:Modifier){Box(m.clip(RoundedCornerShape(30.dp)).background(Color.White.copy(.045f))){Canvas(Modifier.fillMaxSize()){val c=Offset(size.width/2,size.height/2+sin(t*6.28f)*10f);for(i in 0..6)drawCircle(a.copy(.025f+i*.014f),size.minDimension*(.15f+i*.05f),c,style=Stroke(1.2f));drawCircle(a.copy(.3f),size.minDimension*.17f*p,c,style=Stroke(3f));for(i in 0..8){val q=t*6.28f+i*.7f;drawCircle(a.copy(.75f),3f+p,Offset(c.x+cos(q)*size.minDimension*.22f,c.y+sin(q)*size.minDimension*.22f))}};Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally){Text("◈",color=a,fontSize=48.sp);Text(title,color=ICE,fontSize=20.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp);Text(status,color=a,fontSize=9.sp,letterSpacing=3.sp);Spacer(Modifier.height(14.dp));Text("LIVE • REACTIVE",color=GREEN,fontSize=9.sp)}}}
 
-@Composable
-private fun RiskDeck() = Stage("RISK RADAR", Magenta) {
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Dial("RISK", "5%", .18f, Emerald)
-            Dial("DAILY DD", "10%", .35f, Gold)
-            Dial("MAX LOT", "0.20", .52f, Cyan)
-            Dial("BASKET", "$100", .72f, Magenta)
-        }
-        Tile("EQUITY", "$1,012.84", "SAFE", Emerald, Modifier.weight(1f))
-    }
-}
+@Composable private fun Chart(t:Float,a:Color,m:Modifier){Box(m.clip(RoundedCornerShape(28.dp)).background(Color.White.copy(.04f))){Canvas(Modifier.fillMaxSize().padding(14.dp)){for(i in 0..10){val y=size.height*i/10f;drawLine(Color.White.copy(.035f),Offset(0f,y),Offset(size.width,y),1f)};val path=Path();for(i in 0..90){val x=size.width*i/90f;val y=size.height*.58f-sin(i*.27f+t*5f)*size.height*.11f-i*size.height*.0023f;if(i==0)path.moveTo(x,y)else path.lineTo(x,y)};drawPath(path,a,style=Stroke(3f));drawCircle(GREEN,5f,Offset(size.width*.82f,size.height*.34f))};Text("XAUUSD • M5 • LIVING FLOW",Modifier.align(Alignment.TopStart).padding(14.dp),color=Color.White.copy(.5f),fontSize=9.sp)}}
 
-@Composable
-private fun MetricsDeck(title: String, values: List<String>, labels: List<String>, accent: Color) = Stage(title, accent) {
-    Row(Modifier.fillMaxSize().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        values.zip(labels).forEach { (value, label) -> Tile(label, value, "LIVE", accent, Modifier.width(190.dp)) }
-    }
-}
+@Composable private fun Panel(label:String,value:String,a:Color,active:Boolean,m:Modifier=Modifier.weight(1f),click:()->Unit){Box(m.clip(RoundedCornerShape(20.dp)).background(if(active)a.copy(.13f)else Color.White.copy(.045f)).pointerInput(label){detectTapGestures{click()}}.padding(12.dp)){Column{Text(label,color=Color.White.copy(.38f),fontSize=8.sp,letterSpacing=1.sp);Spacer(Modifier.height(4.dp));Text(value,color=if(active)ICE else a,fontSize=13.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.height(5.dp));Box(Modifier.fillMaxWidth().height(2.dp).clip(CircleShape).background(a.copy(if(active).9f else .3f)))}}}
 
-@Composable
-private fun Stage(title: String, accent: Color, modifier: Modifier = Modifier.fillMaxSize(), content: @Composable () -> Unit) = Column(modifier.clip(RoundedCornerShape(30.dp)).background(Color.White.copy(.045f)).padding(14.dp)) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-        Spacer(Modifier.width(8.dp))
-        Text(title, color = Color.White.copy(.9f), style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.weight(1f))
-        Text("● LIVE", color = accent, style = MaterialTheme.typography.labelSmall)
-    }
-    Spacer(Modifier.height(12.dp))
-    Box(Modifier.fillMaxSize()) { content() }
-}
-
-@Composable
-private fun Tile(label: String, value: String, state: String, accent: Color, modifier: Modifier = Modifier.width(170.dp)) = Column(modifier.clip(RoundedCornerShape(24.dp)).background(Color.Black.copy(.18f)).padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
-    Text(label, color = Color.White.copy(.42f), style = MaterialTheme.typography.labelSmall)
-    Text(value, color = accent, style = MaterialTheme.typography.headlineSmall)
-    Text(state, color = Color.White.copy(.55f), style = MaterialTheme.typography.labelMedium)
-}
-
-@Composable
-private fun Dial(label: String, value: String, amount: Float, accent: Color) = Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Color.Black.copy(.16f)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-    Column(Modifier.weight(1f)) {
-        Text(label, color = Color.White.copy(.45f), style = MaterialTheme.typography.labelSmall)
-        Text(value, color = accent, style = MaterialTheme.typography.titleLarge)
-    }
-    Canvas(Modifier.size(54.dp)) {
-        drawArc(accent.copy(.15f), -90f, 360f, false, style = Stroke(5f))
-        drawArc(accent, -90f, amount * 360f, false, style = Stroke(5f, cap = StrokeCap.Round))
-    }
-}
+@Composable private fun Dial(label:String,value:String,a:Color,active:Boolean,click:()->Unit){Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(19.dp)).background(if(active)a.copy(.13f)else Color.White.copy(.045f)).pointerInput(label){detectTapGestures{click()}}.padding(11.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(40.dp).clip(CircleShape).background(a.copy(.1f))){Canvas(Modifier.fillMaxSize()){drawArc(a,-90f,270f,false,style=Stroke(3f));drawCircle(a.copy(.7f),3.5f,Offset(size.width/2,6f))}};Spacer(Modifier.width(9.dp));Column(Modifier.weight(1f)){Text(label,color=Color.White.copy(.4f),fontSize=8.sp,letterSpacing=1.sp);Text(value,color=ICE,fontSize=14.sp,fontWeight=FontWeight.Bold)};Text("DRAG",color=a.copy(.7f),fontSize=8.sp)}}
