@@ -17,13 +17,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,35 +67,13 @@ fun AmarAuroraShell(
     var orbit by remember { mutableFloatStateOf(0f) }
     val rooms = AmarRoom.values().toList()
     val transition = rememberInfiniteTransition(label = "amar_motion")
-    val flow by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(8000), RepeatMode.Reverse),
-        label = "flow"
-    )
-    val pulse by transition.animateFloat(
-        initialValue = 0.65f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1200), RepeatMode.Reverse),
-        label = "pulse"
-    )
+    val flow by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(8000), RepeatMode.Reverse), label = "flow")
+    val pulse by transition.animateFloat(0.65f, 1f, infiniteRepeatable(tween(1200), RepeatMode.Reverse), label = "pulse")
 
     Box(Modifier.fillMaxSize().background(AmarBg)) {
         AuroraField(flow, pulse)
-        if (!entered) {
-            EntryPortal(flow, pulse) { entered = true }
-        } else {
-            NexusHome(
-                rooms = rooms,
-                selectedIndex = selectedIndex,
-                orbit = orbit,
-                flow = flow,
-                pulse = pulse,
-                onOrbitDrag = { orbit += it / 240f },
-                onRoom = { selectedIndex = it },
-                onLegacy = onOpenLegacyGrid
-            )
-        }
+        if (!entered) EntryPortal(flow, pulse) { entered = true }
+        else NexusHome(rooms, selectedIndex, orbit, flow, pulse, { orbit += it / 240f }, { selectedIndex = it }, onOpenLegacyGrid)
     }
 }
 
@@ -103,20 +82,8 @@ private fun AuroraField(flow: Float, pulse: Float) {
     Canvas(Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
-        drawRect(
-            Brush.radialGradient(
-                listOf(AmarCyan.copy(alpha = 0.22f * pulse), Color.Transparent),
-                androidx.compose.ui.geometry.Offset(w * (0.15f + flow * 0.18f), h * 0.15f),
-                w * 0.75f
-            )
-        )
-        drawRect(
-            Brush.radialGradient(
-                listOf(AmarViolet.copy(alpha = 0.18f), Color.Transparent),
-                androidx.compose.ui.geometry.Offset(w * (0.85f - flow * 0.15f), h * 0.85f),
-                w * 0.70f
-            )
-        )
+        drawRect(Brush.radialGradient(listOf(AmarCyan.copy(alpha = 0.22f * pulse), Color.Transparent), androidx.compose.ui.geometry.Offset(w * (0.15f + flow * 0.18f), h * 0.15f), w * 0.75f))
+        drawRect(Brush.radialGradient(listOf(AmarViolet.copy(alpha = 0.18f), Color.Transparent), androidx.compose.ui.geometry.Offset(w * (0.85f - flow * 0.15f), h * 0.85f), w * 0.70f))
         for (i in 0..16) {
             val y = h * i / 16f
             drawLine(Color.White.copy(alpha = 0.018f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(w, y), 1f)
@@ -130,9 +97,7 @@ private fun EntryPortal(flow: Float, pulse: Float, onEnter: () -> Unit) {
         Canvas(Modifier.fillMaxSize()) {
             val center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             val r = size.minDimension * 0.22f
-            for (i in 0..7) {
-                drawCircle(AmarCyan.copy(alpha = 0.025f + i * 0.012f), r + i * 28f, center, style = Stroke(1f))
-            }
+            for (i in 0..7) drawCircle(AmarCyan.copy(alpha = 0.025f + i * 0.012f), r + i * 28f, center, style = Stroke(1f))
             drawCircle(AmarCyan.copy(alpha = 0.32f), r, center, style = Stroke(3f))
             drawCircle(AmarViolet.copy(alpha = 0.22f), r * 0.68f, center, style = Stroke(2f))
             for (i in 0..15) {
@@ -146,7 +111,7 @@ private fun EntryPortal(flow: Float, pulse: Float, onEnter: () -> Unit) {
             Spacer(Modifier.height(6.dp))
             Text("AURORA NEXUS", color = AmarCyan, fontSize = 13.sp, letterSpacing = 4.sp)
             Spacer(Modifier.height(28.dp))
-            GlassButton("دخول إلى النظام  ›", AmarCyan)
+            GlassButton("دخول إلى النظام  ›", AmarCyan, onEnter)
             Spacer(Modifier.height(12.dp))
             Text("DEMO • LOCAL • SAFE", color = Color.White.copy(alpha = 0.42f), fontSize = 9.sp, letterSpacing = 2.sp)
         }
@@ -154,33 +119,20 @@ private fun EntryPortal(flow: Float, pulse: Float, onEnter: () -> Unit) {
 }
 
 @Composable
-private fun NexusHome(
-    rooms: List<AmarRoom>,
-    selectedIndex: Int,
-    orbit: Float,
-    flow: Float,
-    pulse: Float,
-    onOrbitDrag: (Float) -> Unit,
-    onRoom: (Int) -> Unit,
-    onLegacy: () -> Unit
-) {
+private fun NexusHome(rooms: List<AmarRoom>, selectedIndex: Int, orbit: Float, flow: Float, pulse: Float, onOrbitDrag: (Float) -> Unit, onRoom: (Int) -> Unit, onLegacy: () -> Unit) {
     Column(Modifier.fillMaxSize().padding(12.dp)) {
-        val room = rooms[selectedIndex]
-        Header(room, pulse)
+        Header(rooms[selectedIndex], pulse)
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OrbitRail(rooms, selectedIndex, orbit, flow, onOrbitDrag, onRoom, Modifier.width(124.dp).fillMaxSize())
-            RoomStage(room, flow, pulse, onLegacy, Modifier.weight(1f).fillMaxSize())
+            RoomStage(rooms[selectedIndex], flow, pulse, onLegacy, Modifier.weight(1f).fillMaxSize())
         }
     }
 }
 
 @Composable
 private fun Header(room: AmarRoom, pulse: Float) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Color.White.copy(alpha = 0.055f)).padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Color.White.copy(alpha = 0.055f)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(9.dp * pulse).clip(CircleShape).background(AmarGreen))
         Spacer(Modifier.width(9.dp))
         Column(Modifier.weight(1f)) {
@@ -194,14 +146,8 @@ private fun Header(room: AmarRoom, pulse: Float) {
 }
 
 @Composable
-private fun OrbitRail(
-    rooms: List<AmarRoom>, selected: Int, orbit: Float, flow: Float,
-    onDrag: (Float) -> Unit, onRoom: (Int) -> Unit, modifier: Modifier
-) {
-    Box(
-        modifier.clip(RoundedCornerShape(30.dp)).background(Color.White.copy(alpha = 0.035f))
-            .pointerInput(Unit) { detectDragGestures { _, drag -> onDrag(drag.y) } }
-    ) {
+private fun OrbitRail(rooms: List<AmarRoom>, selected: Int, orbit: Float, flow: Float, onDrag: (Float) -> Unit, onRoom: (Int) -> Unit, modifier: Modifier) {
+    Box(modifier.clip(RoundedCornerShape(30.dp)).background(Color.White.copy(alpha = 0.035f)).pointerInput(Unit) { detectDragGestures { _, drag -> onDrag(drag.y) } }) {
         Canvas(Modifier.fillMaxSize()) {
             val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f)
             drawCircle(AmarCyan.copy(alpha = 0.05f), size.minDimension * 0.34f, c, style = Stroke(1f))
@@ -212,22 +158,7 @@ private fun OrbitRail(
             val depth = (cos(angle) + 1f) / 2f
             val y = 0.50f + sin(angle) * 0.40f
             val active = index == selected
-            Box(
-                Modifier.align(Alignment.TopCenter)
-                    .offset(y = (y * 900f - 450f).dp)
-                    .graphicsLayer {
-                        val s = 0.70f + depth * 0.32f + if (active) 0.08f else 0f
-                        scaleX = s
-                        scaleY = s
-                        alpha = 0.35f + depth * 0.65f
-                        rotationY = sin(angle) * 22f
-                        cameraDistance = 28f * density
-                    }
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(if (active) AmarCyan.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.18f))
-                    .clickable { onRoom(index) }
-                    .padding(horizontal = 8.dp, vertical = 9.dp)
-            ) {
+            Box(Modifier.align(Alignment.TopCenter).offset(y = (y * 900f - 450f).dp).graphicsLayer(scaleX = 0.70f + depth * 0.32f + if (active) 0.08f else 0f, scaleY = 0.70f + depth * 0.32f + if (active) 0.08f else 0f, alpha = 0.35f + depth * 0.65f, rotationZ = sin(angle) * 8f).clip(RoundedCornerShape(18.dp)).background(if (active) AmarCyan.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.18f)).clickable { onRoom(index) }.padding(horizontal = 8.dp, vertical = 9.dp)) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(item.emoji, fontSize = if (active) 24.sp else 18.sp)
                     Text(item.titleAr.take(9), color = if (active) AmarIce else Color.White.copy(alpha = 0.45f), fontSize = 8.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
@@ -298,12 +229,7 @@ private fun ChartStage(flow: Float, title: String, accent: Color) {
             Text("BUY 82%", Modifier.align(Alignment.TopEnd).padding(14.dp), color = AmarGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            Node("EMA", "ON", accent)
-            Node("VWAP", "LIVE", AmarViolet)
-            Node("FVG", "ON", AmarCyan)
-            Node("BOS", "LIVE", AmarGold)
-            Node("TP", "READY", AmarGreen)
-            Node("SL", "READY", AmarPink)
+            Node("EMA", "ON", accent); Node("VWAP", "LIVE", AmarViolet); Node("FVG", "ON", AmarCyan); Node("BOS", "LIVE", AmarGold); Node("TP", "READY", AmarGreen); Node("SL", "READY", AmarPink)
         }
     }
 }
@@ -326,11 +252,7 @@ private fun BotStage(flow: Float, pulse: Float, onLegacy: () -> Unit) {
             }
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Node("STATUS", "READY • DEMO", AmarGreen)
-            Node("LOT", "0.02", AmarCyan)
-            Node("GRID STEP", "40 POINTS", AmarViolet)
-            Node("MAX ORDERS", "30", AmarGold)
-            GlassButton("فتح وحدة التحكم ›", AmarCyan, onLegacy)
+            Node("STATUS", "READY • DEMO", AmarGreen); Node("LOT", "0.02", AmarCyan); Node("GRID STEP", "40 POINTS", AmarViolet); Node("MAX ORDERS", "30", AmarGold); GlassButton("فتح وحدة التحكم ›", AmarCyan, onLegacy)
         }
     }
 }
@@ -341,10 +263,7 @@ private fun RiskStage(flow: Float, pulse: Float) {
         CoreStage("RISK CORE", "ARMED", AmarGold, flow, pulse, Modifier.weight(1f))
         Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("RISK PRESETS", color = Color.White.copy(alpha = 0.45f), fontSize = 9.sp, letterSpacing = 2.sp)
-            Node("PRESET 01", "5%", AmarGreen)
-            Node("PRESET 02", "10%", AmarGold)
-            Node("PRESET 03", "25%", AmarGold)
-            Node("PRESET 04", "27%", AmarPink)
+            Node("PRESET 01", "5%", AmarGreen); Node("PRESET 02", "10%", AmarGold); Node("PRESET 03", "25%", AmarGold); Node("PRESET 04", "27%", AmarPink)
         }
     }
 }
@@ -353,9 +272,7 @@ private fun RiskStage(flow: Float, pulse: Float) {
 private fun MatrixStage(title: String, values: List<String>, accent: Color) {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(9.dp)) {
         CoreStage(title, "LIVE MATRIX", accent, 0.25f, 1f, Modifier.fillMaxWidth().weight(1f))
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            values.forEachIndexed { index, value -> Node("NODE ${index + 1}", value, accent) }
-        }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { values.forEachIndexed { index, value -> Node("NODE ${index + 1}", value, accent) } }
     }
 }
 
@@ -390,12 +307,7 @@ private fun Node(title: String, value: String, accent: Color) {
 
 @Composable
 private fun GlassButton(text: String, accent: Color, onClick: (() -> Unit)? = null) {
-    Row(
-        Modifier.clip(RoundedCornerShape(50.dp)).background(accent.copy(alpha = 0.14f))
-            .clickable(enabled = onClick != null) { onClick?.invoke() }
-            .padding(horizontal = 18.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.clip(RoundedCornerShape(50.dp)).background(accent.copy(alpha = 0.14f)).clickable(enabled = onClick != null) { onClick?.invoke() }.padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(7.dp).clip(CircleShape).background(accent))
         Spacer(Modifier.width(8.dp))
         Text(text, color = AmarIce, fontSize = 11.sp, fontWeight = FontWeight.Bold)
