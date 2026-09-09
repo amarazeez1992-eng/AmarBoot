@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.design
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -30,4 +29,4 @@ fun AmarAuroraTheme(content: @Composable () -> Unit) {
 }
 
 @Suppress("UNUSED_PARAMETER")
-private fun keepThemeReference(isDark: Boolean = isSystemInDarkTheme()) = isDark
+private fun keepThemeReference(isDark: Boolean = false) = isDark
