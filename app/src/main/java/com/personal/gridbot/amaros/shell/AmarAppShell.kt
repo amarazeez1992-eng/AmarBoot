@@ -33,6 +33,7 @@ import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
 import com.personal.gridbot.amaros.navigation.AmarRoom
+import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
 /**
@@ -145,7 +146,7 @@ private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) {
     when (room) {
         AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
         AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
-        else -> PlaceholderRoom(room)
+        else -> AmarRoomWorkspace(room)
     }
 }
 
@@ -166,25 +167,6 @@ private fun LegacyGridEntry(onOpenLegacyGrid: () -> Unit) {
             Text("مختبر البوتات", style = MaterialTheme.typography.headlineSmall)
             Text("البوت الحالي محفوظ كما هو. لا تتم إضافة بوتات جديدة في هذه المرحلة.")
             Text("اضغط هنا لفتح واجهة Grid الحالية.")
-        }
-    }
-}
-
-@Composable
-private fun PlaceholderRoom(room: AmarRoom) {
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(room.titleAr, style = MaterialTheme.typography.headlineSmall)
-            Text("هذه الغرفة مستقلة وسيتم بناء وحداتها تدريجياً دون تعديل محرك التداول.")
-            Text("الوضع الحالي: تجريبي")
         }
     }
 }
