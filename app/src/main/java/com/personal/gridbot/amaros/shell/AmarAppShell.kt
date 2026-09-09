@@ -33,8 +33,13 @@ import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
 import com.personal.gridbot.amaros.navigation.AmarRoom
+import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/** الغلاف الجديد للتطبيق. الشاشات القديمة تبقى موجودة ولا يتم حذفها. */
+/**
+ * الغلاف الرئيسي لـ AMAR.
+ * التنقل منفصل عن الوحدات، والغرف لا تحتوي على منطق تداول.
+ * يمكن استبدال واجهة أي غرفة لاحقاً دون هدم بقية النظام.
+ */
 @Composable
 fun AmarAppShell(
     initialState: AmarAppState = AmarAppState(),
@@ -64,7 +69,7 @@ fun AmarAppShell(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text("AMAR", style = MaterialTheme.typography.titleLarge)
-                Text("تداول ذكي", style = MaterialTheme.typography.labelSmall)
+                Text("نظام التداول", style = MaterialTheme.typography.labelSmall)
                 Spacer(Modifier.height(8.dp))
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     items(AmarRoom.entries) { room ->
@@ -90,10 +95,7 @@ fun AmarAppShell(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(room.emoji)
-                                Text(
-                                    room.titleAr,
-                                    style = MaterialTheme.typography.labelSmall
-                                )
+                                Text(room.titleAr, style = MaterialTheme.typography.labelSmall)
                             }
                         }
                     }
@@ -129,7 +131,10 @@ fun AmarAppShell(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                AmarRoomContent(room = state.selectedRoom, onOpenLegacyGrid = onOpenLegacyGrid)
+                AmarRoomContent(
+                    room = state.selectedRoom,
+                    onOpenLegacyGrid = onOpenLegacyGrid
+                )
             }
         }
     }
@@ -137,6 +142,36 @@ fun AmarAppShell(
 
 @Composable
 private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) {
+    when (room) {
+        AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
+        AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
+        else -> PlaceholderRoom(room)
+    }
+}
+
+@Composable
+private fun LegacyGridEntry(onOpenLegacyGrid: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable { onOpenLegacyGrid() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text("مختبر البوتات", style = MaterialTheme.typography.headlineSmall)
+            Text("البوت الحالي محفوظ كما هو. لا تتم إضافة بوتات جديدة في هذه المرحلة.")
+            Text("اضغط هنا لفتح واجهة Grid الحالية.")
+        }
+    }
+}
+
+@Composable
+private fun PlaceholderRoom(room: AmarRoom) {
     Card(
         modifier = Modifier.fillMaxSize(),
         colors = CardDefaults.cardColors(
@@ -148,25 +183,8 @@ private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(room.titleAr, style = MaterialTheme.typography.headlineSmall)
-            Text(
-                "هذه مساحة الغرفة الجديدة. سيتم إضافة وحداتها بشكل مستقل دون هدم الوحدات الحالية.",
-                style = MaterialTheme.typography.bodyLarge
-            )
-            if (room == AmarRoom.BOT_LAB) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenLegacyGrid() },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("وحدة Grid الحالية")
-                        Text("فتح الواجهة الحالية المحفوظة دون إضافة بوت جديد")
-                    }
-                }
-            }
+            Text("هذه الغرفة مستقلة وسيتم بناء وحداتها تدريجياً دون تعديل محرك التداول.")
+            Text("الوضع الحالي: تجريبي")
         }
     }
 }
