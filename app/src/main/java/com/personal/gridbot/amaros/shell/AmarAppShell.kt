@@ -40,67 +40,37 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/**
- * AMAR B4: living command shell.
- * Visual motion is isolated from trading logic.
- * Depth is expressed with supported Compose graphicsLayer properties:
- * cameraDistance + rotation + scale + shadowElevation + translation.
- */
+/** AMAR B4: living command shell. */
 @Composable
-fun AmarAppShell(
-    initialState: AmarAppState = AmarAppState(),
-    onOpenLegacyGrid: () -> Unit = {}
-) {
+fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
     var state by remember { mutableStateOf(initialState) }
     val transition = rememberInfiniteTransition(label = "shell-depth")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(9000), RepeatMode.Reverse),
-        label = "shell-phase"
-    )
+    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "shell-phase")
 
     AmarLivingVisualEngine {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        Row(Modifier.fillMaxSize().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             AmarLivingGlass(
-                modifier = Modifier
-                    .width(116.dp)
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        rotationY = (phase - 0.5f) * 1.4f
-                        cameraDistance = 18f
-                        shadowElevation = 18f
-                        scaleX = 1f + phase * 0.006f
-                        scaleY = 1f + phase * 0.006f
-                    },
-                accent = Color(0xFF35D6FF)
+                Modifier.width(116.dp).fillMaxSize().graphicsLayer {
+                    rotationY = (phase - 0.5f) * 1.4f
+                    cameraDistance = 18f
+                    shadowElevation = 18f
+                    scaleX = 1f + phase * 0.006f
+                    scaleY = 1f + phase * 0.006f
+                }, Color(0xFF35D6FF)
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
-                ) {
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("AMAR", color = Color.White, style = MaterialTheme.typography.titleLarge)
                     Text("TRADING OS", color = Color(0xFF35D6FF), style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.height(7.dp))
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         items(AmarRoom.entries) { room ->
-                            AmarLivingButton(
-                                label = room.titleAr,
-                                active = state.selectedRoom == room,
-                                accent = when (room) {
-                                    AmarRoom.COMMAND_CENTER -> Color(0xFF35D6FF)
-                                    AmarRoom.BOT_LAB -> Color(0xFFFFC857)
-                                    AmarRoom.MARKET -> Color(0xFF39E58C)
-                                    AmarRoom.CHART -> Color(0xFF8B5CFF)
-                                    else -> Color(0xFFFF5DA2)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            AmarLivingButton(room.titleAr, state.selectedRoom == room, when (room) {
+                                AmarRoom.COMMAND_CENTER -> Color(0xFF35D6FF)
+                                AmarRoom.BOT_LAB -> Color(0xFFFFC857)
+                                AmarRoom.MARKET -> Color(0xFF39E58C)
+                                AmarRoom.CHART -> Color(0xFF8B5CFF)
+                                else -> Color(0xFFFF5DA2)
+                            }, Modifier.fillMaxWidth()) {
                                 state = state.copy(selectedRoom = room)
                                 AmarEventBus.publish(AmarEvent.RoomSelected(room.name))
                             }
@@ -108,71 +78,41 @@ fun AmarAppShell(
                     }
                 }
             }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        rotationX = (0.5f - phase) * 0.5f
-                        cameraDistance = 24f
-                        shadowElevation = 22f
-                        translationY = (phase - 0.5f) * 3f
-                    },
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                AmarLivingGlass(
-                    modifier = Modifier.fillMaxWidth(),
-                    accent = Color(0xFF8B5CFF)
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
+            Column(Modifier.fillMaxSize().graphicsLayer {
+                rotationX = (0.5f - phase) * 0.5f
+                cameraDistance = 24f
+                shadowElevation = 22f
+                translationY = (phase - 0.5f) * 3f
+            }, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                AmarLivingGlass(Modifier.fillMaxWidth(), Color(0xFF8B5CFF)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text("AMAR TRADING OS", color = Color.White, style = MaterialTheme.typography.titleLarge)
-                            Text(
-                                "${state.selectedRoom.emoji} ${state.selectedRoom.titleAr}  •  نظام حي",
-                                color = Color.White.copy(alpha = 0.64f)
-                            )
+                            Text("${state.selectedRoom.emoji} ${state.selectedRoom.titleAr}  •  نظام حي", color = Color.White.copy(alpha = 0.64f))
                         }
                         AmarLivingButton("تجريبي", true, Color(0xFF39E58C)) {}
                     }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     AmarLivingMetric("السوق", "XAUUSD", "حالة مباشرة", Color(0xFF35D6FF), Modifier.weight(1f))
                     AmarLivingMetric("النظام", "نشط", "المحرك البصري يعمل", Color(0xFF39E58C), Modifier.weight(1f))
                     AmarLivingMetric("الوضع", "DEMO", "بدون تداول حقيقي", Color(0xFFFFC857), Modifier.weight(1f))
                 }
-
-                Box(Modifier.fillMaxSize()) {
-                    AmarRoomContent(state.selectedRoom, onOpenLegacyGrid)
-                }
+                Box(Modifier.fillMaxSize()) { AmarRoomContent(state.selectedRoom, onOpenLegacyGrid) }
             }
         }
     }
 }
 
-@Composable
-private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) {
-    when (room) {
-        AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-        AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
-        else -> AmarRoomWorkspace(room)
-    }
+@Composable private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) = when (room) {
+    AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
+    AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
+    else -> AmarRoomWorkspace(room)
 }
 
-@Composable
-private fun LegacyGridEntry(onOpenLegacyGrid: () -> Unit) {
-    AmarLivingGlass(modifier = Modifier.fillMaxSize(), accent = Color(0xFFFFC857)) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
+@Composable private fun LegacyGridEntry(onOpenLegacyGrid: () -> Unit) {
+    AmarLivingGlass(Modifier.fillMaxSize(), Color(0xFFFFC857)) {
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("مختبر البوتات", color = Color.White, style = MaterialTheme.typography.headlineSmall)
             Text("البوت الحالي محفوظ كما هو. لا تتم إضافة بوتات جديدة في هذه المرحلة.", color = Color.White.copy(alpha = 0.70f))
             AmarLivingButton("فتح واجهة Grid الحالية", true, Color(0xFFFFC857), Modifier.fillMaxWidth(), onOpenLegacyGrid)
