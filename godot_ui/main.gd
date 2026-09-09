@@ -100,7 +100,7 @@ func _add_zone(title: String, position: Vector3, color: Color) -> void:
     shape.radius = 0.8
     collision.shape = shape
     area.add_child(collision)
-    area.input_event.connect(_zone_input)
+    area.input_event.connect(_zone_input.bind(area))
     add_child(area)
 
     var mesh_instance := MeshInstance3D.new()
@@ -192,12 +192,10 @@ func _process(delta: float) -> void:
     camera.look_at(Vector3.ZERO)
     metric_label.text = "XAUUSD   M5    •    %0.2f%%" % (sin(pulse * 0.42) * 2.4)
 
-func _zone_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
+func _zone_input(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int, area: Area3D) -> void:
     if event is InputEventScreenTouch and event.pressed:
-        var sender := _camera.get_parent()
-        if sender is Area3D:
-            selected_zone = sender.get_meta("title", "المحور")
-            status_label.text = "●  عمار حي  ·  " + selected_zone
+        selected_zone = area.get_meta("title", "المحور")
+        status_label.text = "●  عمار حي  ·  " + selected_zone
 
 func _input(event: InputEvent) -> void:
     if event is InputEventScreenTouch:
