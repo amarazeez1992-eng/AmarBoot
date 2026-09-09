@@ -65,7 +65,8 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
         run: |
           mkdir -p godot_ui/build
-          ./godot --headless --path godot_ui --export-debug "Android" godot_ui/build/AmarLivingUI-debug.apk
+          cd godot_ui
+          ../godot --headless --path . --export-debug "Android" build/AmarLivingUI-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
