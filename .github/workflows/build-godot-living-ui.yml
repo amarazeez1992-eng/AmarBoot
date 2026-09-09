@@ -26,6 +26,9 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
 
+      - name: Start ADB
+        run: adb start-server
+
       - name: Create debug keystore
         run: |
           mkdir -p "$HOME/.android"
