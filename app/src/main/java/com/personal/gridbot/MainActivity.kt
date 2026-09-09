@@ -1,20 +1,24 @@
 package com.personal.gridbot
 
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import com.personal.gridbot.ui.amarapproved.AmarReferenceHomeScreen
-import com.personal.gridbot.ui.theme.AmarTheme
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            AmarTheme {
-                AmarReferenceHomeScreen()
-            }
+        val webView = WebView(this).apply {
+            webViewClient = WebViewClient()
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.cacheMode = WebSettings.LOAD_DEFAULT
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            loadUrl("file:///android_asset/amar_reference.html")
         }
+        setContentView(webView)
     }
 }
