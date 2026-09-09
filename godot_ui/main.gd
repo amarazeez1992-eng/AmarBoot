@@ -1,5 +1,7 @@
 extends Node3D
 
+# AMAR Living UI 0.1.2 — bright Arabic 3D demo surface; live trading remains disabled.
+
 var core: MeshInstance3D
 var ring_a: MeshInstance3D
 var ring_b: MeshInstance3D
