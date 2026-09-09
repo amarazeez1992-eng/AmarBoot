@@ -83,7 +83,9 @@ fun AmarReferenceHomeScreen() {
             Node("الرسم البياني", Alignment.CenterEnd, .38f, selected == "الرسم البياني") { selected = "الرسم البياني" }
             Node("المخاطر", Alignment.BottomStart, .22f, selected == "المخاطر") { selected = "المخاطر" }
             Node("التحليل", Alignment.BottomEnd, .22f, selected == "التحليل") { selected = "التحليل" }
-            BottomNav(selected) { selected = it }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+                BottomNav(selected) { selected = it }
+            }
         }
     }
 }
@@ -129,7 +131,6 @@ private fun BottomNav(selected: String, onSelected: (String) -> Unit) {
     val items = listOf("الإعدادات", "التنبيهات", "الرئيسية", "الأداء", "المزيد")
     Row(
         Modifier
-            .align(Alignment.BottomCenter)
             .fillMaxWidth()
             .padding(horizontal = 10.dp, vertical = 9.dp)
             .clip(RoundedCornerShape(30.dp))
