@@ -19,11 +19,14 @@ export default function Page() {
   const [equity, setEquity] = useState(1012.84);
   const [confidence, setConfidence] = useState(82);
 
-  useEffect(() => amarDemoStream.connect(event => {
-    setEvents(current => [event, ...current].slice(0, 10));
-    if (event.type === 'ACCOUNT_UPDATE' && typeof event.payload.equity === 'number') setEquity(event.payload.equity);
-    if (event.type === 'SIGNAL_UPDATE' && typeof event.payload.confidence === 'number') setConfidence(event.payload.confidence);
-  }), []);
+  useEffect(() => {
+    const disconnect = amarDemoStream.connect(event => {
+      setEvents(current => [event, ...current].slice(0, 10));
+      if (event.type === 'ACCOUNT_UPDATE' && typeof event.payload.equity === 'number') setEquity(event.payload.equity);
+      if (event.type === 'SIGNAL_UPDATE' && typeof event.payload.confidence === 'number') setConfidence(event.payload.confidence);
+    });
+    return () => { disconnect(); };
+  }, []);
 
   const activity = useMemo(() => Math.min(1, events.length / 10), [events.length]);
 
