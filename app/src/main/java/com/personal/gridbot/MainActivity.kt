@@ -3,15 +3,17 @@ package com.personal.gridbot
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.personal.gridbot.ui.amarapproved.AmarApprovedHomeScreen
+import androidx.activity.enableEdgeToEdge
+import com.personal.gridbot.ui.amarapproved.AmarReferenceHomeScreen
 import com.personal.gridbot.ui.theme.AmarTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             AmarTheme {
-                AmarApprovedHomeScreen()
+                AmarReferenceHomeScreen()
             }
         }
     }
