@@ -91,7 +91,8 @@ fun AmarReferenceHomeScreen() {
 @Composable
 private fun ReferenceBackground(pulse: Float) {
     Canvas(Modifier.fillMaxSize()) {
-        val w = size.width; val h = size.height
+        val w = size.width
+        val h = size.height
         drawRect(Brush.verticalGradient(listOf(Color(0xFFF9FEFF), Color(0xFFDDF7F5), Color(0xFFEAF1DA), Color(0xFFF9E9C7))))
         drawCircle(Color(0x44FFFFFF), w * .32f * pulse, Offset(w * .5f, h * .34f))
         drawOval(Color(0x3348BDB1), Offset(-w*.18f, h*.48f), androidx.compose.ui.geometry.Size(w*.78f, h*.35f))
@@ -105,10 +106,10 @@ private fun ReferenceBackground(pulse: Float) {
 @Composable
 private fun TopGlassBar() {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).background(Color(0xBFFFFFFF)).padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("عمار متصل", Color(0xFF0A786F), 12.sp, fontWeight = FontWeight.Bold)
-        Text("الحساب تجريبي", Color(0xFF174A52), 10.sp)
-        Text("XAUUSD  M5  ﹀", Color(0xFF174A52), 10.sp, fontWeight = FontWeight.SemiBold)
-        Text("⚙", Color(0xFF174A52), 17.sp)
+        Text("عمار متصل", color = Color(0xFF0A786F), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text("الحساب تجريبي", color = Color(0xFF174A52), fontSize = 10.sp)
+        Text("XAUUSD  M5  ﹀", color = Color(0xFF174A52), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+        Text("⚙", color = Color(0xFF174A52), fontSize = 17.sp)
     }
 }
 
@@ -118,7 +119,7 @@ private fun Node(label: String, alignment: Alignment, fraction: Float, selected:
         val top = if (alignment == Alignment.TopCenter) maxHeight * fraction else 0.dp
         val bottom = if (alignment == Alignment.BottomStart || alignment == Alignment.BottomEnd) maxHeight * fraction else 0.dp
         Box(Modifier.align(alignment).padding(top = top, bottom = bottom).size(82.dp).scale(if (selected) 1.10f else 1f).clip(CircleShape).background(Color(0xCFFFFFFF)).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-            Text(label, Color(0xFF174A52), 10.sp, fontWeight = FontWeight.Bold)
+            Text(label, color = Color(0xFF174A52), fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -129,8 +130,8 @@ private fun BottomNav(selected: String, onSelected: (String) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 9.dp).clip(RoundedCornerShape(30.dp)).background(Color(0xD9FFFFFF)).padding(5.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
         items.forEach { item ->
             Column(Modifier.clip(RoundedCornerShape(20.dp)).background(if (selected == item) Color(0xFFDCF5EF) else Color.Transparent).clickable { onSelected(item) }.padding(horizontal = 6.dp, vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(if (selected == item) "●" else "○", Color(0xFF159B89), 10.sp)
-                Text(item, Color(0xFF174A52), 8.sp, fontWeight = FontWeight.SemiBold)
+                Text(if (selected == item) "●" else "○", color = Color(0xFF159B89), fontSize = 10.sp)
+                Text(item, color = Color(0xFF174A52), fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
             }
         }
     }
