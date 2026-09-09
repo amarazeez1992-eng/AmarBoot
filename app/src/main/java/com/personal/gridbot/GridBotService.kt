@@ -8,9 +8,9 @@ import androidx.core.app.NotificationCompat
 import com.personal.gridbot.data.AppDatabase
 import com.personal.gridbot.network.GridEngine
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 class GridBotService : Service() {
-
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private lateinit var engine: GridEngine
 
@@ -19,26 +19,18 @@ class GridBotService : Service() {
         val dao = AppDatabase.getInstance(applicationContext).botDao()
         engine = GridEngine(dao)
         startForeground(1, buildNotification())
-
         scope.launch {
             while (isActive) {
-                dao.getAllBots().collect { bots ->
-                    bots.filter { it.isActive }.forEach { bot ->
-                        engine.runCycle(bot)
-                    }
-                }
-                delay(60_000L) // دورة كل دقيقة - عدّلها حسب الحاجة
+                val bots = dao.getAllBots().first()
+                bots.filter { it.isActive }.forEach { bot -> engine.runCycle(bot) }
+                delay(60_000L)
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
     override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        scope.cancel()
-        super.onDestroy()
-    }
+    override fun onDestroy() { scope.cancel(); super.onDestroy() }
 
     private fun buildNotification(): Notification {
         val channelId = "gridbot_channel"
