@@ -5,20 +5,36 @@ import com.personal.gridbot.data.BotDao
 import com.personal.gridbot.data.BotLog
 
 /**
- * منطق التنفيذ الفعلي للبوت الشبكي - نسخة Kotlin من نفس فكرة GridTradeBot.mq5
- * لكن تنفّذه عبر MetaApi بدل تشغيله داخل MetaTrader مباشرة.
+ * Execution bridge for the future live Grid engine.
+ *
+ * The current product phase is Demo, so no live order is sent while MetaApi
+ * credentials are not explicitly configured. When enabled later, grid prices
+ * are based on the broker's live quote, never on account balance.
  */
 class GridEngine(private val dao: BotDao) {
 
     suspend fun runCycle(bot: Bot) {
         try {
-            val pipSize = 0.0001 // عدّلها لأزواج الـ JPY (0.01) حسب الزوج
-            val spacing = bot.gridSpacingPips * pipSize
+            if (!MetaApiClient.isConfigured) {
+                dao.insertLog(
+                    BotLog(
+                        botId = bot.id,
+                        type = "DEMO",
+                        message = "Live execution disabled: MetaApi credentials are not configured"
+                    )
+                )
+                return
+            }
 
-            val account = MetaApiClient.service.getAccountInformation(
-                MetaApiClient.authToken, MetaApiClient.accountId
+            val symbolPrice = MetaApiClient.service.getCurrentPrice(
+                MetaApiClient.authToken,
+                MetaApiClient.accountId,
+                bot.pair
             )
-            val basePrice = account.balance ?: 0.0 // ملاحظة: استبدلها بسعر السوق الفعلي (quote) وليس الرصيد
+
+            val pipSize = 0.0001
+            val spacing = bot.gridSpacingPips * pipSize
+            val basePrice = (symbolPrice.bid + symbolPrice.ask) / 2.0
             val lot = calcLotSize(bot)
 
             for (i in 1..bot.gridCount) {
@@ -43,23 +59,45 @@ class GridEngine(private val dao: BotDao) {
                 )
 
                 val buyResult = MetaApiClient.service.executeTrade(
-                    MetaApiClient.authToken, MetaApiClient.accountId, buyTrade
+                    MetaApiClient.authToken,
+                    MetaApiClient.accountId,
+                    buyTrade
                 )
-                dao.insertLog(BotLog(botId = bot.id, type = "ORDER", message = "Buy L$i -> ${buyResult.stringCode} ${buyResult.orderId}"))
+                dao.insertLog(
+                    BotLog(
+                        botId = bot.id,
+                        type = "ORDER",
+                        message = "Buy L$i -> ${buyResult.stringCode} ${buyResult.orderId}"
+                    )
+                )
 
                 val sellResult = MetaApiClient.service.executeTrade(
-                    MetaApiClient.authToken, MetaApiClient.accountId, sellTrade
+                    MetaApiClient.authToken,
+                    MetaApiClient.accountId,
+                    sellTrade
                 )
-                dao.insertLog(BotLog(botId = bot.id, type = "ORDER", message = "Sell L$i -> ${sellResult.stringCode} ${sellResult.orderId}"))
+                dao.insertLog(
+                    BotLog(
+                        botId = bot.id,
+                        type = "ORDER",
+                        message = "Sell L$i -> ${sellResult.stringCode} ${sellResult.orderId}"
+                    )
+                )
             }
         } catch (e: Exception) {
-            dao.insertLog(BotLog(botId = bot.id, type = "ERROR", message = e.message ?: "Unknown error"))
+            dao.insertLog(
+                BotLog(
+                    botId = bot.id,
+                    type = "ERROR",
+                    message = e.message ?: "Unknown error"
+                )
+            )
         }
     }
 
     private fun calcLotSize(bot: Bot): Double {
         val perGridCapital = bot.investment / bot.gridCount.coerceAtLeast(1)
-        val lot = (perGridCapital / 1000.0)
+        val lot = perGridCapital / 1000.0
         return String.format("%.2f", lot.coerceAtLeast(0.01)).toDouble()
     }
 }
