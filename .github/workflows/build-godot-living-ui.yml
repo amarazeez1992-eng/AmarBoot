@@ -70,6 +70,14 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.2.stable"
           cp -R templates_unpack/templates/. "$HOME/.local/share/godot/export_templates/4.5.2.stable/"
 
+      - name: Install Android Gradle build template
+        run: |
+          mkdir -p godot_ui/android/plugins godot_ui/android/build
+          touch godot_ui/android/build/.gdignore
+          printf '%s\n' '4.5.2.stable' > godot_ui/android/.build_version
+          unzip -q "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_source.zip" -d godot_ui/android/build
+          test -f godot_ui/android/build/gradlew
+
       - name: Validate project and scripts
         run: ./godot --headless --path godot_ui --editor --quit --check-only
 
