@@ -1,0 +1,23 @@
+; AMAR Living UI Engine — Godot 4.5
+config_version=5
+
+[application]
+config/name="عمار — المحور الحي"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.5", "GL Compatibility")
+boot_splash/bg_color=Color(0.025,0.055,0.095,1)
+
+[display]
+window/size/viewport_width=1080
+window/size/viewport_height=1920
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+
+[input]
+touch_primary={"deadzone":0.2,"events":[Object(InputEventScreenTouch,"pressed":true)]}
