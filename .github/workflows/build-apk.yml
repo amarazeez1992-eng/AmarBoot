@@ -22,7 +22,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses >/dev/null || true
+        run: yes | sdkmanager --licenses >/dev/null
 
       - name: Generate Gradle Wrapper
         run: gradle wrapper --gradle-version 8.7
