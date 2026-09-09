@@ -1,13 +1,14 @@
 package com.personal.gridbot.ui.amarapproved
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,12 +39,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Ivory = Color(0xFFF7F4EA)
 private val Ink = Color(0xFF17485A)
 private val Cyan = Color(0xFF58D9D2)
 private val Green = Color(0xFF16C784)
@@ -64,11 +64,7 @@ fun AmarApprovedHomeScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFFFFFFFF), Color(0xFFEAF8F6), Color(0xFFF7F4EA))
-                )
-            )
+            .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFEAF8F6), Color(0xFFF7F4EA))))
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
@@ -117,8 +113,12 @@ fun AmarApprovedHomeScreen() {
                 }
             }
 
-            AnimatedContent(targetState = selected, transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }, label = "selected") { value ->
-                Text(value, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            AnimatedContent(
+                targetState = selected,
+                transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) },
+                label = "selected"
+            ) { value ->
+                Text(value, modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), textAlign = TextAlign.Center, color = Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
             BottomBar(selected) { selected = it }
             Spacer(Modifier.height(8.dp))
@@ -155,7 +155,7 @@ private fun FeatureNode(title: String, icon: String, accent: Color, modifier: Mo
 
 @Composable
 private fun CoreOrb(scale: Float) {
-    Box(Modifier.size((122 * scale).dp).shadow(18.dp, CircleShape).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFFFFFFFF), Color(0xFF55D9D2), Color(0xFF177A83)))), contentAlignment = Alignment.Center) {
+    Box(Modifier.size((122 * scale).dp).shadow(18.dp, CircleShape).clip(CircleShape).background(Brush.radialGradient(listOf(Color.White, Color(0xFF55D9D2), Color(0xFF177A83)))), contentAlignment = Alignment.Center) {
         Text("✦", color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.Bold)
     }
 }
