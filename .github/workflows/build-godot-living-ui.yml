@@ -24,10 +24,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1" "cmdline-tools;latest"
-
-      - name: Start Android Debug Bridge
-        run: adb start-server
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
 
       - name: Create debug keystore
         run: |
@@ -54,7 +51,6 @@ jobs:
           export/android/debug_keystore = "$HOME/.android/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
-          export/android/shutdown_adb_on_exit = false
           EOF
 
       - name: Download Godot 4.5.2
@@ -71,19 +67,21 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.2.stable"
           cp -R templates_unpack/templates/. "$HOME/.local/share/godot/export_templates/4.5.2.stable/"
 
-      - name: Validate Godot project
+      - name: Validate project and scripts
         run: ./godot --headless --path godot_ui --editor --quit --check-only
 
       - name: Export Android APK
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
-          JAVA_HOME: ${{ env.JAVA_HOME }}
         run: |
           mkdir -p godot_ui/build
           cd godot_ui
           set -o pipefail
           ../godot --headless --path . --export-debug "Android" build/AmarLivingUI-debug.apk 2>&1 | tee godot_export.log
+          test -s build/AmarLivingUI-debug.apk
+
+      - name: Verify APK
+        run: |
+          test -f godot_ui/build/AmarLivingUI-debug.apk
+          stat -c '%n %s bytes' godot_ui/build/AmarLivingUI-debug.apk
 
       - name: Upload export diagnostics
         if: always()
