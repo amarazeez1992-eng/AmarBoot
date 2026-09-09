@@ -1,10 +1,10 @@
 package com.personal.gridbot.amaros.shell
 
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
@@ -37,11 +39,12 @@ import com.personal.gridbot.amaros.design.AmarLivingVisualEngine
 import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
-import androidx.compose.material3.Text
 
 /**
  * AMAR B4: living command shell.
- * Navigation and visual motion remain independent from trading logic.
+ * Visual motion is isolated from trading logic.
+ * Depth is expressed with supported Compose graphicsLayer properties:
+ * cameraDistance + rotation + scale + shadowElevation + translation.
  */
 @Composable
 fun AmarAppShell(
@@ -70,7 +73,10 @@ fun AmarAppShell(
                     .fillMaxSize()
                     .graphicsLayer {
                         rotationY = (phase - 0.5f) * 1.4f
-                        translationZ = 8f
+                        cameraDistance = 18f
+                        shadowElevation = 18f
+                        scaleX = 1f + phase * 0.006f
+                        scaleY = 1f + phase * 0.006f
                     },
                 accent = Color(0xFF35D6FF)
             ) {
@@ -78,8 +84,8 @@ fun AmarAppShell(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    Text("AMAR", color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
-                    Text("TRADING OS", color = Color(0xFF35D6FF), style = androidx.compose.material3.MaterialTheme.typography.labelSmall)
+                    Text("AMAR", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                    Text("TRADING OS", color = Color(0xFF35D6FF), style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.height(7.dp))
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         items(AmarRoom.entries) { room ->
@@ -108,7 +114,9 @@ fun AmarAppShell(
                     .fillMaxSize()
                     .graphicsLayer {
                         rotationX = (0.5f - phase) * 0.5f
-                        translationZ = 16f
+                        cameraDistance = 24f
+                        shadowElevation = 22f
+                        translationY = (phase - 0.5f) * 3f
                     },
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -122,7 +130,7 @@ fun AmarAppShell(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Column(Modifier.weight(1f)) {
-                            Text("AMAR TRADING OS", color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.titleLarge)
+                            Text("AMAR TRADING OS", color = Color.White, style = MaterialTheme.typography.titleLarge)
                             Text(
                                 "${state.selectedRoom.emoji} ${state.selectedRoom.titleAr}  •  نظام حي",
                                 color = Color.White.copy(alpha = 0.64f)
@@ -165,7 +173,7 @@ private fun LegacyGridEntry(onOpenLegacyGrid: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text("مختبر البوتات", color = Color.White, style = androidx.compose.material3.MaterialTheme.typography.headlineSmall)
+            Text("مختبر البوتات", color = Color.White, style = MaterialTheme.typography.headlineSmall)
             Text("البوت الحالي محفوظ كما هو. لا تتم إضافة بوتات جديدة في هذه المرحلة.", color = Color.White.copy(alpha = 0.70f))
             AmarLivingButton("فتح واجهة Grid الحالية", true, Color(0xFFFFC857), Modifier.fillMaxWidth(), onOpenLegacyGrid)
         }
