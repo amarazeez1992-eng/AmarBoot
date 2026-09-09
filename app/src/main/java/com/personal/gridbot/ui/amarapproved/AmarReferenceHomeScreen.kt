@@ -127,9 +127,26 @@ private fun Node(label: String, alignment: Alignment, fraction: Float, selected:
 @Composable
 private fun BottomNav(selected: String, onSelected: (String) -> Unit) {
     val items = listOf("الإعدادات", "التنبيهات", "الرئيسية", "الأداء", "المزيد")
-    Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 9.dp).clip(RoundedCornerShape(30.dp)).background(Color(0xD9FFFFFF)).padding(5.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 9.dp)
+            .clip(RoundedCornerShape(30.dp))
+            .background(Color(0xD9FFFFFF))
+            .padding(5.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         items.forEach { item ->
-            Column(Modifier.clip(RoundedCornerShape(20.dp)).background(if (selected == item) Color(0xFFDCF5EF) else Color.Transparent).clickable { onSelected(item) }.padding(horizontal = 6.dp, vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (selected == item) Color(0xFFDCF5EF) else Color.Transparent)
+                    .clickable { onSelected(item) }
+                    .padding(horizontal = 6.dp, vertical = 5.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(if (selected == item) "●" else "○", color = Color(0xFF159B89), fontSize = 10.sp)
                 Text(item, color = Color(0xFF174A52), fontSize = 8.sp, fontWeight = FontWeight.SemiBold)
             }
