@@ -57,8 +57,6 @@ jobs:
         run: ./godot --headless --path godot_ui --editor --quit --check-only
 
       - name: Export Android APK
-        id: export_apk
-        continue-on-error: true
         env:
           GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ env.HOME }}/.android/debug.keystore
           GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
@@ -68,11 +66,8 @@ jobs:
         run: |
           mkdir -p godot_ui/build
           cd godot_ui
-          set +e
+          set -o pipefail
           ../godot --headless --path . --export-debug "Android" build/AmarLivingUI-debug.apk 2>&1 | tee godot_export.log
-          status=${PIPESTATUS[0]}
-          echo "GODOT_EXPORT_EXIT_CODE=$status" >> godot_export.log
-          exit $status
 
       - name: Upload export diagnostics
         if: always()
@@ -81,10 +76,6 @@ jobs:
           name: AmarLivingUI-export-diagnostics
           path: godot_ui/godot_export.log
           if-no-files-found: warn
-
-      - name: Fail if APK export failed
-        if: steps.export_apk.outcome == 'failure'
-        run: exit 1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
