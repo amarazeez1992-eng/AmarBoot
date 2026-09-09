@@ -59,10 +59,7 @@ jobs:
 
       - name: Download Godot 4.5.2
         run: |
-          curl -L --fail --retry 3 -o godot.zip https://github.com/DonkeyHotei/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_linux.x86_64.zip || true
-          if [ ! -s godot.zip ]; then
-            curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_linux.x86_64.zip
-          fi
+          curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_linux.x86_64.zip
           unzip -q godot.zip
           mv Godot_v4.5.2-stable_linux.x86_64 godot
           chmod +x godot
