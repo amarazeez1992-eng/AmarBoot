@@ -29,16 +29,20 @@ export class AmarDemoStream {
   private listeners = new Set<(event: AmarEvent) => void>();
   private tick = 0;
 
-  connect(listener: (event: AmarEvent) => void) {
+  connect(listener: (event: AmarEvent) => void): () => void {
     this.listeners.add(listener);
     this.timer ??= setInterval(() => {
       const events = demoEvent(this.tick++);
       events.forEach(event => this.listeners.forEach(fn => fn(event)));
     }, 900);
-    return () => this.listeners.delete(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+      this.disconnect();
+    };
   }
 
-  disconnect() {
+  disconnect(): void {
     if (this.listeners.size === 0 && this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
