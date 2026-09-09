@@ -28,14 +28,14 @@ jobs:
 
       - name: Download Godot 4.5.2
         run: |
-          curl -L --fail --retry 3 -o godot.zip https://downloads.tuxfamily.org/godotengine/4.5.2/Godot_v4.5.2-stable_linux.x86_64.zip
+          curl -L --fail --retry 3 -o godot.zip https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_linux.x86_64.zip
           unzip -q godot.zip
           mv Godot_v4.5.2-stable_linux.x86_64 godot
           chmod +x godot
 
       - name: Install Godot export templates
         run: |
-          curl -L --fail --retry 3 -o templates.tpz https://downloads.tuxfamily.org/godotengine/4.5.2/Godot_v4.5.2-stable_export_templates.tpz
+          curl -L --fail --retry 3 -o templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.5.2-stable/Godot_v4.5.2-stable_export_templates.tpz
           unzip -q templates.tpz -d templates_unpack
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.2.stable"
           cp -R templates_unpack/templates/. "$HOME/.local/share/godot/export_templates/4.5.2.stable/"
