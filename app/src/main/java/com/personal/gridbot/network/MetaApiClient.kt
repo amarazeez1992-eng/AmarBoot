@@ -5,19 +5,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 
 /**
- * طبقة الاتصال بخدمة MetaApi.cloud - الجسر بين التطبيق وحساب MT5 الحقيقي بـ JustMarkets.
+ * طبقة اتصال MetaApi.
  *
- * ⚠️ مهم:
- * - الـ Base URL هنا (new-york.agiliumtrade.ai) هو للمنطقة الافتراضية new-york فقط.
- *   تحقق من لوحة MetaApi (Region الخاص بحسابك) وعدّله إذا لزم.
- * - لا تضع الـ Token مباشرة بالكود بشكل نهائي - استخدم مكانًا آمنًا (مثل
- *   EncryptedSharedPreferences) عند التوزيع الفعلي، هنا موضوع كمتغير للتبسيط فقط.
- * - هذا هيكل أولي؛ راجع التوثيق الرسمي (metaapi.cloud/docs/client) قبل الاعتماد
- *   عليه بحساب حقيقي.
+ * هذا الملف يعرّف العقد فقط. الاتصال الحقيقي يبقى معطلاً ما لم تُضبط بيانات
+ * الاعتماد الآمنة لاحقاً. مرحلة المشروع الحالية Demo ولا تنفذ تداولاً حقيقياً.
  */
 
 data class TradeRequest(
-    val actionType: String,     // مثال: ORDER_TYPE_BUY_LIMIT / ORDER_TYPE_SELL_LIMIT
+    val actionType: String,
     val symbol: String,
     val volume: Double,
     val openPrice: Double? = null,
@@ -40,6 +35,14 @@ data class AccountInformation(
     val currency: String?
 )
 
+data class SymbolPrice(
+    val symbol: String,
+    val bid: Double,
+    val ask: Double,
+    val profitTickValue: Double?,
+    val lossTickValue: Double?
+)
+
 interface MetaApiService {
 
     @Headers("Content-Type: application/json")
@@ -55,16 +58,25 @@ interface MetaApiService {
         @Header("auth-token") token: String,
         @Path("accountId") accountId: String
     ): AccountInformation
+
+    @GET("users/current/accounts/{accountId}/symbols/{symbol}/current-price")
+    suspend fun getCurrentPrice(
+        @Header("auth-token") token: String,
+        @Path("accountId") accountId: String,
+        @Path("symbol", encoded = true) symbol: String
+    ): SymbolPrice
 }
 
 object MetaApiClient {
-
-    // عدّل المنطقة حسب حسابك في لوحة MetaApi (new-york / london / singapore ...)
     private const val BASE_URL = "https://mt-client-api-v1.new-york.agiliumtrade.ai/"
 
-    // 🔑 عبّي هذي القيم من حسابك في metaapi.cloud بعد ما تربط حساب JustMarkets Demo
-    var authToken: String = "PUT_YOUR_METAAPI_TOKEN_HERE"
-    var accountId: String = "PUT_YOUR_METAAPI_ACCOUNT_ID_HERE"
+    // لا توجد أسرار حقيقية داخل المستودع.
+    // يتم تفعيل الاتصال لاحقاً عبر طبقة إعدادات آمنة.
+    var authToken: String = ""
+    var accountId: String = ""
+
+    val isConfigured: Boolean
+        get() = authToken.isNotBlank() && accountId.isNotBlank()
 
     private val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
