@@ -19,5 +19,5 @@ window/handheld/orientation=1
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 
-[input]
-touch_primary={"deadzone":0.2,"events":[Object(InputEventScreenTouch,"pressed":true)]}
+[android]
+gradle_build/use_gradle_build=true
