@@ -10,10 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/.ci/debug.keystore
-      GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
-      GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,21 +26,21 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
 
-      - name: Start ADB
-        run: adb start-server
-
       - name: Create debug keystore
         run: |
-          mkdir -p .ci "$HOME/.android"
-          keytool -genkeypair -v \
-            -keystore "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH" \
-            -storepass "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD" \
-            -alias "$GODOT_ANDROID_KEYSTORE_DEBUG_USER" \
-            -keypass "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          test -s "$HOME/.android/debug.keystore"
 
       - name: Configure Godot Android editor settings
         run: |
@@ -55,9 +51,9 @@ jobs:
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
-          export/android/debug_keystore = "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH"
-          export/android/debug_keystore_user = "$GODOT_ANDROID_KEYSTORE_DEBUG_USER"
-          export/android/debug_keystore_pass = "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
           EOF
 
       - name: Download Godot 4.5.2
