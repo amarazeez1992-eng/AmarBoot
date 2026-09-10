@@ -47,9 +47,9 @@ class MainActivity : ComponentActivity() {
     }
     private fun palette()=if(themeMode==AmarThemeMode.LIGHT)AmarDay else AmarPlatinum
     private fun applyHomeTheme(){home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')",null)}
-    private fun renderCurrentRoom(){currentRoom?.let{roomHost.setContent{AmarTheme(palette(),themeMode){AmarRoomHostScreen(it,::showHome,themeMode,::setThemeMode)}}}}
+    private fun renderCurrentRoom(){currentRoom?.let{roomHost.setContent{AmarTheme(palette(),themeMode){AmarRoomHostScreen(it,::showHome,themeMode,::onThemeModeChanged)}}}}
     private fun showRoom(room:AmarRoom){currentRoom=room;showingRoom=true;home.visibility=android.view.View.GONE;roomHost.visibility=android.view.View.VISIBLE;renderCurrentRoom()}
-    private fun setThemeMode(mode:AmarThemeMode){themeMode=mode;prefs.edit().putString("theme_mode",mode.name).apply();applyHomeTheme();renderCurrentRoom()}
+    private fun onThemeModeChanged(mode:AmarThemeMode){themeMode=mode;prefs.edit().putString("theme_mode",mode.name).apply();applyHomeTheme();renderCurrentRoom()}
     private fun showHome(){showingRoom=false;currentRoom=null;roomHost.visibility=android.view.View.GONE;home.visibility=android.view.View.VISIBLE;applyHomeTheme()}
     private inner class HomeBridge{
         @JavascriptInterface fun openRoom(name:String){runOnUiThread{runCatching{AmarRoom.valueOf(name)}.getOrNull()?.let(::showRoom)}}
