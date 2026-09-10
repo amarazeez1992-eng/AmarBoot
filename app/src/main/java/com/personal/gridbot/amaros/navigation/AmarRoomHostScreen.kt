@@ -16,16 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
 import com.personal.gridbot.amaros.bots.BotLabScreen
+import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
+import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 
-/** مضيف الغرف خلف الواجهة الرئيسية المعتمدة. */
+/** مضيف الغرف؛ الرسم البياني يستخدم مصدر MT5 الحقيقي عند تثبيت جلسة موثقة. */
 @Composable
-fun AmarRoomHostScreen(
-    room: AmarRoom,
-    onBackHome: () -> Unit
-) {
+fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -44,7 +43,14 @@ fun AmarRoomHostScreen(
             }
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                AmarRoom.CHART -> AmarTradingChartScreen()
+                AmarRoom.CHART -> {
+                    val runtime = AmarMt5RuntimeRegistry.current()
+                    if (runtime == null) {
+                        AmarTradingChartScreen(symbol = "الذهب")
+                    } else {
+                        AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
+                    }
+                }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
                 AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
                 AmarRoom.BOT_LAB -> BotLabScreen()
