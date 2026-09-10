@@ -9,16 +9,13 @@ class AmarBotVaultRepository(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences("amar_bot_vault_v1", Context.MODE_PRIVATE)
 
     fun load(): List<AmarSavedBot> {
-        val raw = prefs.getString(KEY_BOTS, null) ?: return emptyList()
+        val raw = prefs.getString(KEY_BOTS, null) ?: return defaultBots()
         return runCatching {
             val array = JSONArray(raw)
             buildList {
-                for (i in 0 until array.length()) {
-                    val o = array.getJSONObject(i)
-                    add(AmarSavedBot.fromJson(o))
-                }
+                for (i in 0 until array.length()) add(AmarSavedBot.fromJson(array.getJSONObject(i)))
             }
-        }.getOrDefault(emptyList())
+        }.getOrElse { defaultBots() }
     }
 
     fun save(bots: List<AmarSavedBot>) {
@@ -26,6 +23,8 @@ class AmarBotVaultRepository(context: Context) {
         bots.sortedBy { it.botNumber }.forEach { array.put(it.toJson()) }
         prefs.edit().putString(KEY_BOTS, array.toString()).apply()
     }
+
+    private fun defaultBots(): List<AmarSavedBot> = (1..4).map { AmarSavedBot(it, "بوت $it") }
 
     companion object { private const val KEY_BOTS = "bots" }
 }
