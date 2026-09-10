@@ -20,23 +20,23 @@ class AmarB31SecurityTest {
     @Test
     fun authorizedCommandPassesAllGates() {
         val e = envelope()
-        val decision = AmarSecureCommandValidator { 2_000L }.validate(e, true, true, true, true, 123L, 20260908L, "XAUUSD", false)
+        val decision = AmarSecureCommandValidator(clockMs = { 2_000L }).validate(e, true, true, true, true, 123L, 20260908L, "XAUUSD", false)
         assertTrue(decision.accepted)
     }
 
     @Test
     fun missingLiveAuthorizationBlocks() {
         val e = envelope()
-        val decision = AmarSecureCommandValidator { 2_000L }.validate(e, true, true, false, true, 123L, 20260908L, "XAUUSD", false)
+        val decision = AmarSecureCommandValidator(clockMs = { 2_000L }).validate(e, true, true, false, true, 123L, 20260908L, "XAUUSD", false)
         assertFalse(decision.accepted)
     }
 
     @Test
     fun futureAndWrongScopeAreRejected() {
         val e = envelope(100_000L)
-        val future = AmarSecureCommandValidator { 1_000L }.validate(e, true, true, true, true, 123L, 20260908L, "XAUUSD", false)
+        val future = AmarSecureCommandValidator(clockMs = { 1_000L }).validate(e, true, true, true, true, 123L, 20260908L, "XAUUSD", false)
         assertEquals(false, future.accepted)
-        val scope = AmarSecureCommandValidator { 101_000L }.validate(e, true, true, true, true, 999L, 20260908L, "XAUUSD", false)
+        val scope = AmarSecureCommandValidator(clockMs = { 101_000L }).validate(e, true, true, true, true, 999L, 20260908L, "XAUUSD", false)
         assertEquals(false, scope.accepted)
     }
 }
