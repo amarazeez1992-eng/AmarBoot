@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.bots.Bot1ProfessionalScreen
+import com.personal.gridbot.amaros.bots.Bot1UnifiedScreen
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
@@ -30,6 +30,10 @@ import com.personal.gridbot.ui.theme.AmarThemeMode
 
 @Composable
 fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarThemeMode, onThemeModeChange: (AmarThemeMode) -> Unit) {
+    if (room == AmarRoom.BOT_LAB) {
+        Bot1UnifiedScreen(onBackHome = onBackHome)
+        return
+    }
     var settingsMode by remember { mutableIntStateOf(0) }
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -45,7 +49,6 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarTh
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }; Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") } }
                     if (settingsMode == 0) AmarAppearanceScreen(themeMode, onThemeModeChange) else AmarDeveloperOptionsScreen()
                 }
-                AmarRoom.BOT_LAB -> Bot1ProfessionalScreen()
                 else -> AmarRoomWorkspace(room)
             }
         }
