@@ -1,12 +1,12 @@
 {
-  "name": "AMAR AI — Trading Command OS",
-  "short_name": "AMAR OS",
-  "description": "AMAR Aurora Nexus trading command environment",
+  "name": "عمار — المحور الذكي للتداول",
+  "short_name": "عمار",
+  "description": "المحور الحي لعمار — منصة تداول تجريبية آمنة",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#010208",
-  "theme_color": "#010208",
+  "background_color": "#dff7fb",
+  "theme_color": "#dff7fb",
   "lang": "ar",
   "dir": "rtl",
   "icons": []
