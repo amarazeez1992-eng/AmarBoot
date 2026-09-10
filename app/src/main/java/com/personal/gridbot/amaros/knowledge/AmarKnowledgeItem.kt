@@ -25,30 +25,32 @@ interface AmarKnowledgeRepository {
 class InMemoryAmarKnowledgeRepository : AmarKnowledgeRepository {
     private val items = LinkedHashMap<String, AmarKnowledgeItem>()
 
-    @Synchronized
     override suspend fun upsert(item: AmarKnowledgeItem) {
-        items[item.id] = item
+        synchronized(this) {
+            items[item.id] = item
+        }
     }
 
-    @Synchronized
     override suspend fun findByTopic(topic: String, limit: Int): List<AmarKnowledgeItem> =
-        items.values.filter { it.topic.equals(topic.trim(), ignoreCase = true) }
-            .sortedByDescending { it.confidence }
-            .take(limit.coerceIn(1, 500))
+        synchronized(this) {
+            items.values.filter { it.topic.equals(topic.trim(), ignoreCase = true) }
+                .sortedByDescending { it.confidence }
+                .take(limit.coerceIn(1, 500))
+        }
 
-    @Synchronized
-    override suspend fun search(query: String, limit: Int): List<AmarKnowledgeItem> {
-        val q = query.trim().lowercase()
-        if (q.isBlank()) return emptyList()
-        return items.values
-            .mapNotNull { item ->
-                val haystack = "${item.topic} ${item.title} ${item.content} ${item.tags.joinToString(" ")}".lowercase()
-                if (!haystack.contains(q)) null else item to relevance(haystack, q)
-            }
-            .sortedWith(compareByDescending<Pair<AmarKnowledgeItem, Int>> { it.second }.thenByDescending { it.first.confidence })
-            .take(limit.coerceIn(1, 500))
-            .map { it.first }
-    }
+    override suspend fun search(query: String, limit: Int): List<AmarKnowledgeItem> =
+        synchronized(this) {
+            val q = query.trim().lowercase()
+            if (q.isBlank()) return@synchronized emptyList()
+            items.values
+                .mapNotNull { item ->
+                    val haystack = "${item.topic} ${item.title} ${item.content} ${item.tags.joinToString(" ")}".lowercase()
+                    if (!haystack.contains(q)) null else item to relevance(haystack, q)
+                }
+                .sortedWith(compareByDescending<Pair<AmarKnowledgeItem, Int>> { it.second }.thenByDescending { it.first.confidence })
+                .take(limit.coerceIn(1, 500))
+                .map { it.first }
+        }
 
     private fun relevance(text: String, query: String): Int =
         text.split(query).size - 1
