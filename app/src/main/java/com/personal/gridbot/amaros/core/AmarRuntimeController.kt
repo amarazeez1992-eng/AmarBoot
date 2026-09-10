@@ -5,6 +5,7 @@ import com.personal.gridbot.amaros.data.DemoDataProvider
 import com.personal.gridbot.amaros.intelligence.DecisionEngine
 import com.personal.gridbot.amaros.intelligence.MarketContext
 import com.personal.gridbot.amaros.intelligence.MarketAnalyzer
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,8 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class AmarRuntimeController(
     private val provider: AmarDataProvider = DemoDataProvider(),
-    private val monitor: AmarRuntimeMonitor = AmarRuntimeMonitor()
+    private val monitor: AmarRuntimeMonitor = AmarRuntimeMonitor(),
+    private val clock: AmarClock = SystemAmarClock
 ) {
     data class RuntimeState(
         val cycleNumber: Long = 0L,
@@ -35,13 +37,13 @@ class AmarRuntimeController(
     val health: StateFlow<AmarRuntimeHealth> = monitor.state
 
     fun onRuntimeStarted() {
-        val now = System.currentTimeMillis()
+        val now = clock.nowEpochMs()
         monitor.markStarted(now)
         publishHealth()
     }
 
     fun onRuntimeStopped() {
-        val now = System.currentTimeMillis()
+        val now = clock.nowEpochMs()
         monitor.markStopped(now)
         _state.value = _state.value.copy(health = monitor.state.value)
         publishHealth()
@@ -49,13 +51,14 @@ class AmarRuntimeController(
 
     fun advance(): RuntimeState {
         val cycleNumber = _state.value.cycleNumber + 1L
-        val startedAt = System.currentTimeMillis()
-        AmarEventBus.publish(AmarEvent.RuntimeCycleStarted(cycleNumber, startedAt))
+        val correlationId = UUID.randomUUID().toString()
+        val startedAt = clock.nowEpochMs()
+        AmarEventBus.publish(AmarEvent.RuntimeCycleStarted(cycleNumber, startedAt, correlationId = correlationId))
 
         return try {
             val result = cycle.runDemoCycle()
             val context = result.data.let { MarketAnalyzer().analyze(it) }
-            val finishedAt = System.currentTimeMillis()
+            val finishedAt = clock.nowEpochMs()
             monitor.recordSuccess(finishedAt - startedAt, finishedAt)
             val next = RuntimeState(
                 cycleNumber = cycleNumber,
@@ -77,13 +80,14 @@ class AmarRuntimeController(
                     decision = result.decision.direction.name,
                     confidence = result.decision.confidence,
                     riskAllowed = result.risk.allowed,
-                    executionMode = if (result.execution.executed) "EXECUTED" else "DEMO_GUARDED"
+                    executionMode = if (result.execution.executed) "EXECUTED" else "DEMO_GUARDED",
+                    correlationId = correlationId
                 )
             )
-            publishHealth()
+            publishHealth(correlationId)
             next
         } catch (error: Throwable) {
-            val finishedAt = System.currentTimeMillis()
+            val finishedAt = clock.nowEpochMs()
             monitor.recordFailure(error, finishedAt - startedAt, finishedAt)
             val next = _state.value.copy(
                 cycleNumber = cycleNumber,
@@ -95,21 +99,23 @@ class AmarRuntimeController(
                 AmarEvent.RuntimeCycleFailed(
                     cycleNumber = cycleNumber,
                     durationMs = finishedAt - startedAt,
-                    error = error.message ?: error::class.simpleName ?: "Runtime error"
+                    error = error.message ?: error::class.simpleName ?: "Runtime error",
+                    correlationId = correlationId
                 )
             )
-            publishHealth()
+            publishHealth(correlationId)
             next
         }
     }
 
-    private fun publishHealth() {
+    private fun publishHealth(correlationId: String = UUID.randomUUID().toString()) {
         val snapshot = monitor.state.value
         AmarEventBus.publish(
             AmarEvent.RuntimeHealthChanged(
                 status = snapshot.status,
                 consecutiveFailures = snapshot.consecutiveFailures,
-                totalFailures = snapshot.totalFailures
+                totalFailures = snapshot.totalFailures,
+                correlationId = correlationId
             )
         )
     }
