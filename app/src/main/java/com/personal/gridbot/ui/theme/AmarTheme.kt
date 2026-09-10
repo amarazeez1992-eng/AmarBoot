@@ -7,9 +7,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 
-val LocalAmarPalette = compositionLocalOf { DefaultAmarPalette }
+enum class AmarThemeMode { DARK, LIGHT }
 
-private fun amarColorScheme(palette: AmarPalette) = if (palette.background.luminance() > 0.5f) {
+val LocalAmarPalette = compositionLocalOf { DefaultAmarPalette }
+val LocalAmarThemeMode = compositionLocalOf { AmarThemeMode.DARK }
+
+private fun amarColorScheme(palette: AmarPalette, mode: AmarThemeMode) = if (mode == AmarThemeMode.LIGHT) {
     lightColorScheme(
         primary = palette.accent, onPrimary = palette.background, secondary = palette.buy, onSecondary = palette.background,
         tertiary = palette.sell, background = palette.background, onBackground = palette.textPrimary,
@@ -26,12 +29,17 @@ private fun amarColorScheme(palette: AmarPalette) = if (palette.background.lumin
 }
 
 @Composable
-fun AmarTheme(palette: AmarPalette = DefaultAmarPalette, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalAmarPalette provides palette) {
-        MaterialTheme(colorScheme = amarColorScheme(palette), content = content)
+fun AmarTheme(
+    palette: AmarPalette = DefaultAmarPalette,
+    mode: AmarThemeMode = AmarThemeMode.DARK,
+    content: @Composable () -> Unit
+) {
+    CompositionLocalProvider(LocalAmarPalette provides palette, LocalAmarThemeMode provides mode) {
+        MaterialTheme(colorScheme = amarColorScheme(palette, mode), content = content)
     }
 }
 
 object AmarThemeColors {
     @Composable fun current(): AmarPalette = LocalAmarPalette.current
+    @Composable fun mode(): AmarThemeMode = LocalAmarThemeMode.current
 }
