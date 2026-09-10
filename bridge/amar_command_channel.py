@@ -5,7 +5,6 @@ time bounds, replay protection, idempotency and account/BOT/symbol scope.
 """
 import hashlib
 import hmac
-import json
 import os
 import threading
 import time
@@ -41,14 +40,16 @@ class CommandReplayStore:
 REPLAY_STORE = CommandReplayStore()
 
 def canonical(payload):
+    command = payload.get("command") or {}
     fields = [
         payload.get("requestId", ""), payload.get("idempotencyKey", ""),
         payload.get("nonce", ""), str(payload.get("issuedAtMs", "")),
         str(payload.get("expiresAtMs", "")), str(payload.get("accountLogin", "")),
         str(payload.get("botMagic", "")), payload.get("symbol", ""),
-        json.dumps(payload.get("command", {}), sort_keys=True, separators=(",", ":")),
+        command.get("requestId", ""), command.get("side", ""),
+        command.get("quantity", ""), "" if command.get("price") is None else command.get("price"),
     ]
-    return "|".join(fields)
+    return "|".join(str(x) for x in fields)
 
 def valid_signature(payload):
     if not SIGNING_SECRET:
