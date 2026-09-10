@@ -72,6 +72,13 @@ jobs:
           printf '%s\n' '4.5.2.stable' > "$HOME/.local/share/godot/export_templates/4.5.2.stable/version.txt"
           test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
 
+      - name: Start ADB for Godot Android export
+        run: |
+          adb kill-server || true
+          adb start-server
+          adb devices
+          adb get-state 2>/dev/null || true
+
       - name: Validate project and scripts
         run: ./godot --headless --path godot_ui --editor --quit --check-only
 
