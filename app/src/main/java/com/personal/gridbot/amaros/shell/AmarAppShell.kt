@@ -36,6 +36,7 @@ import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
 import com.personal.gridbot.amaros.core.AmarRuntimeController
+import com.personal.gridbot.amaros.core.AmarRuntimeHealthStatus
 import com.personal.gridbot.amaros.core.AmarRuntimeTicker
 import com.personal.gridbot.amaros.design.AmarAnalogClock
 import com.personal.gridbot.amaros.design.AmarLivingButton
@@ -46,7 +47,6 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/** AMAR shell with B9-B20 demo runtime connected as a read-only data source. */
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
     var state by remember { mutableStateOf(initialState) }
@@ -54,31 +54,26 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
     val runtimeState by runtimeController.state.collectAsState()
     val runtimeTicker = remember { AmarRuntimeTicker(runtimeController) }
     val runtimeScope = rememberCoroutineScope()
-
     DisposableEffect(runtimeTicker, runtimeScope) {
         runtimeTicker.start(runtimeScope)
         onDispose { runtimeTicker.stop() }
     }
-
-    val transition = rememberInfiniteTransition(label = "shell-depth")
-    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "shell-phase")
+    val transition = rememberInfiniteTransition(label = "واجهة عمار")
+    val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "حركة الواجهة")
     val telemetry = runtimeState.telemetry
     val health = runtimeState.health
-
     AmarLivingVisualEngine {
         Row(Modifier.fillMaxSize().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            AmarLivingGlass(
-                Modifier.width(116.dp).fillMaxSize().graphicsLayer {
-                    rotationY = (phase - 0.5f) * 1.4f
-                    cameraDistance = 18f
-                    shadowElevation = 18f
-                    scaleX = 1f + phase * 0.006f
-                    scaleY = 1f + phase * 0.006f
-                }, Color(0xFF35D6FF)
-            ) {
+            AmarLivingGlass(Modifier.width(116.dp).fillMaxSize().graphicsLayer {
+                rotationY = (phase - 0.5f) * 1.4f
+                cameraDistance = 18f
+                shadowElevation = 18f
+                scaleX = 1f + phase * 0.006f
+                scaleY = 1f + phase * 0.006f
+            }, Color(0xFF35D6FF)) {
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                    Text("AMAR", color = Color.White, style = MaterialTheme.typography.titleLarge)
-                    Text("TRADING OS", color = Color(0xFF35D6FF), style = MaterialTheme.typography.labelSmall)
+                    Text("عمار", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                    Text("نظام التداول", color = Color(0xFF35D6FF), style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.height(7.dp))
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         items(AmarRoom.entries) { room ->
@@ -105,7 +100,7 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
                 AmarLivingGlass(Modifier.fillMaxWidth(), Color(0xFF8B5CFF)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.weight(1f)) {
-                            Text("AMAR TRADING OS", color = Color.White, style = MaterialTheme.typography.titleLarge)
+                            Text("نظام عمار للتداول", color = Color.White, style = MaterialTheme.typography.titleLarge)
                             Text("${state.selectedRoom.emoji} ${state.selectedRoom.titleAr}  •  نظام حي", color = Color.White.copy(alpha = 0.64f))
                         }
                         AmarAnalogClock(Modifier.width(142.dp))
@@ -114,13 +109,21 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     AmarLivingMetric("السوق", telemetry.symbol, "${telemetry.timeframe} • ${telemetry.bid}", Color(0xFF35D6FF), Modifier.weight(1f))
-                    AmarLivingMetric("النظام", "حي #${runtimeState.cycleNumber}", "DEMO • ${telemetry.spread}", Color(0xFF39E58C), Modifier.weight(1f))
-                    AmarLivingMetric("الصحة", health.status.name, "أخطاء متتالية: ${health.consecutiveFailures}", Color(0xFFFFC857), Modifier.weight(1f))
+                    AmarLivingMetric("النظام", "حي #${runtimeState.cycleNumber}", "تجريبي • ${telemetry.spread}", Color(0xFF39E58C), Modifier.weight(1f))
+                    AmarLivingMetric("الصحة", health.status.arabicLabel(), "أخطاء متتالية: ${health.consecutiveFailures}", Color(0xFFFFC857), Modifier.weight(1f))
                 }
                 Box(Modifier.fillMaxSize()) { AmarRoomContent(state.selectedRoom, onOpenLegacyGrid) }
             }
         }
     }
+}
+
+private fun AmarRuntimeHealthStatus.arabicLabel(): String = when (this) {
+    AmarRuntimeHealthStatus.STARTING -> "بدء التشغيل"
+    AmarRuntimeHealthStatus.HEALTHY -> "سليم"
+    AmarRuntimeHealthStatus.DEGRADED -> "متراجع"
+    AmarRuntimeHealthStatus.FAULTED -> "متوقف بسبب خلل"
+    AmarRuntimeHealthStatus.STOPPED -> "متوقف"
 }
 
 @Composable private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) = when (room) {
@@ -134,7 +137,7 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("مختبر البوتات", color = Color.White, style = MaterialTheme.typography.headlineSmall)
             Text("البوت الحالي محفوظ كما هو. لا تتم إضافة بوتات جديدة في هذه المرحلة.", color = Color.White.copy(alpha = 0.70f))
-            AmarLivingButton("فتح واجهة Grid الحالية", true, Color(0xFFFFC857), Modifier.fillMaxWidth(), onOpenLegacyGrid)
+            AmarLivingButton("فتح واجهة الشبكة الحالية", true, Color(0xFFFFC857), Modifier.fillMaxWidth(), onOpenLegacyGrid)
         }
     }
 }
