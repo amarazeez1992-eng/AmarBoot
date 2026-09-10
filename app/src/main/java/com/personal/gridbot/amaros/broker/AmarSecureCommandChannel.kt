@@ -1,7 +1,8 @@
 package com.personal.gridbot.amaros.broker
 
-import java.security.MessageDigest
 import java.util.UUID
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 
 /** B31: immutable command envelope. The bridge must validate every field independently. */
 data class AmarCommandEnvelope(
@@ -28,15 +29,20 @@ data class AmarCommandEnvelope(
 }
 
 object AmarCommandSigner {
-    /** HMAC-style canonical digest boundary; secret material stays outside source control. */
     fun canonical(envelope: AmarCommandEnvelope): String = listOf(
         envelope.requestId, envelope.idempotencyKey, envelope.nonce,
         envelope.issuedAtMs, envelope.expiresAtMs, envelope.accountLogin,
-        envelope.botMagic, envelope.symbol, envelope.command.requestId,
+        envelope.botMagic, envelope.symbol,
+        envelope.command.requestId, envelope.command.side.name,
+        envelope.command.quantity, envelope.command.price ?: "",
     ).joinToString("|")
 
-    fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    fun hmacSha256(secret: String, value: String): String {
+        require(secret.isNotBlank())
+        val mac = Mac.getInstance("HmacSHA256")
+        mac.init(SecretKeySpec(secret.toByteArray(Charsets.UTF_8), "HmacSHA256"))
+        return mac.doFinal(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    }
 }
 
 enum class AmarCommandRejectReason {
