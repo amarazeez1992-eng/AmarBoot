@@ -1,8 +1,7 @@
 """B31 secure command-channel primitives for the AMAR MT5 bridge.
 
-Execution remains FAIL-CLOSED. The module provides validation, replay protection,
-idempotency and BOT-1 scope checks; the HTTP bridge keeps live execution disabled
-unless AMAR_LIVE_EXECUTION=1 is explicitly configured on the host.
+Execution remains FAIL-CLOSED. Validation covers authentication, HMAC integrity,
+time bounds, replay protection, idempotency and account/BOT/symbol scope.
 """
 import hashlib
 import hmac
@@ -28,9 +27,9 @@ class CommandReplayStore:
     def claim(self, key, expires_at_ms):
         now = int(time.time() * 1000)
         with self._lock:
-            expired = [k for k, v in self._items.items() if v <= now]
-            for k in expired:
-                self._items.pop(k, None)
+            for existing, expiry in list(self._items.items()):
+                if expiry <= now:
+                    self._items.pop(existing, None)
             if key in self._items:
                 return False
             self._items[key] = expires_at_ms
@@ -63,14 +62,23 @@ def validate(payload, expected_login, expected_magic, expected_symbol):
     required = ("requestId", "idempotencyKey", "nonce", "issuedAtMs", "expiresAtMs", "accountLogin", "botMagic", "symbol", "command", "signature")
     if any(not payload.get(k) and payload.get(k) != 0 for k in required):
         return False, "missing command fields"
+    command = payload.get("command")
+    if not isinstance(command, dict) or command.get("requestId") != payload.get("requestId"):
+        return False, "invalid command identity"
     now = int(time.time() * 1000)
-    issued = int(payload["issuedAtMs"]); expires = int(payload["expiresAtMs"])
+    try:
+        issued = int(payload["issuedAtMs"]); expires = int(payload["expiresAtMs"])
+        account_login = int(payload["accountLogin"]); bot_magic = int(payload["botMagic"])
+    except (ValueError, TypeError):
+        return False, "invalid numeric fields"
     if issued > now + MAX_CLOCK_SKEW_MS or expires <= now or expires - issued > COMMAND_TTL_MS:
         return False, "expired command"
     if not valid_signature(payload):
         return False, "invalid signature"
-    if int(payload["accountLogin"]) != int(expected_login) or int(payload["botMagic"]) != int(expected_magic) or payload["symbol"] != expected_symbol:
+    if account_login != int(expected_login) or bot_magic != int(expected_magic) or payload["symbol"] != expected_symbol:
         return False, "invalid execution scope"
-    if not REPLAY_STORE.claim(str(payload["nonce"]), expires):
+    if not REPLAY_STORE.claim(f"nonce:{payload['nonce']}", expires):
         return False, "replayed command"
+    if not REPLAY_STORE.claim(f"idempotency:{payload['idempotencyKey']}", expires):
+        return False, "duplicate command"
     return True, "accepted"
