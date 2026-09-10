@@ -46,7 +46,7 @@ data class AmarBot1DesiredState(
 
 data class AmarBot1ActualState(
     val identity: AmarBotIdentity? = null,
-    val runtimeState: AmarBotRuntimeState = AmarBotRuntimeState.UNKNOWN,
+    val runtimeState: AmarBotRuntimeState? = null,
     val config: AmarBot1RuntimeConfig? = null,
     val openPositions: Int = 0,
     val pendingOrders: Int = 0,
@@ -56,7 +56,7 @@ data class AmarBot1ActualState(
 )
 
 fun reconcileBot1(desired: AmarBot1DesiredState, actual: AmarBot1ActualState): AmarBotSyncState {
-    if (actual.identity == null || actual.config == null) return AmarBotSyncState.UNKNOWN
+    if (actual.identity == null || actual.config == null || actual.runtimeState == null) return AmarBotSyncState.UNKNOWN
     if (desired.identity.botId != actual.identity.botId || desired.identity.magic != actual.identity.magic) return AmarBotSyncState.ERROR
     if (desired.runtimeState != actual.runtimeState) return AmarBotSyncState.DRIFT
     val d = desired.config
