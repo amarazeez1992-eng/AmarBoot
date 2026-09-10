@@ -95,10 +95,10 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
             drawCircle(Cyan, 5f + pulse * 3f, c)
         }
         Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("A M A R", color = Ice, fontSize = 42.sp, fontWeight = FontWeight.Bold, letterSpacing = 8.sp)
-            Spacer(Modifier.height(6.dp)); Text("AURORA NEXUS", color = Cyan, fontSize = 13.sp, letterSpacing = 4.sp)
+            Text("عمار", color = Ice, fontSize = 42.sp, fontWeight = FontWeight.Bold, letterSpacing = 8.sp)
+            Spacer(Modifier.height(6.dp)); Text("نظام عمار المتقدم", color = Cyan, fontSize = 13.sp)
             Spacer(Modifier.height(28.dp)); GlassButton("دخول إلى النظام  ›", Cyan, onEnter)
-            Spacer(Modifier.height(12.dp)); Text("DEMO • LOCAL • SAFE", color = Color.White.copy(alpha = .42f), fontSize = 9.sp, letterSpacing = 2.sp)
+            Spacer(Modifier.height(12.dp)); Text("تجريبي • محلي • آمن", color = Color.White.copy(alpha = .42f), fontSize = 9.sp)
         }
     }
 }
@@ -116,8 +116,8 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
 @Composable private fun Header(room: AmarRoom, pulse: Float) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Color.White.copy(alpha = .055f)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size((8f * pulse).dp).clip(CircleShape).background(Green)); Spacer(Modifier.width(9.dp))
-        Column(Modifier.weight(1f)) { Text("AMAR / NEXUS", color = Ice, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp); Text("${room.emoji} ${room.titleAr} • XAUUSD • M5", color = Color.White.copy(alpha = .48f), fontSize = 10.sp) }
-        Text("DEMO", color = Gold, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.width(14.dp)); Text("ONLINE", color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Column(Modifier.weight(1f)) { Text("نظام عمار", color = Ice, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("${room.emoji} ${room.titleAr} • XAUUSD • M5", color = Color.White.copy(alpha = .48f), fontSize = 10.sp) }
+        Text("تجريبي", color = Gold, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.width(14.dp)); Text("متصل", color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -142,28 +142,29 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
 
 @Composable private fun Stage(room: AmarRoom, flow: Float, pulse: Float, onLegacy: () -> Unit, modifier: Modifier) {
     Column(modifier) {
-        Text(room.titleAr, color = Ice, fontSize = 27.sp, fontWeight = FontWeight.Bold); Text("${room.name.replace('_', ' ')} • LIVING SPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp); Spacer(Modifier.height(10.dp))
+        Text(room.titleAr, color = Ice, fontSize = 27.sp, fontWeight = FontWeight.Bold); Text("${room.titleAr} • مساحة العمل", color = Cyan, fontSize = 9.sp); Spacer(Modifier.height(10.dp))
         when (room) {
             AmarRoom.COMMAND_CENTER -> Command(flow, pulse)
-            AmarRoom.MARKET -> Chart(flow, "MARKET MATRIX", Cyan)
+            AmarRoom.MARKET -> Chart(flow, "مصفوفة السوق", Cyan)
             AmarRoom.CHART -> Chart(flow, "XAUUSD • M5", Cyan)
             AmarRoom.BOT_LAB -> Bot(flow, pulse, onLegacy)
             AmarRoom.RISK -> Risk(flow, pulse)
-            AmarRoom.POSITIONS -> Matrix("ORDER MATRIX", listOf("6 OPEN", "18 PENDING", "+12.84 FLOAT", "SPREAD 0.12"), Cyan)
-            AmarRoom.PERFORMANCE -> Matrix("PERFORMANCE", listOf("+18.40 TODAY", "+127.40 TOTAL", "66.7% WIN", "2.1% DD"), Gold)
-            AmarRoom.INDICATORS -> Matrix("SIGNAL CONSTELLATION", listOf("EMA TREND", "RSI 64", "VWAP ABOVE", "ATR HIGH"), Violet)
-            AmarRoom.ANALYSIS -> Matrix("ANALYSIS MATRIX", listOf("BUY BIAS", "82 SCORE", "MOMENTUM", "M5 REGIME"), Cyan)
-            AmarRoom.TESTING -> Matrix("SIMULATION DECK", listOf("BACKTEST", "FORWARD", "MONTE CARLO", "PARAMETERS"), Pink)
-            AmarRoom.TOOLS -> Matrix("TOOL DECK", listOf("RISK SIZE", "LOT SIZE", "TP / SL", "GRID CALC"), Gold)
-            AmarRoom.ALERTS -> Matrix("ALERT STREAM", listOf("CONNECTION", "RISK ARMED", "TP / SL", "REBUILD"), Pink)
-            AmarRoom.LIBRARY -> Matrix("AMAR LIBRARY", listOf("CORE", "INDICATORS", "STRATEGIES", "EXTENSIONS"), Violet)
-            AmarRoom.SETTINGS -> Matrix("SYSTEM CONTROL", listOf("MOTION", "AURORA", "SECURITY", "DEMO MODE"), Cyan)
+            AmarRoom.POSITIONS -> Matrix("مصفوفة الصفقات", listOf("6 مفتوحة", "18 معلقة", "+12.84 عائم", "فارق 0.12"), Cyan)
+            AmarRoom.PERFORMANCE -> Matrix("الأداء", listOf("+18.40 اليوم", "+127.40 الإجمالي", "66.7% نجاح", "2.1% سحب"), Gold)
+            AmarRoom.INDICATORS -> Matrix("مجموعة المؤشرات", listOf("اتجاه", "زخم", "سعر مرجعي", "تذبذب"), Violet)
+            AmarRoom.ANALYSIS -> Matrix("مصفوفة التحليل", listOf("ميل شراء", "82 نتيجة", "زخم", "نظام M5"), Cyan)
+            AmarRoom.TESTING -> Matrix("منصة الاختبار", listOf("اختبار خلفي", "اختبار أمامي", "مونت كارلو", "المعاملات"), Pink)
+            AmarRoom.TOOLS -> Matrix("أدوات التداول", listOf("حجم المخاطرة", "حجم اللوت", "TP / SL", "حاسبة الشبكة"), Gold)
+            AmarRoom.ALERTS -> Matrix("تيار التنبيهات", listOf("الاتصال", "الحماية مفعلة", "TP / SL", "إعادة البناء"), Pink)
+            AmarRoom.LIBRARY -> Matrix("مكتبة عمار", listOf("النواة", "المؤشرات", "الاستراتيجيات", "الإضافات"), Violet)
+            AmarRoom.ACCOUNTS -> Matrix("حسابات التداول", listOf("حسابات محفوظة", "بيانات محمية", "الاتصال", "التنفيذ محمي"), Gold)
+            AmarRoom.SETTINGS -> Matrix("تحكم النظام", listOf("الحركة", "الإضاءة", "الأمان", "الوضع التجريبي"), Cyan)
         }
     }
 }
 
 @Composable private fun Command(flow: Float, pulse: Float) {
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { Core("AMAR CORE", "MONITORING", Cyan, flow, pulse, Modifier.weight(1.2f)); Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("MARKET", "BUY • 82%", Cyan); Node("AMAR GRID", "READY • DEMO", Green); Node("RISK", "SAFE • 5%", Gold); Node("EQUITY", "$1,012.84", Violet) } }
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { Core("نواة عمار", "مراقبة", Cyan, flow, pulse, Modifier.weight(1.2f)); Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("السوق", "شراء • 82%", Cyan); Node("شبكة عمار", "جاهز • تجريبي", Green); Node("المخاطر", "آمن • 5%", Gold); Node("حقوق الملكية", "$1,012.84", Violet) } }
 }
 
 @Composable private fun Chart(flow: Float, title: String, accent: Color) {
@@ -175,9 +176,9 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
                 drawPath(path, accent, style = Stroke(3f))
                 for (i in 0..6) { val y = size.height * i / 6f; drawLine(Color.White.copy(alpha = .035f), androidx.compose.ui.geometry.Offset(0f, y), androidx.compose.ui.geometry.Offset(size.width, y), 1f) }
             }
-            Text(title, Modifier.align(Alignment.TopStart).padding(14.dp), color = Ice, fontSize = 12.sp, fontWeight = FontWeight.Bold); Text("BUY 82%", Modifier.align(Alignment.TopEnd).padding(14.dp), color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(title, Modifier.align(Alignment.TopStart).padding(14.dp), color = Ice, fontSize = 12.sp, fontWeight = FontWeight.Bold); Text("شراء 82%", Modifier.align(Alignment.TopEnd).padding(14.dp), color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) { Node("EMA", "ON", accent); Node("VWAP", "LIVE", Violet); Node("FVG", "ON", Cyan); Node("BOS", "LIVE", Gold); Node("TP", "READY", Green); Node("SL", "READY", Pink) }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) { Node("الاتجاه", "مفعل", accent); Node("السعر المرجعي", "مباشر", Violet); Node("الفجوة", "مفعل", Cyan); Node("الهيكل", "مباشر", Gold); Node("الهدف", "جاهز", Green); Node("الإيقاف", "جاهز", Pink) }
     }
 }
 
@@ -185,29 +186,29 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(Modifier.weight(1.2f).fillMaxSize().clip(RoundedCornerShape(28.dp)).background(Color.White.copy(alpha = .045f))) {
             Canvas(Modifier.fillMaxSize()) { val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + sin(flow * 6.28f) * 10f); drawCircle(Cyan.copy(alpha = .08f), size.minDimension * .34f, c); drawCircle(Cyan.copy(alpha = .24f), size.minDimension * .20f, c, style = Stroke(3f)); drawCircle(Violet.copy(alpha = .18f), size.minDimension * .28f, c, style = Stroke(1f)); drawCircle(Cyan, 7f * pulse, androidx.compose.ui.geometry.Offset(c.x - 24f, c.y - 8f)); drawCircle(Cyan, 7f * pulse, androidx.compose.ui.geometry.Offset(c.x + 24f, c.y - 8f)) }
-            Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) { Text("AMAR GRID", color = Ice, fontSize = 16.sp, fontWeight = FontWeight.Bold); Text("ANALYZING • DEMO", color = Green, fontSize = 9.sp, letterSpacing = 2.sp) }
+            Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) { Text("شبكة عمار", color = Ice, fontSize = 16.sp, fontWeight = FontWeight.Bold); Text("تحليل • تجريبي", color = Green, fontSize = 9.sp) }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("STATUS", "READY • DEMO", Green); Node("LOT", "0.02", Cyan); Node("GRID STEP", "40 POINTS", Violet); Node("MAX ORDERS", "30", Gold); GlassButton("فتح وحدة التحكم ›", Cyan, onLegacy) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("الحالة", "جاهز • تجريبي", Green); Node("اللوت", "0.02", Cyan); Node("خطوة الشبكة", "40 نقطة", Violet); Node("أقصى أوامر", "30", Gold); GlassButton("فتح وحدة التحكم ›", Cyan, onLegacy) }
     }
 }
 
 @Composable private fun Risk(flow: Float, pulse: Float) {
-    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { Core("RISK CORE", "ARMED", Gold, flow, pulse, Modifier.weight(1f)); Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("RISK PRESETS", color = Color.White.copy(alpha = .45f), fontSize = 9.sp, letterSpacing = 2.sp); Node("PRESET 01", "5%", Green); Node("PRESET 02", "10%", Gold); Node("PRESET 03", "25%", Gold); Node("PRESET 04", "27%", Pink) } }
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) { Core("نواة المخاطر", "مفعلة", Gold, flow, pulse, Modifier.weight(1f)); Column(Modifier.weight(1.2f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Text("إعدادات المخاطر", color = Color.White.copy(alpha = .45f), fontSize = 9.sp); Node("إعداد 01", "5%", Green); Node("إعداد 02", "10%", Gold); Node("إعداد 03", "25%", Gold); Node("إعداد 04", "27%", Pink) } }
 }
 
 @Composable private fun Matrix(title: String, values: List<String>, accent: Color) {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(9.dp)) { Core(title, "LIVE MATRIX", accent, .25f, 1f, Modifier.fillMaxWidth().weight(1f)); Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { values.forEachIndexed { i, v -> Node("NODE ${i + 1}", v, accent) } } }
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(9.dp)) { Core(title, "مصفوفة مباشرة", accent, .25f, 1f, Modifier.fillMaxWidth().weight(1f)); Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { values.forEachIndexed { i, v -> Node("عنصر ${i + 1}", v, accent) } } }
 }
 
 @Composable private fun Core(title: String, subtitle: String, accent: Color, flow: Float, pulse: Float, modifier: Modifier) {
     Box(modifier.clip(RoundedCornerShape(28.dp)).background(Brush.linearGradient(listOf(accent.copy(alpha = .13f), Color.White.copy(alpha = .035f))))) {
         Canvas(Modifier.fillMaxSize()) { val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f); val r = size.minDimension * .23f; drawCircle(accent.copy(alpha = .06f), r * 1.9f, c); drawCircle(accent.copy(alpha = .18f), r * 1.25f, c, style = Stroke(2f)); drawCircle(accent.copy(alpha = .30f), r, c, style = Stroke(3f)); val a = flow * 6.28f; drawCircle(accent, 5f + pulse * 3f, androidx.compose.ui.geometry.Offset(c.x + cos(a) * r * 1.45f, c.y + sin(a) * r * 1.45f)) }
-        Column(Modifier.align(Alignment.TopStart).padding(16.dp)) { Text(title, color = Ice, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp); Text(subtitle, color = accent, fontSize = 8.sp, letterSpacing = 2.sp) }
+        Column(Modifier.align(Alignment.TopStart).padding(16.dp)) { Text(title, color = Ice, fontSize = 13.sp, fontWeight = FontWeight.Bold); Text(subtitle, color = accent, fontSize = 8.sp) }
     }
 }
 
 @Composable private fun Node(title: String, value: String, accent: Color) {
-    Column(Modifier.width(108.dp).clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = .045f)).padding(11.dp)) { Box(Modifier.size(7.dp).clip(CircleShape).background(accent)); Spacer(Modifier.height(7.dp)); Text(title, color = Color.White.copy(alpha = .42f), fontSize = 8.sp, letterSpacing = 1.sp); Text(value, color = Ice, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+    Column(Modifier.width(108.dp).clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = .045f)).padding(11.dp)) { Box(Modifier.size(7.dp).clip(CircleShape).background(accent)); Spacer(Modifier.height(7.dp)); Text(title, color = Color.White.copy(alpha = .42f), fontSize = 8.sp); Text(value, color = Ice, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
 }
 
 @Composable private fun GlassButton(text: String, accent: Color, onClick: (() -> Unit)? = null) {
