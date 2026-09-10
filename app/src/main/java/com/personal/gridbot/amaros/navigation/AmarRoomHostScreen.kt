@@ -26,9 +26,10 @@ import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
 import com.personal.gridbot.amaros.design.AmarAppearanceScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
+import com.personal.gridbot.ui.theme.AmarThemeMode
 
 @Composable
-fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
+fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarThemeMode, onThemeModeChange: (AmarThemeMode) -> Unit) {
     var settingsMode by remember { mutableIntStateOf(0) }
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -52,7 +53,7 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
                         Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }
                         Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") }
                     }
-                    if (settingsMode == 0) AmarAppearanceScreen() else AmarDeveloperOptionsScreen()
+                    if (settingsMode == 0) AmarAppearanceScreen(themeMode, onThemeModeChange) else AmarDeveloperOptionsScreen()
                 }
                 AmarRoom.BOT_LAB -> Bot1PremiumScreen()
                 else -> AmarRoomWorkspace(room)
