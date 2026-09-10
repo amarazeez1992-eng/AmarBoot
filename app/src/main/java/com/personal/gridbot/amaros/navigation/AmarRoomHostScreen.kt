@@ -19,6 +19,7 @@ import com.personal.gridbot.amaros.bots.Bot1PremiumScreen
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
+import com.personal.gridbot.amaros.design.AmarAppearanceScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 
@@ -42,6 +43,7 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
                 }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
                 AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
+                AmarRoom.APPEARANCE -> AmarAppearanceScreen()
                 AmarRoom.BOT_LAB -> Bot1PremiumScreen()
                 else -> AmarRoomWorkspace(room)
             }
