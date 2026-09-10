@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 /** B29: Android-side read-only client. No trade endpoint is exposed here. */
@@ -18,15 +20,22 @@ class AmarMt5BridgeClient(
 ) {
     suspend fun health(): AmarMt5Health = get("/health")
     suspend fun account(): AmarMt5AccountSnapshot = get("/account")
-    suspend fun market(symbol: String): AmarMt5MarketSnapshot =
-        get("/market?symbol=${java.net.URLEncoder.encode(symbol, Charsets.UTF_8.name())}")
-    suspend fun botStatus(symbol: String? = null, magic: Long? = null): AmarMt5BotStatus = {
-        val query = buildString {
-            if (symbol != null) append("&symbol=${java.net.URLEncoder.encode(symbol, Charsets.UTF_8.name())}")
-            if (magic != null) append("&magic=$magic")
-        }.removePrefix("&")
-        get("/bot-status${if (query.isEmpty()) "" else "?$query"}")
-    }()
+
+    suspend fun market(symbol: String): AmarMt5MarketSnapshot {
+        require(symbol.isNotBlank()) { "رمز السوق مطلوب" }
+        return get("/market?symbol=${encode(symbol)}")
+    }
+
+    suspend fun botStatus(symbol: String? = null, magic: Long? = null): AmarMt5BotStatus {
+        val params = buildList {
+            if (!symbol.isNullOrBlank()) add("symbol=${encode(symbol)}")
+            if (magic != null) add("magic=$magic")
+        }.joinToString("&")
+        return get("/bot-status${if (params.isEmpty()) "" else "?$params"}")
+    }
+
+    private fun encode(value: String): String =
+        URLEncoder.encode(value, StandardCharsets.UTF_8.name())
 
     private suspend inline fun <reified T> get(path: String): T = withContext(Dispatchers.IO) {
         require(path.startsWith("/"))
