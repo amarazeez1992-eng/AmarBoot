@@ -21,18 +21,14 @@ class AmarRuntimeTicker(
         job?.cancel()
         controller.onRuntimeStarted()
         val newJob = scope.launch {
-            try {
-                while (isActive) {
-                    val state = controller.advance()
-                    AmarEventBus.publish(
-                        AmarEvent.SystemMessage(
-                            "B10 cycle=${state.cycleNumber} • ${state.telemetry.symbol}/${state.telemetry.timeframe} • DEMO"
-                        )
+            while (isActive) {
+                val state = controller.advance()
+                AmarEventBus.publish(
+                    AmarEvent.SystemMessage(
+                        "B10 cycle=${state.cycleNumber} • ${state.telemetry.symbol}/${state.telemetry.timeframe} • DEMO"
                     )
-                    delay(intervalMs.coerceAtLeast(250L))
-                }
-            } finally {
-                if (!isActive) controller.onRuntimeStopped()
+                )
+                delay(intervalMs.coerceAtLeast(250L))
             }
         }
         job = newJob
