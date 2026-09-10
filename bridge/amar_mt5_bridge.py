@@ -53,7 +53,10 @@ def authorized(handler):
 def mt5_ready():
     if mt5 is None:
         return False
-    return bool(mt5.initialize())
+    try:
+        return bool(mt5.initialize())
+    except Exception:
+        return False
 
 
 def parse_magic(params):
@@ -74,9 +77,11 @@ def selected_items(items, params):
     magic = parse_magic(params)
     if symbol is None and magic is None:
         return list(items)
-    return [x for x in items
-            if (symbol is None or getattr(x, "symbol", None) == symbol)
-            and (magic is None or getattr(x, "magic", None) == magic)]
+    return [
+        x for x in items
+        if (symbol is None or getattr(x, "symbol", None) == symbol)
+        and (magic is None or getattr(x, "magic", None) == magic)
+    ]
 
 
 def position_to_dict(x):
@@ -122,15 +127,27 @@ def candle_to_dict(x):
 
 
 def bot_status(params):
-    magic = parse_magic(params)
+    requested_magic = parse_magic(params)
+    effective_magic = BOT_MAGIC if requested_magic is None else requested_magic
+    filtered = dict(params)
+    filtered["magic"] = [str(effective_magic)]
     if not mt5_ready():
-        return {"ok": False, "available": False, "message": "MT5 unavailable"}
-    positions = selected_items(mt5.positions_get() or (), params)
-    orders = selected_items(mt5.orders_get() or (), params)
+        return {
+            "ok": False,
+            "available": False,
+            "magic": effective_magic,
+            "symbol": params.get("symbol", [None])[0],
+            "positions": 0,
+            "pendingOrders": 0,
+            "floatingProfit": 0.0,
+            "lastCheckMs": int(time.time() * 1000),
+        }
+    positions = selected_items(mt5.positions_get() or (), filtered)
+    orders = selected_items(mt5.orders_get() or (), filtered)
     return {
         "ok": True,
         "available": True,
-        "magic": BOT_MAGIC if magic is None else magic,
+        "magic": effective_magic,
         "symbol": params.get("symbol", [None])[0],
         "positions": len(positions),
         "pendingOrders": len(orders),
@@ -140,7 +157,7 @@ def bot_status(params):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "AMAR-MT5-Bridge/0.3"
+    server_version = "AMAR-MT5-Bridge/0.4"
 
     def log_message(self, fmt, *args):
         print(fmt % args)
@@ -159,13 +176,13 @@ class Handler(BaseHTTPRequestHandler):
             return json_response(self, 400, {"ok": False, "message": str(exc)})
 
         if path == "/health":
-            connected = bool(mt5 and mt5.terminal_info() is not None)
+            connected = mt5_ready()
             return json_response(self, 200, {
                 "ok": True,
                 "connected": connected,
                 "terminal": "MetaTrader 5",
                 "message": "متصل" if connected else "غير متصل",
-                "bridge": "0.3",
+                "bridge": "0.4",
                 "timestampMs": int(time.time() * 1000),
             })
 
@@ -223,9 +240,9 @@ class Handler(BaseHTTPRequestHandler):
             rates = mt5.copy_rates_from_pos(symbol, TIMEFRAMES[timeframe], 0, count)
             if rates is None:
                 return json_response(self, 503, {"ok": False, "message": "candles unavailable"})
-            items = [candle_to_dict(x) for x in rates]
             return json_response(self, 200, {
-                "ok": True, "symbol": symbol, "timeframe": timeframe, "items": items,
+                "ok": True, "symbol": symbol, "timeframe": timeframe,
+                "items": [candle_to_dict(x) for x in rates],
             })
 
         if path == "/positions":
@@ -258,22 +275,15 @@ def main():
     if not CERT or not KEY:
         raise SystemExit("AMAR_TLS_CERT and AMAR_TLS_KEY are required; HTTP is disabled")
     if mt5 is None:
-        raise SystemExit("Install bridge/requirements.txt before starting")
-    if not mt5.initialize():
-        raise SystemExit(f"MT5 initialize failed: {mt5.last_error()}")
+        raise SystemExit("MetaTrader5 package is required")
 
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    server.timeout = 10
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
-    context.load_cert_chain(CERT, KEY)
+    context.load_cert_chain(certfile=CERT, keyfile=KEY)
     server.socket = context.wrap_socket(server.socket, server_side=True)
-    print(f"AMAR MT5 Bridge listening on https://{HOST}:{PORT}")
-    try:
-        server.serve_forever()
-    finally:
-        mt5.shutdown()
-        server.server_close()
+    print(f"AMAR MT5 bridge listening on https://{HOST}:{PORT}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":
