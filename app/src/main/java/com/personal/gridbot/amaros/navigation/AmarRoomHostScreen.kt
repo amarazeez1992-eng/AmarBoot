@@ -11,6 +11,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,6 +29,7 @@ import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 
 @Composable
 fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
+    var settingsMode by remember { mutableIntStateOf(0) }
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -42,9 +47,12 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
                     else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
                 }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
-                AmarRoom.SETTINGS -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AmarAppearanceScreen()
-                    AmarDeveloperOptionsScreen()
+                AmarRoom.SETTINGS -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }
+                        Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") }
+                    }
+                    if (settingsMode == 0) AmarAppearanceScreen() else AmarDeveloperOptionsScreen()
                 }
                 AmarRoom.BOT_LAB -> Bot1PremiumScreen()
                 else -> AmarRoomWorkspace(room)
