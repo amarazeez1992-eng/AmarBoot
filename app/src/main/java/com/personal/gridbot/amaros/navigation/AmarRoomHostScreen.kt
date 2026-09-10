@@ -15,14 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
+import com.personal.gridbot.amaros.bots.BotLabScreen
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 
-/**
- * Native destination host behind the approved living home interface.
- * The home visual stays independent; room implementations remain modular.
- */
+/** مضيف الغرف خلف الواجهة الرئيسية المعتمدة. */
 @Composable
 fun AmarRoomHostScreen(
     room: AmarRoom,
@@ -50,7 +48,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.CHART -> AmarTradingChartScreen()
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
                 AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
-                AmarRoom.BOT_LAB -> LegacyGridDestination(onOpenLegacyGrid)
+                AmarRoom.BOT_LAB -> BotLabScreen()
                 else -> AmarRoomWorkspace(room)
             }
         }
