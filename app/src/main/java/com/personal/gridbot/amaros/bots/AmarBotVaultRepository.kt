@@ -13,14 +13,19 @@ class AmarBotVaultRepository(context: Context) {
         return runCatching {
             val array = JSONArray(raw)
             buildList {
-                for (i in 0 until array.length()) add(AmarSavedBot.fromJson(array.getJSONObject(i)))
-            }
+                for (i in 0 until array.length()) {
+                    add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized())
+                }
+            }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
         }.getOrElse { defaultBots() }
     }
 
     fun save(bots: List<AmarSavedBot>) {
         val array = JSONArray()
-        bots.sortedBy { it.botNumber }.forEach { array.put(it.toJson()) }
+        bots.map { it.normalized() }
+            .distinctBy { it.botNumber }
+            .sortedBy { it.botNumber }
+            .forEach { array.put(it.toJson()) }
         prefs.edit().putString(KEY_BOTS, array.toString()).apply()
     }
 
@@ -34,10 +39,19 @@ data class AmarSavedBot(
     val name: String,
     val strategies: List<AmarSavedStrategy> = emptyList()
 ) {
+    fun normalized(): AmarSavedBot = copy(
+        botNumber = botNumber.coerceAtLeast(1),
+        name = name.ifBlank { "بوت ${botNumber.coerceAtLeast(1)}" },
+        strategies = strategies
+            .filter { it.number in 1..10 }
+            .distinctBy { it.number }
+            .sortedBy { it.number }
+    )
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("botNumber", botNumber)
         put("name", name)
-        put("strategies", JSONArray().apply { strategies.sortedBy { it.number }.forEach { put(it.toJson()) } })
+        put("strategies", JSONArray().apply { strategies.forEach { put(it.toJson()) } })
     }
 
     companion object {
@@ -55,10 +69,14 @@ data class AmarSavedStrategy(
     val number: Int,
     val name: String,
     val profile: AmarBot1RuntimeConfig,
-    val riskProfile: String = "قياسي"
+    val riskProfile: String = "قياسي",
+    val rebuildRule: String = "يدوي",
+    val entryRule: String = "أساسي",
+    val metadata: String = ""
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("number", number); put("name", name); put("risk", riskProfile)
+        put("rebuildRule", rebuildRule); put("entryRule", entryRule); put("metadata", metadata)
         put("lot", profile.lot); put("step", profile.gridStep); put("max", profile.maxOrders)
         put("multiplier", profile.multiplier); put("tp", profile.basketTp); put("sl", profile.basketSl)
         put("trailing", profile.trailing); put("buy", profile.buyEnabled); put("sell", profile.sellEnabled)
@@ -73,7 +91,11 @@ data class AmarSavedStrategy(
                 basketTp = o.optDouble("tp", 50.0), basketSl = o.optDouble("sl", -30.0),
                 trailing = o.optDouble("trailing", 0.0), buyEnabled = o.optBoolean("buy", true),
                 sellEnabled = o.optBoolean("sell", true)
-            ), riskProfile = o.optString("risk", "قياسي")
+            ),
+            riskProfile = o.optString("risk", "قياسي"),
+            rebuildRule = o.optString("rebuildRule", "يدوي"),
+            entryRule = o.optString("entryRule", "أساسي"),
+            metadata = o.optString("metadata", "")
         )
     }
 }
