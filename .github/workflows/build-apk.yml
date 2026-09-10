@@ -22,15 +22,11 @@ jobs:
           java-version: '17'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          accept-android-sdk-licenses: true
-          log-accepted-android-sdk-licenses: false
-          packages: tools platform-tools
+        uses: android-actions/setup-android@v3
 
-      - name: Accept remaining Android SDK licenses
+      - name: Accept Android SDK licenses
         run: |
-          sdkmanager --licenses < <(printf 'y\n%.0s' {1..100}) >/dev/null
+          printf 'y\n%.0s' {1..100} | sdkmanager --licenses >/dev/null
 
       - name: Generate Gradle Wrapper
         run: gradle wrapper --gradle-version 8.7
