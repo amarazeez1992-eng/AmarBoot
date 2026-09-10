@@ -29,6 +29,7 @@ class AmarAuditLog(private val capacity: Int = 5_000) {
         val hash = sha256("${safe.id}|${safe.epochMs}|${safe.category}|${safe.action}|${safe.outcome}|${safe.traceId}|${safe.details}|${safe.previousHash}")
         records.addLast(safe.copy(integrityHash = hash))
         while (records.size > capacity) records.removeFirst()
+        rebaseAfterEviction()
     }
 
     @Synchronized fun snapshot(): List<AmarAuditRecord> = records.toList()
@@ -45,6 +46,15 @@ class AmarAuditLog(private val capacity: Int = 5_000) {
     }
 
     @Synchronized fun clear() { records.clear() }
+
+    private fun rebaseAfterEviction() {
+        val first = records.firstOrNull() ?: return
+        if (first.previousHash == "GENESIS") return
+        val rebased = first.copy(previousHash = "GENESIS")
+        val hash = sha256("${rebased.id}|${rebased.epochMs}|${rebased.category}|${rebased.action}|${rebased.outcome}|${rebased.traceId}|${rebased.details}|${rebased.previousHash}")
+        records.removeFirst()
+        records.addFirst(rebased.copy(integrityHash = hash))
+    }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
