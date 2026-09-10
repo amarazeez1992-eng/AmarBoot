@@ -1,6 +1,6 @@
 {
   "name": "AMAR Living 3D Nexus",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "mode": "demo",
   "engine": "godot-4.5.2",
   "secondaryEngines": ["android-kotlin", "web-react-three"],
