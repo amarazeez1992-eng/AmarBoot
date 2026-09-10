@@ -2,10 +2,10 @@ import './globals.css';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'AMAR AI — Trading Command OS',
-  description: 'AMAR Aurora Nexus — demo command interface',
+  title: 'عمار — المحور الذكي للتداول',
+  description: 'واجهة عمار الحية — مركز قيادة تداول تجريبي آمن',
   manifest: '/manifest.webmanifest',
-  themeColor: '#010208',
+  themeColor: '#dff7fb',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
