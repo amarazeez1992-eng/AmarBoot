@@ -53,6 +53,8 @@ private val MarketYellow = Color(0xFFF4B400)
 private val MarketBlue = Color(0xFF246BFE)
 private val MarketBorder = Color(0xFFE1E7F0)
 private val MarketOrange = Color(0xFFFF8A34)
+private val MarketShape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp)
+private val MarketSmallShape = androidx.compose.foundation.shape.RoundedCornerShape(13.dp)
 
 private data class LiveFrame(val label: String, val key: String)
 
@@ -85,19 +87,23 @@ fun Bot1MarketStatus() {
         if (bridgeUrl.isBlank() || token.isBlank() || symbol.isBlank()) return
         loading = true
         try {
-            val client = AmarMt5BridgeClient(AmarBridgeConfig(bridgeUrl.trim(), token))
+            val client = AmarMt5BridgeClient(
+                config = AmarBridgeConfig(bridgeUrl.trim(), token)
+            )
             val health = client.health()
             if (!health.connected) {
                 connected = false
                 message = "الجسر يعمل لكن MT5 غير متصل"
                 return
             }
+
             val account = client.account()
             val market = client.market(symbol.trim())
             val bot = client.botStatus(symbol = symbol.trim(), magic = 20260908L)
             accountText = "الرصيد ${account.balance} ${account.currency} • حقوق الملكية ${account.equity}"
             botText = "${bot.positions} صفقة • ${bot.pendingOrders} أمر معلق • الربح العائم ${bot.floatingProfit}"
             marketText = "شراء ${market.ask} • بيع ${market.bid} • السبريد ${market.spreadPoints}"
+
             frames.forEach { frame ->
                 val candles = client.candles(symbol.trim(), frame.key, 80).items
                 directions[frame.key] = AmarMt5MarketAnalysis.direction(candles)
@@ -113,7 +119,7 @@ fun Bot1MarketStatus() {
     }
 
     LaunchedEffect(bridgeUrl, token, symbol) {
-        if (bridgeUrl.isBlank() || token.isBlank()) return@LaunchedEffect
+        if (bridgeUrl.isBlank() || token.isBlank() || symbol.isBlank()) return@LaunchedEffect
         while (true) {
             refresh()
             delay(3_000L)
@@ -124,25 +130,47 @@ fun Bot1MarketStatus() {
     val pulse by rememberInfiniteTransition(label = "marketPulse").animateFloat(
         initialValue = 0.55f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
         label = "marketPulseValue"
     )
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+        shape = MarketShape,
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(15.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("حالة السوق", color = MarketInk, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Text("قراءة حقيقية متعددة الفريمات لبوت 1", color = MarketBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = "حالة السوق",
+                        color = MarketInk,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "قراءة حقيقية متعددة الفريمات لبوت 1",
+                        color = MarketBlue,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-                Box(Modifier.size(11.dp).alpha(pulse).background(if (connected) MarketGreen else MarketYellow, androidx.compose.foundation.shape.CircleShape))
+                Box(
+                    modifier = Modifier
+                        .size(11.dp)
+                        .alpha(pulse)
+                        .background(
+                            color = if (connected) MarketGreen else MarketYellow,
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        )
+                )
             }
-            Spacer(Modifier.height(12.dp))
+
+            Spacer(modifier = Modifier.height(12.dp))
             ConnectionSettings(
                 bridgeUrl = bridgeUrl,
                 token = token,
@@ -153,21 +181,30 @@ fun Bot1MarketStatus() {
                 onSymbol = { symbol = it },
                 onConnect = { scope.launch { refresh() } },
             )
-            Spacer(Modifier.height(10.dp))
-            StatusBanner(connected, message)
-            Spacer(Modifier.height(10.dp))
-            LiveAccountStrip(accountText, botText, marketText)
-            Spacer(Modifier.height(11.dp))
-            Text("اتجاه الفريمات", color = MarketInk, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Spacer(Modifier.height(7.dp))
+            Spacer(modifier = Modifier.height(10.dp))
+            StatusBanner(connected = connected, message = message)
+            Spacer(modifier = Modifier.height(10.dp))
+            LiveAccountStrip(account = accountText, bot = botText, market = marketText)
+            Spacer(modifier = Modifier.height(11.dp))
+            Text(
+                text = "اتجاه الفريمات",
+                color = MarketInk,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(7.dp))
             frames.forEach { frame ->
                 MarketTimeframeRow(frame.label, directions[frame.key])
-                Spacer(Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(6.dp))
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             MarketSummary(summary.first, summary.second, summary.third)
-            Spacer(Modifier.height(8.dp))
-            Text("هذه القراءة وصفية فقط ولا تغيّر إعدادات BOT 1 أو تتخذ قرار تنفيذ.", color = MarketMuted, fontSize = 9.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "هذه القراءة وصفية فقط ولا تغيّر إعدادات BOT 1 أو تتخذ قرار تنفيذ.",
+                color = MarketMuted,
+                fontSize = 9.sp
+            )
         }
     }
 }
@@ -184,17 +221,45 @@ private fun ConnectionSettings(
     onConnect: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        Text("اتصال MT5 — قراءة فقط", color = MarketInk, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-        OutlinedTextField(value = bridgeUrl, onValueChange = onUrl, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("عنوان الجسر الآمن") }, placeholder = { Text("https://عنوان-اللابتوب:8765") })
-        OutlinedTextField(value = token, onValueChange = onToken, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("رمز الجسر") })
-        OutlinedTextField(value = symbol, onValueChange = onSymbol, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("رمز السوق") })
+        Text(
+            text = "اتصال MT5 — قراءة فقط",
+            color = MarketInk,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp
+        )
+        OutlinedTextField(
+            value = bridgeUrl,
+            onValueChange = onUrl,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(text = "عنوان الجسر الآمن") },
+            placeholder = { Text(text = "https://عنوان-اللابتوب:8765") }
+        )
+        OutlinedTextField(
+            value = token,
+            onValueChange = onToken,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(text = "رمز الجسر") }
+        )
+        OutlinedTextField(
+            value = symbol,
+            onValueChange = onSymbol,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(text = "رمز السوق") }
+        )
         Button(
             onClick = onConnect,
             enabled = !loading && bridgeUrl.isNotBlank() && token.isNotBlank() && symbol.isNotBlank(),
-            modifier = Modifier.fillMaxWidth().height(43.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(43.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MarketBlue),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-        ) { Text(if (loading) "جاري الاتصال…" else "اختبار الاتصال والقراءة") }
+            shape = MarketSmallShape,
+        ) {
+            Text(text = if (loading) "جاري الاتصال…" else "اختبار الاتصال والقراءة")
+        }
     }
 }
 
@@ -202,22 +267,34 @@ private fun ConnectionSettings(
 private fun StatusBanner(connected: Boolean, message: String) {
     val color = if (connected) MarketGreen else MarketYellow
     Row(
-        modifier = Modifier.fillMaxWidth().background(color.copy(alpha = 0.08f), androidx.compose.foundation.shape.RoundedCornerShape(13.dp))
-            .border(1.dp, color.copy(alpha = 0.28f), androidx.compose.foundation.shape.RoundedCornerShape(13.dp)).padding(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color.copy(alpha = 0.08f), MarketSmallShape)
+            .border(1.dp, color.copy(alpha = 0.28f), MarketSmallShape)
+            .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(8.dp).background(color, androidx.compose.foundation.shape.CircleShape))
-        Spacer(Modifier.size(7.dp))
-        Text(message, color = if (connected) MarketGreen else Color(0xFF805B12), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color = color, shape = androidx.compose.foundation.shape.CircleShape)
+        )
+        Spacer(modifier = Modifier.size(7.dp))
+        Text(
+            text = message,
+            color = if (connected) MarketGreen else Color(0xFF805B12),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
 private fun LiveAccountStrip(account: String, bot: String, market: String) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text(account, color = MarketInk, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-        Text(bot, color = MarketBlue, fontSize = 10.sp)
-        Text(market, color = MarketOrange, fontSize = 10.sp)
+        Text(text = account, color = MarketInk, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+        Text(text = bot, color = MarketBlue, fontSize = 10.sp)
+        Text(text = market, color = MarketOrange, fontSize = 10.sp)
     }
 }
 
@@ -230,22 +307,48 @@ private fun MarketTimeframeRow(label: String, direction: AmarMarketDirection?) {
         else -> MarketMuted
     }
     Row(
-        modifier = Modifier.fillMaxWidth().background(Color(0xFFF8FAFC), androidx.compose.foundation.shape.RoundedCornerShape(13.dp))
-            .border(1.dp, MarketBorder, androidx.compose.foundation.shape.RoundedCornerShape(13.dp)).padding(horizontal = 10.dp, vertical = 9.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFF8FAFC), MarketSmallShape)
+            .border(1.dp, MarketBorder, MarketSmallShape)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(1f), color = MarketInk, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        Box(Modifier.size(8.dp).background(color, androidx.compose.foundation.shape.CircleShape))
-        Spacer(Modifier.size(6.dp))
-        Text(direction?.labelAr ?: "بانتظار البيانات", color = color, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.size(8.dp))
-        Text(direction?.percentage?.let { "$it%" } ?: "—", color = color, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = label,
+            modifier = Modifier.weight(1f),
+            color = MarketInk,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(color = color, shape = androidx.compose.foundation.shape.CircleShape)
+        )
+        Spacer(modifier = Modifier.size(6.dp))
+        Text(
+            text = direction?.labelAr ?: "بانتظار البيانات",
+            color = color,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            text = direction?.percentage?.let { "$it%" } ?: "—",
+            color = color,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
 private fun MarketSummary(buy: Int, neutral: Int, sell: Int) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
         MarketScoreCard("الشراء", if (buy == 0) "—" else "$buy%", MarketGreen, Modifier.weight(1f))
         MarketScoreCard("الحياد", if (neutral == 0) "—" else "$neutral%", MarketYellow, Modifier.weight(1f))
         MarketScoreCard("البيع", if (sell == 0) "—" else "$sell%", MarketRed, Modifier.weight(1f))
@@ -255,11 +358,13 @@ private fun MarketSummary(buy: Int, neutral: Int, sell: Int) {
 @Composable
 private fun MarketScoreCard(label: String, value: String, color: Color, modifier: Modifier) {
     Column(
-        modifier = modifier.background(color.copy(alpha = 0.07f), androidx.compose.foundation.shape.RoundedCornerShape(13.dp))
-            .border(1.dp, color.copy(alpha = 0.25f), androidx.compose.foundation.shape.RoundedCornerShape(13.dp)).padding(vertical = 10.dp),
+        modifier = modifier
+            .background(color.copy(alpha = 0.07f), MarketSmallShape)
+            .border(1.dp, color.copy(alpha = 0.25f), MarketSmallShape)
+            .padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = MarketMuted, fontSize = 9.sp)
+        Text(text = value, color = color, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(text = label, color = MarketMuted, fontSize = 9.sp)
     }
 }
