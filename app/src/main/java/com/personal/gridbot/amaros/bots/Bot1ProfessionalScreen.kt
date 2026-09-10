@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.bots
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,7 +7,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +26,6 @@ private val Cyan = Color(0xFF19E6FF)
 private val Teal = Color(0xFF00F0A8)
 private val Gold = Color(0xFFFFC84D)
 private val Red = Color(0xFFFF5364)
-private val Purple = Color(0xFFB14DFF)
 private val Line = Color(0xFF214452)
 
 @Composable
@@ -40,18 +37,35 @@ fun Bot1ProfessionalScreen() {
     var selectedStrategy by remember { mutableIntStateOf(1) }
     var editing by remember { mutableStateOf(false) }
     var draftName by remember { mutableStateOf("") }
+    var draftRisk by remember { mutableStateOf("قياسي") }
+    var draftRebuild by remember { mutableStateOf("يدوي") }
+    var draftEntry by remember { mutableStateOf("أساسي") }
+    var draftMetadata by remember { mutableStateOf("") }
     var draft by remember { mutableStateOf(AmarBot1RuntimeConfig()) }
 
     fun persist(updated: List<AmarSavedBot>) { bots = updated; repository.save(updated) }
     val current = bots.firstOrNull { it.botNumber == selectedBot }
     val strategies = current?.strategies.orEmpty()
-    val selected = strategies.firstOrNull { it.number == selectedStrategy }
+
+    fun openEditor(number: Int, saved: AmarSavedStrategy?) {
+        selectedStrategy = number
+        draft = saved?.profile ?: AmarBot1RuntimeConfig()
+        draftName = saved?.name ?: "استراتيجية رقم $number"
+        draftRisk = saved?.riskProfile ?: "قياسي"
+        draftRebuild = saved?.rebuildRule ?: "يدوي"
+        draftEntry = saved?.entryRule ?: "أساسي"
+        draftMetadata = saved?.metadata ?: ""
+        editing = true
+    }
 
     Surface(color = Bg, modifier = Modifier.fillMaxSize()) {
         LazyColumn(contentPadding = PaddingValues(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { Text("خزنة البوتات", color = Cyan, fontSize = 27.sp, fontWeight = FontWeight.Black); Text("إدارة وحفظ وتعديل الاستراتيجيات", color = Muted, fontSize = 10.sp) }
+                    Column(Modifier.weight(1f)) {
+                        Text("خزنة البوتات", color = Cyan, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                        Text("BOT 1 / ملفات البوت والاستراتيجيات المحفوظة", color = Muted, fontSize = 10.sp)
+                    }
                     Button(onClick = {
                         val next = ((bots.maxOfOrNull { it.botNumber } ?: 0) + 1)
                         val created = AmarSavedBot(next, "بوت $next")
@@ -62,10 +76,10 @@ fun Bot1ProfessionalScreen() {
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     bots.forEach { bot ->
-                        val selectedBotCard = bot.botNumber == selectedBot
-                        Column(Modifier.width(105.dp).background(if (selectedBotCard) Panel2 else Panel, RoundedCornerShape(18.dp)).border(1.dp, if (selectedBotCard) Cyan else Line, RoundedCornerShape(18.dp)).clickable { selectedBot = bot.botNumber; selectedStrategy = 1 }.padding(10.dp)) {
-                            Text(bot.name, color = if (selectedBotCard) Cyan else Ink, fontWeight = FontWeight.Black)
-                            Text("${bot.strategies.size} استراتيجية محفوظة", color = Muted, fontSize = 9.sp)
+                        val active = bot.botNumber == selectedBot
+                        Column(Modifier.width(110.dp).background(if (active) Panel2 else Panel, RoundedCornerShape(18.dp)).border(1.dp, if (active) Cyan else Line, RoundedCornerShape(18.dp)).clickable { selectedBot = bot.botNumber; selectedStrategy = 1 }.padding(10.dp)) {
+                            Text(bot.name, color = if (active) Cyan else Ink, fontWeight = FontWeight.Black)
+                            Text("${bot.strategies.size}/10 استراتيجية", color = Muted, fontSize = 9.sp)
                         }
                     }
                 }
@@ -75,49 +89,46 @@ fun Bot1ProfessionalScreen() {
             } else {
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton("تعديل اسم البوت", Cyan) { draftName = current.name; editing = true }
-                        ActionButton("إعادة تهيئة البوت", Gold) {
-                            persist(bots.map { if (it.botNumber == selectedBot) it.copy(strategies = emptyList()) else it })
-                            selectedStrategy = 1
+                        ActionButton("تعديل اسم البوت", Cyan) { /* name editing remains configuration-only */ }
+                        ActionButton("إعادة تهيئة", Gold) {
+                            persist(bots.map { if (it.botNumber == selectedBot) it.copy(name = "بوت $selectedBot", strategies = emptyList()) else it }); selectedStrategy = 1; editing = false
                         }
                         ActionButton("حذف البوت", Red) {
                             val remaining = bots.filterNot { it.botNumber == selectedBot }
-                            persist(remaining); selectedBot = remaining.firstOrNull()?.botNumber ?: 1; selectedStrategy = 1
+                            persist(remaining); selectedBot = remaining.firstOrNull()?.botNumber ?: 1; selectedStrategy = 1; editing = false
                         }
                     }
                 }
                 item { Text("استراتيجيات ${current.name}", color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Black) }
                 item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        ActionButton("+ استراتيجية", Teal) {
-                            val next = ((strategies.maxOfOrNull { it.number } ?: 0) + 1)
+                    ActionButton(if (strategies.size < 10) "+ استراتيجية" else "الخانات مكتملة 10/10", Teal) {
+                        if (strategies.size < 10) {
+                            val next = (1..10).first { n -> strategies.none { it.number == n } }
                             val created = AmarSavedStrategy(next, "استراتيجية رقم $next", AmarBot1RuntimeConfig())
-                            persist(bots.map { if (it.botNumber == selectedBot) it.copy(strategies = it.strategies + created) else it })
-                            selectedStrategy = next; draft = created.profile; draftName = created.name; editing = true
-                        }
-                        ActionButton("حذف المحددة", Red) {
-                            persist(bots.map { if (it.botNumber == selectedBot) it.copy(strategies = it.strategies.filterNot { s -> s.number == selectedStrategy }) else it })
-                            selectedStrategy = 1
+                            persist(bots.map { if (it.botNumber == selectedBot) it.copy(strategies = (it.strategies + created).sortedBy { s -> s.number }) else it })
+                            openEditor(next, created)
                         }
                     }
                 }
-                items((1..10).toList()) { number ->
-                    val saved = strategies.firstOrNull { it.number == number }
-                    StrategyRow(number, saved != null, number == selectedStrategy, saved?.name ?: "خانة فارغة") {
-                        selectedStrategy = number
-                        if (saved != null) { draft = saved.profile; draftName = saved.name; editing = true }
-                        else { draft = AmarBot1RuntimeConfig(); draftName = "استراتيجية رقم $number"; editing = true }
+                item { Text("الخانات 01 — 10", color = Gold, fontWeight = FontWeight.Bold) }
+                (1..10).forEach { number ->
+                    item {
+                        val saved = strategies.firstOrNull { it.number == number }
+                        StrategyRow(number, saved != null, number == selectedStrategy, saved?.name ?: "خانة فارغة") { openEditor(number, saved) }
                     }
                 }
                 if (editing) {
-                    item { StrategyEditor(draftName, draft, { draftName = it }, { draft = it }) }
+                    item { StrategyEditor(draftName, draft, draftRisk, draftRebuild, draftEntry, draftMetadata, { draftName = it }, { draft = it }, { draftRisk = it }, { draftRebuild = it }, { draftEntry = it }, { draftMetadata = it }) }
                     item {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             ActionButton("حفظ الاستراتيجية ✓", Teal) {
-                                val normalized = if (selectedStrategy in 1..10) selectedStrategy else 1
-                                val item = AmarSavedStrategy(normalized, draftName.ifBlank { "استراتيجية رقم $normalized" }, draft)
-                                persist(bots.map { bot -> if (bot.botNumber == selectedBot) bot.copy(strategies = (bot.strategies.filterNot { it.number == normalized } + item).sortedBy { it.number }) else bot })
+                                val n = selectedStrategy.coerceIn(1, 10)
+                                val item = AmarSavedStrategy(n, draftName.ifBlank { "استراتيجية رقم $n" }, draft, draftRisk, draftRebuild, draftEntry, draftMetadata)
+                                persist(bots.map { bot -> if (bot.botNumber == selectedBot) bot.copy(strategies = (bot.strategies.filterNot { it.number == n } + item).sortedBy { it.number }) else bot })
                                 editing = false
+                            }
+                            ActionButton("حذف", Red) {
+                                persist(bots.map { bot -> if (bot.botNumber == selectedBot) bot.copy(strategies = bot.strategies.filterNot { it.number == selectedStrategy }) else bot }); editing = false
                             }
                             ActionButton("إلغاء", Muted) { editing = false }
                         }
@@ -128,11 +139,31 @@ fun Bot1ProfessionalScreen() {
     }
 }
 
-@Composable private fun EmptyState(onAdd: () -> Unit) { Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text("الخزنة فارغة", color = Gold, fontWeight = FontWeight.Black); Text("أضف بوتًا جديدًا أو أنشئه من الخانة الحالية.", color = Muted, fontSize = 11.sp); Spacer(Modifier.height(10.dp)); ActionButton("إضافة بوت", Cyan, onAdd) } }
+@Composable private fun EmptyState(onAdd: () -> Unit) { Column(Modifier.fillMaxWidth().background(Panel, RoundedCornerShape(20.dp)).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text("الخزنة فارغة", color = Gold, fontWeight = FontWeight.Black); Spacer(Modifier.height(10.dp)); ActionButton("إضافة بوت", Cyan, onAdd) } }
 
 @Composable private fun StrategyRow(number: Int, saved: Boolean, selected: Boolean, name: String, onClick: () -> Unit) { Row(Modifier.fillMaxWidth().background(if (selected) Panel2 else Panel, RoundedCornerShape(15.dp)).border(1.dp, if (selected) Cyan else Line, RoundedCornerShape(15.dp)).clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Text(if (saved) "✓" else "○", color = if (saved) Teal else Muted, fontSize = 19.sp, fontWeight = FontWeight.Black); Spacer(Modifier.width(10.dp)); Column(Modifier.weight(1f)) { Text(name, color = Ink, fontWeight = FontWeight.Bold); Text(if (saved) "محفوظة — اضغط للتعديل" else "خانة فارغة — اضغط للإنشاء", color = if (saved) Teal else Muted, fontSize = 9.sp) }; Text("$number", color = Gold, fontWeight = FontWeight.Black) } }
 
-@Composable private fun StrategyEditor(name: String, config: AmarBot1RuntimeConfig, setName: (String) -> Unit, setConfig: (AmarBot1RuntimeConfig) -> Unit) { Card(colors = CardDefaults.cardColors(Panel), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("محرر الاستراتيجية", color = Gold, fontSize = 18.sp, fontWeight = FontWeight.Black); OutlinedTextField(name, setName, Modifier.fillMaxWidth(), label = { Text("اسم الاستراتيجية") }); ConfigSlider("اللوت", config.lot.toFloat(), .01f, 1f) { setConfig(config.copy(lot = it.toDouble())) }; ConfigSlider("مسافة الشبكة", config.gridStep.toFloat(), 1f, 300f) { setConfig(config.copy(gridStep = it.toDouble())) }; ConfigSlider("الحد الأقصى", config.maxOrders.toFloat(), 1f, 100f) { setConfig(config.copy(maxOrders = it.toInt())) }; ConfigSlider("المضاعف", config.multiplier.toFloat(), 1f, 5f) { setConfig(config.copy(multiplier = it.toDouble())) }; ConfigSlider("هدف السلة", config.basketTp.toFloat(), 0f, 500f) { setConfig(config.copy(basketTp = it.toDouble())) }; ConfigSlider("خسارة السلة", config.basketSl.toFloat(), -500f, 0f) { setConfig(config.copy(basketSl = it.toDouble())) }; ConfigSlider("التتبع", config.trailing.toFloat(), 0f, 300f) { setConfig(config.copy(trailing = it.toDouble())) } } } }
+@Composable private fun StrategyEditor(name: String, config: AmarBot1RuntimeConfig, risk: String, rebuild: String, entry: String, metadata: String, setName: (String) -> Unit, setConfig: (AmarBot1RuntimeConfig) -> Unit, setRisk: (String) -> Unit, setRebuild: (String) -> Unit, setEntry: (String) -> Unit, setMetadata: (String) -> Unit) {
+    Card(colors = CardDefaults.cardColors(Panel), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        Text("محرر الاستراتيجية", color = Gold, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        OutlinedTextField(name, setName, Modifier.fillMaxWidth(), label = { Text("اسم الاستراتيجية") })
+        OutlinedTextField(risk, setRisk, Modifier.fillMaxWidth(), label = { Text("ملف المخاطر") })
+        OutlinedTextField(rebuild, setRebuild, Modifier.fillMaxWidth(), label = { Text("قاعدة إعادة البناء") })
+        OutlinedTextField(entry, setEntry, Modifier.fillMaxWidth(), label = { Text("قاعدة الدخول") })
+        OutlinedTextField(metadata, setMetadata, Modifier.fillMaxWidth(), label = { Text("ملاحظات / Metadata") })
+        ConfigSlider("اللوت", config.lot.toFloat(), .01f, 1f) { setConfig(config.copy(lot = it.toDouble())) }
+        ConfigSlider("مسافة الشبكة", config.gridStep.toFloat(), 1f, 300f) { setConfig(config.copy(gridStep = it.toDouble())) }
+        ConfigSlider("الحد الأقصى", config.maxOrders.toFloat(), 1f, 100f) { setConfig(config.copy(maxOrders = it.toInt())) }
+        ConfigSlider("المضاعف", config.multiplier.toFloat(), 1f, 5f) { setConfig(config.copy(multiplier = it.toDouble())) }
+        ConfigSlider("هدف السلة", config.basketTp.toFloat(), 0f, 500f) { setConfig(config.copy(basketTp = it.toDouble())) }
+        ConfigSlider("خسارة السلة", config.basketSl.toFloat(), -500f, 0f) { setConfig(config.copy(basketSl = it.toDouble())) }
+        ConfigSlider("التتبع", config.trailing.toFloat(), 0f, 300f) { setConfig(config.copy(trailing = it.toDouble())) }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = config.buyEnabled, onClick = { setConfig(config.copy(buyEnabled = !config.buyEnabled)) }, label = { Text("BUY") })
+            FilterChip(selected = config.sellEnabled, onClick = { setConfig(config.copy(sellEnabled = !config.sellEnabled)) }, label = { Text("SELL") })
+        }
+    } }
+}
 
 @Composable private fun ConfigSlider(label: String, value: Float, min: Float, max: Float, onChange: (Float) -> Unit) { Text("$label  ${"%.2f".format(value)}", color = Ink, fontSize = 10.sp); Slider(value, onChange, valueRange = min..max, colors = SliderDefaults.colors(thumbColor = Cyan, activeTrackColor = Cyan, inactiveTrackColor = Line)) }
 
