@@ -10,11 +10,15 @@ data class AmarBridgeConfig(
     init {
         require(baseUrl.startsWith("https://")) { "جسر MT5 يجب أن يستخدم HTTPS" }
         require(token.isNotBlank()) { "رمز الجسر مطلوب" }
-        require(connectTimeoutMs > 0 && readTimeoutMs > 0)
+        require(connectTimeoutMs > 0 && readTimeoutMs > 0) { "مهلة الاتصال غير صالحة" }
     }
 }
 
-data class AmarMt5Health(val connected: Boolean, val terminal: String, val message: String)
+data class AmarMt5Health(
+    val connected: Boolean,
+    val terminal: String,
+    val message: String,
+)
 
 data class AmarMt5AccountSnapshot(
     val login: Long,
@@ -50,19 +54,40 @@ data class AmarMt5CandleSeries(
     val items: List<AmarMt5Candle>,
 )
 
-data class AmarMt5BridgeStatus(val health: AmarMt5Health, val account: AmarMt5AccountSnapshot?)
+data class AmarMt5BridgeStatus(
+    val health: AmarMt5Health,
+    val account: AmarMt5AccountSnapshot?,
+)
 
-enum class AmarMt5ReadOperation { HEALTH, ACCOUNT, MARKET, CANDLES, POSITIONS, PENDING_ORDERS, BOT_STATUS }
-en
-enum class AmarLiveGateState { LOCKED, AUTHENTICATED_READ_ONLY, AUTHORIZED_LIVE }
+enum class AmarMt5ReadOperation {
+    HEALTH,
+    ACCOUNT,
+    MARKET,
+    CANDLES,
+    POSITIONS,
+    PENDING_ORDERS,
+    BOT_STATUS,
+}
+
+enum class AmarLiveGateState {
+    LOCKED,
+    AUTHENTICATED_READ_ONLY,
+    AUTHORIZED_LIVE,
+}
 
 /** B28: execution stays blocked unless every explicit gate is satisfied. */
 class AmarLiveExecutionGate {
-    fun state(authenticated: Boolean, accountEnabled: Boolean, explicitLiveAuthorization: Boolean, connectorReady: Boolean): AmarLiveGateState = when {
+    fun state(
+        authenticated: Boolean,
+        accountEnabled: Boolean,
+        explicitLiveAuthorization: Boolean,
+        connectorReady: Boolean,
+    ): AmarLiveGateState = when {
         !authenticated || !accountEnabled -> AmarLiveGateState.LOCKED
         !explicitLiveAuthorization || !connectorReady -> AmarLiveGateState.AUTHENTICATED_READ_ONLY
         else -> AmarLiveGateState.AUTHORIZED_LIVE
     }
 
-    fun allowExecution(state: AmarLiveGateState): Boolean = state == AmarLiveGateState.AUTHORIZED_LIVE
+    fun allowExecution(state: AmarLiveGateState): Boolean =
+        state == AmarLiveGateState.AUTHORIZED_LIVE
 }
