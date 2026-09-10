@@ -1,0 +1,16 @@
+{
+  "name": "AMAR Living 3D Nexus",
+  "version": "0.1.2",
+  "mode": "demo",
+  "engine": "godot-4.5.2",
+  "secondaryEngines": ["android-kotlin", "web-react-three"],
+  "rooms": ["home", "market", "chart", "bot", "risk", "analysis", "performance", "testing", "tools", "alerts", "settings", "library"],
+  "motion": ["off", "low", "medium", "high", "cinematic"],
+  "input": ["touch", "drag", "tap"],
+  "safety": {
+    "demoOnly": true,
+    "liveTrading": false,
+    "uiDecidesOrders": false,
+    "guardian": true
+  }
+}
