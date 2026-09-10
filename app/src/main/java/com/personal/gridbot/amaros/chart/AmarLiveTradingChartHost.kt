@@ -15,6 +15,7 @@ fun AmarLiveTradingChartHost(
     pendingOrders: List<AmarChartPendingOrder> = emptyList(),
     history: List<AmarChartHistoryDeal> = emptyList(),
     executionController: AmarChartExecutionController? = null,
+    liveExecutionAuthorized: Boolean = false,
     refreshMs: Long = 1_000L,
 ) {
     LaunchedEffect(symbol, provider, refreshMs) {
@@ -33,6 +34,6 @@ fun AmarLiveTradingChartHost(
         pendingOrders = pendingOrders,
         history = history,
         executionController = executionController,
-        liveExecutionAuthorized = executionController != null,
+        liveExecutionAuthorized = liveExecutionAuthorized,
     )
 }
