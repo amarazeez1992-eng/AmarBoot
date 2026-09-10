@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +57,6 @@ private val Border = Color(0xFFE1E7F0)
 
 private enum class Bot1Page { BOT, MARKET }
 
-/** واجهة بوت 1. الواجهة مستقلة عن كود الاستراتيجية ولا تنفذ أوامر MT5 في هذه المرحلة. */
 @Composable
 fun BotLabScreen() {
     var selectedBot by remember { mutableStateOf(1) }
@@ -75,15 +75,14 @@ fun BotLabScreen() {
 @Composable
 private fun BotLabHeader() {
     val pulse by rememberInfiniteTransition(label = "headerPulse").animateFloat(
-        0.72f,
-        1f,
+        0.72f, 1f,
         infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "pulse"
     )
     Card(
-        colors = CardDefaults.cardColors(Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -92,7 +91,7 @@ private fun BotLabHeader() {
             }
             Spacer(Modifier.width(11.dp))
             Column(Modifier.weight(1f)) {
-                Text("غرفة البوتات", 21.sp, FontWeight.Bold, Ink)
+                Text("غرفة البوتات", color = Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold)
                 Text("10 خانات مستقلة قابلة للتوسع", color = Muted, fontSize = 12.sp)
             }
             LiveBadge()
@@ -117,17 +116,15 @@ private fun LiveBadge() {
 @Composable
 private fun BotSlots(selectedBot: Int, onSelect: (Int) -> Unit) {
     Card(
-        colors = CardDefaults.cardColors(Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(11.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("اختيار البوت", fontWeight = FontWeight.Bold, color = Ink)
-                Spacer(Modifier.width(8.dp))
-                Text("•", color = Orange)
-                Text("10", color = Purple, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("اختيار البوت", color = Ink, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(8.dp)); Text("•", color = Orange); Text("10", color = Purple, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
             Spacer(Modifier.height(8.dp))
             for (rowStart in 1..10 step 5) {
@@ -147,17 +144,12 @@ private fun BotSlot(number: Int, selected: Boolean, configured: Boolean, onClick
     val accent = if (selected) Blue else Border
     val bg = if (selected) Color(0xFFEAF2FF) else Color(0xFFFBFCFE)
     Column(
-        modifier
-            .height(66.dp)
-            .background(bg, RoundedCornerShape(15.dp))
-            .border(1.5.dp, accent, RoundedCornerShape(15.dp))
-            .clickable(onClick = onClick)
-            .padding(7.dp),
-        Arrangement.Center,
-        Alignment.CenterHorizontally
+        modifier.height(66.dp).background(bg, RoundedCornerShape(15.dp)).border(1.5.dp, accent, RoundedCornerShape(15.dp)).clickable(onClick = onClick).padding(7.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("${if (number < 10) "0$number" else number}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = if (selected) Blue else Ink)
-        Text(if (configured) "بوت 1" else "جاهز", fontSize = 9.sp, color = if (configured) Green else Muted)
+        Text(if (number < 10) "0$number" else "$number", color = if (selected) Blue else Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(if (configured) "بوت 1" else "جاهز", color = if (configured) Green else Muted, fontSize = 9.sp)
     }
 }
 
@@ -172,25 +164,10 @@ private fun Bot1Workspace() {
 
 @Composable
 private fun Bot1TopTabs(page: Bot1Page, onPageChange: (Bot1Page) -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(Color.White),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(20.dp), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-            BotTab(
-                title = "🤖 واجهة البوت",
-                selected = page == Bot1Page.BOT,
-                color = Blue,
-                modifier = Modifier.weight(1f)
-            ) { onPageChange(Bot1Page.BOT) }
-            BotTab(
-                title = "📊 حالة السوق",
-                selected = page == Bot1Page.MARKET,
-                color = Green,
-                modifier = Modifier.weight(1f)
-            ) { onPageChange(Bot1Page.MARKET) }
+            BotTab("🤖 واجهة البوت", page == Bot1Page.BOT, Blue, Modifier.weight(1f)) { onPageChange(Bot1Page.BOT) }
+            BotTab("📊 حالة السوق", page == Bot1Page.MARKET, Green, Modifier.weight(1f)) { onPageChange(Bot1Page.MARKET) }
         }
     }
 }
@@ -198,20 +175,8 @@ private fun Bot1TopTabs(page: Bot1Page, onPageChange: (Bot1Page) -> Unit) {
 @Composable
 private fun BotTab(title: String, selected: Boolean, color: Color, modifier: Modifier, onClick: () -> Unit) {
     val background = if (selected) color.copy(alpha = 0.12f) else Color(0xFFF8FAFC)
-    Row(
-        modifier
-            .height(48.dp)
-            .background(background, RoundedCornerShape(15.dp))
-            .border(1.5.dp, if (selected) color else Border, RoundedCornerShape(15.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        if (selected) {
-            Box(Modifier.size(7.dp).background(color, CircleShape))
-            Spacer(Modifier.width(6.dp))
-        }
+    Row(modifier.height(48.dp).background(background, RoundedCornerShape(15.dp)).border(1.5.dp, if (selected) color else Border, RoundedCornerShape(15.dp)).clickable(onClick = onClick).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        if (selected) { Box(Modifier.size(7.dp).background(color, CircleShape)); Spacer(Modifier.width(6.dp)) }
         Text(title, color = if (selected) color else Ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -232,28 +197,18 @@ private fun Bot1ControlPanel() {
     var trailing by remember { mutableStateOf("0") }
     var saved by remember { mutableStateOf(false) }
 
-    Card(
-        colors = CardDefaults.cardColors(Color.White),
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(3.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(22.dp), elevation = CardDefaults.cardElevation(defaultElevation = 3.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(15.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("بوت 1", 23.sp, FontWeight.Bold, Ink)
+                    Text("بوت 1", color = Ink, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                     Text("شبكة + مضاعفة + سلة", color = Purple, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                     Text("الإصدار 2.00", color = Muted, fontSize = 10.sp)
                 }
                 StateIndicator(enabled)
             }
-
-            Spacer(Modifier.height(12.dp))
-            DividerLine()
-            Spacer(Modifier.height(11.dp))
-            SectionTitle("إعدادات الاستراتيجية", Purple)
-            Spacer(Modifier.height(7.dp))
-
+            Spacer(Modifier.height(12.dp)); DividerLine(); Spacer(Modifier.height(11.dp))
+            SectionTitle("إعدادات الاستراتيجية", Purple); Spacer(Modifier.height(7.dp))
             EditableSetting("اللوت الابتدائي", lotStart, "حجم العقد", Green) { lotStart = it; saved = false }
             EditableSetting("مسافة الشبكة", gridStep, "نقطة", Blue) { gridStep = it; saved = false }
             EditableSetting("الحد الأقصى", maxOrders, "صفقات", Orange) { maxOrders = it; saved = false }
@@ -261,52 +216,25 @@ private fun Bot1ControlPanel() {
             EditableSetting("هدف السلة", basketTp, "دولار", Green) { basketTp = it; saved = false }
             EditableSetting("خسارة السلة", basketSl, "دولار", Red) { basketSl = it; saved = false }
             EditableSetting("الستوب المتحرك", trailing, "نقطة", Yellow) { trailing = it; saved = false }
-
-            Spacer(Modifier.height(11.dp))
-            DividerLine()
-            Spacer(Modifier.height(11.dp))
-            SectionTitle("مفاتيح الاستراتيجية", Blue)
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(11.dp)); DividerLine(); Spacer(Modifier.height(11.dp))
+            SectionTitle("مفاتيح الاستراتيجية", Blue); Spacer(Modifier.height(7.dp))
             ToggleAction("الشراء", buyEnabled, Green) { buyEnabled = !buyEnabled }
-            Spacer(Modifier.height(6.dp))
-            ToggleAction("البيع", sellEnabled, Red) { sellEnabled = !sellEnabled }
-
-            Spacer(Modifier.height(11.dp))
-            SectionTitle("تحكم البوت", Orange)
-            Spacer(Modifier.height(7.dp))
+            Spacer(Modifier.height(6.dp)); ToggleAction("البيع", sellEnabled, Red) { sellEnabled = !sellEnabled }
+            Spacer(Modifier.height(11.dp)); SectionTitle("تحكم البوت", Orange); Spacer(Modifier.height(7.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                ActionButton(if (enabled) "● يعمل" else "● متوقف", if (enabled) Green else Red, Modifier.weight(1f)) {
-                    enabled = !enabled
-                }
-                ActionButton("🔄 إعادة بناء", Blue, Modifier.weight(1f)) {
-                    rebuildRequested = !rebuildRequested
-                }
+                ActionButton(if (enabled) "● يعمل" else "● متوقف", if (enabled) Green else Red, Modifier.weight(1f)) { enabled = !enabled }
+                ActionButton("🔄 إعادة بناء", Blue, Modifier.weight(1f)) { rebuildRequested = !rebuildRequested }
             }
-            Spacer(Modifier.height(7.dp))
-            ActionButton("🔴 إغلاق صفقات البوت", Red, Modifier.fillMaxWidth()) {
-                closeRequested = !closeRequested
-            }
-
+            Spacer(Modifier.height(7.dp)); ActionButton("🔴 إغلاق صفقات البوت", Red, Modifier.fillMaxWidth()) { closeRequested = !closeRequested }
             Spacer(Modifier.height(9.dp))
-            Button(
-                onClick = { saved = true },
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(13.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Purple)
-            ) {
+            Button(onClick = { saved = true }, modifier = Modifier.fillMaxWidth().height(44.dp), shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.buttonColors(containerColor = Purple)) {
                 Text(if (saved) "✓ تم حفظ الإعدادات يدويًا" else "حفظ الإعدادات يدويًا", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
-
             if (rebuildRequested || closeRequested) {
                 Spacer(Modifier.height(7.dp))
-                Text(
-                    if (closeRequested) "تم اختيار أمر الإغلاق للمعاينة فقط." else "تم اختيار إعادة البناء للمعاينة فقط.",
-                    color = Orange,
-                    fontSize = 10.sp
-                )
+                Text(if (closeRequested) "تم اختيار أمر الإغلاق للمعاينة فقط." else "تم اختيار إعادة البناء للمعاينة فقط.", color = Orange, fontSize = 10.sp)
             }
-            Spacer(Modifier.height(10.dp))
-            InfoStrip()
+            Spacer(Modifier.height(10.dp)); InfoStrip()
         }
     }
 }
@@ -314,9 +242,8 @@ private fun Bot1ControlPanel() {
 @Composable
 private fun SectionTitle(title: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(7.dp).background(color, CircleShape))
-        Spacer(Modifier.width(7.dp))
-        Text(title, fontWeight = FontWeight.Bold, color = Ink, fontSize = 13.sp)
+        Box(Modifier.size(7.dp).background(color, CircleShape)); Spacer(Modifier.width(7.dp))
+        Text(title, color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -326,8 +253,7 @@ private fun StateIndicator(enabled: Boolean) {
     Column(horizontalAlignment = Alignment.End) {
         Text("حالة البوت", color = Muted, fontSize = 9.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(8.dp).background(color, CircleShape))
-            Spacer(Modifier.width(5.dp))
+            Box(Modifier.size(8.dp).background(color, CircleShape)); Spacer(Modifier.width(5.dp))
             Text(if (enabled) "مفعّل" else "متوقف", color = color, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
     }
@@ -336,85 +262,46 @@ private fun StateIndicator(enabled: Boolean) {
 @Composable
 private fun ToggleAction(label: String, enabled: Boolean, accent: Color, onClick: () -> Unit) {
     val bg = if (enabled) Color(0xFFF1FBF6) else Color(0xFFFFF1F2)
-    val state = if (enabled) "مفعّل" else "مغلق"
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .background(bg, RoundedCornerShape(13.dp))
-            .border(1.dp, if (enabled) accent else Red, RoundedCornerShape(13.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(Modifier.size(10.dp).background(if (enabled) accent else Red, CircleShape))
-        Spacer(Modifier.width(8.dp))
+    Row(Modifier.fillMaxWidth().background(bg, RoundedCornerShape(13.dp)).border(1.dp, if (enabled) accent else Red, RoundedCornerShape(13.dp)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(10.dp).background(if (enabled) accent else Red, CircleShape)); Spacer(Modifier.width(8.dp))
         Text(label, Modifier.weight(1f), color = Ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        Text(state, color = if (enabled) accent else Red, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Text(if (enabled) "مفعّل" else "مغلق", color = if (enabled) accent else Red, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
-private fun ActionButton(text: String, color: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(43.dp),
-        shape = RoundedCornerShape(13.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = color)
-    ) {
+private fun ActionButton(text: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Button(onClick = onClick, modifier = modifier.height(43.dp), shape = RoundedCornerShape(13.dp), colors = ButtonDefaults.buttonColors(containerColor = color)) {
         Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold)
     }
 }
 
 @Composable
 private fun EditableSetting(name: String, value: String, unit: String, accent: Color, onValueChange: (String) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(bottom = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(Modifier.size(5.dp).background(accent, CircleShape))
-        Spacer(Modifier.width(7.dp))
+    Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(5.dp).background(accent, CircleShape)); Spacer(Modifier.width(7.dp))
         Text(name, Modifier.width(108.dp), color = Color(0xFF334155), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.weight(1f).height(52.dp),
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold),
-            supportingText = { Text(unit, fontSize = 8.sp, color = Muted) }
-        )
+        OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.weight(1f).height(52.dp), singleLine = true, shape = RoundedCornerShape(12.dp), textStyle = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Bold), supportingText = { Text(unit, color = Muted, fontSize = 8.sp) })
     }
 }
 
 @Composable
-private fun DividerLine() {
-    Spacer(Modifier.fillMaxWidth().height(1.dp).background(Border))
-}
+private fun DividerLine() { Spacer(Modifier.fillMaxWidth().height(1.dp).background(Border)) }
 
 @Composable
 private fun InfoStrip() {
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFFFFF8EA), RoundedCornerShape(13.dp)).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("●", color = Yellow, fontSize = 14.sp)
-        Spacer(Modifier.width(7.dp))
+    Row(Modifier.fillMaxWidth().background(Color(0xFFFFF8EA), RoundedCornerShape(13.dp)).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("●", color = Yellow, fontSize = 14.sp); Spacer(Modifier.width(7.dp))
         Text("تحكم يدوي بالكامل. الربط مع MT5 سيأتي عبر طبقة آمنة منفصلة.", color = Color(0xFF805B12), fontSize = 10.sp)
     }
 }
 
 @Composable
 private fun EmptyBotSlotPanel(number: Int) {
-    Card(
-        colors = CardDefaults.cardColors(Color.White),
-        shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(22.dp), elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("بوت $number", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Ink)
-            Spacer(Modifier.height(6.dp))
-            Text("هذه الخانة جاهزة لإضافة بوت مستقل لاحقًا.", color = Muted, fontSize = 12.sp)
+            Text("بوت $number", color = Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(6.dp)); Text("هذه الخانة جاهزة لإضافة بوت مستقل لاحقًا.", color = Muted, fontSize = 12.sp)
         }
     }
 }
