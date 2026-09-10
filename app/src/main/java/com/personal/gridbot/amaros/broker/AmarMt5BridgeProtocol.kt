@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.broker
 
-/** B26: protocol shared by the Android client and the self-hosted MT5 bridge. */
+/** B26/B30: protocol shared by the Android client and the self-hosted MT5 bridge. */
 data class AmarBridgeConfig(
     val baseUrl: String,
     val token: String,
@@ -34,10 +34,26 @@ data class AmarMt5MarketSnapshot(
     val timestampMs: Long,
 )
 
+data class AmarMt5Candle(
+    val timestampMs: Long,
+    val open: Double,
+    val high: Double,
+    val low: Double,
+    val close: Double,
+    val tickVolume: Long,
+)
+
+data class AmarMt5CandleSeries(
+    val ok: Boolean,
+    val symbol: String,
+    val timeframe: String,
+    val items: List<AmarMt5Candle>,
+)
+
 data class AmarMt5BridgeStatus(val health: AmarMt5Health, val account: AmarMt5AccountSnapshot?)
 
-enum class AmarMt5ReadOperation { HEALTH, ACCOUNT, MARKET, POSITIONS, PENDING_ORDERS, BOT_STATUS }
-
+enum class AmarMt5ReadOperation { HEALTH, ACCOUNT, MARKET, CANDLES, POSITIONS, PENDING_ORDERS, BOT_STATUS }
+en
 enum class AmarLiveGateState { LOCKED, AUTHENTICATED_READ_ONLY, AUTHORIZED_LIVE }
 
 /** B28: execution stays blocked unless every explicit gate is satisfied. */
