@@ -3,6 +3,7 @@ package com.personal.gridbot.amaros.broker
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -19,7 +20,9 @@ class AmarMt5CommandClient(
         .build(),
     private val gson: Gson = Gson(),
 ) {
-    init { require(signingSecret.isNotBlank()) { "مفتاح توقيع الأوامر مطلوب" } }
+    init {
+        require(signingSecret.isNotBlank()) { "مفتاح توقيع الأوامر مطلوب" }
+    }
 
     suspend fun submit(
         accountLogin: Long,
@@ -33,6 +36,10 @@ class AmarMt5CommandClient(
         require(symbol.isNotBlank())
         require(ttlMs in 1_000L..30_000L)
         require(command.requestId.isNotBlank())
+        require(command.symbol == symbol) { "رمز الأمر لا يطابق رمز الغلاف" }
+        require(command.quantity.isFinite() && command.quantity > 0.0) { "حجم الأمر غير صالح" }
+        require(command.price == null || (command.price.isFinite() && command.price > 0.0)) { "سعر الأمر غير صالح" }
+
         val now = System.currentTimeMillis()
         val envelopeWithoutSignature = AmarCommandEnvelope(
             requestId = command.requestId,
@@ -47,23 +54,30 @@ class AmarMt5CommandClient(
             signature = "pending",
         )
         val envelope = envelopeWithoutSignature.copy(
-            signature = AmarCommandSigner.hmacSha256(signingSecret, AmarCommandSigner.canonical(envelopeWithoutSignature))
+            signature = AmarCommandSigner.hmacSha256(
+                signingSecret,
+                AmarCommandSigner.canonical(envelopeWithoutSignature),
+            ),
         )
-        val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaTypeCompat())
+        val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaType())
         val request = Request.Builder()
             .url(config.baseUrl.trimEnd('/') + "/commands")
             .header("Authorization", "Bearer ${config.token}")
             .header("X-AMAR-Command-Version", "1")
             .post(body)
             .build()
+
         httpClient.newCall(request).execute().use { response ->
             val raw = response.body?.string().orEmpty()
-            if (raw.isBlank()) return@withContext AmarBrokerResult(false, false, command.requestId, "استجابة الأمر فارغة")
-            if (!response.isSuccessful) return@withContext AmarBrokerResult(false, false, command.requestId, "تم رفض الأمر: HTTP ${response.code}")
-            gson.fromJson(raw, AmarBrokerResult::class.java)
-                ?: AmarBrokerResult(false, false, command.requestId, "استجابة الأمر غير صالحة")
+            if (raw.isBlank()) {
+                return@withContext AmarBrokerResult(false, false, command.requestId, "استجابة الأمر فارغة")
+            }
+            val parsed = runCatching { gson.fromJson(raw, AmarBrokerResult::class.java) }.getOrNull()
+            if (parsed != null) return@withContext parsed
+            if (!response.isSuccessful) {
+                return@withContext AmarBrokerResult(false, false, command.requestId, "تم رفض الأمر: HTTP ${response.code}")
+            }
+            AmarBrokerResult(false, false, command.requestId, "استجابة الأمر غير صالحة")
         }
     }
-
-    private fun String.toMediaTypeCompat() = okhttp3.MediaType.Companion.parse(this)
 }
