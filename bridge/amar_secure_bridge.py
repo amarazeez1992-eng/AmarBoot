@@ -1,13 +1,12 @@
 """AMAR secure bridge entrypoint.
 
-Extends the hardened read-only bridge with a /commands endpoint. Live execution
-is FAIL-CLOSED and remains disabled unless AMAR_LIVE_EXECUTION=1 is explicitly
-set on the MT5 host. Every command is authenticated, HMAC signed, time bounded,
-replay protected, account scoped and BOT-MAGIC scoped before mt5.order_send().
+Extends the hardened read-only bridge with /commands. Live execution is
+FAIL-CLOSED and disabled unless AMAR_LIVE_EXECUTION=1 is explicitly enabled.
+Every command is authenticated, HMAC signed, time bounded, replay protected,
+account scoped, BOT-MAGIC scoped and symbol allow-listed before MT5 execution.
 """
 import json
 import os
-import time
 
 import MetaTrader5 as mt5
 
@@ -15,6 +14,7 @@ from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, js
 from amar_command_channel import validate
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
+ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
 
 
 def execute_market_command(payload):
@@ -26,6 +26,8 @@ def execute_market_command(payload):
     if account is None:
         return False, False, payload.get("requestId", ""), "الحساب غير متاح"
     symbol = str(payload["symbol"])
+    if not ALLOWED_SYMBOLS or symbol not in ALLOWED_SYMBOLS:
+        return False, False, payload["requestId"], "الرمز غير مصرح به"
     command = payload["command"]
     side = str(command.get("side", "")).upper()
     quantity = float(command.get("quantity", 0.0))
@@ -70,9 +72,9 @@ def execute_market_command(payload):
 
 class SecureHandler(Handler):
     def do_POST(self):
-        if not self.path.split("?", 1)[0] == "/commands":
+        if self.path.split("?", 1)[0] != "/commands":
             return json_response(self, 404, {"ok": False, "message": "not found"})
-        if not self.headers.get("Authorization", "").strip() == f"Bearer {TOKEN}" or not TOKEN:
+        if not TOKEN or self.headers.get("Authorization", "").strip() != f"Bearer {TOKEN}":
             return json_response(self, 401, {"ok": False, "accepted": False, "message": "unauthorized"})
         length = int(self.headers.get("Content-Length", "0"))
         if length <= 0 or length > 32_768:
@@ -81,7 +83,10 @@ class SecureHandler(Handler):
             payload = json.loads(self.rfile.read(length).decode("utf-8"))
             account = mt5.account_info() if mt5_ready() else None
             expected_login = account.login if account else -1
-            valid, message = validate(payload, expected_login, BOT_MAGIC, str(payload.get("symbol", "")))
+            symbol = str(payload.get("symbol", ""))
+            if not ALLOWED_SYMBOLS or symbol not in ALLOWED_SYMBOLS:
+                return json_response(self, 403, {"ok": False, "accepted": False, "requestId": payload.get("requestId", ""), "message": "الرمز غير مصرح به"})
+            valid, message = validate(payload, expected_login, BOT_MAGIC, symbol)
             if not valid:
                 return json_response(self, 403, {"ok": False, "accepted": False, "requestId": payload.get("requestId", ""), "message": message})
             executed, accepted, request_id, result_message = execute_market_command(payload)
@@ -89,8 +94,8 @@ class SecureHandler(Handler):
                 "accepted": accepted, "executed": executed,
                 "requestId": request_id, "message": result_message,
             })
-        except (ValueError, TypeError, json.JSONDecodeError) as exc:
-            return json_response(self, 400, {"ok": False, "accepted": False, "message": f"invalid command: {exc}"})
+        except (ValueError, TypeError, json.JSONDecodeError):
+            return json_response(self, 400, {"ok": False, "accepted": False, "message": "invalid command"})
         except Exception as exc:
             return json_response(self, 500, {"ok": False, "accepted": False, "message": f"command failure: {type(exc).__name__}"})
 
@@ -100,8 +105,11 @@ def main():
         raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
     if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
         raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
-    server = __import__("http.server", fromlist=["ThreadingHTTPServer"]).ThreadingHTTPServer((HOST, PORT), SecureHandler)
+    if not ALLOWED_SYMBOLS:
+        raise SystemExit("AMAR_ALLOWED_SYMBOLS is required")
+    from http.server import ThreadingHTTPServer
     import ssl
+    server = ThreadingHTTPServer((HOST, PORT), SecureHandler)
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(certfile=CERT, keyfile=KEY)
