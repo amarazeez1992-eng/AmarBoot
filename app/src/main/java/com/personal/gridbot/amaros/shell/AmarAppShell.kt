@@ -47,6 +47,7 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
+import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
 
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
@@ -130,6 +131,7 @@ private fun AmarRuntimeHealthStatus.arabicLabel(): String = when (this) {
 @Composable private fun AmarRoomContent(room: AmarRoom, onOpenLegacyGrid: () -> Unit) = when (room) {
     AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
     AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
+    AmarRoom.ACCOUNTS -> AmarAccountsScreen()
     AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
     else -> AmarRoomWorkspace(room)
 }
