@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
@@ -99,7 +101,7 @@ fun AmarTradingChartScreen(symbol: String = "الذهب", provider: AmarMarketDa
             history.takeLast(30).forEachIndexed { index, deal -> val color = if (deal.profit >= 0.0) Mt5Colors.target else Mt5Colors.stop; drawCircle(color, 3.8f, Offset((chartRight - (index + 1) * 8f).coerceAtLeast(4f), y(deal.price))) }
             if (crosshair && pointerX != null && pointerY != null) { drawLine(Mt5Colors.crosshair, Offset(pointerX!!, 0f), Offset(pointerX!!, chartHeight), 1f); drawLine(Mt5Colors.crosshair, Offset(0f, pointerY!!), Offset(chartRight, pointerY!!), 1f) }
             val paint = Paint().apply { textSize = 24f; color = android.graphics.Color.LTGRAY; isAntiAlias = true }
-            for (i in 0..6) { val price = maxPrice - (range * i / 6.0); drawContext.canvas.nativeCanvas.drawText(formatPrice(price), chartRight + 6f, chartHeight * i / 6f + 4f, paint) }
+            drawIntoCanvas { canvas -> for (i in 0..6) { val price = maxPrice - (range * i / 6.0); canvas.nativeCanvas.drawText(formatPrice(price), chartRight + 6f, chartHeight * i / 6f + 4f, paint) } }
         }
     }
 }
