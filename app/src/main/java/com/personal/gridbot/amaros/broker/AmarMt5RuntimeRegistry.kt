@@ -3,11 +3,7 @@ package com.personal.gridbot.amaros.broker
 import com.personal.gridbot.amaros.chart.AmarMarketDataProvider
 import java.util.concurrent.atomic.AtomicReference
 
-/**
- * Runtime wiring point for the real MT5 bridge.
- * Empty by default: the application therefore remains read-only/offline until
- * an authenticated bridge session is explicitly configured by the host layer.
- */
+/** Explicit MT5 runtime wiring point; empty by default and therefore fail-closed. */
 object AmarMt5RuntimeRegistry {
     data class Runtime(
         val client: AmarMt5BridgeClient,
@@ -19,17 +15,13 @@ object AmarMt5RuntimeRegistry {
     private val current = AtomicReference<Runtime?>(null)
 
     fun install(config: AmarBridgeConfig): Runtime {
-        val runtime = Runtime(
-            client = AmarMt5BridgeClient(config),
-            marketData = AmarMt5LiveMarketDataProvider(AmarMt5BridgeClient(config)),
-        )
+        val client = AmarMt5BridgeClient(config)
+        val runtime = Runtime(client, AmarMt5LiveMarketDataProvider(client))
         current.set(runtime)
         return runtime
     }
 
     fun current(): Runtime? = current.get()
-
     fun provider(): AmarMarketDataProvider? = current.get()?.provider
-
     fun clear() { current.set(null) }
 }
