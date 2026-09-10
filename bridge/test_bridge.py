@@ -23,6 +23,12 @@ class BridgeContractTests(unittest.TestCase):
         items = [SimpleNamespace(symbol="XAUUSD", magic=1)]
         self.assertEqual(items, bridge.selected_items(items, {}))
 
+    def test_invalid_magic_is_rejected(self):
+        with self.assertRaises(ValueError):
+            bridge.parse_magic({"magic": ["not-a-number"]})
+        with self.assertRaises(ValueError):
+            bridge.parse_magic({"magic": ["-1"]})
+
     def test_position_mapping_is_safe_and_complete(self):
         position = SimpleNamespace(
             ticket=1, symbol="XAUUSD", type=0, volume=0.01,
