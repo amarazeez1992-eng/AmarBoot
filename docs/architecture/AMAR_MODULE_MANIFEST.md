@@ -61,8 +61,8 @@
 - لا يوجد broker/network execution.
 
 ## B11 — Event / State Expansion — مكتمل Demo
-- `AmarEventBus` أصبح typed ويغطي بدء الدورة واكتمالها وفشلها وتغير صحة runtime، مع الإبقاء على أحداث الغرف والنظام والإيقاف الطارئ.
-- `AmarRuntimeController.RuntimeState` أصبح يحمل `health` إلى جانب Telemetry/Context/Decision/Risk/Execution.
+- `AmarEventBus` typed ويغطي بدء الدورة واكتمالها وفشلها وتغير صحة runtime، مع الإبقاء على أحداث الغرف والنظام والإيقاف الطارئ.
+- `RuntimeState` يحمل health إلى جانب Telemetry/Context/Decision/Risk/Execution.
 - أحداث runtime تحمل بيانات تشغيلية قابلة للتدقيق مثل cycle number، duration، decision، confidence، risk gate، وexecution mode.
 - لا يمنح B11 أي صلاحية تنفيذ؛ الأحداث مراقبة فقط.
 
@@ -73,13 +73,27 @@
 - runtime لا يتوقف بالكامل بسبب استثناء دورة واحدة؛ يتم احتواء الخطأ وتحويله إلى حالة مراقبة قابلة للرصد.
 - الواجهة تعرض صحة runtime فقط ولا تتخذ قرارات تداول.
 
+## B13 — Memory Foundation — مكتمل Demo
+- `AmarMemoryRecord` عقد ذاكرة immutable وnamespaced.
+- `AmarMemoryRepository` حد التخزين القابل للاستبدال.
+- `InMemoryAmarMemoryRepository` تنفيذ deterministic آمن للاختبار وDemo.
+- `AmarMemoryService` طبقة وصول تتحقق من البيانات وتطبع tags/importance.
+- لا يتم ربط B13 مباشرة بواجهة المستخدم أو التنفيذ التداولي.
+
+## B14 — Knowledge Foundation — مكتمل Demo
+- `AmarKnowledgeItem` عقد معرفة immutable مع source/version/confidence/tags.
+- `AmarKnowledgeRepository` حد التخزين والبحث القابل للاستبدال.
+- `InMemoryAmarKnowledgeRepository` بحث deterministic بسيط للـ Demo والاختبار.
+- `AmarKnowledgeService` طبقة نشر/استرجاع موحدة.
+- المعرفة منفصلة عن ذاكرة runtime وعن قرار التداول.
+
 ## المسار الرسمي
-`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → B9 Runtime → B10 Event Runtime → B11 Event/State → B12 Monitoring → UI/Services`
+`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → B9 Runtime → B10 Event Runtime → B11 Event/State → B12 Monitoring → B13 Memory → B14 Knowledge → UI/Services`
 
 ## حالة الإكمال
-**B1 إلى B12: مكتمل كطبقة تأسيس وتشغيل Demo قابلة للبناء والتوسع.**
+**B1 إلى B14: مكتمل كطبقة تأسيس وتشغيل Demo قابلة للبناء والتوسع.**
 
-المقصود بـ "مكتمل" هنا هو اكتمال العقود والتدفق والتشغيل التجريبي الآمن. لا يعني ذلك تفعيل التداول الحقيقي أو اكتمال MT5/Broker Adapter؛ ذلك مرحلة لاحقة منفصلة.
+المقصود بـ "مكتمل" هو اكتمال العقود والتدفق والتشغيل التجريبي الآمن. لا يعني تفعيل التداول الحقيقي أو اكتمال MT5/Broker Adapter؛ ذلك مرحلة لاحقة منفصلة.
 
 ## حدود المرحلة
-لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن إعادة تصميم الواجهة مستقبلًا دون كسر B5-B12.
+لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن تطوير التخزين الدائم، الفهرسة، والاسترجاع المتقدم لاحقًا خلف حدود B13/B14 دون كسر المستهلكين.
