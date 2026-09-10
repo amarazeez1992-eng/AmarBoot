@@ -1,0 +1,27 @@
+name: Validate MT5 Bridge
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "bridge/**"
+      - ".github/workflows/bridge-validation.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Compile bridge
+        run: python -m py_compile bridge/amar_mt5_bridge.py bridge/test_bridge.py
+
+      - name: Run bridge contract tests
+        run: python -m unittest discover -s bridge -p 'test_*.py' -v
