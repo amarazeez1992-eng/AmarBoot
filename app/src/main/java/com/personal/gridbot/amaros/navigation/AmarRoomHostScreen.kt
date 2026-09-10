@@ -24,8 +24,7 @@ import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 @Composable
 fun AmarRoomHostScreen(
     room: AmarRoom,
-    onBackHome: () -> Unit,
-    onOpenLegacyGrid: () -> Unit = {}
+    onBackHome: () -> Unit
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -52,14 +51,5 @@ fun AmarRoomHostScreen(
                 else -> AmarRoomWorkspace(room)
             }
         }
-    }
-}
-
-@Composable
-private fun LegacyGridDestination(onOpenLegacyGrid: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("البوت والشبكة", style = MaterialTheme.typography.headlineSmall)
-        Text("واجهة البوت الحالية محفوظة كجزء مستقل، ويمكن فتحها دون تغيير محرك التداول.")
-        Button(onClick = onOpenLegacyGrid) { Text("فتح واجهة الشبكة الحالية") }
     }
 }
