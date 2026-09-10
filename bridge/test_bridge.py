@@ -40,6 +40,17 @@ class BridgeContractTests(unittest.TestCase):
         self.assertEqual(20260908, mapped["magic"])
         self.assertEqual(2501.0, mapped["priceCurrent"])
 
+    def test_timeframe_contract_contains_required_bot1_frames(self):
+        for name in ("H4", "H1", "M30", "M15", "M5", "M1"):
+            self.assertIn(name, bridge.TIMEFRAMES)
+
+    def test_candle_mapping_uses_milliseconds(self):
+        candle = SimpleNamespace(time=1000, open=2500.0, high=2510.0, low=2495.0, close=2505.0, tick_volume=123)
+        mapped = bridge.candle_to_dict(candle)
+        self.assertEqual(1_000_000, mapped["timestampMs"])
+        self.assertEqual(2505.0, mapped["close"])
+        self.assertEqual(123, mapped["tickVolume"])
+
 
 if __name__ == "__main__":
     unittest.main()
