@@ -1,10 +1,11 @@
 package com.personal.gridbot.amaros.broker
 
+import java.math.BigDecimal
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** B31: immutable command envelope. The bridge must validate every field independently. */
+/** B31: immutable command envelope. Every field is authenticated and scoped. */
 data class AmarCommandEnvelope(
     val requestId: String = UUID.randomUUID().toString(),
     val idempotencyKey: String,
@@ -29,12 +30,16 @@ data class AmarCommandEnvelope(
 }
 
 object AmarCommandSigner {
+    /** Cross-language canonical decimal form; Python bridge uses Decimal to match it. */
+    private fun decimal(value: Double): String =
+        BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
+
     fun canonical(envelope: AmarCommandEnvelope): String = listOf(
         envelope.requestId, envelope.idempotencyKey, envelope.nonce,
-        envelope.issuedAtMs, envelope.expiresAtMs, envelope.accountLogin,
-        envelope.botMagic, envelope.symbol,
+        envelope.issuedAtMs.toString(), envelope.expiresAtMs.toString(),
+        envelope.accountLogin.toString(), envelope.botMagic.toString(), envelope.symbol,
         envelope.command.requestId, envelope.command.side.name,
-        envelope.command.quantity, envelope.command.price ?: "",
+        decimal(envelope.command.quantity), envelope.command.price?.let(::decimal).orEmpty(),
     ).joinToString("|")
 
     fun hmacSha256(secret: String, value: String): String {
