@@ -47,13 +47,26 @@
 - `AmarFoundationCycle` يربط B5 → B6 → B7 → B8 في دورة واحدة قابلة للاستهلاك من الواجهة والخدمات.
 - لا يوجد Broker Adapter أو MT5 execution في هذه المرحلة.
 
+## B9 — Intelligence Runtime Integration — مكتمل Demo
+- `AmarRuntimeController` يملك دورة B1-B8 ويعرض أحدث Telemetry/Context/Decision/Risk/Execution كـ `StateFlow`.
+- مصدر التشغيل الافتراضي `DemoDataProvider` فقط.
+- لا يملك B9 صلاحية تنفيذ تداول حقيقي.
+- أي واجهة مستقبلية تستطيع استهلاك الحالة دون معرفة تفاصيل B5-B8.
+
+## B10 — Demo Event Runtime — مكتمل Demo
+- `AmarRuntimeTicker` يشغل دورة B9 بفاصل مضبوط وقابل للتغيير.
+- كل دورة تنشر `AmarEvent.SystemMessage` عبر `AmarEventBus`.
+- الإيقاف والإعادة آمنان عبر `Job` واحد فقط.
+- الحد الأدنى للفاصل 250ms لمنع حلقات التشغيل غير المنضبطة.
+- لا يوجد broker/network execution.
+
 ## المسار الرسمي
-`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → UI/Services`
+`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → B9 Runtime → B10 Event Runtime → UI/Services`
 
 ## حالة الإكمال
-**B1 إلى B8: مكتمل كطبقة تأسيس Demo قابلة للبناء والتوسع.**
+**B1 إلى B10: مكتمل كطبقة تأسيس وتشغيل Demo قابلة للبناء والتوسع.**
 
-المقصود بـ "مكتمل" هنا هو اكتمال العقود، الفصل المعماري، تدفق البيانات، التحليل، القرار، بوابات السلامة، والتكامل البرمجي. لا يعني ذلك تفعيل التداول الحقيقي أو اكتمال MT5/Broker Adapter؛ ذلك مرحلة لاحقة منفصلة.
+المقصود بـ "مكتمل" هنا هو اكتمال العقود والتدفق والتشغيل التجريبي الآمن. لا يعني ذلك تفعيل التداول الحقيقي أو اكتمال MT5/Broker Adapter؛ ذلك مرحلة لاحقة منفصلة.
 
 ## حدود المرحلة
-لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن إعادة تصميم الواجهة مستقبلًا دون كسر B5-B8.
+لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن إعادة تصميم الواجهة مستقبلًا دون كسر B5-B10.
