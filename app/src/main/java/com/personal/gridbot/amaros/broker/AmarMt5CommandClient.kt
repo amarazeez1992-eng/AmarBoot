@@ -6,7 +6,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -35,7 +34,7 @@ class AmarMt5CommandClient(
         require(ttlMs in 1_000L..30_000L)
         require(command.requestId.isNotBlank())
         val now = System.currentTimeMillis()
-        val envelope = AmarCommandEnvelope(
+        val envelopeWithoutSignature = AmarCommandEnvelope(
             requestId = command.requestId,
             idempotencyKey = UUID.randomUUID().toString(),
             nonce = UUID.randomUUID().toString(),
@@ -45,7 +44,10 @@ class AmarMt5CommandClient(
             botMagic = botMagic,
             symbol = symbol,
             command = command,
-            signature = AmarCommandSigner.sha256("$signingSecret|${command.requestId}|$symbol|$now"),
+            signature = "pending",
+        )
+        val envelope = envelopeWithoutSignature.copy(
+            signature = AmarCommandSigner.hmacSha256(signingSecret, AmarCommandSigner.canonical(envelopeWithoutSignature))
         )
         val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaTypeCompat())
         val request = Request.Builder()
