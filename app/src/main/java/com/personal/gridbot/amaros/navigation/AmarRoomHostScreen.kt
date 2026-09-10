@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.bots.Bot1PremiumScreen
+import com.personal.gridbot.amaros.bots.Bot1PremiumScreenV2
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
@@ -34,28 +34,18 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarTh
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("عمار", style = MaterialTheme.typography.headlineSmall)
-                    Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium)
-                }
+                Column(modifier = Modifier.weight(1f)) { Text("عمار", style = MaterialTheme.typography.headlineSmall); Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium) }
                 Button(onClick = onBackHome) { Text("الرئيسية") }
             }
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                AmarRoom.CHART -> {
-                    val runtime = AmarMt5RuntimeRegistry.current()
-                    if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
-                    else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
-                }
+                AmarRoom.CHART -> { val runtime = AmarMt5RuntimeRegistry.current(); if (runtime == null) AmarTradingChartScreen(symbol = "الذهب") else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData) }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
                 AmarRoom.SETTINGS -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }
-                        Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") }
-                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }; Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") } }
                     if (settingsMode == 0) AmarAppearanceScreen(themeMode, onThemeModeChange) else AmarDeveloperOptionsScreen()
                 }
-                AmarRoom.BOT_LAB -> Bot1PremiumScreen()
+                AmarRoom.BOT_LAB -> Bot1PremiumScreenV2()
                 else -> AmarRoomWorkspace(room)
             }
         }
