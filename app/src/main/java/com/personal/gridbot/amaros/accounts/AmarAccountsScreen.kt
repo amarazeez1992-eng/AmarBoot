@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExposedDropdownMenu
@@ -85,8 +86,7 @@ fun AmarAccountsScreen() {
             }
         }
         item { Text("الحسابات المحفوظة: ${accounts.size}") }
-        items(accounts.size) { index ->
-            val account = accounts[index]
+        items(accounts, key = { it.id }) { account ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(account.brokerName)
