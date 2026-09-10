@@ -55,14 +55,22 @@ def mt5_ready():
     return bool(mt5.initialize())
 
 
-def query(handler):
-    return parse_qs(urlparse(handler.path).query, keep_blank_values=False)
+def parse_magic(params):
+    value = params.get("magic", [None])[0]
+    if value is None or value == "":
+        return None
+    try:
+        magic = int(value)
+    except ValueError:
+        raise ValueError("magic must be an integer")
+    if magic < 0:
+        raise ValueError("magic must be non-negative")
+    return magic
 
 
 def selected_items(items, params):
     symbol = params.get("symbol", [None])[0]
-    magic_text = params.get("magic", [None])[0]
-    magic = int(magic_text) if magic_text is not None and magic_text.isdigit() else None
+    magic = parse_magic(params)
     if symbol is None and magic is None:
         return list(items)
     return [x for x in items
@@ -102,6 +110,7 @@ def order_to_dict(x):
 
 
 def bot_status(params):
+    magic = parse_magic(params)
     if not mt5_ready():
         return {"ok": False, "available": False, "message": "MT5 unavailable"}
     positions = selected_items(mt5.positions_get() or (), params)
@@ -109,7 +118,7 @@ def bot_status(params):
     return {
         "ok": True,
         "available": True,
-        "magic": int(params.get("magic", [BOT_MAGIC])[0]),
+        "magic": BOT_MAGIC if magic is None else magic,
         "symbol": params.get("symbol", [None])[0],
         "positions": len(positions),
         "pendingOrders": len(orders),
@@ -131,6 +140,11 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         params = parse_qs(parsed.query, keep_blank_values=False)
+
+        try:
+            parse_magic(params)
+        except ValueError as exc:
+            return json_response(self, 400, {"ok": False, "message": str(exc)})
 
         if path == "/health":
             connected = bool(mt5 and mt5.terminal_info() is not None)
@@ -195,7 +209,6 @@ class Handler(BaseHTTPRequestHandler):
         return json_response(self, 404, {"ok": False, "message": "not found"})
 
     def do_POST(self):
-        # B28: intentionally no execution endpoint.
         return json_response(self, 403, {
             "ok": False, "accepted": False,
             "message": "live execution is locked; read-only bridge only",
