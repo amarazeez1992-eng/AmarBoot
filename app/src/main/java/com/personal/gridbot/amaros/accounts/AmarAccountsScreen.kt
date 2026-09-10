@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.accounts
 
-import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +29,7 @@ import java.util.UUID
 fun AmarAccountsScreen() {
     val context = LocalContext.current
     val vault = remember { AmarAccountVault(context) }
+    val repository = remember { AmarAccountRepository(context) }
     var brokerName by remember { mutableStateOf("") }
     var server by remember { mutableStateOf("") }
     var login by remember { mutableStateOf("") }
@@ -36,6 +37,7 @@ fun AmarAccountsScreen() {
     var accountType by remember { mutableStateOf(AccountType.DEMO) }
     var expanded by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
+    var accounts by remember { mutableStateOf(repository.list()) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -43,22 +45,16 @@ fun AmarAccountsScreen() {
     ) {
         item {
             Text("حسابات التداول")
-            Text("إضافة الحساب مصممة للربط الحقيقي لاحقاً عبر موصل الوسيط أو منصة التداول.")
+            Text("هذه الطبقة تحفظ تعريف الحساب محلياً، وتحفظ كلمة المرور مشفرة داخل مخزن مفاتيح أندرويد.")
         }
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedTextField(
-                        value = brokerName,
-                        onValueChange = { brokerName = it },
-                        label = { Text("اسم الوسيط") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    OutlinedTextField(brokerName, { brokerName = it }, label = { Text("اسم الوسيط") }, modifier = Modifier.fillMaxWidth())
                     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                         OutlinedTextField(
                             value = if (accountType == AccountType.REAL) "حقيقي" else "تجريبي",
-                            onValueChange = {},
-                            readOnly = true,
+                            onValueChange = {}, readOnly = true,
                             label = { Text("نوع الحساب") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
@@ -68,47 +64,39 @@ fun AmarAccountsScreen() {
                             DropdownMenuItem(text = { Text("حقيقي") }, onClick = { accountType = AccountType.REAL; expanded = false })
                         }
                     }
-                    OutlinedTextField(
-                        value = server,
-                        onValueChange = { server = it },
-                        label = { Text("خادم الحساب") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = login,
-                        onValueChange = { login = it },
-                        label = { Text("رقم الدخول") },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("كلمة المرور") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    OutlinedTextField(server, { server = it }, label = { Text("خادم الحساب") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(login, { login = it }, label = { Text("رقم الدخول") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(password, { password = it }, label = { Text("كلمة المرور") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
                     Button(
                         onClick = {
                             val accountId = UUID.randomUUID().toString()
-                            val chars = password.toCharArray()
-                            vault.savePassword(accountId, chars)
+                            val credentialAlias = "حساب_$accountId"
+                            repository.save(AmarAccountProfile(accountId, brokerName, accountType, server, login, credentialAlias))
+                            vault.savePassword(accountId, password.toCharArray())
+                            accounts = repository.list()
                             password = ""
-                            message = "تم تجهيز بيانات الحساب بشكل مشفر للحساب: $accountId"
+                            message = "تم حفظ الحساب بأمان. لم يتم تفعيل الاتصال أو التداول الحقيقي."
                         },
                         enabled = brokerName.isNotBlank() && server.isNotBlank() && login.isNotBlank() && password.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("حفظ الحساب بأمان")
-                    }
+                    ) { Text("حفظ الحساب بأمان") }
                     if (message.isNotBlank()) Text(message)
                 }
             }
         }
+        item { Text("الحسابات المحفوظة: ${accounts.size}") }
+        items(accounts.size) { index ->
+            val account = accounts[index]
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(account.brokerName)
+                    Text("${account.login} • ${if (account.accountType == AccountType.REAL) "حقيقي" else "تجريبي"}")
+                    Text(if (vault.hasPassword(account.id)) "بيانات الدخول محمية" else "بيانات الدخول غير مكتملة")
+                }
+            }
+        }
         item {
-            Text("حماية مهمة: التطبيق لا يرسل بيانات الحساب إلى أي وسيط من هذه الشاشة وحدها، ولا يفعّل التداول الحقيقي تلقائياً.")
+            Text("حماية مهمة: وجود حساب حقيقي في التطبيق لا يعني تفعيل التنفيذ. التفعيل يحتاج موصل وسيط حقيقي، مصادقة، صلاحيات، وبوابة تداول مباشرة منفصلة.")
         }
     }
 }
-
-@Suppress("UNUSED_PARAMETER")
-private fun vaultFor(context: Context) = AmarAccountVault(context)
