@@ -17,6 +17,7 @@ enum class AmarRoom(
     TESTING("الاختبار والمحاكاة", "🧪"),
     TOOLS("الأدوات", "🧰"),
     ALERTS("التنبيهات", "🔔"),
-    LIBRARY("مكتبة AMAR", "🧩"),
+    LIBRARY("مكتبة عمار", "🧩"),
+    ACCOUNTS("حسابات التداول", "👤"),
     SETTINGS("الإعدادات", "⚙️")
 }
