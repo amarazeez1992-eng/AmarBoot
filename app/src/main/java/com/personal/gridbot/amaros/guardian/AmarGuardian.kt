@@ -17,8 +17,7 @@ class AmarGuardian(private val clock: () -> Long = { System.currentTimeMillis() 
         if (state.health.consecutiveFailures > 0) reasons += "runtime_failures_present"
         if (state.risk?.allowed != true) reasons += "risk_gate_blocked"
         if (state.decision?.executable == true) reasons += "execution_proposal_requires_boundary"
-        // DEMO is intentionally guarded; Guardian never enables live execution.
         reasons += "demo_execution_guarded"
-        return AmarGuardianDecision(allowed = reasons.size == 1, reasons = reasons, evaluatedAtEpochMs = clock())
+        return AmarGuardianDecision(allowed = false, reasons = reasons, evaluatedAtEpochMs = clock())
     }
 }
