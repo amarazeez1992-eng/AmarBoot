@@ -2,6 +2,7 @@ package com.personal.gridbot.amaros.accounts
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,10 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,7 +33,6 @@ fun AmarAccountsScreen() {
     var login by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var accountType by remember { mutableStateOf(AccountType.DEMO) }
-    var expanded by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var accounts by remember { mutableStateOf(repository.list()) }
 
@@ -52,18 +48,10 @@ fun AmarAccountsScreen() {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(brokerName, { brokerName = it }, label = { Text("اسم الوسيط") }, modifier = Modifier.fillMaxWidth())
-                    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-                        OutlinedTextField(
-                            value = if (accountType == AccountType.REAL) "حقيقي" else "تجريبي",
-                            onValueChange = {}, readOnly = true,
-                            label = { Text("نوع الحساب") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        )
-                        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            DropdownMenuItem(text = { Text("تجريبي") }, onClick = { accountType = AccountType.DEMO; expanded = false })
-                            DropdownMenuItem(text = { Text("حقيقي") }, onClick = { accountType = AccountType.REAL; expanded = false })
-                        }
+                    Text("نوع الحساب")
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { accountType = AccountType.DEMO }, modifier = Modifier.weight(1f), enabled = accountType != AccountType.DEMO) { Text("تجريبي") }
+                        Button(onClick = { accountType = AccountType.REAL }, modifier = Modifier.weight(1f), enabled = accountType != AccountType.REAL) { Text("حقيقي") }
                     }
                     OutlinedTextField(server, { server = it }, label = { Text("خادم الحساب") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(login, { login = it }, label = { Text("رقم الدخول") }, modifier = Modifier.fillMaxWidth())
