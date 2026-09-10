@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
+import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
 import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
@@ -47,7 +49,6 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
-import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
 
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
@@ -132,6 +133,7 @@ private fun AmarRuntimeHealthStatus.arabicLabel(): String = when (this) {
     AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
     AmarRoom.BOT_LAB -> LegacyGridEntry(onOpenLegacyGrid)
     AmarRoom.ACCOUNTS -> AmarAccountsScreen()
+    AmarRoom.CHART -> AmarTradingChartScreen()
     AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
     else -> AmarRoomWorkspace(room)
 }
