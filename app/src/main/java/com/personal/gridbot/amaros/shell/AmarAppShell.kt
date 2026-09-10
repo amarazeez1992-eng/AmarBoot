@@ -18,9 +18,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +35,8 @@ import androidx.compose.material3.Text
 import com.personal.gridbot.amaros.core.AmarAppState
 import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
+import com.personal.gridbot.amaros.core.AmarRuntimeController
+import com.personal.gridbot.amaros.core.AmarRuntimeTicker
 import com.personal.gridbot.amaros.design.AmarLivingButton
 import com.personal.gridbot.amaros.design.AmarLivingGlass
 import com.personal.gridbot.amaros.design.AmarLivingMetric
@@ -40,12 +45,23 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/** AMAR B4: living command shell. */
+/** AMAR B4 shell with the B9/B10 demo runtime connected as a read-only data source. */
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
     var state by remember { mutableStateOf(initialState) }
+    val runtimeController = remember { AmarRuntimeController() }
+    val runtimeState by runtimeController.state.collectAsState()
+    val runtimeTicker = remember { AmarRuntimeTicker(runtimeController) }
+    val runtimeScope = rememberCoroutineScope()
+
+    DisposableEffect(runtimeTicker, runtimeScope) {
+        runtimeTicker.start(runtimeScope)
+        onDispose { runtimeTicker.stop() }
+    }
+
     val transition = rememberInfiniteTransition(label = "shell-depth")
     val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "shell-phase")
+    val telemetry = runtimeState.telemetry
 
     AmarLivingVisualEngine {
         Row(Modifier.fillMaxSize().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -94,9 +110,9 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
                     }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    AmarLivingMetric("السوق", "XAUUSD", "حالة مباشرة", Color(0xFF35D6FF), Modifier.weight(1f))
-                    AmarLivingMetric("النظام", "نشط", "المحرك البصري يعمل", Color(0xFF39E58C), Modifier.weight(1f))
-                    AmarLivingMetric("الوضع", "DEMO", "بدون تداول حقيقي", Color(0xFFFFC857), Modifier.weight(1f))
+                    AmarLivingMetric("السوق", telemetry.symbol, "${telemetry.timeframe} • ${telemetry.bid}", Color(0xFF35D6FF), Modifier.weight(1f))
+                    AmarLivingMetric("النظام", "حي #${runtimeState.cycleNumber}", "DEMO • ${telemetry.spread}", Color(0xFF39E58C), Modifier.weight(1f))
+                    AmarLivingMetric("الوضع", if (telemetry.demo) "DEMO" else "LIVE", "بدون تداول حقيقي", Color(0xFFFFC857), Modifier.weight(1f))
                 }
                 Box(Modifier.fillMaxSize()) { AmarRoomContent(state.selectedRoom, onOpenLegacyGrid) }
             }
