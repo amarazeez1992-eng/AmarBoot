@@ -37,6 +37,7 @@ import com.personal.gridbot.amaros.core.AmarEvent
 import com.personal.gridbot.amaros.core.AmarEventBus
 import com.personal.gridbot.amaros.core.AmarRuntimeController
 import com.personal.gridbot.amaros.core.AmarRuntimeTicker
+import com.personal.gridbot.amaros.design.AmarAnalogClock
 import com.personal.gridbot.amaros.design.AmarLivingButton
 import com.personal.gridbot.amaros.design.AmarLivingGlass
 import com.personal.gridbot.amaros.design.AmarLivingMetric
@@ -45,7 +46,7 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/** AMAR shell with B9-B12 demo runtime connected as a read-only data source. */
+/** AMAR shell with B9-B20 demo runtime connected as a read-only data source. */
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
     var state by remember { mutableStateOf(initialState) }
@@ -107,6 +108,7 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
                             Text("AMAR TRADING OS", color = Color.White, style = MaterialTheme.typography.titleLarge)
                             Text("${state.selectedRoom.emoji} ${state.selectedRoom.titleAr}  •  نظام حي", color = Color.White.copy(alpha = 0.64f))
                         }
+                        AmarAnalogClock(Modifier.width(142.dp))
                         AmarLivingButton("تجريبي", true, Color(0xFF39E58C)) {}
                     }
                 }
