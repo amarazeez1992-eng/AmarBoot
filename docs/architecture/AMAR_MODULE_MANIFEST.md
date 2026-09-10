@@ -55,18 +55,31 @@
 
 ## B10 — Demo Event Runtime — مكتمل Demo
 - `AmarRuntimeTicker` يشغل دورة B9 بفاصل مضبوط وقابل للتغيير.
-- كل دورة تنشر `AmarEvent.SystemMessage` عبر `AmarEventBus`.
+- كل دورة تنشر أحداثًا قابلة للرصد عبر `AmarEventBus`.
 - الإيقاف والإعادة آمنان عبر `Job` واحد فقط.
 - الحد الأدنى للفاصل 250ms لمنع حلقات التشغيل غير المنضبطة.
 - لا يوجد broker/network execution.
 
+## B11 — Event / State Expansion — مكتمل Demo
+- `AmarEventBus` أصبح typed ويغطي بدء الدورة واكتمالها وفشلها وتغير صحة runtime، مع الإبقاء على أحداث الغرف والنظام والإيقاف الطارئ.
+- `AmarRuntimeController.RuntimeState` أصبح يحمل `health` إلى جانب Telemetry/Context/Decision/Risk/Execution.
+- أحداث runtime تحمل بيانات تشغيلية قابلة للتدقيق مثل cycle number، duration، decision، confidence، risk gate، وexecution mode.
+- لا يمنح B11 أي صلاحية تنفيذ؛ الأحداث مراقبة فقط.
+
+## B12 — Runtime Monitoring — مكتمل Demo
+- `AmarRuntimeHealth` عقد موحد لصحة التشغيل.
+- `AmarRuntimeMonitor` يراقب liveness، عدد الدورات، الإخفاقات المتتالية والإجمالية، آخر نجاح، زمن الدورة، والخطأ الأخير.
+- حالات الصحة: `STARTING`, `HEALTHY`, `DEGRADED`, `FAULTED`, `STOPPED`.
+- runtime لا يتوقف بالكامل بسبب استثناء دورة واحدة؛ يتم احتواء الخطأ وتحويله إلى حالة مراقبة قابلة للرصد.
+- الواجهة تعرض صحة runtime فقط ولا تتخذ قرارات تداول.
+
 ## المسار الرسمي
-`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → B9 Runtime → B10 Event Runtime → UI/Services`
+`Market Data → B5 Data Fabric → B6 Intelligence → Evidence Fusion → B7 Decision Engine → Decision Validation → B8 Risk/Execution Boundary → B9 Runtime → B10 Event Runtime → B11 Event/State → B12 Monitoring → UI/Services`
 
 ## حالة الإكمال
-**B1 إلى B10: مكتمل كطبقة تأسيس وتشغيل Demo قابلة للبناء والتوسع.**
+**B1 إلى B12: مكتمل كطبقة تأسيس وتشغيل Demo قابلة للبناء والتوسع.**
 
 المقصود بـ "مكتمل" هنا هو اكتمال العقود والتدفق والتشغيل التجريبي الآمن. لا يعني ذلك تفعيل التداول الحقيقي أو اكتمال MT5/Broker Adapter؛ ذلك مرحلة لاحقة منفصلة.
 
 ## حدود المرحلة
-لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن إعادة تصميم الواجهة مستقبلًا دون كسر B5-B10.
+لا LIVE trading، لا broker execution، لا استراتيجيات/بوتات جديدة، ولا قرارات تداول داخل UI. يمكن إعادة تصميم الواجهة مستقبلًا دون كسر B5-B12.
