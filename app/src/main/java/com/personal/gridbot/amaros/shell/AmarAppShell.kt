@@ -45,7 +45,7 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomWorkspace
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 
-/** AMAR B4 shell with the B9/B10 demo runtime connected as a read-only data source. */
+/** AMAR shell with B9-B12 demo runtime connected as a read-only data source. */
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
     var state by remember { mutableStateOf(initialState) }
@@ -62,6 +62,7 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
     val transition = rememberInfiniteTransition(label = "shell-depth")
     val phase by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9000), RepeatMode.Reverse), label = "shell-phase")
     val telemetry = runtimeState.telemetry
+    val health = runtimeState.health
 
     AmarLivingVisualEngine {
         Row(Modifier.fillMaxSize().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -112,7 +113,7 @@ fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     AmarLivingMetric("السوق", telemetry.symbol, "${telemetry.timeframe} • ${telemetry.bid}", Color(0xFF35D6FF), Modifier.weight(1f))
                     AmarLivingMetric("النظام", "حي #${runtimeState.cycleNumber}", "DEMO • ${telemetry.spread}", Color(0xFF39E58C), Modifier.weight(1f))
-                    AmarLivingMetric("الوضع", if (telemetry.demo) "DEMO" else "LIVE", "بدون تداول حقيقي", Color(0xFFFFC857), Modifier.weight(1f))
+                    AmarLivingMetric("الصحة", health.status.name, "أخطاء متتالية: ${health.consecutiveFailures}", Color(0xFFFFC857), Modifier.weight(1f))
                 }
                 Box(Modifier.fillMaxSize()) { AmarRoomContent(state.selectedRoom, onOpenLegacyGrid) }
             }
