@@ -42,8 +42,10 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit) {
                     else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
                 }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
-                AmarRoom.SETTINGS -> AmarDeveloperOptionsScreen()
-                AmarRoom.APPEARANCE -> AmarAppearanceScreen()
+                AmarRoom.SETTINGS -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AmarAppearanceScreen()
+                    AmarDeveloperOptionsScreen()
+                }
                 AmarRoom.BOT_LAB -> Bot1PremiumScreen()
                 else -> AmarRoomWorkspace(room)
             }
