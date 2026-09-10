@@ -2,12 +2,15 @@ package com.personal.gridbot.amaros.shell
 
 import androidx.compose.runtime.Composable
 import com.personal.gridbot.amaros.core.AmarAppState
+import com.personal.gridbot.amaros.navigation.AmarRoom
+import com.personal.gridbot.amaros.navigation.AmarRoomHostScreen
 
-/**
- * Compatibility entry point. The approved white Aurora interface is the visual shell.
- * Room implementations remain available behind the existing architecture and are not replaced.
- */
+/** Compatibility entry point. The approved living home is hosted by MainActivity. */
 @Composable
 fun AmarAppShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGrid: () -> Unit = {}) {
-    AmarAuroraShell(initialState, onOpenLegacyGrid)
+    AmarRoomHostScreen(
+        room = initialState.selectedRoom,
+        onBackHome = {},
+        onOpenLegacyGrid = onOpenLegacyGrid
+    )
 }
