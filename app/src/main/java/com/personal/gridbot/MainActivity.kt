@@ -8,8 +8,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.compose.setContentView
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.platform.ComposeView
 import com.personal.gridbot.amaros.navigation.AmarRoom
