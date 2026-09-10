@@ -106,6 +106,11 @@ object AmarRoomCatalog {
             AmarRoomSection("bots", "البوتات الحالية", "🤖", "الوحدات الموجودة فقط"),
             AmarRoomSection("extensions", "الإضافات", "🧩", "نظام الإضافات المستقبلي")
         ))
+        AmarRoom.ACCOUNTS -> AmarRoomDefinition(room, "الحسابات والاتصال", listOf(
+            AmarRoomSection("accounts", "حسابات التداول", "👤", "حفظ وإدارة حسابات التداول"),
+            AmarRoomSection("security", "حماية بيانات الدخول", "🛡", "تخزين آمن للبيانات الحساسة"),
+            AmarRoomSection("connection", "حالة الاتصال", "↔", "حالة موصل الوسيط مستقبلاً")
+        ))
         AmarRoom.SETTINGS -> AmarRoomDefinition(room, "إعدادات وتجهيز AMAR", listOf(
             AmarRoomSection("appearance", "المظهر", "✦", "الألوان والثيمات والحركة"),
             AmarRoomSection("workspace", "مساحة العمل", "▦", "التخطيط والتنقل"),
