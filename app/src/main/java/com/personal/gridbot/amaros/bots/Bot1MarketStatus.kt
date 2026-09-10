@@ -40,10 +40,7 @@ private val MarketYellow = Color(0xFFF4B400)
 private val MarketBlue = Color(0xFF246BFE)
 private val MarketBorder = Color(0xFFE1E7F0)
 
-/**
- * حالة السوق لبوت 1.
- * هذه الطبقة واجهة وعقد بيانات فقط؛ لا تولد بيانات سوق وهمية ولا تنفذ صفقات.
- */
+/** حالة السوق لبوت 1. واجهة وعقد بيانات فقط؛ لا تولد بيانات سوق وهمية. */
 @Composable
 fun Bot1MarketStatus() {
     val timeframes = listOf("4 ساعات", "ساعة", "30 دقيقة", "15 دقيقة", "5 دقائق", "1 دقيقة")
@@ -56,34 +53,28 @@ fun Bot1MarketStatus() {
     )
 
     Card(
-        colors = CardDefaults.cardColors(Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(22.dp),
-        elevation = CardDefaults.cardElevation(3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(Modifier.padding(15.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("حالة السوق", 22.sp, FontWeight.Bold, MarketInk)
+                    Text("حالة السوق", color = MarketInk, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                     Text("قراءة متعددة الفريمات لبوت 1", color = MarketBlue, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
-                Box(
-                    Modifier.size(11.dp).alpha(pulse).background(MarketYellow, CircleShape)
-                )
+                Box(Modifier.size(11.dp).alpha(pulse).background(MarketYellow, CircleShape))
             }
-
             Spacer(Modifier.height(12.dp))
             MarketConnectionBanner()
             Spacer(Modifier.height(11.dp))
-
             Text("اتجاه الفريمات", color = MarketInk, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(Modifier.height(7.dp))
-
             timeframes.forEach { timeframe ->
                 MarketTimeframeRow(timeframe)
                 Spacer(Modifier.height(6.dp))
             }
-
             Spacer(Modifier.height(6.dp))
             MarketSummary()
         }
