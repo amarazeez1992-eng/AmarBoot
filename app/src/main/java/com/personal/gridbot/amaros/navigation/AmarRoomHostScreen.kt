@@ -19,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.bots.Bot1PremiumScreenV2
+import com.personal.gridbot.amaros.bots.Bot1PremiumScreenV3
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
@@ -45,7 +45,7 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarTh
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("المظهر") }; Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الإعدادات المتقدمة") } }
                     if (settingsMode == 0) AmarAppearanceScreen(themeMode, onThemeModeChange) else AmarDeveloperOptionsScreen()
                 }
-                AmarRoom.BOT_LAB -> Bot1PremiumScreenV2()
+                AmarRoom.BOT_LAB -> Bot1PremiumScreenV3()
                 else -> AmarRoomWorkspace(room)
             }
         }
