@@ -1,4 +1,7 @@
+import hashlib
+import hmac
 import os
+import time
 import unittest
 
 os.environ["AMAR_COMMAND_SIGNING_SECRET"] = "test-secret"
@@ -7,19 +10,19 @@ from amar_command_channel import canonical, valid_signature, validate
 
 
 class CommandChannelTest(unittest.TestCase):
-    def envelope(self):
+    def envelope(self, request_id="r1", idempotency="i1", nonce="n1"):
+        now = int(time.time() * 1000)
         payload = {
-            "requestId": "r1",
-            "idempotencyKey": "i1",
-            "nonce": "n1",
-            "issuedAtMs": 1_000,
-            "expiresAtMs": 10_000,
+            "requestId": request_id,
+            "idempotencyKey": idempotency,
+            "nonce": nonce,
+            "issuedAtMs": now,
+            "expiresAtMs": now + 10_000,
             "accountLogin": 123,
             "botMagic": 20260908,
             "symbol": "XAUUSD",
-            "command": {"requestId": "r1", "side": "BUY", "quantity": 0.01, "price": None},
+            "command": {"requestId": request_id, "side": "BUY", "quantity": 0.01, "price": None},
         }
-        import hmac, hashlib
         payload["signature"] = hmac.new(b"test-secret", canonical(payload).encode(), hashlib.sha256).hexdigest()
         return payload
 
@@ -27,19 +30,18 @@ class CommandChannelTest(unittest.TestCase):
         self.assertTrue(valid_signature(self.envelope()))
 
     def test_scope_is_enforced(self):
-        payload = self.envelope()
-        ok, _ = validate(payload, 123, 20260908, "XAUUSD")
-        self.assertTrue(ok)
-        payload["botMagic"] = 7
-        ok, _ = validate(payload, 123, 20260908, "XAUUSD")
-        self.assertFalse(ok)
+        payload = self.envelope(request_id="scope")
+        self.assertEqual(validate(payload, 123, 20260908, "XAUUSD")[0], True)
+        bad = self.envelope(request_id="scope-bad")
+        bad["botMagic"] = 7
+        self.assertFalse(validate(bad, 123, 20260908, "XAUUSD")[0])
 
-    def test_replay_is_rejected(self):
-        payload = self.envelope()
-        ok, _ = validate(payload, 123, 20260908, "XAUUSD")
-        self.assertTrue(ok)
-        ok, _ = validate(payload, 123, 20260908, "XAUUSD")
-        self.assertFalse(ok)
+    def test_replay_and_idempotency_are_rejected(self):
+        first = self.envelope(request_id="replay", idempotency="id-1", nonce="nonce-1")
+        self.assertTrue(validate(first, 123, 20260908, "XAUUSD")[0])
+        self.assertFalse(validate(first, 123, 20260908, "XAUUSD")[0])
+        second = self.envelope(request_id="replay-2", idempotency="id-1", nonce="nonce-2")
+        self.assertFalse(validate(second, 123, 20260908, "XAUUSD")[0])
 
 
 if __name__ == "__main__":
