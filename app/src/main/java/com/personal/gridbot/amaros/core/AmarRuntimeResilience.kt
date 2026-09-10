@@ -50,11 +50,25 @@ class AmarCircuitBreaker(
         require(openDurationMs > 0)
     }
     private var failures = 0
-    private var openedAt = 0L
-    @Synchronized fun isOpen(): Boolean = openedAt != 0L && clock() - openedAt < openDurationMs
-    @Synchronized fun recordSuccess() { failures = 0; openedAt = 0L }
-    @Synchronized fun recordFailure() { failures++; if (failures >= failureThreshold) openedAt = clock() }
-    @Synchronized fun reset() { failures = 0; openedAt = 0L }
+    private var openedAt: Long? = null
+
+    @Synchronized fun isOpen(): Boolean {
+        val opened = openedAt ?: return false
+        if (clock() - opened >= openDurationMs) {
+            openedAt = null
+            return false
+        }
+        return true
+    }
+
+    @Synchronized fun recordSuccess() { failures = 0; openedAt = null }
+
+    @Synchronized fun recordFailure() {
+        failures++
+        if (failures >= failureThreshold) openedAt = clock()
+    }
+
+    @Synchronized fun reset() { failures = 0; openedAt = null }
 }
 
 suspend fun <T> amarWithRetry(
