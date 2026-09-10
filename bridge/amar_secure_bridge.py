@@ -1,7 +1,6 @@
 """AMAR secure bridge entrypoint.
 
-Extends the hardened read-only bridge with /commands. Live execution is
-FAIL-CLOSED and disabled unless AMAR_LIVE_EXECUTION=1 is explicitly enabled.
+Extends the read-only bridge with /commands. Live execution remains FAIL-CLOSED.
 Every command is authenticated, HMAC signed, time bounded, replay protected,
 account scoped, BOT-MAGIC scoped and symbol allow-listed before MT5 execution.
 """
@@ -11,7 +10,7 @@ import os
 import MetaTrader5 as mt5
 
 from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
-from amar_command_channel import validate
+from amar_command_channel import validate, REPLAY_STORE
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
@@ -30,8 +29,11 @@ def execute_market_command(payload):
         return False, False, payload["requestId"], "الرمز غير مصرح به"
     command = payload["command"]
     side = str(command.get("side", "")).upper()
-    quantity = float(command.get("quantity", 0.0))
-    if side not in ("BUY", "SELL") or quantity <= 0 or quantity != quantity:
+    try:
+        quantity = float(command.get("quantity", 0.0))
+    except (TypeError, ValueError):
+        return False, False, payload["requestId"], "حجم التداول غير صالح"
+    if side not in ("BUY", "SELL") or quantity <= 0 or not quantity == quantity:
         return False, False, payload["requestId"], "أمر تداول غير صالح"
     if command.get("price") is not None:
         return False, False, payload["requestId"], "هذا المسار يدعم تنفيذ السوق فقط"
@@ -52,16 +54,11 @@ def execute_market_command(payload):
     order_type = mt5.ORDER_TYPE_BUY if side == "BUY" else mt5.ORDER_TYPE_SELL
     price = tick.ask if side == "BUY" else tick.bid
     request = {
-        "action": mt5.TRADE_ACTION_DEAL,
-        "symbol": symbol,
-        "volume": normalized,
-        "type": order_type,
-        "price": price,
+        "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": normalized,
+        "type": order_type, "price": price,
         "deviation": int(os.environ.get("AMAR_MAX_DEVIATION_POINTS", "20")),
-        "magic": BOT_MAGIC,
-        "comment": "AMAR_B31",
-        "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_RETURN,
+        "magic": BOT_MAGIC, "comment": "AMAR_B31",
+        "type_time": mt5.ORDER_TIME_GTC, "type_filling": mt5.ORDER_FILLING_RETURN,
     }
     result = mt5.order_send(request)
     if result is None:
@@ -76,7 +73,10 @@ class SecureHandler(Handler):
             return json_response(self, 404, {"ok": False, "message": "not found"})
         if not TOKEN or self.headers.get("Authorization", "").strip() != f"Bearer {TOKEN}":
             return json_response(self, 401, {"ok": False, "accepted": False, "message": "unauthorized"})
-        length = int(self.headers.get("Content-Length", "0"))
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
         if length <= 0 or length > 32_768:
             return json_response(self, 413, {"ok": False, "accepted": False, "message": "payload too large"})
         try:
@@ -90,6 +90,8 @@ class SecureHandler(Handler):
             if not valid:
                 return json_response(self, 403, {"ok": False, "accepted": False, "requestId": payload.get("requestId", ""), "message": message})
             executed, accepted, request_id, result_message = execute_market_command(payload)
+            if not executed:
+                REPLAY_STORE.release_idempotency(f"idempotency:{payload['idempotencyKey']}")
             return json_response(self, 200 if accepted else 409, {
                 "accepted": accepted, "executed": executed,
                 "requestId": request_id, "message": result_message,
