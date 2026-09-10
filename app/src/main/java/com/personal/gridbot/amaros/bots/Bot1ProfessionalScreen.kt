@@ -36,6 +36,8 @@ fun Bot1ProfessionalScreen() {
     var selectedBot by remember { mutableIntStateOf(bots.firstOrNull()?.botNumber ?: 1) }
     var selectedStrategy by remember { mutableIntStateOf(1) }
     var editing by remember { mutableStateOf(false) }
+    var editingBotName by remember { mutableStateOf(false) }
+    var botNameDraft by remember { mutableStateOf("") }
     var draftName by remember { mutableStateOf("") }
     var draftRisk by remember { mutableStateOf("قياسي") }
     var draftRebuild by remember { mutableStateOf("يدوي") }
@@ -89,13 +91,27 @@ fun Bot1ProfessionalScreen() {
             } else {
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ActionButton("تعديل اسم البوت", Cyan) { /* name editing remains configuration-only */ }
+                        ActionButton("تعديل اسم البوت", Cyan) { botNameDraft = current.name; editingBotName = true }
                         ActionButton("إعادة تهيئة", Gold) {
                             persist(bots.map { if (it.botNumber == selectedBot) it.copy(name = "بوت $selectedBot", strategies = emptyList()) else it }); selectedStrategy = 1; editing = false
                         }
                         ActionButton("حذف البوت", Red) {
                             val remaining = bots.filterNot { it.botNumber == selectedBot }
                             persist(remaining); selectedBot = remaining.firstOrNull()?.botNumber ?: 1; selectedStrategy = 1; editing = false
+                        }
+                    }
+                }
+                if (editingBotName) {
+                    item {
+                        Card(colors = CardDefaults.cardColors(Panel), shape = RoundedCornerShape(18.dp)) {
+                            Column(Modifier.padding(12.dp)) {
+                                OutlinedTextField(botNameDraft, { botNameDraft = it }, Modifier.fillMaxWidth(), label = { Text("اسم البوت") })
+                                Spacer(Modifier.height(8.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ActionButton("حفظ", Teal) { persist(bots.map { if (it.botNumber == selectedBot) it.copy(name = botNameDraft.ifBlank { "بوت $selectedBot" }) else it }); editingBotName = false }
+                                    ActionButton("إلغاء", Muted) { editingBotName = false }
+                                }
+                            }
                         }
                     }
                 }
