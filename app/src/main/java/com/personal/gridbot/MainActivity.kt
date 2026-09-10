@@ -10,7 +10,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,31 +27,26 @@ class MainActivity : ComponentActivity() {
     private lateinit var roomHost: ComposeView
     private var showingRoom = false
     private var themeMode by mutableStateOf(AmarThemeMode.DARK)
+    private val prefs by lazy { getSharedPreferences("amar_ui", MODE_PRIVATE) }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        themeMode = runCatching { AmarThemeMode.valueOf(prefs.getString("theme_mode", AmarThemeMode.DARK.name) ?: AmarThemeMode.DARK.name) }.getOrDefault(AmarThemeMode.DARK)
         enterImmersiveReferenceMode()
         root = FrameLayout(this)
         home = WebView(this).apply {
-            webViewClient = WebViewClient()
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.cacheMode = WebSettings.LOAD_DEFAULT
-            settings.allowFileAccess = true
-            settings.allowContentAccess = false
-            settings.builtInZoomControls = false
-            settings.displayZoomControls = false
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) { applyHomeTheme() }
+            }
+            settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT
+            settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
             addJavascriptInterface(HomeBridge(), "Android")
             loadUrl("file:///android_asset/amar_reference.html")
         }
         roomHost = ComposeView(this).apply { visibility = android.view.View.GONE }
-        root.addView(home, FrameLayout.LayoutParams(-1, -1))
-        root.addView(roomHost, FrameLayout.LayoutParams(-1, -1))
-        setContentView(root)
-        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { if (showingRoom) showHome() else finish() }
-        })
+        root.addView(home, FrameLayout.LayoutParams(-1, -1)); root.addView(roomHost, FrameLayout.LayoutParams(-1, -1)); setContentView(root)
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { if (showingRoom) showHome() else finish() } })
     }
 
     private fun enterImmersiveReferenceMode() {
@@ -61,22 +55,16 @@ class MainActivity : ComponentActivity() {
         if (android.os.Build.VERSION.SDK_INT >= 30) window.insetsController?.let { it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()); it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE }
     }
 
+    private fun applyHomeTheme() { home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null) }
+
     private fun showRoom(room: AmarRoom) {
-        showingRoom = true
-        home.visibility = android.view.View.GONE
-        roomHost.visibility = android.view.View.VISIBLE
-        roomHost.setContent {
-            AmarTheme(palette = if (themeMode == AmarThemeMode.LIGHT) AmarDay else AmarPlatinum, mode = themeMode) {
-                AmarRoomHostScreen(room, ::showHome, themeMode) { themeMode = it }
-            }
-        }
+        showingRoom = true; home.visibility = android.view.View.GONE; roomHost.visibility = android.view.View.VISIBLE
+        roomHost.setContent { AmarTheme(if (themeMode == AmarThemeMode.LIGHT) AmarDay else AmarPlatinum, themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode) { setThemeMode(it) } } }
     }
 
-    private fun showHome() {
-        showingRoom = false
-        roomHost.visibility = android.view.View.GONE
-        home.visibility = android.view.View.VISIBLE
-    }
+    private fun setThemeMode(mode: AmarThemeMode) { themeMode = mode; prefs.edit().putString("theme_mode", mode.name).apply(); applyHomeTheme(); roomHost.setContent { AmarTheme(if (themeMode == AmarThemeMode.LIGHT) AmarDay else AmarPlatinum, themeMode) { AmarRoomHostScreen(AmarRoom.SETTINGS, ::showHome, themeMode) { setThemeMode(it) } } } }
+
+    private fun showHome() { showingRoom = false; roomHost.visibility = android.view.View.GONE; home.visibility = android.view.View.VISIBLE; applyHomeTheme() }
 
     private inner class HomeBridge {
         @JavascriptInterface fun openRoom(name: String) { runOnUiThread { runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom) } }
