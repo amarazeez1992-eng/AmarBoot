@@ -1,16 +1,8 @@
 """AMAR MT5 Bridge — hardened read-only integration layer.
 
-B26/B27/B28 remain fail-closed: this service exposes only authenticated
+B26/B27/B28/B30 remain fail-closed: this service exposes only authenticated
 read operations. No trade execution endpoint exists. BOT 1 MQL5 code is
 not modified here.
-
-Environment:
-  AMAR_BRIDGE_TOKEN  required bearer secret
-  AMAR_BIND_HOST     default 127.0.0.1; use LAN only with HTTPS/firewall
-  AMAR_BRIDGE_PORT   default 8765
-  AMAR_TLS_CERT      required PEM certificate
-  AMAR_TLS_KEY       required PEM private key
-  AMAR_BOT_MAGIC     default 20260908 (BOT 1 magic)
 """
 import hmac
 import json
@@ -31,6 +23,15 @@ PORT = int(os.environ.get("AMAR_BRIDGE_PORT", "8765"))
 CERT = os.environ.get("AMAR_TLS_CERT", "")
 KEY = os.environ.get("AMAR_TLS_KEY", "")
 BOT_MAGIC = int(os.environ.get("AMAR_BOT_MAGIC", "20260908"))
+
+TIMEFRAMES = {
+    "M1": mt5.TIMEFRAME_M1 if mt5 else 1,
+    "M5": mt5.TIMEFRAME_M5 if mt5 else 5,
+    "M15": mt5.TIMEFRAME_M15 if mt5 else 15,
+    "M30": mt5.TIMEFRAME_M30 if mt5 else 30,
+    "H1": mt5.TIMEFRAME_H1 if mt5 else 60,
+    "H4": mt5.TIMEFRAME_H4 if mt5 else 240,
+}
 
 
 def json_response(handler, status, payload):
@@ -109,6 +110,17 @@ def order_to_dict(x):
     }
 
 
+def candle_to_dict(x):
+    return {
+        "timestampMs": int(x.time) * 1000,
+        "open": float(x.open),
+        "high": float(x.high),
+        "low": float(x.low),
+        "close": float(x.close),
+        "tickVolume": int(x.tick_volume),
+    }
+
+
 def bot_status(params):
     magic = parse_magic(params)
     if not mt5_ready():
@@ -128,7 +140,7 @@ def bot_status(params):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "AMAR-MT5-Bridge/0.2"
+    server_version = "AMAR-MT5-Bridge/0.3"
 
     def log_message(self, fmt, *args):
         print(fmt % args)
@@ -152,7 +164,8 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "connected": connected,
                 "terminal": "MetaTrader 5",
-                "bridge": "0.2",
+                "message": "متصل" if connected else "غير متصل",
+                "bridge": "0.3",
                 "timestampMs": int(time.time() * 1000),
             })
 
@@ -170,6 +183,7 @@ class Handler(BaseHTTPRequestHandler):
                 "marginLevel": getattr(info, "margin_level", 0.0),
                 "tradeAllowed": bool(getattr(info, "trade_allowed", False)),
                 "tradeExpert": bool(getattr(info, "trade_expert", False)),
+                "connected": True,
             })
 
         if path == "/market":
@@ -189,6 +203,29 @@ class Handler(BaseHTTPRequestHandler):
             return json_response(self, 200, {
                 "ok": True, "symbol": symbol, "bid": tick.bid, "ask": tick.ask,
                 "spreadPoints": spread, "timestampMs": int(tick.time_msc),
+            })
+
+        if path == "/candles":
+            symbol = params.get("symbol", [""])[0].strip()
+            timeframe = params.get("timeframe", [""])[0].strip().upper()
+            try:
+                count = int(params.get("count", ["80"])[0])
+            except ValueError:
+                return json_response(self, 400, {"ok": False, "message": "count must be an integer"})
+            if not symbol or timeframe not in TIMEFRAMES:
+                return json_response(self, 400, {"ok": False, "message": "symbol and timeframe are required"})
+            if count < 10 or count > 500:
+                return json_response(self, 400, {"ok": False, "message": "count must be between 10 and 500"})
+            if not mt5_ready():
+                return json_response(self, 503, {"ok": False, "message": "MT5 unavailable"})
+            if not mt5.symbol_select(symbol, True):
+                return json_response(self, 404, {"ok": False, "message": "symbol unavailable"})
+            rates = mt5.copy_rates_from_pos(symbol, TIMEFRAMES[timeframe], 0, count)
+            if rates is None:
+                return json_response(self, 503, {"ok": False, "message": "candles unavailable"})
+            items = [candle_to_dict(x) for x in rates]
+            return json_response(self, 200, {
+                "ok": True, "symbol": symbol, "timeframe": timeframe, "items": items,
             })
 
         if path == "/positions":
