@@ -23,11 +23,12 @@ class AmarAnalytics(private val maxSamples: Int = 10_000) {
     private val samples = ArrayDeque<Sample>()
 
     fun record(state: AmarRuntimeController.RuntimeState, durationMs: Long? = null) {
-        val decision = state.decision?.direction?.name ?: "UNKNOWN"
-        val riskAllowed = state.risk?.allowed ?: false
-        val executionMode = if (state.execution?.executed == true) "EXECUTED" else "DEMO_GUARDED"
         val duration = max(0L, durationMs ?: 0L)
-        samples.addLast(Sample(state.cycleNumber, duration, state.health.totalFailures == 0L || state.decision != null, decision, riskAllowed, executionMode))
+        val failed = state.health.lastError != null && state.health.lastSuccessfulCycle < state.cycleNumber
+        val decision = state.decision?.direction?.name ?: "UNKNOWN"
+        val riskAllowed = state.risk?.allowed == true
+        val executionMode = if (state.execution?.executed == true) "EXECUTED" else "DEMO_GUARDED"
+        samples.addLast(Sample(state.cycleNumber, duration, !failed, decision, riskAllowed, executionMode, state.health.consecutiveFailures))
         while (samples.size > maxSamples) samples.removeFirst()
     }
 
@@ -40,8 +41,9 @@ class AmarAnalytics(private val maxSamples: Int = 10_000) {
         val modes = samples.groupingBy { it.executionMode }.eachCount().mapValues { it.value.toLong() }
         val allowed = samples.count { it.riskAllowed }.toLong()
         return AmarAnalyticsSnapshot(samples.size.toLong(), successful.toLong(), failed.toLong(), successful.toDouble() / samples.size,
-            durations.average(), durations.maxOrNull() ?: 0L, 0, samples.last().cycleNumber, decisions, allowed, samples.size - allowed, modes)
+            durations.average(), durations.maxOrNull() ?: 0L, samples.last().consecutiveFailures, samples.last().cycleNumber,
+            decisions, allowed, samples.size - allowed, modes)
     }
 
-    private data class Sample(val cycleNumber: Long, val durationMs: Long, val success: Boolean, val decision: String, val riskAllowed: Boolean, val executionMode: String)
+    private data class Sample(val cycleNumber: Long, val durationMs: Long, val success: Boolean, val decision: String, val riskAllowed: Boolean, val executionMode: String, val consecutiveFailures: Int)
 }
