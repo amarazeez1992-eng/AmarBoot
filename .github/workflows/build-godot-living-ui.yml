@@ -10,6 +10,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/.ci/debug.keystore
+      GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+      GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,12 +35,12 @@ jobs:
 
       - name: Create debug keystore
         run: |
-          mkdir -p "$HOME/.android"
+          mkdir -p .ci "$HOME/.android"
           keytool -genkeypair -v \
-            -keystore "$HOME/.android/debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
+            -keystore "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH" \
+            -storepass "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD" \
+            -alias "$GODOT_ANDROID_KEYSTORE_DEBUG_USER" \
+            -keypass "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD" \
             -keyalg RSA \
             -keysize 2048 \
             -validity 10000 \
@@ -51,9 +55,9 @@ jobs:
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME"
-          export/android/debug_keystore = "$HOME/.android/debug.keystore"
-          export/android/debug_keystore_user = "androiddebugkey"
-          export/android/debug_keystore_pass = "android"
+          export/android/debug_keystore = "$GODOT_ANDROID_KEYSTORE_DEBUG_PATH"
+          export/android/debug_keystore_user = "$GODOT_ANDROID_KEYSTORE_DEBUG_USER"
+          export/android/debug_keystore_pass = "$GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD"
           EOF
 
       - name: Download Godot 4.5.2
@@ -69,14 +73,8 @@ jobs:
           unzip -q templates.tpz -d templates_unpack
           mkdir -p "$HOME/.local/share/godot/export_templates/4.5.2.stable"
           cp -R templates_unpack/templates/. "$HOME/.local/share/godot/export_templates/4.5.2.stable/"
-
-      - name: Install Android Gradle build template
-        run: |
-          mkdir -p godot_ui/android/plugins godot_ui/android/build
-          touch godot_ui/android/build/.gdignore
-          printf '%s\n' '4.5.2.stable' > godot_ui/android/.build_version
-          unzip -q "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_source.zip" -d godot_ui/android/build
-          test -f godot_ui/android/build/gradlew
+          printf '%s\n' '4.5.2.stable' > "$HOME/.local/share/godot/export_templates/4.5.2.stable/version.txt"
+          test -f "$HOME/.local/share/godot/export_templates/4.5.2.stable/android_debug.apk"
 
       - name: Validate project and scripts
         run: ./godot --headless --path godot_ui --editor --quit --check-only
