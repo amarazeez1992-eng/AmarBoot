@@ -1,8 +1,8 @@
 package com.personal.gridbot.amaros.security
 
-/** B18 security runtime state. Live trading is structurally unavailable here. */
-enum class AmarOperatingMode { DEMO, READ_ONLY, LIVE }
+import com.personal.gridbot.amaros.core.AmarOperatingMode
 
+/** B18 security runtime state. Live trading remains structurally unavailable in this phase. */
 data class AmarSecurityState(
     val mode: AmarOperatingMode = AmarOperatingMode.DEMO,
     val emergencyLock: Boolean = false,
@@ -20,8 +20,8 @@ class AmarSecurityRuntime(initial: AmarSecurityState = AmarSecurityState()) {
 
     fun snapshot(): AmarSecurityState = state
 
-    fun lock(reason: String = "manual_lock"): AmarSecurityState {
-        state = state.copy(emergencyLock = true, executionAuthorized = false, credentialAccessAllowed = false)
+    fun lock(): AmarSecurityState {
+        state = state.copy(mode = AmarOperatingMode.EMERGENCY, emergencyLock = true, executionAuthorized = false, credentialAccessAllowed = false)
         return state
     }
 
@@ -34,4 +34,6 @@ class AmarSecurityRuntime(initial: AmarSecurityState = AmarSecurityState()) {
         state = state.copy(mode = AmarOperatingMode.READ_ONLY, emergencyLock = false, executionAuthorized = false, credentialAccessAllowed = false)
         return state
     }
+
+    fun canExecuteLive(): Boolean = false
 }
