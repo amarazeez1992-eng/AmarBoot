@@ -116,7 +116,7 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
 @Composable private fun Header(room: AmarRoom, pulse: Float) {
     Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(26.dp)).background(Color.White.copy(alpha = .055f)).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size((8f * pulse).dp).clip(CircleShape).background(Green)); Spacer(Modifier.width(9.dp))
-        Column(Modifier.weight(1f)) { Text("نظام عمار", color = Ice, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("${room.emoji} ${room.titleAr} • XAUUSD • M5", color = Color.White.copy(alpha = .48f), fontSize = 10.sp) }
+        Column(Modifier.weight(1f)) { Text("نظام عمار", color = Ice, fontSize = 18.sp, fontWeight = FontWeight.Bold); Text("${room.emoji} ${room.titleAr} • الذهب • 5 دقائق", color = Color.White.copy(alpha = .48f), fontSize = 10.sp) }
         Text("تجريبي", color = Gold, fontSize = 10.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.width(14.dp)); Text("متصل", color = Green, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -146,16 +146,16 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
         when (room) {
             AmarRoom.COMMAND_CENTER -> Command(flow, pulse)
             AmarRoom.MARKET -> Chart(flow, "مصفوفة السوق", Cyan)
-            AmarRoom.CHART -> Chart(flow, "XAUUSD • M5", Cyan)
+            AmarRoom.CHART -> Chart(flow, "الذهب • 5 دقائق", Cyan)
             AmarRoom.BOT_LAB -> Bot(flow, pulse, onLegacy)
             AmarRoom.RISK -> Risk(flow, pulse)
             AmarRoom.POSITIONS -> Matrix("مصفوفة الصفقات", listOf("6 مفتوحة", "18 معلقة", "+12.84 عائم", "فارق 0.12"), Cyan)
             AmarRoom.PERFORMANCE -> Matrix("الأداء", listOf("+18.40 اليوم", "+127.40 الإجمالي", "66.7% نجاح", "2.1% سحب"), Gold)
             AmarRoom.INDICATORS -> Matrix("مجموعة المؤشرات", listOf("اتجاه", "زخم", "سعر مرجعي", "تذبذب"), Violet)
-            AmarRoom.ANALYSIS -> Matrix("مصفوفة التحليل", listOf("ميل شراء", "82 نتيجة", "زخم", "نظام M5"), Cyan)
+            AmarRoom.ANALYSIS -> Matrix("مصفوفة التحليل", listOf("ميل للشراء", "82 نتيجة", "زخم", "نظام 5 دقائق"), Cyan)
             AmarRoom.TESTING -> Matrix("منصة الاختبار", listOf("اختبار خلفي", "اختبار أمامي", "مونت كارلو", "المعاملات"), Pink)
-            AmarRoom.TOOLS -> Matrix("أدوات التداول", listOf("حجم المخاطرة", "حجم اللوت", "TP / SL", "حاسبة الشبكة"), Gold)
-            AmarRoom.ALERTS -> Matrix("تيار التنبيهات", listOf("الاتصال", "الحماية مفعلة", "TP / SL", "إعادة البناء"), Pink)
+            AmarRoom.TOOLS -> Matrix("أدوات التداول", listOf("حجم المخاطرة", "حجم العقد", "جني الربح / وقف الخسارة", "حاسبة الشبكة"), Gold)
+            AmarRoom.ALERTS -> Matrix("تيار التنبيهات", listOf("الاتصال", "الحماية مفعلة", "جني الربح / وقف الخسارة", "إعادة البناء"), Pink)
             AmarRoom.LIBRARY -> Matrix("مكتبة عمار", listOf("النواة", "المؤشرات", "الاستراتيجيات", "الإضافات"), Violet)
             AmarRoom.ACCOUNTS -> Matrix("حسابات التداول", listOf("حسابات محفوظة", "بيانات محمية", "الاتصال", "التنفيذ محمي"), Gold)
             AmarRoom.SETTINGS -> Matrix("تحكم النظام", listOf("الحركة", "الإضاءة", "الأمان", "الوضع التجريبي"), Cyan)
@@ -188,7 +188,7 @@ fun AmarAuroraShell(initialState: AmarAppState = AmarAppState(), onOpenLegacyGri
             Canvas(Modifier.fillMaxSize()) { val c = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height / 2f + sin(flow * 6.28f) * 10f); drawCircle(Cyan.copy(alpha = .08f), size.minDimension * .34f, c); drawCircle(Cyan.copy(alpha = .24f), size.minDimension * .20f, c, style = Stroke(3f)); drawCircle(Violet.copy(alpha = .18f), size.minDimension * .28f, c, style = Stroke(1f)); drawCircle(Cyan, 7f * pulse, androidx.compose.ui.geometry.Offset(c.x - 24f, c.y - 8f)); drawCircle(Cyan, 7f * pulse, androidx.compose.ui.geometry.Offset(c.x + 24f, c.y - 8f)) }
             Column(Modifier.align(Alignment.BottomStart).padding(16.dp)) { Text("شبكة عمار", color = Ice, fontSize = 16.sp, fontWeight = FontWeight.Bold); Text("تحليل • تجريبي", color = Green, fontSize = 9.sp) }
         }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("الحالة", "جاهز • تجريبي", Green); Node("اللوت", "0.02", Cyan); Node("خطوة الشبكة", "40 نقطة", Violet); Node("أقصى أوامر", "30", Gold); GlassButton("فتح وحدة التحكم ›", Cyan, onLegacy) }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) { Node("الحالة", "جاهز • تجريبي", Green); Node("حجم العقد", "0.02", Cyan); Node("خطوة الشبكة", "40 نقطة", Violet); Node("الحد الأقصى للأوامر", "30", Gold); GlassButton("فتح وحدة التحكم ›", Cyan, onLegacy) }
     }
 }
 
