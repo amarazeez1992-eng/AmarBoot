@@ -18,19 +18,20 @@ class AmarFoundationCycle(
         val decision: DecisionEngine.DecisionProposal,
         val risk: AmarRiskGate.Result,
         val execution: AmarExecutionBoundary.ExecutionResult,
-        val telemetry: com.personal.gridbot.amaros.core.AmarUiContract.Telemetry
+        val telemetry: AmarUiContract.Telemetry
     )
 
     fun runDemoCycle(): Cycle {
-        val pipeline = DecisionPipeline(provider)
-        val result = pipeline.evaluate()
+        val result = DecisionPipeline(provider).evaluate()
         val data = result.intelligence.sourceData
         val risk = AmarRiskGate.validate(data, result.proposal)
         val execution = AmarExecutionBoundary.submit(
             AmarExecutionBoundary.ExecutionRequest(
                 proposal = result.proposal,
                 validation = result.intelligence.validation,
-                mode = AmarOperatingMode.DEMO
+                data = data,
+                mode = AmarOperatingMode.DEMO,
+                requestId = "DEMO-${data.generatedAtEpochMs}"
             )
         )
         return Cycle(
