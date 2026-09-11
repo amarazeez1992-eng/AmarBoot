@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.broker
 
-import android.content.Context
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -19,13 +18,11 @@ object AmarBot1CommandRuntimeRegistry {
     private val current = AtomicReference<Runtime?>(null)
 
     fun install(
-        context: Context,
         config: AmarBridgeConfig,
         signingSecret: String,
     ): Runtime {
         require(signingSecret.isNotBlank()) { "مفتاح توقيع BOT1 مطلوب" }
-        val client = AmarMt5CommandClientFactory.create(
-            context = context.applicationContext,
+        val client = AmarMt5CommandClient(
             config = config,
             signingSecret = signingSecret,
         )
