@@ -34,6 +34,8 @@ data class AmarBot1RemoteState(
     @SerializedName("basket_sl") val basketSl: Double? = null,
     @SerializedName("trailing") val trailing: Int? = null,
     @SerializedName("open_positions") val openPositions: Int = 0,
+    @SerializedName("buy_positions") val buyPositions: Int = 0,
+    @SerializedName("sell_positions") val sellPositions: Int = 0,
     @SerializedName("pending_orders") val pendingOrders: Int = 0,
     @SerializedName("market_ready") val marketReady: Boolean = false,
     @SerializedName("heartbeat_ms") val heartbeatMs: Long? = null,
