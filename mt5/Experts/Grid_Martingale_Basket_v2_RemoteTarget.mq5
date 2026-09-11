@@ -1,13 +1,9 @@
 //+------------------------------------------------------------------+
 //| Grid_Martingale_Basket_v2_RemoteTarget.mq5                       |
 //| BOT 1 remote target-symbol execution wrapper                     |
-//|                                                                  |
-//| The authoritative strategy source remains untouched. This EA     |
-//| includes it and routes its existing Symbol() calls through an    |
-//| explicit, verified target symbol selected remotely.              |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.11"
+#property version   "2.12"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
@@ -31,7 +27,6 @@ bool AmarTargetReady(string symbol)
 {
    if(StringLen(symbol) <= 0) return false;
    if(!SymbolSelect(symbol,true)) return false;
-
    MqlTick tick;
    if(!SymbolInfoTick(symbol,tick)) return false;
    if(!MathIsValidNumber(tick.bid) || !MathIsValidNumber(tick.ask)) return false;
@@ -39,15 +34,27 @@ bool AmarTargetReady(string symbol)
    return true;
 }
 
-// Rename the authoritative lifecycle handlers while it is included, then
-// wrap them so the remote polling lifecycle is guaranteed to be installed.
+// Keep the authoritative strategy source intact. Its Symbol() calls are
+// redirected to AmarTargetSymbol(), and its lifecycle/tick handlers are
+// wrapped so target-symbol management works even when the chart is another symbol.
 #define Symbol() AmarTargetSymbol()
 #define OnInit AmarOriginalOnInit
 #define OnDeinit AmarOriginalOnDeinit
+#define OnTick AmarOriginalOnTick
 #include "Grid_Martingale_Basket_v2.mq5"
+#undef OnTick
 #undef OnDeinit
 #undef OnInit
 #undef Symbol
+
+void AmarTargetCycle()
+{
+   if(!IsTrading) return;
+   if(!AmarTargetReady(AmarTargetSymbol())) return;
+   CheckBasket();
+   if(Trail > 0) ManageTrailing();
+   TrackPrice();
+}
 
 bool ApplyRemoteTarget(string requested)
 {
@@ -61,8 +68,7 @@ bool ApplyRemoteTarget(string requested)
    string oldTarget=AmarTargetSymbol();
    if(oldTarget==requested) return true;
 
-   // Switch only after the requested symbol is proven available.
-   // The authoritative EA functions are routed through the old target here.
+   // Close/delete only BOT 1 exposure for the current target before switching.
    DeletePending();
    CloseAll();
    ResetCounters();
@@ -145,6 +151,14 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
    }
 }
 
+void OnTick()
+{
+   // When the chart itself is the selected target, retain the authoritative
+   // strategy's native tick cadence. Otherwise the timer below owns the cycle.
+   if(_Symbol==AmarTargetSymbol())
+      AmarOriginalOnTick();
+}
+
 void OnTimer()
 {
    AmarBot1RemoteCommand cmd;
@@ -154,6 +168,11 @@ void OnTimer()
       Print(ok ? "AMAR remote command verified" : "AMAR remote command rejected/fail-closed");
       ChartRedraw(0);
    }
+
+   // If the chart is not the target, manage the strategy from target-symbol
+   // quotes rather than depending on ticks from the unrelated chart symbol.
+   if(_Symbol!=AmarTargetSymbol())
+      AmarTargetCycle();
 }
 
 int OnInit()
