@@ -1,6 +1,9 @@
 package com.personal.gridbot.amaros.bots
 
 import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -126,54 +129,55 @@ data class AmarSavedStrategy(
     val entryRule: String = "أساسي",
     val metadata: String = ""
 ) {
-    /** Stable JSON contract. Numeric values are emitted as canonical strings to avoid org.json floating-point edge cases. */
-    fun toJson(): JSONObject = JSONObject().apply {
-        put("schemaVersion", 2)
-        put("number", number)
-        put("name", name)
-        put("risk", riskProfile)
-        put("rebuildRule", rebuildRule)
-        put("entryRule", entryRule)
-        put("metadata", metadata)
-        put("lot", profile.lot.toString())
-        put("step", profile.gridStep.toString())
-        put("max", profile.maxOrders)
-        put("multiplier", profile.multiplier.toString())
-        put("tp", profile.basketTp.toString())
-        put("sl", profile.basketSl.toString())
-        put("trailing", profile.trailing.toString())
-        put("buy", profile.buyEnabled)
-        put("sell", profile.sellEnabled)
+    /** Pure JSON contract. Kept independent from Android's org.json implementation so JVM tests can exercise it. */
+    fun toJsonString(): String = Gson().toJson(toJsonObject())
+
+    /** Android adapter retained for SharedPreferences persistence. */
+    fun toJson(): JSONObject = JSONObject(toJsonString())
+
+    private fun toJsonObject(): JsonObject = JsonObject().apply {
+        addProperty("schemaVersion", 2)
+        addProperty("number", number)
+        addProperty("name", name)
+        addProperty("risk", riskProfile)
+        addProperty("rebuildRule", rebuildRule)
+        addProperty("entryRule", entryRule)
+        addProperty("metadata", metadata)
+        addProperty("lot", profile.lot)
+        addProperty("step", profile.gridStep)
+        addProperty("max", profile.maxOrders)
+        addProperty("multiplier", profile.multiplier)
+        addProperty("tp", profile.basketTp)
+        addProperty("sl", profile.basketSl)
+        addProperty("trailing", profile.trailing)
+        addProperty("buy", profile.buyEnabled)
+        addProperty("sell", profile.sellEnabled)
     }
 
     companion object {
-        private fun readDouble(o: JSONObject, key: String, fallback: Double): Double {
-            val value = o.opt(key) ?: return fallback
-            return when (value) {
-                is Number -> value.toDouble()
-                is String -> value.toDoubleOrNull() ?: fallback
-                else -> fallback
-            }
+        fun fromJsonString(json: String): AmarSavedStrategy {
+            val o = JsonParser.parseString(json).asJsonObject
+            return AmarSavedStrategy(
+                number = o.get("number").asInt,
+                name = o.get("name")?.asString ?: "استراتيجية",
+                profile = AmarBot1RuntimeConfig(
+                    lot = o.get("lot")?.asDouble ?: 0.01,
+                    gridStep = o.get("step")?.asDouble ?: 30.0,
+                    maxOrders = o.get("max")?.asInt ?: 10,
+                    multiplier = o.get("multiplier")?.asDouble ?: 2.0,
+                    basketTp = o.get("tp")?.asDouble ?: 50.0,
+                    basketSl = o.get("sl")?.asDouble ?: -30.0,
+                    trailing = o.get("trailing")?.asDouble ?: 0.0,
+                    buyEnabled = o.get("buy")?.asBoolean ?: true,
+                    sellEnabled = o.get("sell")?.asBoolean ?: true
+                ),
+                riskProfile = o.get("risk")?.asString ?: "قياسي",
+                rebuildRule = o.get("rebuildRule")?.asString ?: "يدوي",
+                entryRule = o.get("entryRule")?.asString ?: "أساسي",
+                metadata = o.get("metadata")?.asString ?: ""
+            )
         }
 
-        fun fromJson(o: JSONObject): AmarSavedStrategy = AmarSavedStrategy(
-            number = o.optInt("number"),
-            name = o.optString("name", "استراتيجية"),
-            profile = AmarBot1RuntimeConfig(
-                lot = readDouble(o, "lot", 0.01),
-                gridStep = readDouble(o, "step", 30.0),
-                maxOrders = o.optInt("max", 10),
-                multiplier = readDouble(o, "multiplier", 2.0),
-                basketTp = readDouble(o, "tp", 50.0),
-                basketSl = readDouble(o, "sl", -30.0),
-                trailing = readDouble(o, "trailing", 0.0),
-                buyEnabled = o.optBoolean("buy", true),
-                sellEnabled = o.optBoolean("sell", true)
-            ),
-            riskProfile = o.optString("risk", "قياسي"),
-            rebuildRule = o.optString("rebuildRule", "يدوي"),
-            entryRule = o.optString("entryRule", "أساسي"),
-            metadata = o.optString("metadata", "")
-        )
+        fun fromJson(o: JSONObject): AmarSavedStrategy = fromJsonString(o.toString())
     }
 }
