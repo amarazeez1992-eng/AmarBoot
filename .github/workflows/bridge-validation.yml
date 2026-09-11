@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install bridge test dependencies
+        run: python -m pip install --disable-pip-version-check 'cryptography>=42.0.0'
+
       - name: Compile all bridge Python modules and tests
         run: python -m compileall -q bridge
 
