@@ -27,7 +27,8 @@ private enum class Tab(val title: String, val icon: String) { BOT("البوت", 
 
 @Composable
 fun Bot1UnifiedScreen(onBackHome: () -> Unit) {
-    val repo = remember { AmarBotVaultRepository(LocalContext.current) }
+    val context = LocalContext.current
+    val repo = remember(context) { AmarBotVaultRepository(context) }
     var bots by remember { mutableStateOf(repo.load()) }
     var selectedBot by remember { mutableIntStateOf(1) }
     var tab by remember { mutableStateOf(Tab.BOT) }
