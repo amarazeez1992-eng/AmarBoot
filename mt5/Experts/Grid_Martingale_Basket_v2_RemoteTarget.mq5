@@ -39,9 +39,14 @@ bool AmarTargetReady(string symbol)
    return true;
 }
 
-// Route the unchanged strategy's Symbol() calls to the verified target.
+// Rename the authoritative lifecycle handlers while it is included, then
+// wrap them so the remote polling lifecycle is guaranteed to be installed.
 #define Symbol() AmarTargetSymbol()
+#define OnInit AmarOriginalOnInit
+#define OnDeinit AmarOriginalOnDeinit
 #include "Grid_Martingale_Basket_v2.mq5"
+#undef OnDeinit
+#undef OnInit
 #undef Symbol
 
 bool ApplyRemoteTarget(string requested)
@@ -56,8 +61,8 @@ bool ApplyRemoteTarget(string requested)
    string oldTarget=AmarTargetSymbol();
    if(oldTarget==requested) return true;
 
-   // Close/delete only BOT 1 exposure belonging to the old target before
-   // changing execution context. This prevents accidental cross-symbol use.
+   // Switch only after the requested symbol is proven available.
+   // The authoritative EA functions are routed through the old target here.
    DeletePending();
    CloseAll();
    ResetCounters();
@@ -80,7 +85,7 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          return true;
 
       case AMAR_CMD_STOP:
-         // BOT OFF is an engine stop only: do not close positions or delete orders.
+         // BOT OFF is an engine stop only: never close positions or delete orders.
          IsTrading=false;
          return true;
 
@@ -117,7 +122,9 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          return true;
 
       case AMAR_CMD_UPDATE_SETTINGS:
-         if(!cmd.hasSettings || !AmarTargetReady(AmarTargetSymbol())) return false;
+         if(!cmd.hasSettings || !cmd.hasBuyEnabled || !cmd.hasSellEnabled)
+            return false;
+         if(!AmarTargetReady(AmarTargetSymbol())) return false;
          LotStart=cmd.lotStart;
          GridStep=(int)cmd.gridStep;
          MaxOrders=cmd.maxOrders;
@@ -125,8 +132,8 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          BasketTP=cmd.basketTp;
          BasketSL=cmd.basketSl;
          Trail=(int)cmd.trailing;
-         BuyEnabled=cmd.enabled;
-         SellEnabled=cmd.hasEnabled ? cmd.enabled : SellEnabled;
+         BuyEnabled=cmd.buyEnabled;
+         SellEnabled=cmd.sellEnabled;
          if(IsTrading)
          {
             CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
@@ -149,16 +156,27 @@ void OnTimer()
    }
 }
 
-int OnInitRemoteTarget()
+int OnInit()
 {
    g_remoteTargetSymbol=InpRemoteTargetSymbol;
+   if(StringLen(g_remoteTargetSymbol)>0 && !AmarTargetReady(g_remoteTargetSymbol))
+   {
+      Print("AMAR FAIL-CLOSED: configured target symbol unavailable: ",g_remoteTargetSymbol);
+      return INIT_FAILED;
+   }
+
+   int result=AmarOriginalOnInit();
+   if(result!=INIT_SUCCEEDED) return result;
+
    int seconds=InpRemotePollSeconds;
    if(seconds<1) seconds=1;
    EventSetTimer(seconds);
+   Print("AMAR remote target control armed for: ",AmarTargetSymbol());
    return INIT_SUCCEEDED;
 }
 
-void OnDeinitRemoteTarget()
+void OnDeinit(const int reason)
 {
    EventKillTimer();
+   AmarOriginalOnDeinit(reason);
 }
