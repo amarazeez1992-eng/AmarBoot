@@ -32,6 +32,15 @@ class AmarBot1RemoteProtocolTest {
     }
 
     @Test
+    fun sideCloseCommandsRemainSignable() {
+        listOf(AmarBot1RemoteCommandType.CLOSE_BUY, AmarBot1RemoteCommandType.CLOSE_SELL).forEach { command ->
+            val signed = AmarBot1RemoteSigner.sign(envelope(command), "secret")
+            assertTrue(signed.signature.isNotBlank())
+            assertTrue(AmarBot1RemoteSigner.verify(signed, "secret"))
+        }
+    }
+
+    @Test
     fun settingsAreRepresentableForRemoteRebuild() {
         val settings = AmarBot1RemoteSettings(0.01, 30.0, 10, 2.0, 50.0, -30.0, 0.0, true, true)
         val signed = AmarBot1RemoteSigner.sign(envelope(AmarBot1RemoteCommandType.UPDATE_SETTINGS, settings), "secret")
