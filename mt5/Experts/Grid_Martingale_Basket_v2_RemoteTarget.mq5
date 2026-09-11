@@ -3,13 +3,14 @@
 //| BOT 1 remote target-symbol execution wrapper                     |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.13"
+#property version   "2.14"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
 
 input string InpRemoteTargetSymbol = ""; // blank = chart symbol (backward-compatible)
 input int    InpRemotePollSeconds  = 1;
+input int    InpRemoteMaxTickAgeMs = 5000;
 
 string g_remoteTargetSymbol = "";
 CAmarBot1CommandReceiver g_remoteReceiver;
@@ -25,10 +26,18 @@ bool AmarTargetReady(string symbol)
 {
    if(StringLen(symbol) <= 0) return false;
    if(!SymbolSelect(symbol,true)) return false;
+   if(!SymbolIsSynchronized(symbol)) return false;
    MqlTick tick;
    if(!SymbolInfoTick(symbol,tick)) return false;
    if(!MathIsValidNumber(tick.bid) || !MathIsValidNumber(tick.ask)) return false;
    if(tick.bid <= 0 || tick.ask <= 0 || tick.ask < tick.bid) return false;
+   int maxAge=InpRemoteMaxTickAgeMs;
+   if(maxAge<0) maxAge=0;
+   if(maxAge>0 && tick.time_msc>0)
+   {
+      long age=(long)GetTickCount64() - (long)tick.time_msc;
+      if(age>maxAge) return false;
+   }
    return true;
 }
 
@@ -56,7 +65,7 @@ bool ApplyRemoteTarget(string requested)
    if(StringLen(requested) <= 0) return false;
    if(!AmarTargetReady(requested))
    {
-      Print("AMAR FAIL-CLOSED: target symbol unavailable: ",requested);
+      Print("AMAR FAIL-CLOSED: target symbol unavailable or market unhealthy: ",requested);
       return false;
    }
    string oldTarget=AmarTargetSymbol();
@@ -130,7 +139,7 @@ void OnTimer()
    if(g_remoteReceiver.Read(cmd))
    {
       bool ok=ApplyRemoteCommand(cmd);
-      g_remoteReceiver.Ack(cmd.requestId,ok,ok?"تم تطبيق الأمر على MT5":"تم رفض الأمر داخل MT5 - fail-closed");
+      g_remoteReceiver.Ack(cmd.requestId,ok,ok?"VERIFIED":"FAILED_FAIL_CLOSED");
       Print(ok ? "AMAR remote command verified" : "AMAR remote command rejected/fail-closed");
       ChartRedraw(0);
    }
@@ -142,7 +151,7 @@ int OnInit()
    g_remoteTargetSymbol=InpRemoteTargetSymbol;
    if(StringLen(g_remoteTargetSymbol)>0 && !AmarTargetReady(g_remoteTargetSymbol))
    {
-      Print("AMAR FAIL-CLOSED: configured target symbol unavailable: ",g_remoteTargetSymbol);
+      Print("AMAR FAIL-CLOSED: configured target symbol unavailable or market unhealthy: ",g_remoteTargetSymbol);
       return INIT_FAILED;
    }
    int result=AmarOriginalOnInit();
