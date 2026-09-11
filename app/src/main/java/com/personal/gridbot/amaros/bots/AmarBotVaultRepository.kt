@@ -7,11 +7,9 @@ import com.personal.gridbot.amaros.sync.AmarSyncManager
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Persistent configuration vault. It stores profiles only; it never authorizes live execution. */
 class AmarBotVaultRepository(context: Context) {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences("amar_bot_vault_v1", Context.MODE_PRIVATE)
-
     init { AmarSyncManager.schedule(appContext) }
 
     fun load(): List<AmarSavedBot> {
@@ -19,30 +17,18 @@ class AmarBotVaultRepository(context: Context) {
         return runCatching {
             val array = JSONArray(raw)
             buildList {
-                for (i in 0 until array.length()) {
-                    runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
-                }
+                for (i in 0 until array.length()) runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
             }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
         }.getOrElse { defaultBots() }
     }
-
     fun save(bots: List<AmarSavedBot>) = persist(bots)
-
-    fun exportSnapshotJson(): String {
-        val array = JSONArray()
-        load().forEach { array.put(it.toJson()) }
-        return array.toString()
-    }
-
+    fun exportSnapshotJson(): String = JSONArray().apply { load().forEach { put(it.toJson()) } }.toString()
     fun replaceSnapshotJson(snapshot: String): Boolean = runCatching {
         val array = JSONArray(snapshot)
         val normalized = buildList {
-            for (i in 0 until array.length()) {
-                runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
-            }
+            for (i in 0 until array.length()) runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
         }.filter { it.botNumber > 0 }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
-        val out = JSONArray()
-        normalized.forEach { out.put(it.toJson()) }
+        val out = JSONArray(); normalized.forEach { out.put(it.toJson()) }
         prefs.edit().putString(KEY_BOTS, out.toString()).commit()
     }.getOrDefault(false)
 
@@ -50,92 +36,58 @@ class AmarBotVaultRepository(context: Context) {
         val bots = load().toMutableList()
         val next = generateSequence(1) { it + 1 }.first { n -> bots.none { it.botNumber == n } }
         val bot = AmarSavedBot(next, name?.trim().takeUnless { it.isNullOrBlank() } ?: "بوت $next")
-        bots += bot
-        persist(bots)
-        return bot
+        bots += bot; persist(bots); return bot
     }
-
     fun upsertBot(bot: AmarSavedBot): AmarSavedBot {
-        val normalized = bot.normalized()
-        val bots = load().filterNot { it.botNumber == normalized.botNumber }.toMutableList()
-        bots += normalized
-        persist(bots)
-        return normalized
+        val normalized = bot.normalized(); val bots = load().filterNot { it.botNumber == normalized.botNumber }.toMutableList()
+        bots += normalized; persist(bots); return normalized
     }
-
     fun renameBot(botNumber: Int, name: String): AmarSavedBot? {
         val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
         return upsertBot(bot.copy(name = name.trim().ifBlank { bot.name }))
     }
-
     fun deleteBot(botNumber: Int): Boolean {
         if (botNumber == 1) return false
-        val bots = load()
-        if (bots.none { it.botNumber == botNumber }) return false
-        persist(bots.filterNot { it.botNumber == botNumber })
-        return true
+        val bots = load(); if (bots.none { it.botNumber == botNumber }) return false
+        persist(bots.filterNot { it.botNumber == botNumber }); return true
     }
-
     fun resetBot(botNumber: Int): AmarSavedBot? {
         val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
         return upsertBot(bot.copy(strategies = emptyList()))
     }
-
     fun saveStrategy(botNumber: Int, strategy: AmarSavedStrategy): AmarSavedBot? {
         if (strategy.number !in 1..10) return null
         val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
         return upsertBot(bot.copy(strategies = bot.strategies.filterNot { it.number == strategy.number } + strategy))
     }
-
     fun deleteStrategy(botNumber: Int, strategyNumber: Int): AmarSavedBot? {
         val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
         return upsertBot(bot.copy(strategies = bot.strategies.filterNot { it.number == strategyNumber }))
     }
-
     fun resetStrategy(botNumber: Int, strategyNumber: Int): AmarSavedBot? = deleteStrategy(botNumber, strategyNumber)
-
-    fun isStrategySaved(botNumber: Int, strategyNumber: Int): Boolean =
-        load().firstOrNull { it.botNumber == botNumber }?.strategies?.any { it.number == strategyNumber } == true
+    fun isStrategySaved(botNumber: Int, strategyNumber: Int): Boolean = load().firstOrNull { it.botNumber == botNumber }?.strategies?.any { it.number == strategyNumber } == true
 
     private fun persist(bots: List<AmarSavedBot>) {
         val array = JSONArray()
-        bots.map { it.normalized() }
-            .filter { it.botNumber > 0 }
-            .distinctBy { it.botNumber }
-            .sortedBy { it.botNumber }
-            .forEach { array.put(it.toJson()) }
+        bots.map { it.normalized() }.filter { it.botNumber > 0 }.distinctBy { it.botNumber }.sortedBy { it.botNumber }.forEach { array.put(it.toJson()) }
         prefs.edit().putString(KEY_BOTS, array.toString()).commit()
         AmarSyncManager.requestNow(appContext)
     }
-
     private fun defaultBots(): List<AmarSavedBot> = (1..10).map { AmarSavedBot(it, "بوت $it") }
-
     companion object { private const val KEY_BOTS = "bots" }
 }
 
-data class AmarSavedBot(
-    val botNumber: Int,
-    val name: String,
-    val strategies: List<AmarSavedStrategy> = emptyList()
-) {
+data class AmarSavedBot(val botNumber: Int, val name: String, val strategies: List<AmarSavedStrategy> = emptyList()) {
     fun normalized(): AmarSavedBot = copy(
         botNumber = botNumber.coerceAtLeast(1),
         name = name.ifBlank { "بوت ${botNumber.coerceAtLeast(1)}" },
         strategies = strategies.filter { it.number in 1..10 }.distinctBy { it.number }.sortedBy { it.number }
     )
-
-    fun toJson(): JSONObject = JSONObject().apply {
-        put("botNumber", botNumber)
-        put("name", name)
-        put("strategies", JSONArray().apply { strategies.forEach { put(it.toJson()) } })
-    }
-
+    fun toJson(): JSONObject = JSONObject().apply { put("botNumber", botNumber); put("name", name); put("strategies", JSONArray().apply { strategies.forEach { put(it.toJson()) } }) }
     companion object {
         fun fromJson(o: JSONObject): AmarSavedBot {
             val s = o.optJSONArray("strategies") ?: JSONArray()
-            val strategies = buildList {
-                for (i in 0 until s.length()) runCatching { add(AmarSavedStrategy.fromJson(s.getJSONObject(i))) }
-            }
+            val strategies = buildList { for (i in 0 until s.length()) runCatching { add(AmarSavedStrategy.fromJson(s.getJSONObject(i))) } }
             return AmarSavedBot(o.optInt("botNumber"), o.optString("name", "بوت"), strategies)
         }
     }
@@ -152,59 +104,32 @@ data class AmarSavedStrategy(
 ) {
     fun toJsonString(): String = Gson().toJson(toJsonObject())
     fun toJson(): JSONObject = JSONObject(toJsonString())
-
     private fun toJsonObject(): JsonObject = JsonObject().apply {
-        addProperty("schemaVersion", 2)
-        addProperty("number", number)
-        addProperty("name", name)
-        addProperty("risk", riskProfile)
-        addProperty("rebuildRule", rebuildRule)
-        addProperty("entryRule", entryRule)
-        addProperty("metadata", metadata)
-        addProperty("lot", profile.lot)
-        addProperty("step", profile.gridStep)
-        addProperty("max", profile.maxOrders)
-        addProperty("multiplier", profile.multiplier)
-        addProperty("tp", profile.basketTp)
-        addProperty("sl", profile.basketSl)
-        addProperty("trailing", profile.trailing)
-        addProperty("buy", profile.buyEnabled)
-        addProperty("sell", profile.sellEnabled)
+        addProperty("schemaVersion", 2); addProperty("number", number); addProperty("name", name)
+        addProperty("risk", riskProfile); addProperty("rebuildRule", rebuildRule); addProperty("entryRule", entryRule); addProperty("metadata", metadata)
+        addProperty("lot", profile.lot); addProperty("step", profile.gridStep); addProperty("max", profile.maxOrders); addProperty("multiplier", profile.multiplier)
+        addProperty("tp", profile.basketTp); addProperty("sl", profile.basketSl); addProperty("trailing", profile.trailing)
+        addProperty("buy", profile.buyEnabled); addProperty("sell", profile.sellEnabled)
     }
-
     companion object {
-        fun fromJsonString(json: String): AmarSavedStrategy = fromJson(JSONObject(json))
-
+        fun fromJsonString(json: String): AmarSavedStrategy = runCatching { fromJson(JSONObject(json)) }
+            .getOrElse { AmarSavedStrategy(1, "استراتيجية", AmarBot1RuntimeConfig()) }
         fun fromJson(o: JSONObject): AmarSavedStrategy {
             fun positiveDouble(key: String, fallback: Double): Double {
-                val value = o.optDouble(key, fallback)
-                return if (value.isFinite() && value > 0.0) value else fallback
+                val value = o.optDouble(key, fallback); return if (value.isFinite() && value > 0.0) value else fallback
             }
             fun finiteDouble(key: String, fallback: Double): Double {
-                val value = o.optDouble(key, fallback)
-                return if (value.isFinite()) value else fallback
+                val value = o.optDouble(key, fallback); return if (value.isFinite()) value else fallback
             }
-            val lot = positiveDouble("lot", 0.01)
-            val step = positiveDouble("step", 30.0)
-            val max = o.optInt("max", 10).coerceAtLeast(1)
-            val multiplier = positiveDouble("multiplier", 2.0)
-            val tp = finiteDouble("tp", 50.0)
-            val sl = finiteDouble("sl", -30.0)
-            val trailing = finiteDouble("trailing", 0.0).coerceAtLeast(0.0)
+            val lot = positiveDouble("lot", 0.01); val step = positiveDouble("step", 30.0)
+            val max = o.optInt("max", 10).coerceAtLeast(1); val multiplier = positiveDouble("multiplier", 2.0)
+            val tp = finiteDouble("tp", 50.0); val sl = finiteDouble("sl", -30.0); val trailing = finiteDouble("trailing", 0.0).coerceAtLeast(0.0)
+            val profile = runCatching { AmarBot1RuntimeConfig(lot, step, max, multiplier, tp, sl, trailing, o.optBoolean("buy", true), o.optBoolean("sell", true)) }
+                .getOrElse { AmarBot1RuntimeConfig() }
             return AmarSavedStrategy(
                 number = o.optInt("number", 1).coerceIn(1, 10),
                 name = o.optString("name", "استراتيجية").ifBlank { "استراتيجية" },
-                profile = AmarBot1RuntimeConfig(
-                    lot = lot,
-                    gridStep = step,
-                    maxOrders = max,
-                    multiplier = multiplier,
-                    basketTp = tp,
-                    basketSl = sl,
-                    trailing = trailing,
-                    buyEnabled = o.optBoolean("buy", true),
-                    sellEnabled = o.optBoolean("sell", true)
-                ),
+                profile = profile,
                 riskProfile = o.optString("risk", "قياسي").ifBlank { "قياسي" },
                 rebuildRule = o.optString("rebuildRule", "يدوي").ifBlank { "يدوي" },
                 entryRule = o.optString("entryRule", "أساسي").ifBlank { "أساسي" },
