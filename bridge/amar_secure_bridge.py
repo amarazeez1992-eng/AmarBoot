@@ -255,3 +255,25 @@ class SecureHandler(Handler):
             state = _read_bot1_state()
             return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR), "symbolDiscovery": bool(ALLOWED_TARGET_SYMBOLS or ALLOWED_TARGET_PATTERNS), "botStateFresh": bool(state.get("fresh"))})
         return super().do_GET()
+
+
+def main():
+    if not TOKEN or not CERT or not KEY:
+        raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
+    if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
+        raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
+    if not ALLOWED_SYMBOLS or (not ALLOWED_TARGET_SYMBOLS and not ALLOWED_TARGET_PATTERNS):
+        raise SystemExit("AMAR_ALLOWED_SYMBOLS and target allow-list are required")
+    from http.server import ThreadingHTTPServer
+    import ssl
+    server = ThreadingHTTPServer((HOST, PORT), SecureHandler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.load_cert_chain(certfile=CERT, keyfile=KEY)
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+    print(f"AMAR secure bridge listening on https://{HOST}:{PORT}; live={LIVE_ENABLED}; bot1_queue={bool(COMMON_FILES_DIR)}")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    main()
