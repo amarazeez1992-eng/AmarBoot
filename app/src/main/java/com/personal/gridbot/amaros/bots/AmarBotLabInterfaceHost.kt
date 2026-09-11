@@ -2,8 +2,6 @@ package com.personal.gridbot.amaros.bots
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 
 private const val PREFS = "amar_bot_interfaces"
 
@@ -16,12 +14,20 @@ object AmarBotInterfaceRegistry {
 
     fun save(context: Context, botNumber: Int, interfaceId: AmarBotInterface) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit().putString("bot_$botNumber", AmarBotInterface.A.name).apply()
+            .edit()
+            .putString("bot_$botNumber", AmarBotInterface.A.name)
+            .apply()
     }
 }
 
-/** Single active Bot-Lab interface. Interface 2 has been retired. */
+/**
+ * Single active Bot-Lab interface.
+ *
+ * The enhanced visual prototype is intentionally not the runtime host:
+ * production remains wired to the existing Bot Lab business logic,
+ * persistence, command lifecycle and verified BOT1 gateway.
+ */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
-    AmarBotLabInterfaceAEnhancedScreen(onBackHome = onBackHome)
+    AmarBotLabProfessionalScreen(onBackHome = onBackHome)
 }
