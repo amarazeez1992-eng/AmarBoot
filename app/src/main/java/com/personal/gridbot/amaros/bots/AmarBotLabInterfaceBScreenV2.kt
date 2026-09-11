@@ -223,28 +223,28 @@ private fun StrategyEditor(
     onApply: () -> Unit
 ) {
     var lot by remember(strategy?.number, strategy?.profile?.lot) {
-        mutableStateOf((strategy?.profile?.lot ?: 0.01).toFloat())
+        mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat())
     }
     var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) {
-        mutableStateOf((strategy?.profile?.multiplier ?: 2.0).toFloat())
+        mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat())
     }
     var gridStep by remember(strategy?.number, strategy?.profile?.gridStep) {
-        mutableStateOf((strategy?.profile?.gridStep ?: 30.0).toFloat())
+        mutableStateOf((strategy?.profile?.gridStep ?: 0.0).toFloat())
     }
     var maxOrders by remember(strategy?.number, strategy?.profile?.maxOrders) {
-        mutableStateOf((strategy?.profile?.maxOrders ?: 10).toFloat())
+        mutableStateOf((strategy?.profile?.maxOrders ?: 0).toFloat())
     }
     var basketTp by remember(strategy?.number, strategy?.profile?.basketTp) {
-        mutableStateOf((strategy?.profile?.basketTp ?: 50.0).toFloat())
+        mutableStateOf((strategy?.profile?.basketTp ?: 0.0).toFloat())
     }
     var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) {
-        mutableStateOf((strategy?.profile?.basketSl ?: -30.0).toFloat())
+        mutableStateOf((strategy?.profile?.basketSl ?: 0.0).toFloat())
     }
     var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) {
-        mutableStateOf(strategy?.profile?.buyEnabled ?: true)
+        mutableStateOf(strategy?.profile?.buyEnabled ?: false)
     }
     var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) {
-        mutableStateOf(strategy?.profile?.sellEnabled ?: true)
+        mutableStateOf(strategy?.profile?.sellEnabled ?: false)
     }
 
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
@@ -282,7 +282,7 @@ private fun StrategyEditor(
                                 profile = AmarBot1RuntimeConfig(
                                     lot = lot.toDouble(),
                                     gridStep = gridStep.toDouble(),
-                                    maxOrders = maxOrders.toInt().coerceAtLeast(1),
+                                    maxOrders = maxOrders.toInt().coerceAtLeast(0),
                                     multiplier = multiplier.toDouble(),
                                     basketTp = basketTp.toDouble(),
                                     basketSl = basketSl.toDouble(),
