@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,7 +51,11 @@ object AmarBotInterfaceRegistry {
     }
 }
 
-/** Thin shell: internal interfaces keep their original scrolling and layout. */
+/**
+ * Fixed Bot-Lab shell. Market state and timeframe are global context nodes,
+ * shared by every bot, strategy and interface. Interface internals retain
+ * their own original scrolling/layout.
+ */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -60,26 +65,29 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        AmarBotLabGlobalContext()
         InterfaceSelector(selectedInterface) { next ->
             selectedInterface = next
             AmarBotInterfaceRegistry.save(context, selectedBot, next)
         }
 
-        AnimatedContent(
-            targetState = selectedInterface,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
-            label = "amar-bot-interface"
-        ) { active ->
-            when (active) {
-                AmarBotInterface.A -> AmarBotLabProfessionalScreen(onBackHome = onBackHome)
-                AmarBotInterface.B -> AmarBotLabInterfaceBScreenV2(
-                    onBackHome = onBackHome,
-                    selectedBot = selectedBot,
-                    onBotSelected = { bot ->
-                        selectedBot = bot
-                        selectedInterface = AmarBotInterfaceRegistry.load(context, bot)
-                    }
-                )
+        Box(Modifier.fillMaxWidth().weight(1f)) {
+            AnimatedContent(
+                targetState = selectedInterface,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "amar-bot-interface"
+            ) { active ->
+                when (active) {
+                    AmarBotInterface.A -> AmarBotLabProfessionalScreen(onBackHome = onBackHome)
+                    AmarBotInterface.B -> AmarBotLabInterfaceBScreenV2(
+                        onBackHome = onBackHome,
+                        selectedBot = selectedBot,
+                        onBotSelected = { bot ->
+                            selectedBot = bot
+                            selectedInterface = AmarBotInterfaceRegistry.load(context, bot)
+                        }
+                    )
+                }
             }
         }
     }
