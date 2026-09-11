@@ -1,7 +1,8 @@
 import json
 import time
-
-import pytest
+import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from amar_bot1_file_queue import ACK_FILE, COMMAND_FILE, QueueBusyError, enqueue
 
@@ -19,31 +20,37 @@ def _command(request_id: str, expires_at_ms: int | None = None):
     })
 
 
-def test_authenticated_queue_is_single_flight(tmp_path):
-    enqueue(_command("req-1"), tmp_path)
-    with pytest.raises(QueueBusyError):
-        enqueue(_command("req-2"), tmp_path)
+class Bot1FileQueueTests(unittest.TestCase):
+    def test_authenticated_queue_is_single_flight(self):
+        with TemporaryDirectory() as directory:
+            enqueue(_command("req-1"), directory)
+            with self.assertRaises(QueueBusyError):
+                enqueue(_command("req-2"), directory)
+
+    def test_authenticated_queue_can_advance_after_matching_ack(self):
+        with TemporaryDirectory() as directory:
+            enqueue(_command("req-1"), directory)
+            (Path(directory) / ACK_FILE).write_text(
+                json.dumps({"request_id": "req-1", "status": "VERIFIED"}) + "\n",
+                encoding="utf-8",
+            )
+            enqueue(_command("req-2"), directory)
+            record = json.loads((Path(directory) / COMMAND_FILE).read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(record["request_id"], "req-2")
+
+    def test_expired_pending_command_can_be_superseded(self):
+        now = int(time.time() * 1000)
+        with TemporaryDirectory() as directory:
+            enqueue(_command("req-1", expires_at_ms=now - 1), directory)
+            enqueue(_command("req-2"), directory)
+            record = json.loads((Path(directory) / COMMAND_FILE).read_text(encoding="utf-8").splitlines()[-1])
+            self.assertEqual(record["request_id"], "req-2")
+
+    def test_legacy_queue_caller_remains_compatible(self):
+        with TemporaryDirectory() as directory:
+            enqueue(json.dumps({"command": "REBUILD", "symbol": "XAUUSD"}), directory)
+            self.assertTrue((Path(directory) / COMMAND_FILE).exists())
 
 
-def test_authenticated_queue_can_advance_after_matching_ack(tmp_path):
-    enqueue(_command("req-1"), tmp_path)
-    (tmp_path / ACK_FILE).write_text(
-        json.dumps({"request_id": "req-1", "status": "VERIFIED"}) + "\n",
-        encoding="utf-8",
-    )
-    enqueue(_command("req-2"), tmp_path)
-    record = json.loads((tmp_path / COMMAND_FILE).read_text(encoding="utf-8").splitlines()[-1])
-    assert record["request_id"] == "req-2"
-
-
-def test_expired_pending_command_can_be_superseded(tmp_path):
-    now = int(time.time() * 1000)
-    enqueue(_command("req-1", expires_at_ms=now - 1), tmp_path)
-    enqueue(_command("req-2"), tmp_path)
-    record = json.loads((tmp_path / COMMAND_FILE).read_text(encoding="utf-8").splitlines()[-1])
-    assert record["request_id"] == "req-2"
-
-
-def test_legacy_queue_caller_remains_compatible(tmp_path):
-    enqueue(json.dumps({"command": "REBUILD", "symbol": "XAUUSD"}), tmp_path)
-    assert (tmp_path / COMMAND_FILE).exists()
+if __name__ == "__main__":
+    unittest.main()
