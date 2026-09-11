@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.bots
 
-/** B33/B34: complete BOT 1 command vocabulary. Transport remains fail-closed. */
+/** B36: BOT 1 command vocabulary with explicit execution-symbol context. */
 enum class AmarBot1CommandType {
     START,
     STOP,
@@ -39,10 +39,15 @@ data class AmarBot1ControlCommand(
     val type: AmarBot1CommandType,
     val settings: AmarBot1Settings? = null,
     val enabled: Boolean? = null,
+    val targetSymbol: String? = null,
 ) {
     init {
         if (type == AmarBot1CommandType.UPDATE_SETTINGS) requireNotNull(settings)
         if (type == AmarBot1CommandType.SET_BUY_ENABLED || type == AmarBot1CommandType.SET_SELL_ENABLED) requireNotNull(enabled)
         if (type == AmarBot1CommandType.EMERGENCY_LOCK) require(enabled != false)
+        targetSymbol?.let {
+            require(it.isNotBlank())
+            require(!it.contains('\n') && !it.contains('\r'))
+        }
     }
 }
