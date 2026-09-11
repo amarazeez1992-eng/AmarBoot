@@ -2,15 +2,15 @@ package com.personal.gridbot.amaros.design
 
 /** Independent controller for ten radically different animated Amar home layouts. */
 object AmarHomeLayoutController {
-    const val DEFAULT_LAYOUT = 1
-    const val LAYOUT_COUNT = 10
+    const val DEFAULT_LAYOUT = AmarSharedUiContract.LAYOUT_MIN
+    const val LAYOUT_COUNT = AmarSharedUiContract.LAYOUT_MAX
 
     fun applyJavascript(layout: Int): String {
-        val v = layout.coerceIn(1, LAYOUT_COUNT)
+        val v = layout.coerceIn(AmarSharedUiContract.LAYOUT_MIN, AmarSharedUiContract.LAYOUT_MAX)
         return """
             (function(){
               var b=document.body;
-              for(var i=1;i<=10;i++)b.classList.remove('amar-v'+i);
+              for(var i=1;i<=${AmarSharedUiContract.LAYOUT_MAX};i++)b.classList.remove('amar-v'+i);
               b.classList.add('amar-v$v');
               var s=document.getElementById('amarLayoutStyle');
               if(!s){s=document.createElement('style');s.id='amarLayoutStyle';document.head.appendChild(s)}
