@@ -10,7 +10,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** B31/B37/B38: authenticated transport. It never authorizes live execution by itself. */
+/** B31/B37-B41: authenticated transport. It never authorizes live execution by itself. */
 class AmarMt5CommandClient(
     private val config: AmarBridgeConfig,
     private val signingSecret: String,
@@ -115,6 +115,35 @@ class AmarMt5CommandClient(
                 .getOrElse { AmarBot1CommandStatus(requestId, "PENDING", false, 0L, "استجابة ACK غير صالحة") }
         }
     }
+
+    /** B41: reads the broker-discovered target-symbol catalog behind the authenticated bridge. */
+    suspend fun bot1Symbols(): List<AmarBot1DiscoveredSymbol> = withContext(Dispatchers.IO) {
+        val request = authenticatedGet("/bot1/symbols")
+        httpClient.newCall(request).execute().use { response ->
+            val raw = response.body?.string().orEmpty()
+            if (!response.isSuccessful || raw.isBlank()) return@withContext emptyList()
+            runCatching { gson.fromJson(raw, AmarBot1SymbolDiscoveryResponse::class.java)?.items.orEmpty() }
+                .getOrElse { emptyList() }
+        }
+    }
+
+    /** B41: reads terminal runtime state; stale state is returned as an empty snapshot. */
+    suspend fun bot1State(): AmarBot1RemoteState = withContext(Dispatchers.IO) {
+        val request = authenticatedGet("/bot1/state")
+        httpClient.newCall(request).execute().use { response ->
+            val raw = response.body?.string().orEmpty()
+            if (raw.isBlank()) return@withContext AmarBot1RemoteState()
+            runCatching { gson.fromJson(raw, AmarBot1RemoteState::class.java) }
+                .getOrElse { AmarBot1RemoteState() }
+        }
+    }
+
+    private fun authenticatedGet(path: String): Request = Request.Builder()
+        .url(config.baseUrl.trimEnd('/') + path)
+        .header("Authorization", "Bearer ${config.token}")
+        .header("X-AMAR-Command-Version", "1")
+        .get()
+        .build()
 
     private fun postJson(path: String, body: okhttp3.RequestBody, requestId: String): AmarBrokerResult {
         val request = Request.Builder()
