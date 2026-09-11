@@ -135,7 +135,7 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
 }
 
 @Composable
-private fun LabHeader(current: AmarSavedBot?, onBackHome: () -> Unit) {
+private fun LabHeader(currentBot: AmarSavedBot?, onBackHome: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(LabPanel).padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -144,7 +144,7 @@ private fun LabHeader(current: AmarSavedBot?, onBackHome: () -> Unit) {
         Button(onClick = onBackHome, colors = ButtonDefaults.buttonColors(containerColor = LabGold, contentColor = Color.Black), contentPadding = PaddingValues(horizontal = 13.dp, vertical = 4.dp)) { Text("⌂", fontWeight = FontWeight.Black) }
         Column(Modifier.weight(1f)) {
             Text("AMAR BOT LAB", color = LabCyan, fontSize = 19.sp, fontWeight = FontWeight.Black)
-            Text("${current?.name ?: "BOT 1"} • ${current?.botNumber ?: 1}/10", color = LabMuted, fontSize = 9.sp)
+            Text("${currentBot?.name ?: "BOT 1"} • ${currentBot?.botNumber ?: 1}/10", color = LabMuted, fontSize = 9.sp)
         }
         LiveDot()
     }
@@ -181,6 +181,7 @@ private fun BotLabContent(
     onSaveStrategy: (AmarSavedStrategy) -> Unit, onDeleteStrategy: (Int) -> Unit
 ) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item { AmarBotLabGlobalContext() }
         item { BotPicker(selectedBot, onSelectBot) }
         item { StrategyPicker(currentBot, selectedStrategy, onSelectStrategy) }
         item { StrategyEditor(currentStrategy, selectedStrategy, onSaveStrategy, onDeleteStrategy) }
@@ -193,9 +194,7 @@ private fun BotLabContent(
 private fun BotPicker(selected: Int, select: (Int) -> Unit) {
     LabCard("إدارة البوتات", "V1 إلى V10") {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            (1..10).forEach { n ->
-                SelectChip("V$n", selected == n, Modifier.weight(1f)) { select(n) }
-            }
+            (1..10).forEach { n -> SelectChip("V$n", selected == n, Modifier.weight(1f)) { select(n) } }
         }
     }
 }
@@ -318,6 +317,7 @@ private fun MarketLabContent() {
     val provider = com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry.provider()
     val frames = com.personal.gridbot.amaros.chart.AmarTimeframe.values().toList()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item { AmarBotLabGlobalContext() }
         item { MarketSummaryCard(provider != null, frames.size) }
         items(frames) { tf -> MarketFrameCard(tf, provider) }
     }
