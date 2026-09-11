@@ -3,7 +3,7 @@
 //| BOT 1 remote target-symbol execution wrapper                     |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.12"
+#property version   "2.13"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
@@ -16,10 +16,8 @@ CAmarBot1CommandReceiver g_remoteReceiver;
 
 string AmarTargetSymbol()
 {
-   if(StringLen(g_remoteTargetSymbol) > 0)
-      return g_remoteTargetSymbol;
-   if(StringLen(InpRemoteTargetSymbol) > 0)
-      return InpRemoteTargetSymbol;
+   if(StringLen(g_remoteTargetSymbol) > 0) return g_remoteTargetSymbol;
+   if(StringLen(InpRemoteTargetSymbol) > 0) return InpRemoteTargetSymbol;
    return _Symbol;
 }
 
@@ -34,9 +32,6 @@ bool AmarTargetReady(string symbol)
    return true;
 }
 
-// Keep the authoritative strategy source intact. Its Symbol() calls are
-// redirected to AmarTargetSymbol(), and its lifecycle/tick handlers are
-// wrapped so target-symbol management works even when the chart is another symbol.
 #define Symbol() AmarTargetSymbol()
 #define OnInit AmarOriginalOnInit
 #define OnDeinit AmarOriginalOnDeinit
@@ -64,11 +59,8 @@ bool ApplyRemoteTarget(string requested)
       Print("AMAR FAIL-CLOSED: target symbol unavailable: ",requested);
       return false;
    }
-
    string oldTarget=AmarTargetSymbol();
    if(oldTarget==requested) return true;
-
-   // Close/delete only BOT 1 exposure for the current target before switching.
    DeletePending();
    CloseAll();
    ResetCounters();
@@ -79,8 +71,7 @@ bool ApplyRemoteTarget(string requested)
 
 bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
 {
-   if(cmd.hasTargetSymbol && !ApplyRemoteTarget(cmd.targetSymbol))
-      return false;
+   if(cmd.hasTargetSymbol && !ApplyRemoteTarget(cmd.targetSymbol)) return false;
 
    switch(cmd.type)
    {
@@ -89,47 +80,28 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          IsTrading=true;
          BuildGrid();
          return true;
-
       case AMAR_CMD_STOP:
-         // BOT OFF is an engine stop only: never close positions or delete orders.
          IsTrading=false;
          return true;
-
       case AMAR_CMD_REBUILD:
          if(!IsTrading || !AmarTargetReady(AmarTargetSymbol())) return false;
-         CloseAll();
-         DeletePending();
-         ResetCounters();
-         BuildGrid();
+         CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
          return true;
-
       case AMAR_CMD_CLOSE_ALL:
-         CloseAll();
-         DeletePending();
-         ResetCounters();
+         CloseAll(); DeletePending(); ResetCounters();
          return true;
-
       case AMAR_CMD_SET_BUY_ENABLED:
          if(!cmd.hasEnabled) return false;
          BuyEnabled=cmd.enabled;
-         if(IsTrading && AmarTargetReady(AmarTargetSymbol()))
-         {
-            CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
-         }
+         if(IsTrading && AmarTargetReady(AmarTargetSymbol())) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
-
       case AMAR_CMD_SET_SELL_ENABLED:
          if(!cmd.hasEnabled) return false;
          SellEnabled=cmd.enabled;
-         if(IsTrading && AmarTargetReady(AmarTargetSymbol()))
-         {
-            CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
-         }
+         if(IsTrading && AmarTargetReady(AmarTargetSymbol())) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
-
       case AMAR_CMD_UPDATE_SETTINGS:
-         if(!cmd.hasSettings || !cmd.hasBuyEnabled || !cmd.hasSellEnabled)
-            return false;
+         if(!cmd.hasSettings || !cmd.hasBuyEnabled || !cmd.hasSellEnabled) return false;
          if(!AmarTargetReady(AmarTargetSymbol())) return false;
          LotStart=cmd.lotStart;
          GridStep=(int)cmd.gridStep;
@@ -140,12 +112,8 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          Trail=(int)cmd.trailing;
          BuyEnabled=cmd.buyEnabled;
          SellEnabled=cmd.sellEnabled;
-         if(IsTrading)
-         {
-            CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
-         }
+         if(IsTrading) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
-
       default:
          return false;
    }
@@ -153,10 +121,7 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
 
 void OnTick()
 {
-   // When the chart itself is the selected target, retain the authoritative
-   // strategy's native tick cadence. Otherwise the timer below owns the cycle.
-   if(_Symbol==AmarTargetSymbol())
-      AmarOriginalOnTick();
+   if(_Symbol==AmarTargetSymbol()) AmarOriginalOnTick();
 }
 
 void OnTimer()
@@ -165,14 +130,11 @@ void OnTimer()
    if(g_remoteReceiver.Read(cmd))
    {
       bool ok=ApplyRemoteCommand(cmd);
+      g_remoteReceiver.Ack(cmd.requestId,ok,ok?"تم تطبيق الأمر على MT5":"تم رفض الأمر داخل MT5 - fail-closed");
       Print(ok ? "AMAR remote command verified" : "AMAR remote command rejected/fail-closed");
       ChartRedraw(0);
    }
-
-   // If the chart is not the target, manage the strategy from target-symbol
-   // quotes rather than depending on ticks from the unrelated chart symbol.
-   if(_Symbol!=AmarTargetSymbol())
-      AmarTargetCycle();
+   if(_Symbol!=AmarTargetSymbol()) AmarTargetCycle();
 }
 
 int OnInit()
@@ -183,13 +145,15 @@ int OnInit()
       Print("AMAR FAIL-CLOSED: configured target symbol unavailable: ",g_remoteTargetSymbol);
       return INIT_FAILED;
    }
-
    int result=AmarOriginalOnInit();
    if(result!=INIT_SUCCEEDED) return result;
-
    int seconds=InpRemotePollSeconds;
    if(seconds<1) seconds=1;
-   EventSetTimer(seconds);
+   if(!EventSetTimer(seconds))
+   {
+      Print("AMAR FAIL-CLOSED: EventSetTimer failed. Error=",GetLastError());
+      return INIT_FAILED;
+   }
    Print("AMAR remote target control armed for: ",AmarTargetSymbol());
    return INIT_SUCCEEDED;
 }

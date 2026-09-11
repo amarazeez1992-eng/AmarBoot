@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.broker
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,7 +11,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** B31: write transport. It never authorizes live execution by itself. */
+/** B31/B37: write transport. It never authorizes live execution by itself. */
 class AmarMt5CommandClient(
     private val config: AmarBridgeConfig,
     private val signingSecret: String,
@@ -55,20 +56,61 @@ class AmarMt5CommandClient(
         )
         val envelope = unsigned.copy(signature = AmarCommandSigner.hmacSha256(signingSecret, AmarCommandSigner.canonical(unsigned)))
         val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaType())
+        return@withContext postJson("/commands", body, command.requestId)
+    }
+
+    /** B37: queues a full BOT 1 lifecycle command for the MT5 EA. */
+    suspend fun submitBot1(
+        accountLogin: Long,
+        botMagic: Long,
+        symbol: String,
+        command: AmarBot1RemoteCommandType,
+        targetSymbol: String? = null,
+        enabled: Boolean? = null,
+        settings: AmarBot1RemoteSettings? = null,
+        ttlMs: Long = 15_000L,
+        idempotencyKey: String = UUID.randomUUID().toString(),
+    ): AmarBrokerResult = withContext(Dispatchers.IO) {
+        require(accountLogin > 0)
+        require(botMagic >= 0)
+        require(symbol.isNotBlank())
+        require(ttlMs in 1_000L..30_000L)
+        require(idempotencyKey.isNotBlank())
+        if (command == AmarBot1RemoteCommandType.UPDATE_SETTINGS) require(settings != null)
+        if (command == AmarBot1RemoteCommandType.SET_BUY_ENABLED || command == AmarBot1RemoteCommandType.SET_SELL_ENABLED) require(enabled != null)
+        val now = System.currentTimeMillis()
+        val unsigned = AmarBot1RemoteEnvelope(
+            idempotencyKey = idempotencyKey,
+            issuedAtMs = now,
+            expiresAtMs = now + ttlMs,
+            accountLogin = accountLogin,
+            botMagic = botMagic,
+            symbol = symbol,
+            command = command,
+            targetSymbol = targetSymbol,
+            enabled = enabled,
+            settings = settings,
+            signature = "pending",
+        )
+        val envelope = AmarBot1RemoteSigner.sign(unsigned, signingSecret)
+        val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaType())
+        postJson("/bot1/commands", body, envelope.requestId)
+    }
+
+    private fun postJson(path: String, body: okhttp3.RequestBody, requestId: String): AmarBrokerResult {
         val request = Request.Builder()
-            .url(config.baseUrl.trimEnd('/') + "/commands")
+            .url(config.baseUrl.trimEnd('/') + path)
             .header("Authorization", "Bearer ${config.token}")
             .header("X-AMAR-Command-Version", "1")
             .post(body)
             .build()
-
         httpClient.newCall(request).execute().use { response ->
             val raw = response.body?.string().orEmpty()
-            if (raw.isBlank()) return@withContext AmarBrokerResult(false, false, command.requestId, "استجابة الأمر فارغة")
+            if (raw.isBlank()) return AmarBrokerResult(false, false, requestId, "استجابة الأمر فارغة")
             val parsed = runCatching { gson.fromJson(raw, AmarBrokerResult::class.java) }.getOrNull()
-            if (parsed != null) return@withContext parsed
-            if (!response.isSuccessful) return@withContext AmarBrokerResult(false, false, command.requestId, "تم رفض الأمر: HTTP ${response.code}")
-            AmarBrokerResult(false, false, command.requestId, "استجابة الأمر غير صالحة")
+            if (parsed != null) return parsed
+            if (!response.isSuccessful) return AmarBrokerResult(false, false, requestId, "تم رفض الأمر: HTTP ${response.code}")
+            return AmarBrokerResult(false, false, requestId, "استجابة الأمر غير صالحة")
         }
     }
 }

@@ -1,8 +1,9 @@
 """AMAR secure bridge entrypoint.
 
-Extends the read-only bridge with /commands. Live execution remains FAIL-CLOSED.
-Every command is authenticated, HMAC signed, time bounded, replay protected,
-account scoped, BOT-MAGIC scoped and symbol allow-listed before MT5 execution.
+Extends the read-only bridge with /commands and B37 /bot1/commands. Live
+execution remains FAIL-CLOSED. Every write command is authenticated, signed,
+time-bounded, replay-protected, account scoped, BOT-MAGIC scoped and symbol
+allow-listed before it can reach the MT5 common-file queue.
 """
 import json
 import os
@@ -11,9 +12,18 @@ import MetaTrader5 as mt5
 
 from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
 from amar_command_channel import validate, REPLAY_STORE
+from amar_bot1_secure_channel import validate as validate_bot1, canonical as canonical_bot1
+from amar_bot1_file_queue import enqueue as enqueue_bot1
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
+COMMON_FILES_DIR = os.environ.get("AMAR_MT5_COMMON_FILES_DIR", "").strip()
+
+
+def _authorized_account():
+    if not mt5_ready():
+        return None
+    return mt5.account_info()
 
 
 def execute_market_command(payload):
@@ -68,25 +78,56 @@ def execute_market_command(payload):
 
 
 class SecureHandler(Handler):
-    def do_POST(self):
-        if self.path.split("?", 1)[0] != "/commands":
-            return json_response(self, 404, {"ok": False, "message": "not found"})
-        if not TOKEN or self.headers.get("Authorization", "").strip() != f"Bearer {TOKEN}":
-            return json_response(self, 401, {"ok": False, "accepted": False, "message": "unauthorized"})
+    def _authorized(self):
+        return bool(TOKEN and self.headers.get("Authorization", "").strip() == f"Bearer {TOKEN}")
+
+    def _body(self):
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
         if length <= 0 or length > 32_768:
-            return json_response(self, 413, {"ok": False, "accepted": False, "message": "payload too large"})
+            raise ValueError("payload too large")
+        return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def do_POST(self):
+        path = self.path.split("?", 1)[0]
+        if not self._authorized():
+            return json_response(self, 401, {"ok": False, "accepted": False, "message": "unauthorized"})
         try:
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
-            account = mt5.account_info() if mt5_ready() else None
+            payload = self._body()
+            account = _authorized_account()
             expected_login = account.login if account else -1
-            symbol = str(payload.get("symbol", ""))
-            if not ALLOWED_SYMBOLS or symbol not in ALLOWED_SYMBOLS:
+
+            if path == "/bot1/commands":
+                if not LIVE_ENABLED:
+                    return json_response(self, 423, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "BOT 1 live control is locked"})
+                if not COMMON_FILES_DIR:
+                    return json_response(self, 503, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "MT5 common-files directory is not configured"})
+                valid, message = validate_bot1(payload, expected_login, BOT_MAGIC, set(ALLOWED_SYMBOLS))
+                if not valid:
+                    return json_response(self, 403, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": message})
+                expires = int(payload["expires_at_ms"])
+                nonce_key = f"bot1-nonce:{payload['nonce']}"
+                idem_key = f"bot1-idempotency:{payload['idempotency_key']}"
+                if not REPLAY_STORE.claim_nonce(nonce_key, expires):
+                    return json_response(self, 409, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": "replayed command"})
+                if not REPLAY_STORE.claim_idempotency(idem_key, canonical_bot1(payload), expires):
+                    return json_response(self, 409, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": "duplicate command"})
+                try:
+                    enqueue_bot1(json.dumps(payload, separators=(",", ":"), sort_keys=True, allow_nan=False), COMMON_FILES_DIR)
+                except Exception as exc:
+                    REPLAY_STORE.release_idempotency(idem_key)
+                    return json_response(self, 500, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": f"queue failure: {type(exc).__name__}"})
+                return json_response(self, 202, {"ok": True, "accepted": True, "executed": False, "requestId": payload["request_id"], "message": "BOT 1 command queued for MT5 verification"})
+
+            if path != "/commands":
+                return json_response(self, 404, {"ok": False, "message": "not found"})
+
+            account_symbol = str(payload.get("symbol", ""))
+            if not ALLOWED_SYMBOLS or account_symbol not in ALLOWED_SYMBOLS:
                 return json_response(self, 403, {"ok": False, "accepted": False, "requestId": payload.get("requestId", ""), "message": "الرمز غير مصرح به"})
-            valid, message = validate(payload, expected_login, BOT_MAGIC, symbol)
+            valid, message = validate(payload, expected_login, BOT_MAGIC, account_symbol)
             if not valid:
                 return json_response(self, 403, {"ok": False, "accepted": False, "requestId": payload.get("requestId", ""), "message": message})
             executed, accepted, request_id, result_message = execute_market_command(payload)
@@ -100,6 +141,18 @@ class SecureHandler(Handler):
             return json_response(self, 400, {"ok": False, "accepted": False, "message": "invalid command"})
         except Exception as exc:
             return json_response(self, 500, {"ok": False, "accepted": False, "message": f"command failure: {type(exc).__name__}"})
+
+    def do_GET(self):
+        if self.path.split("?", 1)[0] == "/bot1/health":
+            if not self._authorized():
+                return json_response(self, 401, {"ok": False, "message": "unauthorized"})
+            account = _authorized_account()
+            return json_response(self, 200, {
+                "ok": bool(account), "connected": bool(account),
+                "login": int(account.login) if account else 0,
+                "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR),
+            })
+        return super().do_GET()
 
 
 def main():
@@ -116,7 +169,7 @@ def main():
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(certfile=CERT, keyfile=KEY)
     server.socket = context.wrap_socket(server.socket, server_side=True)
-    print(f"AMAR secure bridge listening on https://{HOST}:{PORT}; live={LIVE_ENABLED}")
+    print(f"AMAR secure bridge listening on https://{HOST}:{PORT}; live={LIVE_ENABLED}; bot1_queue={bool(COMMON_FILES_DIR)}")
     server.serve_forever()
 
 
