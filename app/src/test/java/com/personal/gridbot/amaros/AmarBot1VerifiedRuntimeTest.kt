@@ -23,6 +23,7 @@ class AmarBot1VerifiedRuntimeTest {
         fresh = true,
         botId = "BOT_1",
         magic = 20260908L,
+        strategyId = "STRATEGY_01",
         strategyVersion = "2.00",
         runtimeState = "RUNNING",
         targetSymbol = "XAUUSD",
@@ -38,6 +39,7 @@ class AmarBot1VerifiedRuntimeTest {
         basketSl = -30.0,
         trailing = 0,
         marketReady = true,
+        heartbeatMs = System.currentTimeMillis(),
     )
 
     @Test fun exactReadBackIsVerified() {
@@ -59,5 +61,10 @@ class AmarBot1VerifiedRuntimeTest {
     @Test fun configurationDriftIsDetected() {
         val state = liveState().copy(lotStart = 0.02)
         assertEquals(AmarBotSyncState.DRIFT, AmarBot1VerifiedRuntime().reconcile(desired, state))
+    }
+
+    @Test fun strategyIdentityDriftFailsClosed() {
+        val state = liveState().copy(strategyVersion = "9.99")
+        assertEquals(AmarBotSyncState.ERROR, AmarBot1VerifiedRuntime().reconcile(desired, state))
     }
 }
