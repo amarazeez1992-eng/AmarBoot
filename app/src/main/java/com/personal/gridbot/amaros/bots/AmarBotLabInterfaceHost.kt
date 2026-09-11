@@ -79,6 +79,10 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
             selectedInterface = next
             AmarBotInterfaceRegistry.save(context, selectedBot, next)
         }
+
+        // العقدة المشتركة: حالة السوق واحدة بصرياً ومنطقياً لجميع الواجهات.
+        AmarSharedMarketStatus()
+
         AnimatedContent(
             targetState = selectedInterface,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
