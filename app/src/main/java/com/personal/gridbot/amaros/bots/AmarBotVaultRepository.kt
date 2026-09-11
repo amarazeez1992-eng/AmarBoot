@@ -155,15 +155,15 @@ data class AmarSavedStrategy(
                 number = o.get("number").asInt,
                 name = o.get("name")?.asString ?: "استراتيجية",
                 profile = AmarBot1RuntimeConfig(
-                    lot = o.get("lot")?.asDouble ?: 0.01,
-                    gridStep = o.get("step")?.asDouble ?: 30.0,
-                    maxOrders = o.get("max")?.asInt ?: 10,
-                    multiplier = o.get("multiplier")?.asDouble ?: 2.0,
-                    basketTp = o.get("tp")?.asDouble ?: 50.0,
-                    basketSl = o.get("sl")?.asDouble ?: -30.0,
+                    lot = o.get("lot")?.asDouble ?: 0.0,
+                    gridStep = o.get("step")?.asDouble ?: 0.0,
+                    maxOrders = o.get("max")?.asInt ?: 0,
+                    multiplier = o.get("multiplier")?.asDouble ?: 0.0,
+                    basketTp = o.get("tp")?.asDouble ?: 0.0,
+                    basketSl = o.get("sl")?.asDouble ?: 0.0,
                     trailing = o.get("trailing")?.asDouble ?: 0.0,
-                    buyEnabled = o.get("buy")?.asBoolean ?: true,
-                    sellEnabled = o.get("sell")?.asBoolean ?: true
+                    buyEnabled = o.get("buy")?.asBoolean ?: false,
+                    sellEnabled = o.get("sell")?.asBoolean ?: false
                 ),
                 riskProfile = o.get("risk")?.asString ?: "قياسي",
                 rebuildRule = o.get("rebuildRule")?.asString ?: "يدوي",
