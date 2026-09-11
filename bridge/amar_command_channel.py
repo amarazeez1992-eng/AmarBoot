@@ -40,10 +40,11 @@ class CommandReplayStore:
         self.capacity = capacity
         self._nonces = OrderedDict()
         self._idempotency = OrderedDict()
+        self._sequences = OrderedDict()
         self._lock = threading.Lock()
 
     def _purge(self, now):
-        for store in (self._nonces, self._idempotency):
+        for store in (self._nonces, self._idempotency, self._sequences):
             for key, item in list(store.items()):
                 expiry = item if isinstance(item, int) else item[0]
                 if expiry <= now:
@@ -72,6 +73,19 @@ class CommandReplayStore:
             self._idempotency.move_to_end(key)
             while len(self._idempotency) > self.capacity:
                 self._idempotency.popitem(last=False)
+            return True
+
+    def claim_sequence(self, device_id, sequence, expires_at_ms):
+        now = int(time.time() * 1000)
+        with self._lock:
+            self._purge(now)
+            current = self._sequences.get(device_id)
+            if current is not None and sequence <= current[1]:
+                return False
+            self._sequences[device_id] = (expires_at_ms, sequence)
+            self._sequences.move_to_end(device_id)
+            while len(self._sequences) > self.capacity:
+                self._sequences.popitem(last=False)
             return True
 
     def release_idempotency(self, key):
