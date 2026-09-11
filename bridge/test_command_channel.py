@@ -1,12 +1,20 @@
 import hashlib
 import hmac
 import os
+import tempfile
 import time
 import unittest
 
 os.environ["AMAR_COMMAND_SIGNING_SECRET"] = "test-secret"
 
-from amar_command_channel import REPLAY_STORE, canonical, decimal_string, valid_signature, validate
+from amar_command_channel import (
+    REPLAY_STORE,
+    CommandReplayStore,
+    canonical,
+    decimal_string,
+    valid_signature,
+    validate,
+)
 
 
 class CommandChannelTest(unittest.TestCase):
@@ -58,6 +66,28 @@ class CommandChannelTest(unittest.TestCase):
         REPLAY_STORE.release_idempotency("idempotency:retry-key")
         second = self.envelope(request_id="retry-2", idempotency="retry-key", nonce="retry-nonce-2")
         self.assertTrue(validate(second, 123, 20260908, "XAUUSD")[0])
+
+    def test_replay_ledger_survives_store_recreation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "replay.json")
+            first = CommandReplayStore(persistence_path=path)
+            self.assertTrue(first.claim_nonce("nonce:n1", int(time.time() * 1000) + 10_000))
+            self.assertTrue(first.claim_idempotency("idempotency:i1", "fingerprint", int(time.time() * 1000) + 10_000))
+            self.assertTrue(first.claim_sequence("device-1", 7, int(time.time() * 1000) + 10_000))
+
+            restored = CommandReplayStore(persistence_path=path)
+            self.assertFalse(restored.claim_nonce("nonce:n1", int(time.time() * 1000) + 10_000))
+            self.assertFalse(restored.claim_idempotency("idempotency:i1", "fingerprint", int(time.time() * 1000) + 10_000))
+            self.assertFalse(restored.claim_sequence("device-1", 7, int(time.time() * 1000) + 10_000))
+            self.assertTrue(restored.claim_sequence("device-1", 8, int(time.time() * 1000) + 10_000))
+
+    def test_corrupt_replay_ledger_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "replay.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write("not-json")
+            with self.assertRaises(RuntimeError):
+                CommandReplayStore(persistence_path=path)
 
 
 if __name__ == "__main__":
