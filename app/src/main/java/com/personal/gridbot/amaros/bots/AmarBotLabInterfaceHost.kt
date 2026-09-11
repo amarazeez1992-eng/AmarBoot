@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,11 +50,7 @@ object AmarBotInterfaceRegistry {
     }
 }
 
-/**
- * Fixed Bot-Lab shell. Market state and timeframe are global context nodes,
- * shared by every bot, strategy and interface. Interface internals retain
- * their own original scrolling/layout.
- */
+/** Fixed Bot-Lab shell. Global market state/timeframe are shared by all bots, strategies and interfaces. */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -106,7 +101,8 @@ private fun InterfaceSelector(selected: AmarBotInterface, onSelect: (AmarBotInte
         AmarBotInterface.entries.forEach { item ->
             val active = item == selected
             Box(
-                Modifier.weight(1f).height(40.dp)
+                Modifier.height(40.dp)
+                    .weight(1f)
                     .background(if (active) Color(0xFF19E6FF) else Color(0xFF102533), RoundedCornerShape(10.dp))
                     .border(1.dp, if (active) Color(0xFF6CFAFF) else Color(0xFF1C4657), RoundedCornerShape(10.dp))
                     .clickable { onSelect(item) },
