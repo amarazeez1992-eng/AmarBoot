@@ -11,6 +11,10 @@ from pathlib import Path
 import tempfile
 
 COMMAND_FILE = "AMAR_BOT1_COMMANDS.jsonl"
+SUPPORTED_COMMANDS = {
+    "START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED",
+    "SET_SELL_ENABLED", "UPDATE_SETTINGS",
+}
 
 
 def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
@@ -20,11 +24,14 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     path = directory / COMMAND_FILE
     record = json.loads(command_json)
-    if not isinstance(record, dict) or record.get("command") not in {
-        "START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED",
-        "SET_SELL_ENABLED", "UPDATE_SETTINGS",
-    }:
+    if not isinstance(record, dict) or record.get("command") not in SUPPORTED_COMMANDS:
         raise ValueError("unsupported BOT 1 command")
+    if "target_symbol" in record:
+        target_symbol = record["target_symbol"]
+        if not isinstance(target_symbol, str) or not target_symbol.strip():
+            raise ValueError("invalid target_symbol")
+        if "\n" in target_symbol or "\r" in target_symbol:
+            raise ValueError("invalid target_symbol")
     data = (json.dumps(record, separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
     fd, tmp = tempfile.mkstemp(prefix="AMAR_BOT1_", dir=directory)
     try:
