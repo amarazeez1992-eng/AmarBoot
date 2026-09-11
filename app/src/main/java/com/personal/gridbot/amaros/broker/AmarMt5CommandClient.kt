@@ -10,7 +10,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** B31/B37-B41: authenticated transport. It never authorizes live execution by itself. */
+/** B31/B37-B42: authenticated transport with optional Android Keystore device binding. */
 class AmarMt5CommandClient(
     private val config: AmarBridgeConfig,
     private val signingSecret: String,
@@ -19,6 +19,7 @@ class AmarMt5CommandClient(
         .readTimeout(config.readTimeoutMs, TimeUnit.MILLISECONDS)
         .build(),
     private val gson: Gson = Gson(),
+    private val deviceSecurity: AmarDeviceSecurity? = null,
 ) {
     init { require(signingSecret.isNotBlank()) { "مفتاح توقيع الأوامر مطلوب" } }
 
@@ -58,7 +59,7 @@ class AmarMt5CommandClient(
         return@withContext postJson("/commands", body, command.requestId)
     }
 
-    /** B37/B38: queues a full BOT 1 lifecycle command for the MT5 EA. */
+    /** B42: BOT1 lifecycle commands are device-bound and strictly sequenced. */
     suspend fun submitBot1(
         accountLogin: Long,
         botMagic: Long,
@@ -78,6 +79,7 @@ class AmarMt5CommandClient(
         require(idempotencyKey.isNotBlank())
         if (command == AmarBot1RemoteCommandType.UPDATE_SETTINGS) require(settings != null)
         if (command == AmarBot1RemoteCommandType.SET_BUY_ENABLED || command == AmarBot1RemoteCommandType.SET_SELL_ENABLED) require(enabled != null)
+        val security = deviceSecurity ?: return@withContext AmarBrokerResult(false, false, idempotencyKey, "هوية الجهاز الآمنة غير مهيأة")
         val now = System.currentTimeMillis()
         val unsigned = AmarBot1RemoteEnvelope(
             idempotencyKey = idempotencyKey,
@@ -90,14 +92,19 @@ class AmarMt5CommandClient(
             targetSymbol = targetSymbol,
             enabled = enabled,
             settings = settings,
+            deviceId = security.deviceId,
+            sequence = security.nextSequence(),
+            devicePublicKey = security.publicKeyBase64(),
+            deviceSignature = "pending",
             signature = "pending",
         )
-        val envelope = AmarBot1RemoteSigner.sign(unsigned, signingSecret)
+        val deviceSignature = security.sign(AmarBot1RemoteSigner.deviceCanonical(unsigned))
+        val deviceBound = unsigned.copy(deviceSignature = deviceSignature)
+        val envelope = AmarBot1RemoteSigner.sign(deviceBound, signingSecret)
         val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaType())
         postJson("/bot1/commands", body, envelope.requestId)
     }
 
-    /** B38: reads the terminal ACK; QUEUED/PENDING is never reported as verified. */
     suspend fun bot1Status(requestId: String): AmarBot1CommandAck = withContext(Dispatchers.IO) {
         require(requestId.isNotBlank() && requestId.length <= 128 && requestId.none { it == '/' || it == '\\' || it == '\n' || it == '\r' })
         val request = authenticatedGet("/bot1/commands/$requestId")
@@ -111,7 +118,6 @@ class AmarMt5CommandClient(
         }
     }
 
-    /** B41: reads the broker-discovered target-symbol catalog behind the authenticated bridge. */
     suspend fun bot1Symbols(): List<AmarBot1DiscoveredSymbol> = withContext(Dispatchers.IO) {
         val request = authenticatedGet("/bot1/symbols")
         httpClient.newCall(request).execute().use { response ->
@@ -122,7 +128,6 @@ class AmarMt5CommandClient(
         }
     }
 
-    /** B41: reads terminal runtime state; stale state is returned as an empty snapshot. */
     suspend fun bot1State(): AmarBot1RemoteState = withContext(Dispatchers.IO) {
         val request = authenticatedGet("/bot1/state")
         httpClient.newCall(request).execute().use { response ->
