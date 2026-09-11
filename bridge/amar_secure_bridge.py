@@ -1,9 +1,8 @@
 """AMAR secure bridge entrypoint.
 
-Extends the read-only bridge with /commands and the authenticated BOT 1
-lifecycle channel. Live execution is fail-closed: a command must pass bearer
-access, HMAC, TTL/clock checks, account+magic scope, symbol allow-listing and
-replay/idempotency gates before entering the MT5 FILE_COMMON queue.
+Authenticated BOT 1 lifecycle channel: bearer access + HMAC + TTL/clock
+validation + account/magic scope + source/target symbol allow-lists +
+replay/idempotency + single-flight MT5 queue + terminal ACK verification.
 """
 import json
 import os
@@ -18,6 +17,7 @@ from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FI
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
+ALLOWED_TARGET_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_SYMBOLS", "").split(",") if x.strip()) or ALLOWED_SYMBOLS
 COMMON_FILES_DIR = os.environ.get("AMAR_MT5_COMMON_FILES_DIR", "").strip()
 
 
@@ -36,9 +36,7 @@ def _read_latest_ack(request_id: str) -> dict:
         if not lines:
             return {"status": "PENDING", "request_id": request_id}
         value = json.loads(lines[-1])
-        if not isinstance(value, dict):
-            return {"status": "PENDING", "request_id": request_id}
-        if str(value.get("request_id", "")) != request_id:
+        if not isinstance(value, dict) or str(value.get("request_id", "")) != request_id:
             return {"status": "PENDING", "request_id": request_id}
         return value
     except (OSError, UnicodeError, json.JSONDecodeError):
@@ -123,7 +121,7 @@ class SecureHandler(Handler):
                     return json_response(self, 423, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "BOT 1 live control is locked"})
                 if not COMMON_FILES_DIR:
                     return json_response(self, 503, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "MT5 common-files directory is not configured"})
-                valid, message = validate_bot1(payload, expected_login, BOT_MAGIC, set(ALLOWED_SYMBOLS))
+                valid, message = validate_bot1(payload, expected_login, BOT_MAGIC, set(ALLOWED_SYMBOLS), set(ALLOWED_TARGET_SYMBOLS))
                 if not valid:
                     return json_response(self, 403, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": message})
                 expires = int(payload["expires_at_ms"])
@@ -155,10 +153,7 @@ class SecureHandler(Handler):
             executed, accepted, request_id, result_message = execute_market_command(payload)
             if not executed:
                 REPLAY_STORE.release_idempotency(f"idempotency:{payload['idempotencyKey']}")
-            return json_response(self, 200 if accepted else 409, {
-                "accepted": accepted, "executed": executed,
-                "requestId": request_id, "message": result_message,
-            })
+            return json_response(self, 200 if accepted else 409, {"accepted": accepted, "executed": executed, "requestId": request_id, "message": result_message})
         except (ValueError, TypeError, json.JSONDecodeError):
             return json_response(self, 400, {"ok": False, "accepted": False, "message": "invalid command"})
         except Exception as exc:
@@ -173,16 +168,11 @@ class SecureHandler(Handler):
             if not request_id or len(request_id) > 128 or any(c in request_id for c in "/\\\r\n"):
                 return json_response(self, 400, {"ok": False, "message": "invalid request id"})
             return json_response(self, 200, {"ok": True, **_read_latest_ack(request_id)})
-
         if path == "/bot1/health":
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
             account = _authorized_account()
-            return json_response(self, 200, {
-                "ok": bool(account), "connected": bool(account),
-                "login": int(account.login) if account else 0,
-                "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR),
-            })
+            return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR)})
         return super().do_GET()
 
 
@@ -191,8 +181,8 @@ def main():
         raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
     if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
         raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
-    if not ALLOWED_SYMBOLS:
-        raise SystemExit("AMAR_ALLOWED_SYMBOLS is required")
+    if not ALLOWED_SYMBOLS or not ALLOWED_TARGET_SYMBOLS:
+        raise SystemExit("AMAR_ALLOWED_SYMBOLS and AMAR_ALLOWED_TARGET_SYMBOLS are required")
     from http.server import ThreadingHTTPServer
     import ssl
     server = ThreadingHTTPServer((HOST, PORT), SecureHandler)
