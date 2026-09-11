@@ -31,6 +31,10 @@ struct AmarBot1RemoteCommand
    double basketTp;
    double basketSl;
    double trailing;
+   bool hasBuyEnabled;
+   bool buyEnabled;
+   bool hasSellEnabled;
+   bool sellEnabled;
    bool hasTargetSymbol;
    string targetSymbol;
   };
@@ -80,6 +84,11 @@ private:
       if(v=="") return false;
       out=(int)StringToInteger(v);
       return true;
+     }
+
+   bool HasTargetSymbol(string src)
+     {
+      return StringFind(src,"\"target_symbol\"")>=0;
      }
 
 public:
@@ -134,8 +143,9 @@ public:
             !ParseDouble(line,"trailing",out.trailing) ||
             out.lotStart<=0 || out.gridStep<=0 || out.maxOrders<=0 || out.martingale<=0 || out.trailing<0)
            return false;
-         if(!ParseBool(line,"buy_enabled",out.enabled)) return false;
-         if(!ParseBool(line,"sell_enabled",out.hasEnabled)) return false;
+         out.hasBuyEnabled=ParseBool(line,"buy_enabled",out.buyEnabled);
+         out.hasSellEnabled=ParseBool(line,"sell_enabled",out.sellEnabled);
+         if(!out.hasBuyEnabled || !out.hasSellEnabled) return false;
          if(HasTargetSymbol(line))
            {
             out.targetSymbol=ValueAfter(line,"target_symbol");
@@ -144,10 +154,5 @@ public:
            }
         }
       return true;
-     }
-
-   bool HasTargetSymbol(string src)
-     {
-      return StringFind(src,"\"target_symbol\"")>=0;
      }
   };
