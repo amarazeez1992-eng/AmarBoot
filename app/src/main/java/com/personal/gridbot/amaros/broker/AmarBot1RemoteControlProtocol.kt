@@ -7,7 +7,7 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-/** B37: broker-neutral remote BOT 1 control contract. */
+/** B37/B42: broker-neutral remote BOT 1 control contract. */
 enum class AmarBot1RemoteCommandType {
     START, STOP, REBUILD, CLOSE_ALL, SET_BUY_ENABLED, SET_SELL_ENABLED, UPDATE_SETTINGS
 }
@@ -46,6 +46,10 @@ data class AmarBot1RemoteEnvelope(
     @SerializedName("target_symbol") val targetSymbol: String? = null,
     @SerializedName("enabled") val enabled: Boolean? = null,
     @SerializedName("settings") val settings: AmarBot1RemoteSettings? = null,
+    @SerializedName("device_id") val deviceId: String,
+    @SerializedName("sequence") val sequence: Long,
+    @SerializedName("device_public_key") val devicePublicKey: String,
+    @SerializedName("device_signature") val deviceSignature: String,
     @SerializedName("signature") val signature: String,
 ) {
     init {
@@ -53,6 +57,7 @@ data class AmarBot1RemoteEnvelope(
         require(expiresAtMs > issuedAtMs)
         require(accountLogin > 0 && botMagic >= 0 && symbol.isNotBlank())
         require(targetSymbol == null || targetSymbol.isNotBlank())
+        require(deviceId.isNotBlank() && sequence > 0 && devicePublicKey.isNotBlank() && deviceSignature.isNotBlank())
         if (command == AmarBot1RemoteCommandType.UPDATE_SETTINGS) require(settings != null)
         if (command == AmarBot1RemoteCommandType.SET_BUY_ENABLED || command == AmarBot1RemoteCommandType.SET_SELL_ENABLED) require(enabled != null)
         require(signature.isNotBlank())
@@ -71,8 +76,11 @@ object AmarBot1RemoteSigner {
         envelope.settings?.let { s -> listOf(
             decimal(s.lotStart), decimal(s.gridStep), s.maxOrders.toString(), decimal(s.martingale),
             decimal(s.basketTp), decimal(s.basketSl), decimal(s.trailing), s.buyEnabled.toString(), s.sellEnabled.toString()
-        ).joinToString("|") }.orEmpty()
+        ).joinToString("|") }.orEmpty(),
+        envelope.deviceId, envelope.sequence.toString(), envelope.devicePublicKey
     ).joinToString("|")
+
+    fun deviceCanonical(envelope: AmarBot1RemoteEnvelope): String = canonical(envelope.copy(deviceSignature = "pending", signature = "pending"))
 
     fun hmacSha256(secret: String, value: String): String {
         require(secret.isNotBlank())
