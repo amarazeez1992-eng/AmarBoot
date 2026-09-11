@@ -41,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -75,7 +74,7 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val repo = remember(context) { AmarBotVaultRepository(context) }
     var bots by remember { mutableStateOf(repo.load()) }
-    var selectedBot by remember { mutableIntStateOf(1) }
+    val selectedBot = AmarBotLabSelectionContext.selectedBot
     var selectedStrategy by remember { mutableIntStateOf(1) }
     var mode by remember { mutableStateOf(LabMode.BOT) }
     var notice by remember { mutableStateOf("") }
@@ -109,7 +108,7 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
                         commandState = commandState,
                         commandName = commandName,
                         notice = notice,
-                        onSelectBot = { selectedBot = it },
+                        onSelectBot = { AmarBotLabSelectionContext.selectedBot = it.coerceIn(1, 10) },
                         onSelectStrategy = { selectedStrategy = it },
                         onCommand = { name ->
                             commandName = name

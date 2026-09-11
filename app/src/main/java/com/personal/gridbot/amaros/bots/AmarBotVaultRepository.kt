@@ -16,7 +16,9 @@ class AmarBotVaultRepository(context: Context) {
         return runCatching {
             val array = JSONArray(raw)
             buildList {
-                for (i in 0 until array.length()) add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized())
+                for (i in 0 until array.length()) {
+                    runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
+                }
             }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
         }.getOrElse { defaultBots() }
     }
@@ -81,7 +83,7 @@ class AmarBotVaultRepository(context: Context) {
             .distinctBy { it.botNumber }
             .sortedBy { it.botNumber }
             .forEach { array.put(it.toJson()) }
-        prefs.edit().putString(KEY_BOTS, array.toString()).apply()
+        prefs.edit().putString(KEY_BOTS, array.toString()).commit()
     }
 
     private fun defaultBots(): List<AmarSavedBot> = (1..10).map { AmarSavedBot(it, "بوت $it") }
@@ -149,29 +151,39 @@ data class AmarSavedStrategy(
     }
 
     companion object {
-        fun fromJsonString(json: String): AmarSavedStrategy {
-            val o = JsonParser.parseString(json).asJsonObject
+        fun fromJsonString(json: String): AmarSavedStrategy = fromJson(JSONObject(json))
+
+        fun fromJson(o: JSONObject): AmarSavedStrategy {
+            fun finiteDouble(key: String, fallback: Double): Double {
+                val value = o.optDouble(key, fallback)
+                return if (value.isFinite()) value else fallback
+            }
+            val lot = finiteDouble("lot", 0.01).coerceAtLeast(0.00001)
+            val step = finiteDouble("step", 30.0).coerceAtLeast(0.00001)
+            val max = o.optInt("max", 10).coerceAtLeast(1)
+            val multiplier = finiteDouble("multiplier", 2.0).coerceAtLeast(0.00001)
+            val tp = finiteDouble("tp", 50.0)
+            val sl = finiteDouble("sl", -30.0)
+            val trailing = finiteDouble("trailing", 0.0).coerceAtLeast(0.0)
             return AmarSavedStrategy(
-                number = o.get("number").asInt,
-                name = o.get("name")?.asString ?: "استراتيجية",
+                number = o.optInt("number", 1).coerceIn(1, 10),
+                name = o.optString("name", "استراتيجية").ifBlank { "استراتيجية" },
                 profile = AmarBot1RuntimeConfig(
-                    lot = o.get("lot")?.asDouble ?: 0.0,
-                    gridStep = o.get("step")?.asDouble ?: 0.0,
-                    maxOrders = o.get("max")?.asInt ?: 0,
-                    multiplier = o.get("multiplier")?.asDouble ?: 0.0,
-                    basketTp = o.get("tp")?.asDouble ?: 0.0,
-                    basketSl = o.get("sl")?.asDouble ?: 0.0,
-                    trailing = o.get("trailing")?.asDouble ?: 0.0,
-                    buyEnabled = o.get("buy")?.asBoolean ?: false,
-                    sellEnabled = o.get("sell")?.asBoolean ?: false
+                    lot = lot,
+                    gridStep = step,
+                    maxOrders = max,
+                    multiplier = multiplier,
+                    basketTp = tp,
+                    basketSl = sl,
+                    trailing = trailing,
+                    buyEnabled = o.optBoolean("buy", true),
+                    sellEnabled = o.optBoolean("sell", true)
                 ),
-                riskProfile = o.get("risk")?.asString ?: "قياسي",
-                rebuildRule = o.get("rebuildRule")?.asString ?: "يدوي",
-                entryRule = o.get("entryRule")?.asString ?: "أساسي",
-                metadata = o.get("metadata")?.asString ?: ""
+                riskProfile = o.optString("risk", "قياسي").ifBlank { "قياسي" },
+                rebuildRule = o.optString("rebuildRule", "يدوي").ifBlank { "يدوي" },
+                entryRule = o.optString("entryRule", "أساسي").ifBlank { "أساسي" },
+                metadata = o.optString("metadata", "")
             )
         }
-
-        fun fromJson(o: JSONObject): AmarSavedStrategy = fromJsonString(o.toString())
     }
 }
