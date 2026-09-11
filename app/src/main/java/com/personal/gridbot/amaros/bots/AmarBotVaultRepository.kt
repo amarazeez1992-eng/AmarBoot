@@ -23,7 +23,6 @@ class AmarBotVaultRepository(context: Context) {
 
     fun save(bots: List<AmarSavedBot>) = persist(bots)
 
-    /** Adds a configuration slot only; it never creates a trading engine. */
     fun addBot(name: String? = null): AmarSavedBot {
         val bots = load().toMutableList()
         val next = generateSequence(1) { it + 1 }.first { n -> bots.none { it.botNumber == n } }
@@ -46,7 +45,6 @@ class AmarBotVaultRepository(context: Context) {
         return upsertBot(bot.copy(name = name.trim().ifBlank { bot.name }))
     }
 
-    /** Deletes only the saved configuration slot. Live MT5 state is untouched. */
     fun deleteBot(botNumber: Int): Boolean {
         if (botNumber == 1) return false
         val bots = load()
@@ -55,7 +53,6 @@ class AmarBotVaultRepository(context: Context) {
         return true
     }
 
-    /** Clears a saved bot configuration without touching MT5. */
     fun resetBot(botNumber: Int): AmarSavedBot? {
         val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
         return upsertBot(bot.copy(strategies = emptyList()))
@@ -87,7 +84,7 @@ class AmarBotVaultRepository(context: Context) {
         prefs.edit().putString(KEY_BOTS, array.toString()).apply()
     }
 
-    private fun defaultBots(): List<AmarSavedBot> = (1..4).map { AmarSavedBot(it, "بوت $it") }
+    private fun defaultBots(): List<AmarSavedBot> = (1..10).map { AmarSavedBot(it, "بوت $it") }
 
     companion object { private const val KEY_BOTS = "bots" }
 }
@@ -129,10 +126,7 @@ data class AmarSavedStrategy(
     val entryRule: String = "أساسي",
     val metadata: String = ""
 ) {
-    /** Pure JSON contract. Kept independent from Android's org.json implementation so JVM tests can exercise it. */
     fun toJsonString(): String = Gson().toJson(toJsonObject())
-
-    /** Android adapter retained for SharedPreferences persistence. */
     fun toJson(): JSONObject = JSONObject(toJsonString())
 
     private fun toJsonObject(): JsonObject = JsonObject().apply {
