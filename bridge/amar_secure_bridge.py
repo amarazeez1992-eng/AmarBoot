@@ -24,7 +24,9 @@ ALLOWED_TARGET_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOW
 ALLOWED_TARGET_PATTERNS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_PATTERNS", "").split(",") if x.strip())
 COMMON_FILES_DIR = os.environ.get("AMAR_MT5_COMMON_FILES_DIR", "").strip()
 MAX_BODY_BYTES = min(max(int(os.environ.get("AMAR_MAX_BODY_BYTES", "32768")), 1024), 262144)
+MAX_STATE_AGE_MS = max(int(os.environ.get("AMAR_BOT1_STATE_MAX_AGE_MS", "5000")), 1000)
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+STATE_FILE = "AMAR_BOT1_STATE.json"
 
 
 def _authorized_account():
@@ -54,6 +56,26 @@ def _read_ack_for_request(request_id: str) -> dict:
         return {"status": "PENDING", "request_id": request_id}
     except (OSError, UnicodeError):
         return {"status": "PENDING", "request_id": request_id}
+
+
+def _read_bot1_state() -> dict:
+    if not COMMON_FILES_DIR:
+        return {"available": False, "reason": "queue_not_configured"}
+    path = Path(COMMON_FILES_DIR) / STATE_FILE
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(state, dict):
+            return {"available": False, "reason": "invalid_state"}
+        heartbeat = int(state.get("heartbeat_ms", 0) or 0)
+        age = max(0, int(__import__("time").time() * 1000) - heartbeat) if heartbeat else None
+        state["available"] = True
+        state["age_ms"] = age
+        state["fresh"] = bool(age is not None and age <= MAX_STATE_AGE_MS)
+        if not state["fresh"]:
+            state["runtime_health"] = "STALE"
+        return state
+    except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        return {"available": False, "reason": "state_unavailable"}
 
 
 def _discover_target_symbols():
@@ -220,11 +242,17 @@ class SecureHandler(Handler):
             if not mt5_ready():
                 return json_response(self, 503, {"ok": False, "message": "MT5 unavailable"})
             return json_response(self, 200, {"ok": True, "items": _discover_target_symbols()})
+        if path == "/bot1/state":
+            if not self._authorized():
+                return json_response(self, 401, {"ok": False, "message": "unauthorized"})
+            state = _read_bot1_state()
+            return json_response(self, 200 if state.get("fresh") else 503, {"ok": bool(state.get("fresh")), **state})
         if path == "/bot1/health":
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
             account = _authorized_account()
-            return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR), "symbolDiscovery": bool(ALLOWED_TARGET_SYMBOLS or ALLOWED_TARGET_PATTERNS)})
+            state = _read_bot1_state()
+            return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR), "symbolDiscovery": bool(ALLOWED_TARGET_SYMBOLS or ALLOWED_TARGET_PATTERNS), "botStateFresh": bool(state.get("fresh"))})
         return super().do_GET()
 
 
@@ -233,7 +261,7 @@ def main():
         raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
     if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
         raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
-    if not ALLOWED_SYMBOLS or not ALLOWED_TARGET_SYMBOLS and not ALLOWED_TARGET_PATTERNS:
+    if not ALLOWED_SYMBOLS or (not ALLOWED_TARGET_SYMBOLS and not ALLOWED_TARGET_PATTERNS):
         raise SystemExit("AMAR_ALLOWED_SYMBOLS and target allow-list are required")
     from http.server import ThreadingHTTPServer
     import ssl
