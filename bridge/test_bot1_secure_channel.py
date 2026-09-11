@@ -1,5 +1,8 @@
+import hashlib
+import hmac
 import os
 import time
+import unittest
 
 os.environ.setdefault("AMAR_COMMAND_SIGNING_SECRET", "test-secret")
 
@@ -18,33 +21,41 @@ def _payload(command="REBUILD", expires=None, target="XAUUSD"):
         "command": command, "target_symbol": target, "enabled": None,
         "settings": None, "signature": "",
     }
-    import hashlib, hmac
     payload["signature"] = hmac.new(secret.encode(), canonical(payload).encode(), hashlib.sha256).hexdigest()
     return payload
 
 
-def test_valid_bot1_command():
-    ok, message = validate(_payload(), 123, 20260908, {"XAUUSD", "BTCUSD"}, {"XAUUSD", "BTCUSD", "XAUUSDm"})
-    assert ok is True
-    assert message == "accepted"
+class Bot1SecureChannelTests(unittest.TestCase):
+    def test_valid_bot1_command(self):
+        ok, message = validate(_payload(), 123, 20260908, {"XAUUSD", "BTCUSD"}, {"XAUUSD", "BTCUSD", "XAUUSDm"})
+        self.assertTrue(ok)
+        self.assertEqual(message, "accepted")
+
+    def test_wrong_scope_is_rejected(self):
+        ok, _ = validate(_payload(), 999, 20260908, {"XAUUSD"})
+        self.assertFalse(ok)
+
+    def test_expired_command_is_rejected(self):
+        now = int(time.time() * 1000)
+        ok, _ = validate(_payload(expires=now - 1), 123, 20260908, {"XAUUSD"})
+        self.assertFalse(ok)
+
+    def test_target_symbol_must_be_allow_listed(self):
+        ok, _ = validate(_payload(target="XAUUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSD"})
+        self.assertFalse(ok)
+
+    def test_custom_broker_target_can_be_explicitly_allowed(self):
+        ok, _ = validate(_payload(target="XAUUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSDm"})
+        self.assertTrue(ok)
+
+    def test_target_symbol_pattern_can_be_explicitly_allowed(self):
+        ok, _ = validate(_payload(target="XAUUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSD"}, {"XAUUSD*"})
+        self.assertTrue(ok)
+
+    def test_unmatched_target_pattern_is_rejected(self):
+        ok, _ = validate(_payload(target="BTCUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSD"}, {"XAUUSD*"})
+        self.assertFalse(ok)
 
 
-def test_wrong_scope_is_rejected():
-    ok, _ = validate(_payload(), 999, 20260908, {"XAUUSD"})
-    assert ok is False
-
-
-def test_expired_command_is_rejected():
-    now = int(time.time() * 1000)
-    ok, _ = validate(_payload(expires=now - 1), 123, 20260908, {"XAUUSD"})
-    assert ok is False
-
-
-def test_target_symbol_must_be_allow_listed():
-    ok, _ = validate(_payload(target="XAUUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSD"})
-    assert ok is False
-
-
-def test_custom_broker_target_can_be_explicitly_allowed():
-    ok, _ = validate(_payload(target="XAUUSDm"), 123, 20260908, {"XAUUSD"}, {"XAUUSDm"})
-    assert ok is True
+if __name__ == "__main__":
+    unittest.main()
