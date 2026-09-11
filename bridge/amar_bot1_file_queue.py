@@ -1,8 +1,9 @@
-"""Local BOT 1 command queue for the MT5 terminal-side receiver.
+"""Fail-closed single-flight BOT 1 command queue for MT5.
 
-The authenticated B37 bridge writes commands with request identity and expiry.
-Legacy unit-test/local callers remain supported at the queue layer; only the
-remote bridge path is allowed to claim a command as authenticated.
+The authenticated bridge writes one command at a time into the MT5
+FILE_COMMON sandbox. A command cannot be overwritten while it is still
+pending. This prevents a fast sequence of phone commands from silently
+replacing an older command before MT5 has consumed it.
 """
 from __future__ import annotations
 
@@ -11,10 +12,28 @@ from pathlib import Path
 import tempfile
 
 COMMAND_FILE = "AMAR_BOT1_COMMANDS.jsonl"
+ACK_FILE = "AMAR_BOT1_ACK.jsonl"
 SUPPORTED_COMMANDS = {
     "START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED",
     "SET_SELL_ENABLED", "UPDATE_SETTINGS",
 }
+
+
+class QueueBusyError(RuntimeError):
+    """A previous authenticated command is still awaiting terminal ACK."""
+
+
+def _read_last_json(path: Path) -> dict | None:
+    if not path.exists():
+        return None
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if not lines:
+            return None
+        value = json.loads(lines[-1])
+        return value if isinstance(value, dict) else None
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
 
 
 def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
@@ -33,8 +52,18 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
         for key in identity_keys + ("symbol",):
             if key not in record or not record[key]:
                 raise ValueError(f"missing {key}")
-        if int(record["expires_at_ms"]) <= int(record["issued_at_ms"]):
+        issued = int(record["issued_at_ms"])
+        expires = int(record["expires_at_ms"])
+        if expires <= issued:
             raise ValueError("invalid command expiry")
+
+        pending = _read_last_json(path)
+        if pending:
+            pending_id = str(pending.get("request_id", ""))
+            ack = _read_last_json(directory / ACK_FILE)
+            ack_id = str(ack.get("request_id", "")) if ack else ""
+            if pending_id and pending_id != str(record["request_id"]) and pending_id != ack_id:
+                raise QueueBusyError("previous BOT 1 command is awaiting MT5 acknowledgement")
 
     target_symbol = record.get("target_symbol")
     if target_symbol is not None:
@@ -43,6 +72,7 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
         if "\n" in target_symbol or "\r" in target_symbol:
             raise ValueError("invalid target_symbol")
         record["target_symbol"] = target_symbol.strip()
+
     data = (json.dumps(record, separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
     fd, tmp = tempfile.mkstemp(prefix="AMAR_BOT1_", dir=directory)
     try:
