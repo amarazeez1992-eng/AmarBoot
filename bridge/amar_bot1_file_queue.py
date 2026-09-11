@@ -1,8 +1,8 @@
 """Local BOT 1 command queue for the MT5 terminal-side receiver.
 
-The bridge writes one authenticated, already-validated command per file. The
-EA polls the shared MT5 Files/Common directory. The queue is transport-only;
-live authorization remains in the secure bridge and terminal-side gates.
+The authenticated B37 bridge writes commands with request identity and expiry.
+Legacy unit-test/local callers remain supported at the queue layer; only the
+remote bridge path is allowed to claim a command as authenticated.
 """
 from __future__ import annotations
 
@@ -26,11 +26,16 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
     record = json.loads(command_json)
     if not isinstance(record, dict) or record.get("command") not in SUPPORTED_COMMANDS:
         raise ValueError("unsupported BOT 1 command")
-    for key in ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "symbol"):
-        if key not in record or not record[key]:
-            raise ValueError(f"missing {key}")
-    if int(record["expires_at_ms"]) <= int(record["issued_at_ms"]):
-        raise ValueError("invalid command expiry")
+
+    identity_keys = ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms")
+    has_identity = any(key in record for key in identity_keys)
+    if has_identity:
+        for key in identity_keys + ("symbol",):
+            if key not in record or not record[key]:
+                raise ValueError(f"missing {key}")
+        if int(record["expires_at_ms"]) <= int(record["issued_at_ms"]):
+            raise ValueError("invalid command expiry")
+
     target_symbol = record.get("target_symbol")
     if target_symbol is not None:
         if not isinstance(target_symbol, str) or not target_symbol.strip():
