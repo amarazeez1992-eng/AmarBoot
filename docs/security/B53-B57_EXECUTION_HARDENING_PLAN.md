@@ -8,10 +8,10 @@
 
 ## B54 — Verified command wiring boundary
 - Added `AmarBot1CommandRuntimeRegistry` as the explicit Android production wiring point.
-- It constructs `AmarMt5CommandClient` only through `AmarMt5CommandClientFactory`, preserving Android Keystore device identity and persistent sequencing.
+- The registry constructs `AmarMt5CommandClient` through `AmarMt5CommandClientFactory`, preserving Android Keystore device identity and persistent sequencing.
 - It exposes `AmarBot1CommandVerifier`, so UI integrations can report execution success only after terminal ACK + runtime postcondition verification.
 - The registry is empty by default; no endpoint, token, signing secret, account, or magic is embedded or inferred.
-- Actual UI wiring remains a separate integration step because real bridge credentials/configuration are environment-specific.
+- Actual UI activation remains a separate integration step because real bridge credentials/configuration are environment-specific.
 
 ## B55 — Runtime monitoring
 - `AmarBot1HealthMonitor` remains observational and fail-closed.
