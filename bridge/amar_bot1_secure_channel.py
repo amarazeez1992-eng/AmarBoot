@@ -12,6 +12,8 @@ from decimal import Decimal, InvalidOperation
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
+from amar_command_channel import REPLAY_STORE
+
 MAX_CLOCK_SKEW_MS = int(os.environ.get("AMAR_COMMAND_MAX_SKEW_MS", "30000"))
 COMMAND_TTL_MS = int(os.environ.get("AMAR_COMMAND_TTL_MS", "15000"))
 SIGNING_SECRET = os.environ.get("AMAR_COMMAND_SIGNING_SECRET", "")
@@ -61,12 +63,7 @@ def valid_device_signature(payload: dict) -> bool:
     try:
         public_key = serialization.load_der_public_key(base64.b64decode(payload["device_public_key"], validate=True))
         signature = base64.b64decode(payload["device_signature"], validate=True)
-        public_key.verify(
-            signature,
-            canonical(payload).encode("utf-8"),
-            padding.PKCS1v15(),
-            hashes.SHA256(),
-        )
+        public_key.verify(signature, canonical(payload).encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
         digest = hashlib.sha256(public_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)).hexdigest()
         return hmac.compare_digest(digest, str(payload.get("device_id", "")))
     except (ValueError, TypeError, KeyError, AttributeError):
@@ -90,14 +87,7 @@ def symbol_allowed(value: str, exact: set[str], patterns: set[str] | None = None
     return bool(patterns) and any(fnmatch.fnmatchcase(value, pattern) for pattern in patterns)
 
 
-def validate(
-    payload: dict,
-    expected_login: int,
-    expected_magic: int,
-    allowed_symbols: set[str],
-    allowed_target_symbols: set[str] | None = None,
-    allowed_target_patterns: set[str] | None = None,
-) -> tuple[bool, str]:
+def validate(payload: dict, expected_login: int, expected_magic: int, allowed_symbols: set[str], allowed_target_symbols: set[str] | None = None, allowed_target_patterns: set[str] | None = None) -> tuple[bool, str]:
     if not isinstance(payload, dict):
         return False, "invalid request"
     required = ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "account_login", "bot_magic", "symbol", "command", "signature", "device_id", "sequence", "device_public_key", "device_signature")
@@ -141,4 +131,6 @@ def validate(
         return False, "invalid device signature"
     if not valid_signature(payload):
         return False, "invalid signature"
+    if not REPLAY_STORE.claim_sequence(str(payload["device_id"]), sequence, expires):
+        return False, "out-of-order command sequence"
     return True, "accepted"
