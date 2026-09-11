@@ -68,19 +68,37 @@ object AmarBot1RemoteSigner {
     private fun decimal(value: Double): String = BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
     private fun nullable(value: String?) = value.orEmpty()
 
-    fun canonical(envelope: AmarBot1RemoteEnvelope): String = listOf(
-        envelope.requestId, envelope.idempotencyKey, envelope.nonce,
-        envelope.issuedAtMs.toString(), envelope.expiresAtMs.toString(),
-        envelope.accountLogin.toString(), envelope.botMagic.toString(), envelope.symbol,
-        envelope.command.name, nullable(envelope.targetSymbol), envelope.enabled?.toString().orEmpty(),
-        envelope.settings?.let { s -> listOf(
-            decimal(s.lotStart), decimal(s.gridStep), s.maxOrders.toString(), decimal(s.martingale),
-            decimal(s.basketTp), decimal(s.basketSl), decimal(s.trailing), s.buyEnabled.toString(), s.sellEnabled.toString()
-        ).joinToString("|") }.orEmpty(),
-        envelope.deviceId, envelope.sequence.toString(), envelope.devicePublicKey
-    ).joinToString("|")
+    /** Must remain byte-for-byte field compatible with bridge/amar_bot1_secure_channel.py. */
+    fun canonical(envelope: AmarBot1RemoteEnvelope): String = buildList {
+        add(envelope.requestId)
+        add(envelope.idempotencyKey)
+        add(envelope.nonce)
+        add(envelope.issuedAtMs.toString())
+        add(envelope.expiresAtMs.toString())
+        add(envelope.accountLogin.toString())
+        add(envelope.botMagic.toString())
+        add(envelope.symbol)
+        add(envelope.command.name)
+        add(nullable(envelope.targetSymbol))
+        add(envelope.enabled?.toString().orEmpty())
+        envelope.settings?.let { s ->
+            add(decimal(s.lotStart))
+            add(decimal(s.gridStep))
+            add(s.maxOrders.toString())
+            add(decimal(s.martingale))
+            add(decimal(s.basketTp))
+            add(decimal(s.basketSl))
+            add(decimal(s.trailing))
+            add(s.buyEnabled.toString())
+            add(s.sellEnabled.toString())
+        } ?: repeat(9) { add("") }
+        add(envelope.deviceId)
+        add(envelope.sequence.toString())
+        add(envelope.devicePublicKey)
+    }.joinToString("|")
 
-    fun deviceCanonical(envelope: AmarBot1RemoteEnvelope): String = canonical(envelope.copy(deviceSignature = "pending", signature = "pending"))
+    fun deviceCanonical(envelope: AmarBot1RemoteEnvelope): String =
+        canonical(envelope.copy(deviceSignature = "pending", signature = "pending"))
 
     fun hmacSha256(secret: String, value: String): String {
         require(secret.isNotBlank())
