@@ -20,6 +20,7 @@ data class AmarBot1CommandEnvelope(
         require(expiresAtMs > issuedAtMs)
         require(idempotencyKey.isNotBlank())
         require(expectedBotId.isNotBlank())
+        require(expectedMagic >= 0)
     }
 }
 
@@ -53,5 +54,28 @@ object AmarBot1CommandLifecycleRules {
         AmarBot1CommandStatus.EXECUTING -> to == AmarBot1CommandStatus.ACKNOWLEDGED || to == AmarBot1CommandStatus.FAILED
         AmarBot1CommandStatus.ACKNOWLEDGED -> to == AmarBot1CommandStatus.VERIFIED || to == AmarBot1CommandStatus.FAILED
         AmarBot1CommandStatus.VERIFIED, AmarBot1CommandStatus.FAILED, AmarBot1CommandStatus.REJECTED -> false
+    }
+
+    fun transition(
+        lifecycle: AmarBot1CommandLifecycle,
+        next: AmarBot1CommandStatus,
+        nowMs: Long,
+        actual: AmarBot1ActualState? = lifecycle.actualState,
+        resultCode: String? = lifecycle.resultCode,
+        errorCode: String? = lifecycle.errorCode,
+        errorMessage: String? = lifecycle.errorMessage,
+    ): AmarBot1CommandLifecycle {
+        require(canMove(lifecycle.status, next)) { "Invalid BOT1 lifecycle transition: ${lifecycle.status} -> $next" }
+        require(nowMs >= lifecycle.envelope.issuedAtMs) { "Transition time precedes command issue time" }
+        return lifecycle.copy(
+            status = next,
+            acceptedAtMs = if (next == AmarBot1CommandStatus.ACCEPTED) nowMs else lifecycle.acceptedAtMs,
+            acknowledgedAtMs = if (next == AmarBot1CommandStatus.ACKNOWLEDGED) nowMs else lifecycle.acknowledgedAtMs,
+            verifiedAtMs = if (next == AmarBot1CommandStatus.VERIFIED) nowMs else lifecycle.verifiedAtMs,
+            actualState = actual,
+            resultCode = resultCode,
+            errorCode = errorCode,
+            errorMessage = errorMessage,
+        )
     }
 }
