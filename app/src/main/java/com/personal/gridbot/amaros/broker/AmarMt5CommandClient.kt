@@ -98,21 +98,16 @@ class AmarMt5CommandClient(
     }
 
     /** B38: reads the terminal ACK; QUEUED/PENDING is never reported as verified. */
-    suspend fun bot1Status(requestId: String): AmarBot1CommandStatus = withContext(Dispatchers.IO) {
+    suspend fun bot1Status(requestId: String): AmarBot1CommandAck = withContext(Dispatchers.IO) {
         require(requestId.isNotBlank() && requestId.length <= 128 && requestId.none { it == '/' || it == '\\' || it == '\n' || it == '\r' })
-        val request = Request.Builder()
-            .url(config.baseUrl.trimEnd('/') + "/bot1/commands/" + requestId)
-            .header("Authorization", "Bearer ${config.token}")
-            .header("X-AMAR-Command-Version", "1")
-            .get()
-            .build()
+        val request = authenticatedGet("/bot1/commands/$requestId")
         httpClient.newCall(request).execute().use { response ->
             val raw = response.body?.string().orEmpty()
             if (!response.isSuccessful || raw.isBlank()) {
-                return@withContext AmarBot1CommandStatus(requestId, "PENDING", false, 0L, "تعذر التحقق من ACK: HTTP ${response.code}")
+                return@withContext AmarBot1CommandAck(requestId, "PENDING", false, 0L, "تعذر التحقق من ACK: HTTP ${response.code}")
             }
-            runCatching { gson.fromJson(raw, AmarBot1CommandStatus::class.java) }
-                .getOrElse { AmarBot1CommandStatus(requestId, "PENDING", false, 0L, "استجابة ACK غير صالحة") }
+            runCatching { gson.fromJson(raw, AmarBot1CommandAck::class.java) }
+                .getOrElse { AmarBot1CommandAck(requestId, "PENDING", false, 0L, "استجابة ACK غير صالحة") }
         }
     }
 
