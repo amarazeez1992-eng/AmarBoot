@@ -48,6 +48,12 @@ class AmarBot1VerifiedRuntime(
         return reconciliation.evaluate(desired, actualFromRemote(state))
     }
 
-    fun isVerified(desired: AmarBot1DesiredState, state: AmarBot1RemoteState): Boolean =
-        reconcile(desired, state) == AmarBotSyncState.MATCHED
+    fun reconcile(desired: AmarBot1DesiredState, state: AmarBot1RemoteState, expectedTargetSymbol: String): AmarBotSyncState {
+        if (expectedTargetSymbol.isBlank() || state.targetSymbol != expectedTargetSymbol) return AmarBotSyncState.ERROR
+        return reconcile(desired, state)
+    }
+
+    fun isVerified(desired: AmarBot1DesiredState, state: AmarBot1RemoteState, expectedTargetSymbol: String? = null): Boolean =
+        (expectedTargetSymbol == null || state.targetSymbol == expectedTargetSymbol) &&
+            reconcile(desired, state) == AmarBotSyncState.MATCHED
 }
