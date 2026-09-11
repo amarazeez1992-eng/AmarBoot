@@ -110,15 +110,19 @@ fun AmarBotLabInterfaceBScreenV2(
                         notice = "تم حذف الاستراتيجية $number"
                     },
                     onApply = { settings ->
-                        scope.launch {
-                            notice = "جاري إرسال الإعدادات والتحقق من MT5…"
-                            val result = AmarBot1UiCommandGateway.execute(
-                                symbol = symbol,
-                                command = AmarBot1RemoteCommandType.UPDATE_SETTINGS,
-                                targetSymbol = symbol,
-                                settings = settings,
-                            )
-                            notice = result.message
+                        if (settings == null) {
+                            notice = "الإعدادات الحالية صفرية/غير صالحة للتنفيذ؛ لم يتم إرسال أي أمر"
+                        } else {
+                            scope.launch {
+                                notice = "جاري إرسال الإعدادات والتحقق من MT5…"
+                                val result = AmarBot1UiCommandGateway.execute(
+                                    symbol = symbol,
+                                    command = AmarBot1RemoteCommandType.UPDATE_SETTINGS,
+                                    targetSymbol = symbol,
+                                    settings = settings,
+                                )
+                                notice = result.message
+                            }
                         }
                     }
                 )
@@ -130,7 +134,7 @@ fun AmarBotLabInterfaceBScreenV2(
                         val result = AmarBot1UiCommandGateway.execute(
                             symbol = symbol,
                             command = command.type,
-                            targetSymbol = if (command.type == AmarBot1RemoteCommandType.REBUILD || command.type == AmarBot1RemoteCommandType.START) symbol else null,
+                            targetSymbol = if (command.type == AmarBot1RemoteCommandType.REBUILD) symbol else null,
                         )
                         notice = result.message
                     }
@@ -222,7 +226,7 @@ private fun StrategyEditor(
     strategyNumber: Int,
     onSave: (AmarSavedStrategy) -> Unit,
     onDelete: (Int) -> Unit,
-    onApply: (AmarBot1RemoteSettings) -> Unit
+    onApply: (AmarBot1RemoteSettings?) -> Unit
 ) {
     var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat()) }
     var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat()) }
@@ -233,17 +237,19 @@ private fun StrategyEditor(
     var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: false) }
     var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: false) }
 
-    fun remoteSettings() = AmarBot1RemoteSettings(
-        lotStart = lot.toDouble(),
-        gridStep = gridStep.toDouble(),
-        maxOrders = maxOrders.toInt().coerceAtLeast(0),
-        martingale = multiplier.toDouble(),
-        basketTp = basketTp.toDouble(),
-        basketSl = basketSl.toDouble(),
-        trailing = 0.0,
-        buyEnabled = buyEnabled,
-        sellEnabled = sellEnabled,
-    )
+    fun remoteSettings(): AmarBot1RemoteSettings? = runCatching {
+        AmarBot1RemoteSettings(
+            lotStart = lot.toDouble(),
+            gridStep = gridStep.toDouble(),
+            maxOrders = maxOrders.toInt().coerceAtLeast(0),
+            martingale = multiplier.toDouble(),
+            basketTp = basketTp.toDouble(),
+            basketSl = basketSl.toDouble(),
+            trailing = 0.0,
+            buyEnabled = buyEnabled,
+            sellEnabled = sellEnabled,
+        )
+    }.getOrNull()
 
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
