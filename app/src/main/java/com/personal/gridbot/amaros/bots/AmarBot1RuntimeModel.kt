@@ -71,3 +71,75 @@ fun reconcileBot1(desired: AmarBot1DesiredState, actual: AmarBot1ActualState): A
         d.buyEnabled == a.buyEnabled && d.sellEnabled == a.sellEnabled
     return if (same) AmarBotSyncState.MATCHED else AmarBotSyncState.DRIFT
 }
+
+/** B34 execution policy. Every live gate must be explicitly true; any failure blocks. */
+enum class AmarBotExecutionDecision { ALLOW, BLOCK }
+
+data class AmarBotExecutionPolicyResult(
+    val decision: AmarBotExecutionDecision,
+    val reasons: List<String>
+) {
+    val allowed: Boolean get() = decision == AmarBotExecutionDecision.ALLOW
+}
+
+object AmarBot1ExecutionPolicy {
+    fun evaluate(
+        userPermission: Boolean,
+        accountPermission: Boolean,
+        botPermission: Boolean,
+        strategyPermission: Boolean,
+        symbolPermission: Boolean,
+        riskPermission: Boolean,
+        marketCondition: Boolean,
+        connectorHealthy: Boolean,
+        commandValid: Boolean,
+        idempotencyValid: Boolean,
+        emergencyLock: Boolean
+    ): AmarBotExecutionPolicyResult {
+        val gates = listOf(
+            "USER_PERMISSION" to userPermission,
+            "ACCOUNT_PERMISSION" to accountPermission,
+            "BOT_PERMISSION" to botPermission,
+            "STRATEGY_PERMISSION" to strategyPermission,
+            "SYMBOL_PERMISSION" to symbolPermission,
+            "RISK_PERMISSION" to riskPermission,
+            "MARKET_CONDITION" to marketCondition,
+            "CONNECTOR_HEALTH" to connectorHealthy,
+            "COMMAND_VALID" to commandValid,
+            "IDEMPOTENCY_VALID" to idempotencyValid,
+        )
+        val reasons = gates.filterNot { it.second }.map { it.first }
+        val allValid = reasons.isEmpty() && !emergencyLock
+        return AmarBotExecutionPolicyResult(
+            if (allValid) AmarBotExecutionDecision.ALLOW else AmarBotExecutionDecision.BLOCK,
+            if (emergencyLock) listOf("EMERGENCY_LOCK") + reasons else reasons
+        )
+    }
+}
+
+/** Pure reconciliation service: UI cannot manufacture a MATCHED state. */
+class AmarBot1ReconciliationEngine {
+    fun evaluate(desired: AmarBot1DesiredState, actual: AmarBot1ActualState): AmarBotSyncState =
+        reconcileBot1(desired, actual)
+}
+
+/** B36 advisory proposal. It is data only and has no execution capability. */
+data class AmarBotSupervisorProposal(
+    val proposalId: String,
+    val botId: String = "BOT_1",
+    val title: String,
+    val rationale: String,
+    val confidence: Double,
+    val requiresSimulation: Boolean = true,
+    val requiresUserApproval: Boolean = true,
+    val executable: Boolean = false
+) {
+    init {
+        require(proposalId.isNotBlank())
+        require(botId.isNotBlank())
+        require(title.isNotBlank())
+        require(rationale.isNotBlank())
+        require(confidence in 0.0..1.0)
+        require(!executable) { "Supervisor proposals are advisory-only" }
+    }
+}
