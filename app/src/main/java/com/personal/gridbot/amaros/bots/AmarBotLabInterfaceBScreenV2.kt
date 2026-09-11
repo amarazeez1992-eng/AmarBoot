@@ -134,7 +134,7 @@ fun AmarBotLabInterfaceBScreenV2(
                         val result = AmarBot1UiCommandGateway.execute(
                             symbol = symbol,
                             command = command.type,
-                            targetSymbol = if (command.type == AmarBot1RemoteCommandType.REBUILD) symbol else null,
+                            targetSymbol = if (command.type == AmarBot1RemoteCommandType.REBUILD || command.type == AmarBot1RemoteCommandType.START) symbol else null,
                         )
                         notice = result.message
                     }
@@ -337,6 +337,10 @@ private fun QuickCommands(symbol: String, onCommand: (UiCommand) -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("أوامر سريعة • ${symbol.ifBlank { "لا يوجد رمز" }}", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                CommandButton("START", BG, Modifier.weight(1f)) { onCommand(UiCommand("START", AmarBot1RemoteCommandType.START)) }
+                CommandButton("STOP", BR, Modifier.weight(1f)) { onCommand(UiCommand("STOP", AmarBot1RemoteCommandType.STOP)) }
+            }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 CommandButton("إغلاق الشراء", BR, Modifier.weight(1f)) { onCommand(UiCommand("إغلاق الشراء", AmarBot1RemoteCommandType.CLOSE_BUY)) }
                 CommandButton("إغلاق البيع", BP, Modifier.weight(1f)) { onCommand(UiCommand("إغلاق البيع", AmarBot1RemoteCommandType.CLOSE_SELL)) }
