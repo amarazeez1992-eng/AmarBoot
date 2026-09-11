@@ -3,25 +3,19 @@
 //|       شبكة متقدمة - مضاعفة + سلة (ربح/خسارة) + إعادة بناء تلقائي|
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.00"
+#property version   "2.01"
 #property strict
 
-//+------------------------------------------------------------------+
-//| 1. المدخلات (تظهر عند التركيب)                                   |
-//+------------------------------------------------------------------+
-input double  InpLotStart     = 0.01;          // حجم العقد الابتدائي
-input int    InpGridStep     = 30;             // مسافة الشبكة (نقطة)
-input int    InpMaxOrders    = 10;             // الحد الأقصى للصفقات الإجمالية
-input double InpMartingale   = 2.0;            // مضاعفة اللوت (مثل 2.0)
-input double InpBasketTP     = 50.0;           // هدف الربح الكلي ($)
-input double InpBasketSL     = -30.0;          // حد الخسارة الكلية ($)
-input int    InpTrail        = 0;              // ستوب متحرك (0=إلغاء)
-input bool   InpEnableBuy    = true;           // تفعيل الشراء
-input bool   InpEnableSell   = true;           // تفعيل البيع
+input double  InpLotStart     = 0.01;
+input int    InpGridStep     = 30;
+input int    InpMaxOrders    = 10;
+input double InpMartingale   = 2.0;
+input double InpBasketTP     = 50.0;
+input double InpBasketSL     = -30.0;
+input int    InpTrail        = 0;
+input bool   InpEnableBuy    = true;
+input bool   InpEnableSell   = true;
 
-//+------------------------------------------------------------------+
-//| 2. المتغيرات العامة                                              |
-//+------------------------------------------------------------------+
 string   Prefix = "GBM2_";
 bool     IsTrading   = true;
 bool     BuyEnabled  = true;
@@ -41,9 +35,6 @@ double   LastSellPrice = 0;
 int      BuyStepCount  = 0;
 int      SellStepCount = 0;
 
-//+------------------------------------------------------------------+
-//| 3. بداية البوت                                                   |
-//+------------------------------------------------------------------+
 int OnInit()
 {
    LotStart     = InpLotStart;
@@ -69,23 +60,14 @@ void OnDeinit(const int reason)
    Comment("");
 }
 
-//+------------------------------------------------------------------+
-//| 4. التيك – المراقبة وإدارة الصفقات                             |
-//+------------------------------------------------------------------+
 void OnTick()
 {
    if(!IsTrading) return;
-
    CheckBasket();
-
    if(Trail > 0) ManageTrailing();
-
    TrackPrice();
 }
 
-//+------------------------------------------------------------------+
-//| 5. أحداث الواجهة (النقر والتعديل)                               |
-//+------------------------------------------------------------------+
 void OnChartEvent(const int id, const long &lparam, const double &dparam, const string &sparam)
 {
    if(id == CHARTEVENT_OBJECT_CLICK)
@@ -97,7 +79,8 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
          IsTrading = !IsTrading;
          ObjectSetInteger(0, Prefix+"btnToggle", OBJPROP_BGCOLOR, IsTrading ? clrGreen : clrRed);
          ObjectSetString(0, Prefix+"btnToggle", OBJPROP_TEXT, IsTrading ? "► تشغيل" : "⏹ إيقاف");
-         if(IsTrading) { CloseAll(); ResetCounters(); BuildGrid(); } else DeletePending();
+         // BOT OFF is an engine stop only. Existing positions/pending orders remain untouched.
+         if(IsTrading) { CloseAll(); ResetCounters(); BuildGrid(); }
          return;
       }
       if(sparam == Prefix+"btnBuy")
@@ -133,9 +116,6 @@ void OnChartEvent(const int id, const long &lparam, const double &dparam, const 
    }
 }
 
-//+------------------------------------------------------------------+
-//| 6. الواجهة الرسومية (في الركن العلوي الأيمن)                    |
-//+------------------------------------------------------------------+
 void CreateUI()
 {
    ObjectsDeleteAll(0, Prefix);
@@ -167,11 +147,9 @@ void CreateUI()
 
    CreateButton(Prefix+"btnClose", "🔴 إغلاق الكل", x, y, 100,35, clrDarkRed, corner);
    CreateButton(Prefix+"btnRebuild", "🔄 إعادة بناء", x+110, y, 100,35, clrDodgerBlue, corner);
-
    ChartRedraw(0);
 }
 
-//--- دوال مساعدة مع تحديد الركن
 void CreateLabel(string n,string t,int x,int y,color c=clrWhite,int s=10,int corner=CORNER_RIGHT_UPPER)
 {
    ObjectCreate(0,n,OBJ_LABEL,0,0,0);
@@ -186,8 +164,7 @@ void CreateEdit(string n,string t,int x,int y,int w=70,int corner=CORNER_RIGHT_U
    ObjectCreate(0,n,OBJ_EDIT,0,0,0);
    ObjectSetInteger(0,n,OBJPROP_CORNER,corner);
    ObjectSetInteger(0,n,OBJPROP_XDISTANCE,x); ObjectSetInteger(0,n,OBJPROP_YDISTANCE,y);
-   ObjectSetInteger(0,n,OBJPROP_XSIZE,w);
-   ObjectSetInteger(0,n,OBJPROP_YSIZE,22);
+   ObjectSetInteger(0,n,OBJPROP_XSIZE,w); ObjectSetInteger(0,n,OBJPROP_YSIZE,22);
    ObjectSetString(0,n,OBJPROP_TEXT,t);
    ObjectSetString(0,n,OBJPROP_FONT,"Arial"); ObjectSetInteger(0,n,OBJPROP_FONTSIZE,10);
    ObjectSetInteger(0,n,OBJPROP_COLOR,clrBlack); ObjectSetInteger(0,n,OBJPROP_BGCOLOR,clrWhite);
@@ -198,17 +175,13 @@ void CreateButton(string n,string t,int x,int y,int w=80,int h=28,color b=clrDim
    ObjectCreate(0,n,OBJ_BUTTON,0,0,0);
    ObjectSetInteger(0,n,OBJPROP_CORNER,corner);
    ObjectSetInteger(0,n,OBJPROP_XDISTANCE,x); ObjectSetInteger(0,n,OBJPROP_YDISTANCE,y);
-   ObjectSetInteger(0,n,OBJPROP_XSIZE,w);
-   ObjectSetInteger(0,n,OBJPROP_YSIZE,h);
+   ObjectSetInteger(0,n,OBJPROP_XSIZE,w); ObjectSetInteger(0,n,OBJPROP_YSIZE,h);
    ObjectSetString(0,n,OBJPROP_TEXT,t);
    ObjectSetString(0,n,OBJPROP_FONT,"Arial"); ObjectSetInteger(0,n,OBJPROP_FONTSIZE,10);
    ObjectSetInteger(0,n,OBJPROP_COLOR,clrWhite); ObjectSetInteger(0,n,OBJPROP_BGCOLOR,b);
    ObjectSetInteger(0,n,OBJPROP_BORDER_COLOR,clrBlack); ObjectSetInteger(0,n,OBJPROP_STATE,false);
 }
 
-//+------------------------------------------------------------------+
-//| 7. بناء الشبكة المبدئية                                          |
-//+------------------------------------------------------------------+
 void BuildGrid()
 {
    if(!IsTrading) return;
@@ -244,9 +217,6 @@ void BuildGrid()
    Print("✅ الشبكة المبدئية مبنية بـ ", MaxOrders, " أمر");
 }
 
-//+------------------------------------------------------------------+
-//| 8. حساب حجم اللوت حسب مضاعفة مارتينجال                          |
-//+------------------------------------------------------------------+
 double GetLotSize(ENUM_ORDER_TYPE type, int stepNumber)
 {
    double lot = LotStart * MathPow(Martingale, stepNumber-1);
@@ -256,9 +226,6 @@ double GetLotSize(ENUM_ORDER_TYPE type, int stepNumber)
    return lot;
 }
 
-//+------------------------------------------------------------------+
-//| 9. وضع أمر معلق (Stop) مع إلغاء الـ SL/TP الفردي                |
-//+------------------------------------------------------------------+
 void PlacePendingOrder(ENUM_ORDER_TYPE type, double price, double lot, string cmt)
 {
    MqlTradeRequest req = {};
@@ -275,18 +242,27 @@ void PlacePendingOrder(ENUM_ORDER_TYPE type, double price, double lot, string cm
    req.magic = Magic;
    req.comment = cmt;
 
-   if(!OrderSend(req, res))
-      Print("❌ فشل [", cmt, "] الكود: ", res.retcode);
-   else
-      Print("✅ تم [", cmt, "] عند ", price, " بحجم ", lot);
+   if(!OrderSend(req, res)) Print("❌ فشل [", cmt, "] الكود: ", res.retcode);
+   else Print("✅ تم [", cmt, "] عند ", price, " بحجم ", lot);
 }
 
-//+------------------------------------------------------------------+
-//| 10. تتبع السعر وفتح صفقات تعزيز جديدة                           |
-//+------------------------------------------------------------------+
+int CountBotPositions()
+{
+   int count=0;
+   for(int i=0; i<PositionsTotal(); i++)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=Symbol()) continue;
+      count++;
+   }
+   return count;
+}
+
 void TrackPrice()
 {
-   int total = PositionsTotal();
+   int total = CountBotPositions();
    if(total >= MaxOrders) return;
 
    double bid = SymbolInfoDouble(Symbol(), SYMBOL_BID);
@@ -295,14 +271,14 @@ void TrackPrice()
    double step = GridStep * point;
 
    int buyCount=0, sellCount=0;
-   for(int i=0; i<total; i++)
+   for(int i=0; i<PositionsTotal(); i++)
    {
       ulong ticket = PositionGetTicket(i);
-      if(PositionSelectByTicket(ticket))
-      {
-         if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) buyCount++;
-         else if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL) sellCount++;
-      }
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=Symbol()) continue;
+      if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) buyCount++;
+      else if(PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_SELL) sellCount++;
    }
 
    if(BuyEnabled && buyCount < MaxOrders)
@@ -310,18 +286,13 @@ void TrackPrice()
       if(LastBuyPrice == 0)
       {
          double lot = GetLotSize(ORDER_TYPE_BUY, 1);
-         if(OpenMarketOrder(ORDER_TYPE_BUY, ask, lot))
-         {
-            LastBuyPrice = bid;
-            BuyStepCount = 1;
-         }
+         if(OpenMarketOrder(ORDER_TYPE_BUY, ask, lot)) { LastBuyPrice = bid; BuyStepCount = 1; }
       }
       else if(LastBuyPrice - bid >= step)
       {
          BuyStepCount++;
          double lot = GetLotSize(ORDER_TYPE_BUY, BuyStepCount);
-         if(OpenMarketOrder(ORDER_TYPE_BUY, ask, lot))
-            LastBuyPrice = bid;
+         if(OpenMarketOrder(ORDER_TYPE_BUY, ask, lot)) LastBuyPrice = bid;
       }
    }
 
@@ -330,25 +301,17 @@ void TrackPrice()
       if(LastSellPrice == 0)
       {
          double lot = GetLotSize(ORDER_TYPE_SELL, 1);
-         if(OpenMarketOrder(ORDER_TYPE_SELL, bid, lot))
-         {
-            LastSellPrice = bid;
-            SellStepCount = 1;
-         }
+         if(OpenMarketOrder(ORDER_TYPE_SELL, bid, lot)) { LastSellPrice = bid; SellStepCount = 1; }
       }
       else if(bid - LastSellPrice >= step)
       {
          SellStepCount++;
          double lot = GetLotSize(ORDER_TYPE_SELL, SellStepCount);
-         if(OpenMarketOrder(ORDER_TYPE_SELL, bid, lot))
-            LastSellPrice = bid;
+         if(OpenMarketOrder(ORDER_TYPE_SELL, bid, lot)) LastSellPrice = bid;
       }
    }
 }
 
-//+------------------------------------------------------------------+
-//| 11. فتح صفقة سوق (Market) بدون SL/TP فردي                       |
-//+------------------------------------------------------------------+
 bool OpenMarketOrder(ENUM_ORDER_TYPE type, double price, double lot)
 {
    MqlTradeRequest req = {};
@@ -370,56 +333,34 @@ bool OpenMarketOrder(ENUM_ORDER_TYPE type, double price, double lot)
       Print("❌ فشل فتح ", (type==ORDER_TYPE_BUY?"شراء":"بيع"), " - الكود: ", res.retcode);
       return false;
    }
-   else
-   {
-      Print("✅ فتح ", (type==ORDER_TYPE_BUY?"شراء":"بيع"), " عند ", price, " بحجم ", lot);
-      return true;
-   }
+   Print("✅ فتح ", (type==ORDER_TYPE_BUY?"شراء":"بيع"), " عند ", price, " بحجم ", lot);
+   return true;
 }
 
-//+------------------------------------------------------------------+
-//| 12. مراقبة السلة (ربح/خسارة) وإعادة البناء تلقائياً            |
-//+------------------------------------------------------------------+
 void CheckBasket()
 {
    double totalProfit = 0;
-   int total = PositionsTotal();
-   for(int i=0; i<total; i++)
+   for(int i=0; i<PositionsTotal(); i++)
    {
       ulong ticket = PositionGetTicket(i);
-      if(PositionSelectByTicket(ticket))
-         totalProfit += PositionGetDouble(POSITION_PROFIT);
+      if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=Symbol()) continue;
+      totalProfit += PositionGetDouble(POSITION_PROFIT);
    }
 
    bool shouldClose = false;
-
-   if(totalProfit >= BasketTP && BasketTP > 0)
-   {
-      Print("💰 ✅ تحقيق الربح الكلي: $", DoubleToString(totalProfit, 2));
-      shouldClose = true;
-   }
-
-   if(totalProfit <= BasketSL && BasketSL < 0)
-   {
-      Print("💸 ❌ تحقيق الخسارة الكلية: $", DoubleToString(totalProfit, 2));
-      shouldClose = true;
-   }
+   if(totalProfit >= BasketTP && BasketTP > 0) { Print("💰 ✅ تحقيق الربح الكلي: $", DoubleToString(totalProfit, 2)); shouldClose = true; }
+   if(totalProfit <= BasketSL && BasketSL < 0) { Print("💸 ❌ تحقيق الخسارة الكلية: $", DoubleToString(totalProfit, 2)); shouldClose = true; }
 
    if(shouldClose)
    {
       CloseAll();
       ResetCounters();
-      if(IsTrading)
-      {
-         Print("🔄 إعادة بناء الشبكة تلقائياً...");
-         BuildGrid();
-      }
+      if(IsTrading) { Print("🔄 إعادة بناء الشبكة تلقائياً..."); BuildGrid(); }
    }
 }
 
-//+------------------------------------------------------------------+
-//| 13. الستوب المتحرك                                               |
-//+------------------------------------------------------------------+
 void ManageTrailing()
 {
    if(Trail <= 0) return;
@@ -427,6 +368,8 @@ void ManageTrailing()
    {
       ulong ticket = PositionGetTicket(i);
       if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=Symbol()) continue;
 
       double sl = PositionGetDouble(POSITION_SL);
       double open = PositionGetDouble(POSITION_PRICE_OPEN);
@@ -434,12 +377,11 @@ void ManageTrailing()
       ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
       double point = SymbolInfoDouble(Symbol(), SYMBOL_POINT);
 
-      if(type == POSITION_TYPE_BUY && cur - open > Trail * point && (sl == 0 || cur - sl > Trail * point))
-         ModifySL(ticket, cur - Trail * point);
-      else if(type == POSITION_TYPE_SELL && open - cur > Trail * point && (sl == 0 || sl - cur > Trail * point))
-         ModifySL(ticket, cur + Trail * point);
+      if(type == POSITION_TYPE_BUY && cur - open > Trail * point && (sl == 0 || cur - sl > Trail * point)) ModifySL(ticket, cur - Trail * point);
+      else if(type == POSITION_TYPE_SELL && open - cur > Trail * point && (sl == 0 || sl - cur > Trail * point)) ModifySL(ticket, cur + Trail * point);
    }
 }
+
 void ModifySL(ulong ticket, double sl)
 {
    MqlTradeRequest req = {};
@@ -451,9 +393,6 @@ void ModifySL(ulong ticket, double sl)
    OrderSend(req, res);
 }
 
-//+------------------------------------------------------------------+
-//| 14. حذف الأوامر المعلقة                                          |
-//+------------------------------------------------------------------+
 void DeletePending()
 {
    int total = OrdersTotal();
@@ -473,9 +412,6 @@ void DeletePending()
    if(deleted > 0) Print("🗑️ تم حذف ", deleted, " أمر معلق");
 }
 
-//+------------------------------------------------------------------+
-//| 15. إعادة ضبط العدادات                                           |
-//+------------------------------------------------------------------+
 void ResetCounters()
 {
    LastBuyPrice = 0;
@@ -484,9 +420,6 @@ void ResetCounters()
    SellStepCount = 0;
 }
 
-//+------------------------------------------------------------------+
-//| 16. إغلاق جميع الصفقات                                           |
-//+------------------------------------------------------------------+
 void CloseAll()
 {
    int closed = 0;
@@ -494,6 +427,8 @@ void CloseAll()
    {
       ulong ticket = PositionGetTicket(i);
       if(!PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=Symbol()) continue;
 
       MqlTradeRequest req = {};
       MqlTradeResult res = {};
