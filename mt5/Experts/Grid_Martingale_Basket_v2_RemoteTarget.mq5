@@ -3,7 +3,7 @@
 //| BOT 1 remote target-symbol execution wrapper                     |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.16"
+#property version   "2.17"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
@@ -12,7 +12,7 @@
 #define AMAR_BOT1_STRATEGY_ID "STRATEGY_01"
 #define AMAR_BOT1_STRATEGY_VERSION "2.00"
 
-input string InpRemoteTargetSymbol = ""; // blank = chart symbol (backward-compatible)
+input string InpRemoteTargetSymbol = "";
 input int    InpRemotePollSeconds  = 1;
 input int    InpRemoteMaxTickAgeMs = 5000;
 
@@ -150,6 +150,22 @@ bool AmarCloseSide(ENUM_POSITION_TYPE side)
    return allClosed;
 }
 
+double AmarFloatingProfitLoss()
+{
+   double total=0.0;
+   string symbol=AmarTargetSymbol();
+   for(int i=0;i<PositionsTotal();i++)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0 || !PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=symbol) continue;
+      double profit=PositionGetDouble(POSITION_PROFIT);
+      if(MathIsValidNumber(profit)) total+=profit;
+   }
+   return total;
+}
+
 void AmarWriteState()
 {
    string symbol=AmarTargetSymbol();
@@ -165,9 +181,9 @@ void AmarWriteState()
    StringReplace(safeRequest,"\"","'");
    string state=IsTrading ? "RUNNING" : "OFF";
    string payload=StringFormat(
-      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_id\":\"%s\",\"strategy_version\":\"%s\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"buy_positions\":%d,\"sell_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
+      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_id\":\"%s\",\"strategy_version\":\"%s\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"buy_positions\":%d,\"sell_positions\":%d,\"pending_orders\":%d,\"floating_profit_loss\":%.8f,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
       Magic,AMAR_BOT1_STRATEGY_ID,AMAR_BOT1_STRATEGY_VERSION,state,symbol,_Symbol,IsTrading?"true":"false",BuyEnabled?"true":"false",SellEnabled?"true":"false",
-      LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarSideCount(POSITION_TYPE_BUY),AmarSideCount(POSITION_TYPE_SELL),AmarPendingCount(),marketReady?"true":"false",
+      LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarSideCount(POSITION_TYPE_BUY),AmarSideCount(POSITION_TYPE_SELL),AmarPendingCount(),AmarFloatingProfitLoss(),marketReady?"true":"false",
       (long)TimeCurrent()*1000,safeRequest,g_lastCommandStatus,safeError);
    FileWriteString(h,payload+"\n");
    FileFlush(h);
