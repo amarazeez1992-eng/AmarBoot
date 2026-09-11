@@ -57,7 +57,10 @@ data class AmarBot1ActualState(
 
 fun reconcileBot1(desired: AmarBot1DesiredState, actual: AmarBot1ActualState): AmarBotSyncState {
     if (actual.identity == null || actual.config == null || actual.runtimeState == null) return AmarBotSyncState.UNKNOWN
-    if (desired.identity.botId != actual.identity.botId || desired.identity.magic != actual.identity.magic) return AmarBotSyncState.ERROR
+    if (desired.identity.botId != actual.identity.botId ||
+        desired.identity.magic != actual.identity.magic ||
+        desired.identity.version != actual.identity.version ||
+        desired.identity.strategyId != actual.identity.strategyId) return AmarBotSyncState.ERROR
     if (desired.runtimeState != actual.runtimeState) return AmarBotSyncState.DRIFT
     val d = desired.config
     val a = actual.config
