@@ -9,6 +9,8 @@
 #include <AMAR/AmarBot1CommandReceiver.mqh>
 
 #define AMAR_BOT1_STATE_FILE "AMAR_BOT1_STATE.json"
+#define AMAR_BOT1_STRATEGY_ID "STRATEGY_01"
+#define AMAR_BOT1_STRATEGY_VERSION "2.00"
 
 input string InpRemoteTargetSymbol = ""; // blank = chart symbol (backward-compatible)
 input int    InpRemotePollSeconds  = 1;
@@ -76,8 +78,8 @@ void AmarWriteState()
    StringReplace(safeRequest,"\"","'");
    string state=IsTrading ? "RUNNING" : "OFF";
    string payload=StringFormat(
-      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_version\":\"2.00\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
-      Magic,state,symbol,_Symbol,IsTrading?"true":"false",BuyEnabled?"true":"false",SellEnabled?"true":"false",
+      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_id\":\"%s\",\"strategy_version\":\"%s\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
+      Magic,AMAR_BOT1_STRATEGY_ID,AMAR_BOT1_STRATEGY_VERSION,state,symbol,_Symbol,IsTrading?"true":"false",BuyEnabled?"true":"false",SellEnabled?"true":"false",
       LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarPendingCount(),marketReady?"true":"false",
       (long)TimeCurrent()*1000,safeRequest,g_lastCommandStatus,safeError);
    FileWriteString(h,payload+"\n");
