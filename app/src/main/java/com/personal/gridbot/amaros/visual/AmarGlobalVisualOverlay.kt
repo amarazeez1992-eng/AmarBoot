@@ -17,7 +17,7 @@ fun AmarGlobalVisualOverlay(context: Context) {
         Box(
             Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 18.dp, end = 10.dp)
+                .padding(top = 18.dp, end = 52.dp)
         ) {
             AmarVisualEffectsToggle(context)
         }
