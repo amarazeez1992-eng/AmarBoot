@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.broker
 
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 
 /** B50: queue acceptance is never exposed as execution success. */
 class AmarBot1CommandVerifier(
@@ -67,23 +68,26 @@ class AmarBot1CommandVerifier(
         if (state.lastRequestId != requestId || state.lastCommandStatus != "VERIFIED") return false
         return when (command) {
             AmarBot1RemoteCommandType.START,
-            AmarBot1RemoteCommandType.REBUILD -> state.runtimeState == "RUNNING" && state.marketReady
+            AmarBot1RemoteCommandType.REBUILD -> state.runtimeState == "RUNNING" && state.isTrading
             AmarBot1RemoteCommandType.STOP -> state.runtimeState == "OFF" && !state.isTrading
             AmarBot1RemoteCommandType.CLOSE_ALL -> state.openPositions == 0 && state.pendingOrders == 0
-            AmarBot1RemoteCommandType.SET_BUY_ENABLED -> state.buyEnabled == enabled
-            AmarBot1RemoteCommandType.SET_SELL_ENABLED -> state.sellEnabled == enabled
+            AmarBot1RemoteCommandType.SET_BUY_ENABLED -> enabled != null && state.buyEnabled == enabled
+            AmarBot1RemoteCommandType.SET_SELL_ENABLED -> enabled != null && state.sellEnabled == enabled
             AmarBot1RemoteCommandType.UPDATE_SETTINGS -> settings != null && settingsMatch(state, settings)
         }
     }
 
     private fun settingsMatch(state: AmarBot1RemoteState, settings: AmarBot1RemoteSettings): Boolean =
-        state.lotStart == settings.lotStart &&
-            state.gridStep == settings.gridStep &&
+        near(state.lotStart, settings.lotStart) &&
+            near(state.gridStep, settings.gridStep) &&
             state.maxOrders == settings.maxOrders &&
-            state.martingale == settings.martingale &&
-            state.basketTp == settings.basketTp &&
-            state.basketSl == settings.basketSl &&
-            state.trailing?.toDouble() == settings.trailing &&
+            near(state.martingale, settings.martingale) &&
+            near(state.basketTp, settings.basketTp) &&
+            near(state.basketSl, settings.basketSl) &&
+            near(state.trailing?.toDouble(), settings.trailing) &&
             state.buyEnabled == settings.buyEnabled &&
             state.sellEnabled == settings.sellEnabled
+
+    private fun near(actual: Double?, expected: Double): Boolean =
+        actual != null && actual.isFinite() && abs(actual - expected) <= 1e-9
 }
