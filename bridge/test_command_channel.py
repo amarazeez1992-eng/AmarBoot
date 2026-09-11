@@ -12,6 +12,7 @@ from amar_command_channel import (
     CommandReplayStore,
     canonical,
     decimal_string,
+    require_live_replay_ledger,
     valid_signature,
     validate,
 )
@@ -88,6 +89,34 @@ class CommandChannelTest(unittest.TestCase):
                 handle.write("not-json")
             with self.assertRaises(RuntimeError):
                 CommandReplayStore(persistence_path=path)
+
+    def test_live_mode_requires_durable_absolute_ledger(self):
+        require_live_replay_ledger(False)
+        with self.assertRaisesRegex(RuntimeError, "requires"):
+            # The process environment normally has no ledger path in CI.
+            original = __import__("amar_command_channel").REPLAY_LEDGER_PATH
+            try:
+                __import__("amar_command_channel").REPLAY_LEDGER_PATH = ""
+                require_live_replay_ledger(True)
+            finally:
+                __import__("amar_command_channel").REPLAY_LEDGER_PATH = original
+
+        with self.assertRaisesRegex(RuntimeError, "absolute"):
+            original = __import__("amar_command_channel").REPLAY_LEDGER_PATH
+            try:
+                __import__("amar_command_channel").REPLAY_LEDGER_PATH = "relative/replay.json"
+                require_live_replay_ledger(True)
+            finally:
+                __import__("amar_command_channel").REPLAY_LEDGER_PATH = original
+
+    def test_live_mode_accepts_absolute_ledger(self):
+        module = __import__("amar_command_channel")
+        original = module.REPLAY_LEDGER_PATH
+        try:
+            module.REPLAY_LEDGER_PATH = os.path.abspath(os.path.join(tempfile.gettempdir(), "amar-replay-test.json"))
+            require_live_replay_ledger(True)
+        finally:
+            module.REPLAY_LEDGER_PATH = original
 
 
 if __name__ == "__main__":
