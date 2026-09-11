@@ -13,16 +13,73 @@ class AmarBotVaultRepository(context: Context) {
         return runCatching {
             val array = JSONArray(raw)
             buildList {
-                for (i in 0 until array.length()) {
-                    add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized())
-                }
+                for (i in 0 until array.length()) add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized())
             }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
         }.getOrElse { defaultBots() }
     }
 
     fun save(bots: List<AmarSavedBot>) {
+        persist(bots)
+    }
+
+    /** Adds a configuration slot only; it never creates a trading engine. */
+    fun addBot(name: String? = null): AmarSavedBot {
+        val bots = load().toMutableList()
+        val next = generateSequence(1) { it + 1 }.first { n -> bots.none { it.botNumber == n } }
+        val bot = AmarSavedBot(next, name?.trim().takeUnless { it.isNullOrBlank() } ?: "بوت $next")
+        bots += bot
+        persist(bots)
+        return bot
+    }
+
+    fun upsertBot(bot: AmarSavedBot): AmarSavedBot {
+        val normalized = bot.normalized()
+        val bots = load().filterNot { it.botNumber == normalized.botNumber }.toMutableList()
+        bots += normalized
+        persist(bots)
+        return normalized
+    }
+
+    fun renameBot(botNumber: Int, name: String): AmarSavedBot? {
+        val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
+        return upsertBot(bot.copy(name = name.trim().ifBlank { bot.name }))
+    }
+
+    /** Deletes only the saved configuration slot. Live MT5 state is untouched. */
+    fun deleteBot(botNumber: Int): Boolean {
+        if (botNumber == 1) return false
+        val bots = load()
+        if (bots.none { it.botNumber == botNumber }) return false
+        persist(bots.filterNot { it.botNumber == botNumber })
+        return true
+    }
+
+    /** Clears a saved bot configuration without touching MT5. */
+    fun resetBot(botNumber: Int): AmarSavedBot? {
+        val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
+        return upsertBot(bot.copy(strategies = emptyList()))
+    }
+
+    fun saveStrategy(botNumber: Int, strategy: AmarSavedStrategy): AmarSavedBot? {
+        if (strategy.number !in 1..10) return null
+        val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
+        return upsertBot(bot.copy(strategies = bot.strategies.filterNot { it.number == strategy.number } + strategy))
+    }
+
+    fun deleteStrategy(botNumber: Int, strategyNumber: Int): AmarSavedBot? {
+        val bot = load().firstOrNull { it.botNumber == botNumber } ?: return null
+        return upsertBot(bot.copy(strategies = bot.strategies.filterNot { it.number == strategyNumber }))
+    }
+
+    fun resetStrategy(botNumber: Int, strategyNumber: Int): AmarSavedBot? = deleteStrategy(botNumber, strategyNumber)
+
+    fun isStrategySaved(botNumber: Int, strategyNumber: Int): Boolean =
+        load().firstOrNull { it.botNumber == botNumber }?.strategies?.any { it.number == strategyNumber } == true
+
+    private fun persist(bots: List<AmarSavedBot>) {
         val array = JSONArray()
         bots.map { it.normalized() }
+            .filter { it.botNumber > 0 }
             .distinctBy { it.botNumber }
             .sortedBy { it.botNumber }
             .forEach { array.put(it.toJson()) }
@@ -42,10 +99,7 @@ data class AmarSavedBot(
     fun normalized(): AmarSavedBot = copy(
         botNumber = botNumber.coerceAtLeast(1),
         name = name.ifBlank { "بوت ${botNumber.coerceAtLeast(1)}" },
-        strategies = strategies
-            .filter { it.number in 1..10 }
-            .distinctBy { it.number }
-            .sortedBy { it.number }
+        strategies = strategies.filter { it.number in 1..10 }.distinctBy { it.number }.sortedBy { it.number }
     )
 
     fun toJson(): JSONObject = JSONObject().apply {
