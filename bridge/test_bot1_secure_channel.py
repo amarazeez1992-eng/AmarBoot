@@ -80,15 +80,17 @@ class Bot1SecureChannelTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(message, "invalid device signature")
 
-    def test_sequence_reordering_is_rejected(self):
-        first = _payload(sequence=100)
-        self.assertTrue(validate(first, 123, 20260908, {"XAUUSD"})[0])
-        second = _payload(sequence=99)
-        second["device_id"] = first["device_id"]
-        second["device_public_key"] = first["device_public_key"]
-        private = None
-        # Reusing a public key without its private key must fail closed.
-        ok, message = validate(second, 123, 20260908, {"XAUUSD"})
+    def test_malformed_device_public_key_fails_closed(self):
+        payload = _payload()
+        payload["device_public_key"] = "not-a-key"
+        ok, message = validate(payload, 123, 20260908, {"XAUUSD"})
+        self.assertFalse(ok)
+        self.assertEqual(message, "invalid device signature")
+
+    def test_device_signature_tamper_fails_closed(self):
+        payload = _payload()
+        payload["device_signature"] = base64.b64encode(b"tampered").decode("ascii")
+        ok, message = validate(payload, 123, 20260908, {"XAUUSD"})
         self.assertFalse(ok)
         self.assertEqual(message, "invalid device signature")
 
