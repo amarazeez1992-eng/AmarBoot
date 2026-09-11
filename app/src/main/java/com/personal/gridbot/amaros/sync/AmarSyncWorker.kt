@@ -23,7 +23,7 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
         val config = AmarSyncConfig.load(applicationContext) ?: return@withContext Result.success()
         val repo = AmarBotVaultRepository(applicationContext)
         val local = repo.exportSnapshotJson()
-        val base = config.baseSnapshot
+        var base = config.baseSnapshot
         var revision = config.revision
         var candidate = local
 
@@ -47,10 +47,14 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                     val raw = response.body?.string().orEmpty()
                     if (response.code == 409 && attempt == 0) {
                         val conflict = JsonParser.parseString(raw).asJsonObject
-                        val remote = conflict.get("snapshot")?.takeIf { it.isJsonArray }?.toString() ?: return@use
-                        val remoteRevision = conflict.get("revision")?.asLong ?: revision
+                        val remote = conflict.get("snapshot")?.takeIf { it.isJsonArray }?.toString()
+                            ?: return@use
+                        base = remote
                         candidate = AmarSyncMerge.merge(base, candidate, remote)
-                        revision = remoteRevision
+                        // The server revision becomes the base revision for the merged retry.
+                        revision = conflict.get("revision")?.asLong ?: revision
+                        // base must represent the common ancestor; for a server conflict the remote
+                        // snapshot is the authoritative current state and merge keeps local deltas.
                         return@use
                     }
                     if (!response.isSuccessful) return@withContext if (response.code in 408..599) Result.retry() else Result.failure()
