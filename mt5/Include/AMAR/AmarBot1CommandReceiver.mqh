@@ -1,7 +1,7 @@
 #property strict
 
 // B38 terminal-side receiver. The bridge authenticates the command before it
-// reaches FILE_COMMON; MT5 verifies expiry again and reports a terminal ACK.
+// reaches FILE_COMMON; MT5 verifies expiry/shape again and reports a terminal ACK.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
 #define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
@@ -101,6 +101,16 @@ private:
       return StringFind(src,"\"target_symbol\"")>=0;
      }
 
+   bool Reject(string requestId,string reason)
+     {
+      if(requestId!="")
+        {
+         m_lastRequestId=requestId;
+         Ack(requestId,false,reason);
+        }
+      return false;
+     }
+
 public:
    CAmarBot1CommandReceiver():m_lastRequestId("") {}
 
@@ -125,12 +135,7 @@ public:
       if(out.requestId==m_lastRequestId) return false;
 
       long nowMs=(long)TimeCurrent()*1000;
-      if(out.expiresAtMs<=nowMs)
-        {
-         m_lastRequestId=out.requestId;
-         Ack(out.requestId,false,"EXPIRED");
-         return false;
-        }
+      if(out.expiresAtMs<=nowMs) return Reject(out.requestId,"EXPIRED");
 
       string cmd=ValueAfter(line,"command");
       if(cmd=="START") out.type=AMAR_CMD_START;
@@ -140,24 +145,19 @@ public:
       else if(cmd=="SET_BUY_ENABLED") out.type=AMAR_CMD_SET_BUY_ENABLED;
       else if(cmd=="SET_SELL_ENABLED") out.type=AMAR_CMD_SET_SELL_ENABLED;
       else if(cmd=="UPDATE_SETTINGS") out.type=AMAR_CMD_UPDATE_SETTINGS;
-      else
-        {
-         m_lastRequestId=out.requestId;
-         Ack(out.requestId,false,"UNSUPPORTED_COMMAND");
-         return false;
-        }
+      else return Reject(out.requestId,"UNSUPPORTED_COMMAND");
 
       if(HasTargetSymbol(line))
         {
          out.targetSymbol=ValueAfter(line,"target_symbol");
          out.hasTargetSymbol=(StringLen(out.targetSymbol)>0);
-         if(!out.hasTargetSymbol) return false;
+         if(!out.hasTargetSymbol) return Reject(out.requestId,"INVALID_TARGET_SYMBOL");
         }
 
       if(out.type==AMAR_CMD_SET_BUY_ENABLED || out.type==AMAR_CMD_SET_SELL_ENABLED)
         {
          out.hasEnabled=ParseBool(line,"enabled",out.enabled);
-         if(!out.hasEnabled) return false;
+         if(!out.hasEnabled) return Reject(out.requestId,"INVALID_ENABLED_VALUE");
         }
       if(out.type==AMAR_CMD_UPDATE_SETTINGS)
         {
@@ -171,10 +171,10 @@ public:
             !ParseDouble(line,"trailing",out.trailing) ||
             out.lotStart<=0 || out.gridStep<=0 || out.maxOrders<=0 || out.martingale<=0 || out.trailing<0 ||
             !MathIsValidNumber(out.basketTp) || !MathIsValidNumber(out.basketSl))
-           return false;
+           return Reject(out.requestId,"INVALID_SETTINGS");
          out.hasBuyEnabled=ParseBool(line,"buy_enabled",out.buyEnabled);
          out.hasSellEnabled=ParseBool(line,"sell_enabled",out.sellEnabled);
-         if(!out.hasBuyEnabled || !out.hasSellEnabled) return false;
+         if(!out.hasBuyEnabled || !out.hasSellEnabled) return Reject(out.requestId,"INVALID_SIDE_SETTINGS");
         }
       m_lastRequestId=out.requestId;
       return true;
