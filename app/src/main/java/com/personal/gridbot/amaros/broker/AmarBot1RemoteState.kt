@@ -11,13 +11,14 @@ data class AmarBot1CommandAck(
     @SerializedName("message") val message: String? = null,
 )
 
-/** B41: broker-neutral snapshot emitted by the MT5 BOT 1 wrapper. */
+/** B41/B51: broker-neutral snapshot emitted by the MT5 BOT 1 wrapper. */
 data class AmarBot1RemoteState(
     @SerializedName("available") val available: Boolean = false,
     @SerializedName("fresh") val fresh: Boolean = false,
     @SerializedName("age_ms") val ageMs: Long? = null,
     @SerializedName("bot_id") val botId: String? = null,
     @SerializedName("magic") val magic: Long? = null,
+    @SerializedName("strategy_id") val strategyId: String? = null,
     @SerializedName("strategy_version") val strategyVersion: String? = null,
     @SerializedName("runtime_state") val runtimeState: String? = null,
     @SerializedName("target_symbol") val targetSymbol: String? = null,
