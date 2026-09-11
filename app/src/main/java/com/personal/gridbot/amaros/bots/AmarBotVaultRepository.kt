@@ -3,13 +3,16 @@ package com.personal.gridbot.amaros.bots
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.personal.gridbot.amaros.sync.AmarSyncManager
 import org.json.JSONArray
 import org.json.JSONObject
 
 /** Persistent configuration vault. It stores profiles only; it never authorizes live execution. */
 class AmarBotVaultRepository(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences("amar_bot_vault_v1", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences("amar_bot_vault_v1", Context.MODE_PRIVATE)
+
+    init { AmarSyncManager.schedule(appContext) }
 
     fun load(): List<AmarSavedBot> {
         val raw = prefs.getString(KEY_BOTS, null) ?: return defaultBots()
@@ -24,6 +27,28 @@ class AmarBotVaultRepository(context: Context) {
     }
 
     fun save(bots: List<AmarSavedBot>) = persist(bots)
+
+    /** Canonical JSON snapshot used only by the offline-first sync layer. */
+    fun exportSnapshotJson(): String {
+        val array = JSONArray()
+        load().forEach { array.put(it.toJson()) }
+        return array.toString()
+    }
+
+    /** Atomically replaces the local vault with a validated remote snapshot. */
+    fun replaceSnapshotJson(snapshot: String): Boolean {
+        return runCatching {
+            val array = JSONArray(snapshot)
+            val normalized = buildList {
+                for (i in 0 until array.length()) {
+                    runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
+                }
+            }.filter { it.botNumber > 0 }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
+            val out = JSONArray()
+            normalized.forEach { out.put(it.toJson()) }
+            prefs.edit().putString(KEY_BOTS, out.toString()).commit()
+        }.getOrDefault(false)
+    }
 
     fun addBot(name: String? = null): AmarSavedBot {
         val bots = load().toMutableList()
@@ -84,6 +109,7 @@ class AmarBotVaultRepository(context: Context) {
             .sortedBy { it.botNumber }
             .forEach { array.put(it.toJson()) }
         prefs.edit().putString(KEY_BOTS, array.toString()).commit()
+        AmarSyncManager.requestNow(appContext)
     }
 
     private fun defaultBots(): List<AmarSavedBot> = (1..10).map { AmarSavedBot(it, "بوت $it") }
@@ -112,7 +138,9 @@ data class AmarSavedBot(
         fun fromJson(o: JSONObject): AmarSavedBot {
             val s = o.optJSONArray("strategies") ?: JSONArray()
             val strategies = buildList {
-                for (i in 0 until s.length()) add(AmarSavedStrategy.fromJson(s.getJSONObject(i)))
+                for (i in 0 until s.length()) {
+                    runCatching { add(AmarSavedStrategy.fromJson(s.getJSONObject(i))) }
+                }
             }
             return AmarSavedBot(o.optInt("botNumber"), o.optString("name", "بوت"), strategies)
         }
