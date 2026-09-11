@@ -46,7 +46,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m pip install --disable-pip-version-check -r bridge/requirements.txt
+          python3 -m pip install --disable-pip-version-check 'cryptography>=42.0.0'
           python3 -m py_compile bridge/*.py
           python3 -m unittest discover bridge -p 'test_*.py' -v
 
