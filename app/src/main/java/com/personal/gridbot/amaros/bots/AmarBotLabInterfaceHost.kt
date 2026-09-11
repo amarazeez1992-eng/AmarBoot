@@ -50,13 +50,13 @@ object AmarBotInterfaceRegistry {
     }
 }
 
-/** Thin shell: each internal interface owns its complete scrolling layout. */
+/** Thin shell: internal interfaces own their complete scrolling layouts. */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var selectedBot by remember { mutableStateOf(1) }
-    var selectedInterface by remember {
-        mutableStateOf(AmarBotInterfaceRegistry.load(context, 1))
+    val selectedBot = AmarBotLabSelectionContext.selectedBot
+    var selectedInterface by remember(selectedBot) {
+        mutableStateOf(AmarBotInterfaceRegistry.load(context, selectedBot))
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -76,8 +76,7 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
                     onBackHome = onBackHome,
                     selectedBot = selectedBot,
                     onBotSelected = { bot ->
-                        selectedBot = bot
-                        selectedInterface = AmarBotInterfaceRegistry.load(context, bot)
+                        AmarBotLabSelectionContext.selectedBot = bot.coerceIn(1, 10)
                     }
                 )
             }
