@@ -37,6 +37,7 @@ data class AmarBot1RemoteState(
     @SerializedName("buy_positions") val buyPositions: Int = 0,
     @SerializedName("sell_positions") val sellPositions: Int = 0,
     @SerializedName("pending_orders") val pendingOrders: Int = 0,
+    @SerializedName("floating_profit_loss") val floatingProfitLoss: Double? = null,
     @SerializedName("market_ready") val marketReady: Boolean = false,
     @SerializedName("heartbeat_ms") val heartbeatMs: Long? = null,
     @SerializedName("last_request_id") val lastRequestId: String? = null,
