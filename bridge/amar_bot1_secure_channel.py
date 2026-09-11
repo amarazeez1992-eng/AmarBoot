@@ -1,9 +1,4 @@
-"""B37 secure BOT 1 lifecycle command validation.
-
-Separate from market-order canonicalization so the grid settings contract can
-remain stable. The bridge authenticates this envelope before it reaches the
-MT5 common-file queue.
-"""
+"""Fail-closed BOT 1 lifecycle command validation."""
 from __future__ import annotations
 
 import hashlib
@@ -55,7 +50,24 @@ def valid_signature(payload: dict) -> bool:
     return hmac.compare_digest(expected, str(payload.get("signature", "")))
 
 
-def validate(payload: dict, expected_login: int, expected_magic: int, allowed_symbols: set[str]) -> tuple[bool, str]:
+def _valid_symbol_text(value) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 64
+        and value.strip() == value
+        and "\n" not in value
+        and "\r" not in value
+        and "\x00" not in value
+    )
+
+
+def validate(
+    payload: dict,
+    expected_login: int,
+    expected_magic: int,
+    allowed_symbols: set[str],
+    allowed_target_symbols: set[str] | None = None,
+) -> tuple[bool, str]:
     if not isinstance(payload, dict):
         return False, "invalid request"
     required = ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "account_login", "bot_magic", "symbol", "command", "signature")
@@ -71,12 +83,18 @@ def validate(payload: dict, expected_login: int, expected_magic: int, allowed_sy
         return False, "expired command"
     if login != int(expected_login) or magic != int(expected_magic):
         return False, "invalid execution scope"
-    symbol = str(payload["symbol"])
-    if symbol not in allowed_symbols:
+    symbol = payload["symbol"]
+    if not _valid_symbol_text(symbol) or symbol not in allowed_symbols:
         return False, "symbol not allow-listed"
+
     target = payload.get("target_symbol")
-    if target is not None and (not isinstance(target, str) or not target.strip() or "\n" in target or "\r" in target):
-        return False, "invalid target symbol"
+    if target is not None:
+        if not _valid_symbol_text(target):
+            return False, "invalid target symbol"
+        target_allow = allowed_target_symbols if allowed_target_symbols is not None else allowed_symbols
+        if target not in target_allow:
+            return False, "target symbol not allow-listed"
+
     commands = {"START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED", "SET_SELL_ENABLED", "UPDATE_SETTINGS"}
     if payload.get("command") not in commands:
         return False, "unsupported command"
