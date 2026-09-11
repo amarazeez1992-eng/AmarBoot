@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import com.personal.gridbot.amaros.design.AmarHomeLayoutController
 import com.personal.gridbot.amaros.navigation.AmarRoom
 import com.personal.gridbot.amaros.navigation.AmarRoomHostScreen
 import com.personal.gridbot.amaros.security.AmarProtectionCenter
@@ -34,12 +35,14 @@ class MainActivity : ComponentActivity() {
     private var showingRoom = false
     private var currentRoom: AmarRoom? = null
     private var themeMode by mutableStateOf(AmarThemeMode.DARK)
+    private var homeLayout by mutableStateOf(AmarHomeLayoutController.DEFAULT_LAYOUT)
     private val prefs by lazy { getSharedPreferences("amar_ui", MODE_PRIVATE) }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         themeMode = runCatching { AmarThemeMode.valueOf(prefs.getString("theme_mode", AmarThemeMode.DARK.name) ?: AmarThemeMode.DARK.name) }.getOrDefault(AmarThemeMode.DARK)
+        homeLayout = prefs.getInt("home_layout", AmarHomeLayoutController.DEFAULT_LAYOUT).coerceIn(1, AmarHomeLayoutController.LAYOUT_COUNT)
         AmarGlobalVisualStateStore.setEnabled(AmarVisualEffectsPreference.load(this))
         installProtectionHandler(); enterImmersiveReferenceMode()
         root = FrameLayout(this)
@@ -69,12 +72,13 @@ class MainActivity : ComponentActivity() {
         """.trimIndent()
         home.evaluateJavascript(js, null)
     }
-    private fun applyHomeTheme() { home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled(${AmarGlobalVisualStateStore.current().enabled})", null) }
-    private fun renderCurrentRoom() { currentRoom?.let { roomHost.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(it, ::showHome, themeMode, ::onThemeModeChanged) } } } }
+    private fun applyHomeTheme() { home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled(${AmarGlobalVisualStateStore.current().enabled})", null); applyHomeLayout() }
+    private fun applyHomeLayout() { home.evaluateJavascript(AmarHomeLayoutController.applyJavascript(homeLayout), null) }
+    private fun renderCurrentRoom() { currentRoom?.let { roomHost.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(it, ::showHome, themeMode, ::onThemeModeChanged, homeLayout, ::onHomeLayoutChanged) } } } }
     private fun showRoom(room: AmarRoom) { currentRoom = room; showingRoom = true; home.visibility = android.view.View.GONE; roomHost.visibility = android.view.View.VISIBLE; renderCurrentRoom() }
     private fun onThemeModeChanged(mode: AmarThemeMode) { themeMode = mode; prefs.edit().putString("theme_mode", mode.name).apply(); applyHomeTheme(); renderCurrentRoom() }
+    private fun onHomeLayoutChanged(layout: Int) { homeLayout = layout.coerceIn(1, AmarHomeLayoutController.LAYOUT_COUNT); prefs.edit().putInt("home_layout", homeLayout).apply(); if(!showingRoom){applyHomeLayout()} else {showHome();applyHomeLayout()} }
     private fun showHome() { showingRoom = false; currentRoom = null; roomHost.visibility = android.view.View.GONE; home.visibility = android.view.View.VISIBLE; applyHomeTheme() }
     private fun setVisualEffectsEnabled(enabled: Boolean) { AmarVisualEffectsPreference.save(this, enabled); AmarGlobalVisualStateStore.setEnabled(enabled); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled($enabled)", null) }
-    private inner class HomeBridge { @JavascriptInterface fun openRoom(name: String) { runOnUiThread { runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom) } }; @JavascriptInterface fun openHome() { runOnUiThread(::showHome) }; @JavascriptInterface fun setVisualEffectsEnabled(enabled: Boolean) { runOnUiThread { this@MainActivity.setVisualEffectsEnabled(enabled) } }
-    }
+    private inner class HomeBridge { @JavascriptInterface fun openRoom(name: String) { runOnUiThread { runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom) } }; @JavascriptInterface fun openHome() { runOnUiThread(::showHome) }; @JavascriptInterface fun setVisualEffectsEnabled(enabled: Boolean) { runOnUiThread { this@MainActivity.setVisualEffectsEnabled(enabled) } } }
 }
