@@ -123,12 +123,7 @@ fun AmarBotLabInterfaceBScreenV2(
 }
 
 @Composable
-private fun BChip(
-    text: String,
-    selected: Boolean,
-    modifier: Modifier,
-    onClick: () -> Unit
-) {
+private fun BChip(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = modifier.height(34.dp),
@@ -138,9 +133,7 @@ private fun BChip(
             containerColor = if (selected) BC else B2,
             contentColor = if (selected) Color.Black else BT
         )
-    ) {
-        Text(text, fontSize = 8.sp, fontWeight = FontWeight.Black)
-    }
+    ) { Text(text, fontSize = 8.sp, fontWeight = FontWeight.Black) }
 }
 
 @Composable
@@ -150,12 +143,7 @@ private fun BotSelector(selectedBot: Int, onBotSelected: (Int) -> Unit) {
             Text("البوتات", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 (1..10).forEach { bot ->
-                    BChip(
-                        text = "V$bot",
-                        selected = bot == selectedBot,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onBotSelected(bot) }
-                    )
+                    BChip("V$bot", bot == selectedBot, Modifier.weight(1f)) { onBotSelected(bot) }
                 }
             }
         }
@@ -169,19 +157,12 @@ private fun StrategySelector(selectedStrategy: Int, onStrategySelected: (Int) ->
             Text("الاستراتيجيات", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 (1..10).forEach { number ->
-                    BChip(
-                        text = number.toString().padStart(2, '0'),
-                        selected = number == selectedStrategy,
-                        modifier = Modifier.weight(1f),
-                        onClick = { onStrategySelected(number) }
-                    )
+                    BChip(number.toString().padStart(2, '0'), number == selectedStrategy, Modifier.weight(1f)) {
+                        onStrategySelected(number)
+                    }
                 }
             }
-            Text(
-                "الاستراتيجية ${selectedStrategy.toString().padStart(2, '0')}",
-                color = BC,
-                fontSize = 10.sp
-            )
+            Text("الاستراتيجية ${selectedStrategy.toString().padStart(2, '0')}", color = BC, fontSize = 10.sp)
         }
     }
 }
@@ -199,17 +180,8 @@ private fun TimeframeStatus(timeframe: AmarTimeframe) {
         Column(Modifier.padding(9.dp)) {
             Text("فريم الدخول المحدد", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Text("${timeframe.shortLabel} • ${timeframe.arabicLabel}", color = BC, fontSize = 17.sp, fontWeight = FontWeight.Black)
-            Text(
-                "بداية الشمعة التالية خلال ${formatTimeframeRemaining(remaining)}",
-                color = BG,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                "الفريم مشترك بين A وB وC وD وجميع الواجهات المستقبلية.",
-                color = BM,
-                fontSize = 8.sp
-            )
+            Text("بداية الشمعة التالية خلال ${formatTimeframeRemaining(remaining)}", color = BG, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text("الفريم مشترك بين A وB وC وD وجميع الواجهات المستقبلية.", color = BM, fontSize = 8.sp)
         }
     }
 }
@@ -222,43 +194,22 @@ private fun StrategyEditor(
     onDelete: (Int) -> Unit,
     onApply: () -> Unit
 ) {
-    var lot by remember(strategy?.number, strategy?.profile?.lot) {
-        mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat())
-    }
-    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) {
-        mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat())
-    }
-    var gridStep by remember(strategy?.number, strategy?.profile?.gridStep) {
-        mutableStateOf((strategy?.profile?.gridStep ?: 0.0).toFloat())
-    }
-    var maxOrders by remember(strategy?.number, strategy?.profile?.maxOrders) {
-        mutableStateOf((strategy?.profile?.maxOrders ?: 0).toFloat())
-    }
-    var basketTp by remember(strategy?.number, strategy?.profile?.basketTp) {
-        mutableStateOf((strategy?.profile?.basketTp ?: 0.0).toFloat())
-    }
-    var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) {
-        mutableStateOf((strategy?.profile?.basketSl ?: 0.0).toFloat())
-    }
-    var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) {
-        mutableStateOf(strategy?.profile?.buyEnabled ?: false)
-    }
-    var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) {
-        mutableStateOf(strategy?.profile?.sellEnabled ?: false)
-    }
+    var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat()) }
+    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat()) }
+    var gridStep by remember(strategy?.number, strategy?.profile?.gridStep) { mutableStateOf((strategy?.profile?.gridStep ?: 0.0).toFloat()) }
+    var maxOrders by remember(strategy?.number, strategy?.profile?.maxOrders) { mutableStateOf((strategy?.profile?.maxOrders ?: 0).toFloat()) }
+    var basketTp by remember(strategy?.number, strategy?.profile?.basketTp) { mutableStateOf((strategy?.profile?.basketTp ?: 0.0).toFloat()) }
+    var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf((strategy?.profile?.basketSl ?: 0.0).toFloat()) }
+    var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: false) }
+    var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: false) }
 
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(
-                "الاستراتيجية ${strategyNumber.toString().padStart(2, '0')} • تحكم باللمس",
-                color = BT,
-                fontWeight = FontWeight.Black,
-                fontSize = 12.sp
-            )
-            ValueSlider("اللوت", lot, 0.01f..5f, 0.01f) { lot = it }
-            ValueSlider("مضاعف الشبكة", multiplier, 0.5f..5f, 0.05f) { multiplier = it }
+            Text("الاستراتيجية ${strategyNumber.toString().padStart(2, '0')} • تحكم باللمس", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
+            ValueSlider("اللوت", lot, 0f..5f, 0.01f) { lot = it }
+            ValueSlider("مضاعف الشبكة", multiplier, 0f..5f, 0.05f) { multiplier = it }
             ValueSlider("مسافة الشبكة", gridStep, 0f..500f, 1f) { gridStep = it }
-            ValueSlider("عدد الأوامر", maxOrders, 1f..50f, 1f) { maxOrders = it }
+            ValueSlider("عدد الأوامر", maxOrders, 0f..50f, 1f) { maxOrders = it }
             ValueSlider("هدف السلة \\$", basketTp, 0f..1000f, 1f) { basketTp = it }
             ValueSlider("وقف السلة \\$", basketSl, -1000f..0f, 1f) { basketSl = it }
 
@@ -268,11 +219,7 @@ private fun StrategyEditor(
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Button(
-                    onClick = onApply,
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = BC, contentColor = Color.Black)
-                ) { Text("تطبيق") }
+                Button(onClick = onApply, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BC, contentColor = Color.Black)) { Text("تطبيق") }
                 Button(
                     onClick = {
                         onSave(
@@ -296,29 +243,19 @@ private fun StrategyEditor(
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = BG, contentColor = Color.Black)
                 ) { Text("حفظ") }
-                Button(
-                    onClick = { onDelete(strategyNumber) },
-                    colors = ButtonDefaults.buttonColors(containerColor = BR, contentColor = Color.White)
-                ) { Text("حذف") }
+                Button(onClick = { onDelete(strategyNumber) }, colors = ButtonDefaults.buttonColors(containerColor = BR, contentColor = Color.White)) { Text("حذف") }
             }
         }
     }
 }
 
 @Composable
-private fun ValueSlider(
-    label: String,
-    value: Float,
-    range: ClosedFloatingPointRange<Float>,
-    step: Float,
-    onValueChange: (Float) -> Unit
-) {
+private fun ValueSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, onValueChange: (Float) -> Unit) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(label, color = BT, fontSize = 8.sp, modifier = Modifier.weight(1f))
             Text(
-                if (value < 10f) String.format(Locale.US, "%.2f", value)
-                else String.format(Locale.US, "%.0f", value),
+                if (value < 10f) String.format(Locale.US, "%.2f", value) else String.format(Locale.US, "%.0f", value),
                 color = BC,
                 fontWeight = FontWeight.Black,
                 fontSize = 11.sp
@@ -337,18 +274,12 @@ private fun ValueSlider(
 
 @Composable
 private fun ToggleButton(label: String, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    val color by animateColorAsState(
-        targetValue = if (enabled) BG else BR,
-        animationSpec = tween(180),
-        label = "toggle-$label"
-    )
+    val color by animateColorAsState(targetValue = if (enabled) BG else BR, animationSpec = tween(180), label = "toggle-$label")
     Button(
         onClick = onClick,
         modifier = modifier.height(38.dp),
         colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.Black)
-    ) {
-        Text(if (enabled) "● $label ON" else "○ $label OFF", fontSize = 9.sp, fontWeight = FontWeight.Black)
-    }
+    ) { Text(if (enabled) "● $label ON" else "○ $label OFF", fontSize = 9.sp, fontWeight = FontWeight.Black) }
 }
 
 @Composable
@@ -357,20 +288,12 @@ private fun QuickCommands(notice: (String) -> Unit) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text("أوامر سريعة", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CommandButton("إغلاق الشراء", BR, Modifier.weight(1f)) {
-                    notice("طلب إغلاق الشراء — انتظار تأكيد Runtime")
-                }
-                CommandButton("إغلاق البيع", BP, Modifier.weight(1f)) {
-                    notice("طلب إغلاق البيع — انتظار تأكيد Runtime")
-                }
+                CommandButton("إغلاق الشراء", BR, Modifier.weight(1f)) { notice("طلب إغلاق الشراء — انتظار تأكيد Runtime") }
+                CommandButton("إغلاق البيع", BP, Modifier.weight(1f)) { notice("طلب إغلاق البيع — انتظار تأكيد Runtime") }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CommandButton("إغلاق الكل", BR, Modifier.weight(1f)) {
-                    notice("⚠ طلب إغلاق الكل — انتظار التحقق")
-                }
-                CommandButton("إعادة البناء", BC, Modifier.weight(1f)) {
-                    notice("طلب إعادة البناء — انتظار Runtime")
-                }
+                CommandButton("إغلاق الكل", BR, Modifier.weight(1f)) { notice("⚠ طلب إغلاق الكل — انتظار التحقق") }
+                CommandButton("إعادة البناء", BC, Modifier.weight(1f)) { notice("طلب إعادة البناء — انتظار Runtime") }
             }
         }
     }
@@ -381,9 +304,6 @@ private fun CommandButton(label: String, color: Color, modifier: Modifier, onCli
     Button(
         onClick = onClick,
         modifier = modifier.height(42.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = color,
-            contentColor = if (color == BC) Color.Black else Color.White
-        )
+        colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = if (color == BC) Color.Black else Color.White)
     ) { Text(label, fontSize = 9.sp, fontWeight = FontWeight.Black) }
 }
