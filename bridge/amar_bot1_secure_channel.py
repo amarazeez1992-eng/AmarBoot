@@ -9,6 +9,7 @@ import os
 import time
 from decimal import Decimal, InvalidOperation
 
+from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
@@ -66,19 +67,12 @@ def valid_device_signature(payload: dict) -> bool:
         public_key.verify(signature, canonical(payload).encode("utf-8"), padding.PKCS1v15(), hashes.SHA256())
         digest = hashlib.sha256(public_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)).hexdigest()
         return hmac.compare_digest(digest, str(payload.get("device_id", "")))
-    except (ValueError, TypeError, KeyError, AttributeError):
+    except (InvalidSignature, ValueError, TypeError, KeyError, AttributeError):
         return False
 
 
 def _valid_symbol_text(value) -> bool:
-    return (
-        isinstance(value, str)
-        and 1 <= len(value) <= 64
-        and value.strip() == value
-        and "\n" not in value
-        and "\r" not in value
-        and "\x00" not in value
-    )
+    return isinstance(value, str) and 1 <= len(value) <= 64 and value.strip() == value and "\n" not in value and "\r" not in value and "\x00" not in value
 
 
 def symbol_allowed(value: str, exact: set[str], patterns: set[str] | None = None) -> bool:
