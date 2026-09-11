@@ -1,0 +1,49 @@
+name: Amar deep audit fixes
+on:
+  push:
+    paths:
+      - '.github/workflows/amar-deep-audit-fixes.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply audited fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          a = Path('app/src/main/java/com/personal/gridbot/amaros/bots/AmarBotLabProfessionalScreen.kt')
+          s = a.read_text()
+          s = s.replace('import androidx.compose.runtime.mutableIntStateOf\n', '')
+          s = s.replace('    var selectedBot by remember { mutableIntStateOf(1) }\n', '    val selectedBot = AmarBotLabSelectionContext.selectedBot\n')
+          s = s.replace('onSelectBot = { selectedBot = it },', 'onSelectBot = { AmarBotLabSelectionContext.selectedBot = it.coerceIn(1, 10) },')
+          a.write_text(s)
+
+          v = Path('app/src/main/java/com/personal/gridbot/amaros/bots/AmarBotVaultRepository.kt')
+          s = v.read_text()
+          old = '''    private fun persist(bots: List<AmarSavedBot>) {\n        val array = JSONArray()\n        bots.map { it.normalized() }\n            .filter { it.botNumber > 0 }\n            .distinctBy { it.botNumber }\n            .sortedBy { it.botNumber }\n            .forEach { array.put(it.toJson()) }\n        prefs.edit().putString(KEY_BOTS, array.toString()).apply()\n    }'''
+          new = '''    private fun persist(bots: List<AmarSavedBot>) {\n        val array = JSONArray()\n        bots.map { it.normalized() }\n            .filter { it.botNumber > 0 }\n            .distinctBy { it.botNumber }\n            .sortedBy { it.botNumber }\n            .forEach { array.put(it.toJson()) }\n        prefs.edit().putString(KEY_BOTS, array.toString()).commit()\n    }'''
+          if old not in s: raise SystemExit('persist block not found')
+          s = s.replace(old, new)
+          start = s.index('    companion object {\n        fun fromJsonString(json: String): AmarSavedStrategy {')
+          end = s.index('    }\n}\n', start) + len('    }\n')
+          replacement = '''    companion object {\n        fun fromJsonString(json: String): AmarSavedStrategy = fromJson(JSONObject(json))\n\n        fun fromJson(o: JSONObject): AmarSavedStrategy {\n            fun finiteDouble(key: String, fallback: Double): Double {\n                val value = o.optDouble(key, fallback)\n                return if (value.isFinite()) value else fallback\n            }\n            val lot = finiteDouble("lot", 0.01).coerceAtLeast(0.00001)\n            val step = finiteDouble("step", 30.0).coerceAtLeast(0.00001)\n            val max = o.optInt("max", 10).coerceAtLeast(1)\n            val multiplier = finiteDouble("multiplier", 2.0).coerceAtLeast(0.00001)\n            val tp = finiteDouble("tp", 50.0)\n            val sl = finiteDouble("sl", -30.0)\n            val trailing = finiteDouble("trailing", 0.0).coerceAtLeast(0.0)\n            return AmarSavedStrategy(\n                number = o.optInt("number", 1).coerceIn(1, 10),\n                name = o.optString("name", "استراتيجية").ifBlank { "استراتيجية" },\n                profile = AmarBot1RuntimeConfig(\n                    lot = lot,\n                    gridStep = step,\n                    maxOrders = max,\n                    multiplier = multiplier,\n                    basketTp = tp,\n                    basketSl = sl,\n                    trailing = trailing,\n                    buyEnabled = o.optBoolean("buy", true),\n                    sellEnabled = o.optBoolean("sell", true)\n                ),\n                riskProfile = o.optString("risk", "قياسي").ifBlank { "قياسي" },\n                rebuildRule = o.optString("rebuildRule", "يدوي").ifBlank { "يدوي" },\n                entryRule = o.optString("entryRule", "أساسي").ifBlank { "أساسي" },\n                metadata = o.optString("metadata", "")\n            )\n        }\n    }\n'''
+          s = s[:start] + replacement + s[end:]
+          # Make load resilient per strategy: one corrupt record must not erase all other bots.
+          old_load = '''            val array = JSONArray(raw)\n            buildList {\n                for (i in 0 until array.length()) add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized())\n            }.distinctBy { it.botNumber }.sortedBy { it.botNumber }\n        }.getOrElse { defaultBots() }'''
+          new_load = '''            val array = JSONArray(raw)\n            buildList {\n                for (i in 0 until array.length()) {\n                    runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }\n                }\n            }.distinctBy { it.botNumber }.sortedBy { it.botNumber }\n        }.getOrElse { defaultBots() }'''
+          if old_load not in s: raise SystemExit('load block not found')
+          s = s.replace(old_load, new_load)
+          v.write_text(s)
+          PY
+          rm -f .github/workflows/amar-deep-audit-fixes.yml
+          git config user.name 'amarazeez1992-eng'
+          git config user.email 'amarazeez1992@gmail.com'
+          git add app/src/main/java/com/personal/gridbot/amaros/bots/AmarBotLabProfessionalScreen.kt app/src/main/java/com/personal/gridbot/amaros/bots/AmarBotVaultRepository.kt .github/workflows/amar-deep-audit-fixes.yml
+          git commit -m 'Harden Bot Lab state and strategy vault persistence'
+          git push
