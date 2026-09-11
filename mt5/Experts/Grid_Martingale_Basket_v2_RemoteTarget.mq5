@@ -3,7 +3,7 @@
 //| BOT 1 remote target-symbol execution wrapper                     |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.15"
+#property version   "2.16"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
@@ -63,6 +63,93 @@ int AmarPendingCount()
    return count;
 }
 
+int AmarSideCount(ENUM_POSITION_TYPE side)
+{
+   int count=0;
+   string symbol=AmarTargetSymbol();
+   for(int i=0;i<PositionsTotal();i++)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0 || !PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=symbol) continue;
+      if((ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE)==side) count++;
+   }
+   return count;
+}
+
+ENUM_ORDER_TYPE_FILLING AmarFillingType(string symbol)
+{
+   long mode=SymbolInfoInteger(symbol,SYMBOL_FILLING_MODE);
+   if((mode & SYMBOL_FILLING_IOC)==SYMBOL_FILLING_IOC) return ORDER_FILLING_IOC;
+   if((mode & SYMBOL_FILLING_FOK)==SYMBOL_FILLING_FOK) return ORDER_FILLING_FOK;
+   return ORDER_FILLING_RETURN;
+}
+
+bool AmarCloseSide(ENUM_POSITION_TYPE side)
+{
+   string symbol=AmarTargetSymbol();
+   if(!AmarTargetReady(symbol))
+   {
+      g_lastError="MARKET_NOT_READY";
+      return false;
+   }
+
+   bool allClosed=true;
+   for(int i=PositionsTotal()-1;i>=0;i--)
+   {
+      ulong ticket=PositionGetTicket(i);
+      if(ticket==0 || !PositionSelectByTicket(ticket)) continue;
+      if(PositionGetInteger(POSITION_MAGIC)!=Magic) continue;
+      if(PositionGetString(POSITION_SYMBOL)!=symbol) continue;
+      ENUM_POSITION_TYPE positionSide=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+      if(positionSide!=side) continue;
+
+      double volume=PositionGetDouble(POSITION_VOLUME);
+      if(!MathIsValidNumber(volume) || volume<=0.0)
+      {
+         allClosed=false;
+         g_lastError="INVALID_POSITION_VOLUME";
+         continue;
+      }
+
+      MqlTick tick;
+      if(!SymbolInfoTick(symbol,tick))
+      {
+         allClosed=false;
+         g_lastError="TICK_UNAVAILABLE";
+         continue;
+      }
+
+      MqlTradeRequest req={};
+      MqlTradeResult res={};
+      req.action=TRADE_ACTION_DEAL;
+      req.position=ticket;
+      req.symbol=symbol;
+      req.volume=volume;
+      req.type=(side==POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+      req.price=(side==POSITION_TYPE_BUY) ? tick.bid : tick.ask;
+      req.deviation=20;
+      req.magic=Magic;
+      req.type_filling=AmarFillingType(symbol);
+      req.comment=(side==POSITION_TYPE_BUY) ? "AMAR_CLOSE_BUY" : "AMAR_CLOSE_SELL";
+
+      if(!OrderSend(req,res) || (res.retcode!=TRADE_RETCODE_DONE && res.retcode!=TRADE_RETCODE_DONE_PARTIAL))
+      {
+         allClosed=false;
+         g_lastError=StringFormat("SIDE_CLOSE_FAILED_%u",res.retcode);
+         Print("AMAR side close failed ticket=",ticket," retcode=",res.retcode);
+      }
+   }
+
+   if(AmarSideCount(side)>0)
+   {
+      allClosed=false;
+      if(g_lastError=="") g_lastError="SIDE_POSITIONS_REMAIN";
+   }
+   return allClosed;
+}
+
 void AmarWriteState()
 {
    string symbol=AmarTargetSymbol();
@@ -78,9 +165,9 @@ void AmarWriteState()
    StringReplace(safeRequest,"\"","'");
    string state=IsTrading ? "RUNNING" : "OFF";
    string payload=StringFormat(
-      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_id\":\"%s\",\"strategy_version\":\"%s\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
+      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_id\":\"%s\",\"strategy_version\":\"%s\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"buy_positions\":%d,\"sell_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
       Magic,AMAR_BOT1_STRATEGY_ID,AMAR_BOT1_STRATEGY_VERSION,state,symbol,_Symbol,IsTrading?"true":"false",BuyEnabled?"true":"false",SellEnabled?"true":"false",
-      LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarPendingCount(),marketReady?"true":"false",
+      LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarSideCount(POSITION_TYPE_BUY),AmarSideCount(POSITION_TYPE_SELL),AmarPendingCount(),marketReady?"true":"false",
       (long)TimeCurrent()*1000,safeRequest,g_lastCommandStatus,safeError);
    FileWriteString(h,payload+"\n");
    FileFlush(h);
@@ -147,6 +234,10 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
       case AMAR_CMD_CLOSE_ALL:
          CloseAll(); DeletePending(); ResetCounters();
          return true;
+      case AMAR_CMD_CLOSE_BUY:
+         return AmarCloseSide(POSITION_TYPE_BUY);
+      case AMAR_CMD_CLOSE_SELL:
+         return AmarCloseSide(POSITION_TYPE_SELL);
       case AMAR_CMD_SET_BUY_ENABLED:
          if(!cmd.hasEnabled) { g_lastError="INVALID_BUY_SETTING"; return false; }
          BuyEnabled=cmd.enabled;
