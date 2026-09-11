@@ -8,38 +8,35 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AmarBot1RemoteProtocolTest {
+    private fun envelope(command: AmarBot1RemoteCommandType, settings: AmarBot1RemoteSettings? = null) = AmarBot1RemoteEnvelope(
+        idempotencyKey = "idem-${command.name}",
+        issuedAtMs = 1_000L,
+        expiresAtMs = 11_000L,
+        accountLogin = 123L,
+        botMagic = 20260908L,
+        symbol = "XAUUSD",
+        command = command,
+        targetSymbol = "XAUUSD",
+        settings = settings,
+        deviceId = "device-test",
+        sequence = 1L,
+        devicePublicKey = "public-key-test",
+        deviceSignature = "device-signature-test",
+        signature = "pending",
+    )
+
     @Test
     fun signedEnvelopeVerifies() {
-        val unsigned = AmarBot1RemoteEnvelope(
-            idempotencyKey = "idem-1",
-            issuedAtMs = 1_000L,
-            expiresAtMs = 11_000L,
-            accountLogin = 123L,
-            botMagic = 20260908L,
-            symbol = "XAUUSD",
-            command = AmarBot1RemoteCommandType.REBUILD,
-            targetSymbol = "XAUUSD",
-            signature = "pending",
-        )
-        val signed = AmarBot1RemoteSigner.sign(unsigned, "secret")
+        val signed = AmarBot1RemoteSigner.sign(envelope(AmarBot1RemoteCommandType.REBUILD), "secret")
         assertTrue(AmarBot1RemoteSigner.verify(signed, "secret"))
     }
 
     @Test
     fun settingsAreRepresentableForRemoteRebuild() {
         val settings = AmarBot1RemoteSettings(0.01, 30.0, 10, 2.0, 50.0, -30.0, 0.0, true, true)
-        val unsigned = AmarBot1RemoteEnvelope(
-            idempotencyKey = "idem-2",
-            issuedAtMs = 1_000L,
-            expiresAtMs = 11_000L,
-            accountLogin = 123L,
-            botMagic = 20260908L,
-            symbol = "XAUUSD",
-            command = AmarBot1RemoteCommandType.UPDATE_SETTINGS,
-            targetSymbol = "XAUUSD",
-            settings = settings,
-            signature = "pending",
-        )
-        assertTrue(AmarBot1RemoteSigner.sign(unsigned, "secret").signature.isNotBlank())
+        val signed = AmarBot1RemoteSigner.sign(envelope(AmarBot1RemoteCommandType.UPDATE_SETTINGS, settings), "secret")
+        assertTrue(signed.signature.isNotBlank())
+        assertTrue(signed.sequence > 0)
+        assertTrue(signed.deviceId.isNotBlank())
     }
 }
