@@ -31,31 +31,14 @@ struct AmarBot1RemoteCommand
    double basketTp;
    double basketSl;
    double trailing;
+   bool hasTargetSymbol;
+   string targetSymbol;
   };
 
 class CAmarBot1CommandReceiver
   {
 private:
-   ulong m_lastModified;
-
-   string ReadAll()
-     {
-      int h=FileOpen(AMAR_BOT1_COMMAND_FILE,FILE_READ|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ);
-      if(h==INVALID_HANDLE) return "";
-      string s="";
-      while(!FileIsEnding(h))
-        {
-         string line=FileReadString(h);
-         if(StringLen(line)>0) s+=line;
-        }
-      FileClose(h);
-      return s;
-     }
-
-   bool Has(string src,string key)
-     {
-      return StringFind(src,"\""+key+"\"")>=0;
-     }
+   string m_lastPayload;
 
    string ValueAfter(string src,string key)
      {
@@ -100,7 +83,7 @@ private:
      }
 
 public:
-   CAmarBot1CommandReceiver():m_lastModified(0) {}
+   CAmarBot1CommandReceiver():m_lastPayload("") {}
 
    bool Read(AmarBot1RemoteCommand &out)
      {
@@ -114,7 +97,8 @@ public:
          if(StringLen(candidate)>0) line=candidate;
         }
       FileClose(h);
-      if(line=="") return false;
+      if(line=="" || line==m_lastPayload) return false;
+      m_lastPayload=line;
 
       string cmd=ValueAfter(line,"command");
       if(cmd=="START") out.type=AMAR_CMD_START;
@@ -125,6 +109,13 @@ public:
       else if(cmd=="SET_SELL_ENABLED") out.type=AMAR_CMD_SET_SELL_ENABLED;
       else if(cmd=="UPDATE_SETTINGS") out.type=AMAR_CMD_UPDATE_SETTINGS;
       else return false;
+
+      if(HasTargetSymbol(line))
+        {
+         out.targetSymbol=ValueAfter(line,"target_symbol");
+         out.hasTargetSymbol=(StringLen(out.targetSymbol)>0);
+         if(!out.hasTargetSymbol) return false;
+        }
 
       if(out.type==AMAR_CMD_SET_BUY_ENABLED || out.type==AMAR_CMD_SET_SELL_ENABLED)
         {
@@ -144,7 +135,19 @@ public:
             out.lotStart<=0 || out.gridStep<=0 || out.maxOrders<=0 || out.martingale<=0 || out.trailing<0)
            return false;
          if(!ParseBool(line,"buy_enabled",out.enabled)) return false;
+         if(!ParseBool(line,"sell_enabled",out.hasEnabled)) return false;
+         if(HasTargetSymbol(line))
+           {
+            out.targetSymbol=ValueAfter(line,"target_symbol");
+            out.hasTargetSymbol=(StringLen(out.targetSymbol)>0);
+            if(!out.hasTargetSymbol) return false;
+           }
         }
       return true;
+     }
+
+   bool HasTargetSymbol(string src)
+     {
+      return StringFind(src,"\"target_symbol\"")>=0;
      }
   };
