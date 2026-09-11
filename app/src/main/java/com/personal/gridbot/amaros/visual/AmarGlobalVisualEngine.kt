@@ -67,7 +67,7 @@ fun AmarGlobalVisualStateCollector(context: Context) {
         var previous: AmarTradingVisualState? = null
         while (true) {
             val runtime = AmarBot1CommandRuntimeRegistry.current()
-            val remote = runtime?.client?.bot1State()
+            val remote = runCatching { runtime?.client?.bot1State() }.getOrNull()
             val pnl = remote?.floatingProfitLoss
             val fresh = remote?.available == true && remote.fresh && remote.heartbeatMs != null
             val next = when {
@@ -134,9 +134,7 @@ fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
         AmarTradingVisualState.NORMAL -> 0f
     }
 
-    Canvas(
-        modifier.fillMaxSize().clip(RoundedCornerShape(18.dp))
-    ) {
+    Canvas(modifier.fillMaxSize().clip(RoundedCornerShape(18.dp))) {
         val inset = 3.dp.toPx()
         val radius = 18.dp.toPx()
         val rectW = size.width - inset * 2
