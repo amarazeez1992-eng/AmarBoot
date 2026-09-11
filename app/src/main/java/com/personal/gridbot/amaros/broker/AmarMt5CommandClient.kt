@@ -1,7 +1,6 @@
 package com.personal.gridbot.amaros.broker
 
 import com.google.gson.Gson
-import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -11,7 +10,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
-/** B31/B37: write transport. It never authorizes live execution by itself. */
+/** B31/B37/B38: authenticated transport. It never authorizes live execution by itself. */
 class AmarMt5CommandClient(
     private val config: AmarBridgeConfig,
     private val signingSecret: String,
@@ -59,7 +58,7 @@ class AmarMt5CommandClient(
         return@withContext postJson("/commands", body, command.requestId)
     }
 
-    /** B37: queues a full BOT 1 lifecycle command for the MT5 EA. */
+    /** B37/B38: queues a full BOT 1 lifecycle command for the MT5 EA. */
     suspend fun submitBot1(
         accountLogin: Long,
         botMagic: Long,
@@ -74,6 +73,7 @@ class AmarMt5CommandClient(
         require(accountLogin > 0)
         require(botMagic >= 0)
         require(symbol.isNotBlank())
+        require(targetSymbol == null || targetSymbol.length <= 64 && targetSymbol.isNotBlank() && targetSymbol.none { it == '\n' || it == '\r' || it == '\u0000' })
         require(ttlMs in 1_000L..30_000L)
         require(idempotencyKey.isNotBlank())
         if (command == AmarBot1RemoteCommandType.UPDATE_SETTINGS) require(settings != null)
@@ -95,6 +95,25 @@ class AmarMt5CommandClient(
         val envelope = AmarBot1RemoteSigner.sign(unsigned, signingSecret)
         val body = gson.toJson(envelope).toRequestBody("application/json; charset=utf-8".toMediaType())
         postJson("/bot1/commands", body, envelope.requestId)
+    }
+
+    /** B38: reads the terminal ACK; QUEUED/PENDING is never reported as verified. */
+    suspend fun bot1Status(requestId: String): AmarBot1CommandStatus = withContext(Dispatchers.IO) {
+        require(requestId.isNotBlank() && requestId.length <= 128 && requestId.none { it == '/' || it == '\\' || it == '\n' || it == '\r' })
+        val request = Request.Builder()
+            .url(config.baseUrl.trimEnd('/') + "/bot1/commands/" + requestId)
+            .header("Authorization", "Bearer ${config.token}")
+            .header("X-AMAR-Command-Version", "1")
+            .get()
+            .build()
+        httpClient.newCall(request).execute().use { response ->
+            val raw = response.body?.string().orEmpty()
+            if (!response.isSuccessful || raw.isBlank()) {
+                return@withContext AmarBot1CommandStatus(requestId, "PENDING", false, 0L, "تعذر التحقق من ACK: HTTP ${response.code}")
+            }
+            runCatching { gson.fromJson(raw, AmarBot1CommandStatus::class.java) }
+                .getOrElse { AmarBot1CommandStatus(requestId, "PENDING", false, 0L, "استجابة ACK غير صالحة") }
+        }
     }
 
     private fun postJson(path: String, body: okhttp3.RequestBody, requestId: String): AmarBrokerResult {
