@@ -19,5 +19,6 @@ enum class AmarRoom(
     ALERTS("التنبيهات", "🔔"),
     LIBRARY("مكتبة عمار", "🧩"),
     ACCOUNTS("حسابات التداول", "👤"),
+    NEWS_SESSIONS("غرفة الأخبار والجلسات", "🛰️"),
     SETTINGS("الإعدادات", "⚙️")
 }
