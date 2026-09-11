@@ -109,7 +109,10 @@ def validate(payload: dict, expected_login: int, expected_magic: int, allowed_sy
         target_allow = allowed_target_symbols if allowed_target_symbols is not None else allowed_symbols
         if not symbol_allowed(target, target_allow, allowed_target_patterns):
             return False, "target symbol not allow-listed"
-    commands = {"START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED", "SET_SELL_ENABLED", "UPDATE_SETTINGS"}
+    commands = {
+        "START", "STOP", "REBUILD", "CLOSE_ALL", "CLOSE_BUY", "CLOSE_SELL",
+        "SET_BUY_ENABLED", "SET_SELL_ENABLED", "UPDATE_SETTINGS",
+    }
     if payload.get("command") not in commands:
         return False, "unsupported command"
     if payload["command"] in {"SET_BUY_ENABLED", "SET_SELL_ENABLED"} and not isinstance(payload.get("enabled"), bool):
