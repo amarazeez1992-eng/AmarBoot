@@ -28,11 +28,12 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
         var candidate = local
 
         repeat(2) { attempt ->
+            val requestBase = base
             val body = JsonObject().apply {
                 addProperty("schemaVersion", 1)
                 addProperty("deviceId", config.deviceId)
                 addProperty("revision", revision)
-                addProperty("baseHash", sha256(base))
+                addProperty("baseHash", sha256(requestBase))
                 addProperty("snapshotHash", sha256(candidate))
                 add("snapshot", JsonParser.parseString(candidate))
             }
@@ -49,12 +50,9 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                         val conflict = JsonParser.parseString(raw).asJsonObject
                         val remote = conflict.get("snapshot")?.takeIf { it.isJsonArray }?.toString()
                             ?: return@use
+                        candidate = AmarSyncMerge.merge(requestBase, candidate, remote)
                         base = remote
-                        candidate = AmarSyncMerge.merge(base, candidate, remote)
-                        // The server revision becomes the base revision for the merged retry.
                         revision = conflict.get("revision")?.asLong ?: revision
-                        // base must represent the common ancestor; for a server conflict the remote
-                        // snapshot is the authoritative current state and merge keeps local deltas.
                         return@use
                     }
                     if (!response.isSuccessful) return@withContext if (response.code in 408..599) Result.retry() else Result.failure()
