@@ -254,20 +254,20 @@ private fun StrategyEditor(
     onDelete: (Int) -> Unit,
     onApply: (AmarBot1RemoteSettings?) -> Unit
 ) {
-    var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat()) }
-    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat()) }
-    var gridStep by remember(strategy?.number, strategy?.profile?.gridStep) { mutableStateOf((strategy?.profile?.gridStep ?: 0.0).toFloat()) }
-    var maxOrders by remember(strategy?.number, strategy?.profile?.maxOrders) { mutableStateOf((strategy?.profile?.maxOrders ?: 0).toFloat()) }
-    var basketTp by remember(strategy?.number, strategy?.profile?.basketTp) { mutableStateOf((strategy?.profile?.basketTp ?: 0.0).toFloat()) }
-    var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf((strategy?.profile?.basketSl ?: 0.0).toFloat()) }
-    var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: false) }
-    var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: false) }
+    var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.01).toFloat()) }
+    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 2.0).toFloat()) }
+    var gridStep by remember(strategy?.number, strategy?.profile?.gridStep) { mutableStateOf((strategy?.profile?.gridStep ?: 30.0).toFloat()) }
+    var maxOrders by remember(strategy?.number, strategy?.profile?.maxOrders) { mutableStateOf((strategy?.profile?.maxOrders ?: 10).toFloat()) }
+    var basketTp by remember(strategy?.number, strategy?.profile?.basketTp) { mutableStateOf((strategy?.profile?.basketTp ?: 50.0).toFloat()) }
+    var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf((strategy?.profile?.basketSl ?: -30.0).toFloat()) }
+    var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: true) }
+    var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: true) }
 
     fun remoteSettings(): AmarBot1RemoteSettings? = runCatching {
         AmarBot1RemoteSettings(
             lotStart = lot.toDouble(),
             gridStep = gridStep.toDouble(),
-            maxOrders = maxOrders.toInt().coerceAtLeast(0),
+            maxOrders = maxOrders.toInt().coerceAtLeast(1),
             martingale = multiplier.toDouble(),
             basketTp = basketTp.toDouble(),
             basketSl = basketSl.toDouble(),
@@ -303,7 +303,7 @@ private fun StrategyEditor(
                                 profile = AmarBot1RuntimeConfig(
                                     lot = lot.toDouble(),
                                     gridStep = gridStep.toDouble(),
-                                    maxOrders = maxOrders.toInt().coerceAtLeast(0),
+                                    maxOrders = maxOrders.toInt().coerceAtLeast(1),
                                     multiplier = multiplier.toDouble(),
                                     basketTp = basketTp.toDouble(),
                                     basketSl = basketSl.toDouble(),
