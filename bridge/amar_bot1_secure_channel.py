@@ -1,6 +1,7 @@
 """Fail-closed BOT 1 lifecycle command validation."""
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import hmac
 import os
@@ -61,12 +62,19 @@ def _valid_symbol_text(value) -> bool:
     )
 
 
+def symbol_allowed(value: str, exact: set[str], patterns: set[str] | None = None) -> bool:
+    if value in exact:
+        return True
+    return bool(patterns) and any(fnmatch.fnmatchcase(value, pattern) for pattern in patterns)
+
+
 def validate(
     payload: dict,
     expected_login: int,
     expected_magic: int,
     allowed_symbols: set[str],
     allowed_target_symbols: set[str] | None = None,
+    allowed_target_patterns: set[str] | None = None,
 ) -> tuple[bool, str]:
     if not isinstance(payload, dict):
         return False, "invalid request"
@@ -92,7 +100,7 @@ def validate(
         if not _valid_symbol_text(target):
             return False, "invalid target symbol"
         target_allow = allowed_target_symbols if allowed_target_symbols is not None else allowed_symbols
-        if target not in target_allow:
+        if not symbol_allowed(target, target_allow, allowed_target_patterns):
             return False, "target symbol not allow-listed"
 
     commands = {"START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED", "SET_SELL_ENABLED", "UPDATE_SETTINGS"}
