@@ -4,13 +4,15 @@ Authenticated BOT 1 lifecycle channel: bearer access + HMAC + TTL/clock
 validation + account/magic scope + source/target symbol allow-lists +
 replay/idempotency + single-flight MT5 queue + terminal ACK verification.
 """
+import hmac
 import json
 import os
+import re
 from pathlib import Path
 
 import MetaTrader5 as mt5
 
-from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
+from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, json_response, mt5_ready
 from amar_command_channel import validate, REPLAY_STORE
 from amar_bot1_secure_channel import validate as validate_bot1, canonical as canonical_bot1
 from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FILE
@@ -19,6 +21,8 @@ LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
 ALLOWED_TARGET_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_SYMBOLS", "").split(",") if x.strip()) or ALLOWED_SYMBOLS
 COMMON_FILES_DIR = os.environ.get("AMAR_MT5_COMMON_FILES_DIR", "").strip()
+MAX_BODY_BYTES = min(max(int(os.environ.get("AMAR_MAX_BODY_BYTES", "32768")), 1024), 262144)
+REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 def _authorized_account():
@@ -27,19 +31,22 @@ def _authorized_account():
     return mt5.account_info()
 
 
-def _read_latest_ack(request_id: str) -> dict:
+def _read_ack_for_request(request_id: str) -> dict:
+    """Read the newest matching ACK, not merely the last ACK in the ledger."""
     if not COMMON_FILES_DIR:
         return {"status": "UNAVAILABLE", "request_id": request_id}
     path = Path(COMMON_FILES_DIR) / ACK_FILE
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
-        if not lines:
-            return {"status": "PENDING", "request_id": request_id}
-        value = json.loads(lines[-1])
-        if not isinstance(value, dict) or str(value.get("request_id", "")) != request_id:
-            return {"status": "PENDING", "request_id": request_id}
-        return value
-    except (OSError, UnicodeError, json.JSONDecodeError):
+        for raw in reversed(lines[-256:]):
+            try:
+                value = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict) and str(value.get("request_id", "")) == request_id:
+                return value
+        return {"status": "PENDING", "request_id": request_id}
+    except (OSError, UnicodeError):
         return {"status": "PENDING", "request_id": request_id}
 
 
@@ -96,16 +103,33 @@ def execute_market_command(payload):
 
 class SecureHandler(Handler):
     def _authorized(self):
-        return bool(TOKEN and self.headers.get("Authorization", "").strip() == f"Bearer {TOKEN}")
+        presented = self.headers.get("Authorization", "").strip()
+        expected = f"Bearer {TOKEN}" if TOKEN else ""
+        return bool(expected and hmac.compare_digest(presented, expected))
 
     def _body(self):
+        content_type = self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
+        if content_type != "application/json":
+            raise ValueError("application/json required")
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
             length = 0
-        if length <= 0 or length > 32_768:
+        if length <= 0 or length > MAX_BODY_BYTES:
             raise ValueError("payload too large")
-        return json.loads(self.rfile.read(length).decode("utf-8"))
+        raw = self.rfile.read(length)
+        if len(raw) != length:
+            raise ValueError("incomplete payload")
+        return json.loads(raw.decode("utf-8"))
+
+    def _reply(self, status, payload):
+        self.send_response(status)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'none'")
+        self.end_headers()
+        self.wfile.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
 
     def do_POST(self):
         path = self.path.split("?", 1)[0]
@@ -113,6 +137,8 @@ class SecureHandler(Handler):
             return json_response(self, 401, {"ok": False, "accepted": False, "message": "unauthorized"})
         try:
             payload = self._body()
+            if not isinstance(payload, dict):
+                raise ValueError("object payload required")
             account = _authorized_account()
             expected_login = account.login if account else -1
 
@@ -165,9 +191,9 @@ class SecureHandler(Handler):
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
             request_id = path.rsplit("/", 1)[-1].strip()
-            if not request_id or len(request_id) > 128 or any(c in request_id for c in "/\\\r\n"):
+            if not REQUEST_ID_RE.fullmatch(request_id):
                 return json_response(self, 400, {"ok": False, "message": "invalid request id"})
-            return json_response(self, 200, {"ok": True, **_read_latest_ack(request_id)})
+            return json_response(self, 200, {"ok": True, **_read_ack_for_request(request_id)})
         if path == "/bot1/health":
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
