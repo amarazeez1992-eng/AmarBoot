@@ -1,0 +1,61 @@
+name: Amar Approved Integration
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: hashFiles('.amar_integration_pending') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply approved integration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/personal/gridbot/MainActivity.kt')
+          s=p.read_text()
+          s=s.replace('override fun onPageFinished(view: WebView?, url: String?) { applyHomeTheme() }','override fun onPageFinished(view: WebView?, url: String?) { enhanceHome(); applyHomeTheme() }')
+          marker='    private fun applyHomeTheme() {'
+          if 'private fun enhanceHome()' not in s:
+              method=r'''    private fun enhanceHome() {
+        val js = """
+        (function(){
+          if(window.__amarEnhanced)return; window.__amarEnhanced=true;
+          var c=document.getElementById('clock');
+          if(c){c.className='analog';c.innerHTML='<i id=ah></i><i id=am></i><i id=as></i><b></b>';c.style.cssText='position:relative;width:52px;height:52px;border-radius:50%;background:#fff;border:3px solid #d8a83a;box-shadow:0 0 0 2px #111,0 0 18px rgba(216,168,58,.2);direction:ltr';['ah','am','as'].forEach(function(id,i){var e=document.getElementById(id);e.style.cssText='position:absolute;left:50%;bottom:50%;transform-origin:50% 100%;transform:translateX(-50%) rotate(0deg);border-radius:5px;background:'+(i==2?'#d8a83a':'#111')+';width:'+(i==0?'3px':i==1?'2px':'1px')+';height:'+(i==0?'15px':i==1?'20px':'22px)'});var p=c.querySelector('b');p.style.cssText='position:absolute;width:5px;height:5px;border-radius:50%;background:#d8a83a;left:50%;top:50%;transform:translate(-50%,-50%)';setInterval(function(){var d=new Date(),h=d.getHours()%12,m=d.getMinutes(),sec=d.getSeconds();document.getElementById('ah').style.transform='translateX(-50%) rotate('+(h*30+m*.5)+'deg)';document.getElementById('am').style.transform='translateX(-50%) rotate('+(m*6+sec*.1)+'deg)';document.getElementById('as').style.transform='translateX(-50%) rotate('+(sec*6)+'deg)'},1000)}
+          if(!document.getElementById('amarNewsGate')){var g=document.createElement('button');g.id='amarNewsGate';g.textContent='غرفة\\nالأخبار\\nوالجلسات';g.onclick=function(){if(window.Android&&Android.openRoom)Android.openRoom('NEWS_SESSIONS')};g.style.cssText='position:absolute;right:50%;top:19%;transform:translateX(50%);z-index:11;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#c89425 20%,#101b23 62%,#05070b);border:1px solid #d8a83a;box-shadow:0 0 0 3px rgba(216,168,58,.12),0 0 28px rgba(0,217,255,.24);color:#fff4b0;font-size:8px;font-weight:1000;white-space:pre-line;animation:amarGateMove 11s ease-in-out infinite,amarGatePulse 2.4s ease-in-out infinite';document.querySelector('.scene').appendChild(g);var st=document.createElement('style');st.textContent='@keyframes amarGateMove{0%,100%{translate:0 0}25%{translate:-25vw 4vh}50%{translate:22vw 9vh}75%{translate:-14vw 2vh}}@keyframes amarGatePulse{50%{scale:1.08;filter:brightness(1.2)}}';document.head.appendChild(st)}
+        })();
+        """.trimIndent()
+        home.evaluateJavascript(js, null)
+    }
+'''
+              s=s.replace(marker,method+marker)
+          p.write_text(s)
+
+          h=Path('app/src/main/assets/amar_reference.html')
+          s=h.read_text()
+          s=s.replace('<div class="pill clock" id="clock">00:00</div>','<div class="analog" id="clock"><i id="ah"></i><i id="am"></i><i id="as"></i><b></b></div>')
+          if 'amarNewsGate' not in s:
+              s=s.replace('</div><div class="coreWrap">','<button id="amarNewsGate" class="node" onclick="openRoom(\'NEWS_SESSIONS\')" style="z-index:11;width:66px;height:66px;right:50%;top:19%;transform:translateX(50%);color:#fff4b0;border-color:var(--gold);background:radial-gradient(circle at 35% 30%,#fff3b0,#c89425 20%,#101b23 62%,#05070b);">غرفة<br>الأخبار<br>والجلسات</button><div class="coreWrap">',1)
+          s=s.replace('function updateClock(){document.getElementById(\'clock\').textContent=new Date().toLocaleTimeString(\'en-GB\',{hour:\'2-digit\',minute:\'2-digit\',hour12:false})}','function updateClock(){const d=new Date(),h=d.getHours()%12,m=d.getMinutes(),sec=d.getSeconds();document.getElementById(\'ah\').style.transform=\'translateX(-50%) rotate(\'+(h*30+m*.5)+\'deg)\';document.getElementById(\'am\').style.transform=\'translateX(-50%) rotate(\'+(m*6+sec*.1)+\'deg)\';document.getElementById(\'as\').style.transform=\'translateX(-50%) rotate(\'+(sec*6)+\'deg)\'}')
+          h.write_text(s)
+
+          d=Path('app/src/main/java/com/personal/gridbot/amaros/navigation/AmarRoomDefinition.kt')
+          s=d.read_text()
+          if 'AmarRoom.NEWS_SESSIONS' not in s:
+              s=s.replace('object AmarRoomCatalog {\n    fun definition(room: AmarRoom): AmarRoomDefinition = when (room) {','object AmarRoomCatalog {\n    fun definition(room: AmarRoom): AmarRoomDefinition = when (room) {\n        AmarRoom.NEWS_SESSIONS -> AmarRoomDefinition(room, "الأخبار والسوق والسيولة والتقرير اليومي", listOf(AmarRoomSection("news", "A — الأخبار", "◉", "الأخبار والتقويم"), AmarRoomSection("sessions", "B — السوق والسيولة", "◷", "الجلسات والتداخلات"), AmarRoomSection("daily", "C — التقرير اليومي", "◆", "OHLC والفجوة وتحليل الجلسات")))')
+          d.write_text(s)
+          
+          Path('.amar_integration_pending').unlink(missing_ok=True)
+          Path('.github/workflows/amar-approved-integration.yml').unlink(missing_ok=True)
+          PY
+      - name: Build and commit
+        run: |
+          git config user.name 'Amar AI'
+          git config user.email 'amar-ai@users.noreply.github.com'
+          ./gradlew :app:assembleDebug :app:testDebugUnitTest --no-daemon
+          git add -A
+          git commit -m 'Complete approved home, news room and protection integration' || exit 0
+          git push
