@@ -71,6 +71,8 @@ class AmarBot1CommandVerifier(
             AmarBot1RemoteCommandType.REBUILD -> state.runtimeState == "RUNNING" && state.isTrading
             AmarBot1RemoteCommandType.STOP -> state.runtimeState == "OFF" && !state.isTrading
             AmarBot1RemoteCommandType.CLOSE_ALL -> state.openPositions == 0 && state.pendingOrders == 0
+            AmarBot1RemoteCommandType.CLOSE_BUY -> state.buyPositions == 0
+            AmarBot1RemoteCommandType.CLOSE_SELL -> state.sellPositions == 0
             AmarBot1RemoteCommandType.SET_BUY_ENABLED -> enabled != null && state.buyEnabled == enabled
             AmarBot1RemoteCommandType.SET_SELL_ENABLED -> enabled != null && state.sellEnabled == enabled
             AmarBot1RemoteCommandType.UPDATE_SETTINGS -> settings != null && settingsMatch(state, settings)
