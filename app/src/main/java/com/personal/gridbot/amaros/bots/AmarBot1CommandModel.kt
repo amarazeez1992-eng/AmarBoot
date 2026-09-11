@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.bots
 
-/** B33: complete BOT 1 command vocabulary. Transport remains fail-closed. */
+/** B33/B34: complete BOT 1 command vocabulary. Transport remains fail-closed. */
 enum class AmarBot1CommandType {
     START,
     STOP,
@@ -9,6 +9,8 @@ enum class AmarBot1CommandType {
     SET_BUY_ENABLED,
     SET_SELL_ENABLED,
     UPDATE_SETTINGS,
+    EMERGENCY_LOCK,
+    CLEAR_EMERGENCY_LOCK,
 }
 
 data class AmarBot1Settings(
@@ -41,5 +43,6 @@ data class AmarBot1ControlCommand(
     init {
         if (type == AmarBot1CommandType.UPDATE_SETTINGS) requireNotNull(settings)
         if (type == AmarBot1CommandType.SET_BUY_ENABLED || type == AmarBot1CommandType.SET_SELL_ENABLED) requireNotNull(enabled)
+        if (type == AmarBot1CommandType.EMERGENCY_LOCK) require(enabled != false)
     }
 }
