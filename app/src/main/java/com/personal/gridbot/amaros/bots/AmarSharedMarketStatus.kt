@@ -23,17 +23,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.personal.gridbot.amaros.chart.AmarTimeframe
 import kotlinx.coroutines.delay
 
 /**
- * حالة سوق موحدة لجميع واجهات Bot Lab (A/B/C/D والمستقبلية).
- * هذه الطبقة تعرض الحالة المشتركة فقط؛ لا تنشئ أسعاراً أو إشارات وهمية.
- * مصدر البيانات الحقيقي سيُوصل لاحقاً عبر طبقة السوق/MT5 المشتركة.
+ * Shared market-state view for A/B/C/D and future interfaces.
+ * All displayed market values come from AmarMarketStateStore.
  */
 @Composable
 fun AmarSharedMarketStatus() {
     val timeframe = AmarTradingTimeframeContext.selected
+    val market = AmarMarketStateStore.snapshot
     var remaining by remember(timeframe) { mutableStateOf(timeframe.remainingMillis()) }
 
     LaunchedEffect(timeframe) {
@@ -42,6 +41,26 @@ fun AmarSharedMarketStatus() {
             delay(1_000)
         }
     }
+
+    val sourceLabel = when (market.source) {
+        AmarMarketSource.MT5 -> "MT5"
+        AmarMarketSource.TRADING_VIEW -> "TradingView"
+        AmarMarketSource.SIMULATION -> "Simulation"
+        AmarMarketSource.NONE -> "بانتظار المصدر"
+    }
+    val qualityLabel = when (market.quality) {
+        AmarMarketDataQuality.LIVE -> "مباشر"
+        AmarMarketDataQuality.DELAYED -> "متأخر"
+        AmarMarketDataQuality.STALE -> "قديم"
+        AmarMarketDataQuality.UNAVAILABLE -> "غير متاح"
+    }
+    val directionLabel = when (market.direction) {
+        AmarMarketDirection.BUY -> "شراء"
+        AmarMarketDirection.NEUTRAL -> "محايد"
+        AmarMarketDirection.SELL -> "بيع"
+        AmarMarketDirection.UNKNOWN -> "—"
+    }
+    val strengthLabel = market.strength?.let { "%.1f".format(it) } ?: "—"
 
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
@@ -62,24 +81,30 @@ fun AmarSharedMarketStatus() {
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Text("MT5 • بانتظار المصدر", color = Color(0xFFFFC84D), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text("$sourceLabel • $qualityLabel", color = Color(0xFFFFC84D), fontSize = 8.sp, fontWeight = FontWeight.Bold)
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                MarketStateCell("شراء", "—", Color(0xFF18F2A4), Modifier.weight(1f))
-                MarketStateCell("محايد", "—", Color(0xFFFFC84D), Modifier.weight(1f))
-                MarketStateCell("بيع", "—", Color(0xFFFF4F78), Modifier.weight(1f))
-                MarketStateCell("القوة", "—", Color(0xFF8DFAFF), Modifier.weight(1f))
+                MarketStateCell("الاتجاه", directionLabel, Color(0xFF18F2A4), Modifier.weight(1f))
+                MarketStateCell("Bid", market.bid?.let(::formatMarketNumber) ?: "—", Color(0xFF8DFAFF), Modifier.weight(1f))
+                MarketStateCell("Ask", market.ask?.let(::formatMarketNumber) ?: "—", Color(0xFF24E8FF), Modifier.weight(1f))
+                MarketStateCell("القوة", strengthLabel, Color(0xFFFFC84D), Modifier.weight(1f))
             }
 
             Text(
-                "الحالة نفسها مشتركة بين A وB وC وD وجميع الواجهات المستقبلية. لا تُعرض أرقام أو إشارات قبل وصول بيانات السوق الحقيقية.",
+                if (market.hasPrice) {
+                    "${market.symbol.ifBlank { "السوق" }} • Spread ${market.spread?.let(::formatMarketNumber) ?: "—"}"
+                } else {
+                    "الحالة نفسها مشتركة بين A وB وC وD وجميع الواجهات المستقبلية. لا تُعرض بيانات قبل وصول مصدر سوق موثوق."
+                },
                 color = Color(0xFF8CA9B5),
                 fontSize = 8.sp
             )
         }
     }
 }
+
+private fun formatMarketNumber(value: Double): String = "%.5f".format(value)
 
 @Composable
 private fun MarketStateCell(title: String, value: String, accent: Color, modifier: Modifier) {
