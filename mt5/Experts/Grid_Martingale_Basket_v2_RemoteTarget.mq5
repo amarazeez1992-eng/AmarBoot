@@ -35,8 +35,9 @@ bool AmarTargetReady(string symbol)
    if(maxAge<0) maxAge=0;
    if(maxAge>0 && tick.time_msc>0)
    {
-      long age=(long)GetTickCount64() - (long)tick.time_msc;
-      if(age>maxAge) return false;
+      long nowMs=(long)TimeCurrent()*1000;
+      long age=nowMs-(long)tick.time_msc;
+      if(age>maxAge || age<0) return false;
    }
    return true;
 }
