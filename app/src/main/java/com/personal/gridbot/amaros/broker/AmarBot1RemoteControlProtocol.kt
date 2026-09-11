@@ -9,7 +9,7 @@ import javax.crypto.spec.SecretKeySpec
 
 /** B37/B42: broker-neutral remote BOT 1 control contract. */
 enum class AmarBot1RemoteCommandType {
-    START, STOP, REBUILD, CLOSE_ALL, SET_BUY_ENABLED, SET_SELL_ENABLED, UPDATE_SETTINGS
+    START, STOP, REBUILD, CLOSE_ALL, CLOSE_BUY, CLOSE_SELL, SET_BUY_ENABLED, SET_SELL_ENABLED, UPDATE_SETTINGS
 }
 
 data class AmarBot1RemoteSettings(
