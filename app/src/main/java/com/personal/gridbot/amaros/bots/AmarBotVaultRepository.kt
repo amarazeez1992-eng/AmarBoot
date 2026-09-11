@@ -28,27 +28,23 @@ class AmarBotVaultRepository(context: Context) {
 
     fun save(bots: List<AmarSavedBot>) = persist(bots)
 
-    /** Canonical JSON snapshot used only by the offline-first sync layer. */
     fun exportSnapshotJson(): String {
         val array = JSONArray()
         load().forEach { array.put(it.toJson()) }
         return array.toString()
     }
 
-    /** Atomically replaces the local vault with a validated remote snapshot. */
-    fun replaceSnapshotJson(snapshot: String): Boolean {
-        return runCatching {
-            val array = JSONArray(snapshot)
-            val normalized = buildList {
-                for (i in 0 until array.length()) {
-                    runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
-                }
-            }.filter { it.botNumber > 0 }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
-            val out = JSONArray()
-            normalized.forEach { out.put(it.toJson()) }
-            prefs.edit().putString(KEY_BOTS, out.toString()).commit()
-        }.getOrDefault(false)
-    }
+    fun replaceSnapshotJson(snapshot: String): Boolean = runCatching {
+        val array = JSONArray(snapshot)
+        val normalized = buildList {
+            for (i in 0 until array.length()) {
+                runCatching { add(AmarSavedBot.fromJson(array.getJSONObject(i)).normalized()) }
+            }
+        }.filter { it.botNumber > 0 }.distinctBy { it.botNumber }.sortedBy { it.botNumber }
+        val out = JSONArray()
+        normalized.forEach { out.put(it.toJson()) }
+        prefs.edit().putString(KEY_BOTS, out.toString()).commit()
+    }.getOrDefault(false)
 
     fun addBot(name: String? = null): AmarSavedBot {
         val bots = load().toMutableList()
@@ -138,9 +134,7 @@ data class AmarSavedBot(
         fun fromJson(o: JSONObject): AmarSavedBot {
             val s = o.optJSONArray("strategies") ?: JSONArray()
             val strategies = buildList {
-                for (i in 0 until s.length()) {
-                    runCatching { add(AmarSavedStrategy.fromJson(s.getJSONObject(i))) }
-                }
+                for (i in 0 until s.length()) runCatching { add(AmarSavedStrategy.fromJson(s.getJSONObject(i))) }
             }
             return AmarSavedBot(o.optInt("botNumber"), o.optString("name", "بوت"), strategies)
         }
@@ -182,14 +176,18 @@ data class AmarSavedStrategy(
         fun fromJsonString(json: String): AmarSavedStrategy = fromJson(JSONObject(json))
 
         fun fromJson(o: JSONObject): AmarSavedStrategy {
+            fun positiveDouble(key: String, fallback: Double): Double {
+                val value = o.optDouble(key, fallback)
+                return if (value.isFinite() && value > 0.0) value else fallback
+            }
             fun finiteDouble(key: String, fallback: Double): Double {
                 val value = o.optDouble(key, fallback)
                 return if (value.isFinite()) value else fallback
             }
-            val lot = finiteDouble("lot", 0.01).coerceAtLeast(0.00001)
-            val step = finiteDouble("step", 30.0).coerceAtLeast(0.00001)
+            val lot = positiveDouble("lot", 0.01)
+            val step = positiveDouble("step", 30.0)
             val max = o.optInt("max", 10).coerceAtLeast(1)
-            val multiplier = finiteDouble("multiplier", 2.0).coerceAtLeast(0.00001)
+            val multiplier = positiveDouble("multiplier", 2.0)
             val tp = finiteDouble("tp", 50.0)
             val sl = finiteDouble("sl", -30.0)
             val trailing = finiteDouble("trailing", 0.0).coerceAtLeast(0.0)
