@@ -3,6 +3,7 @@ package com.personal.gridbot.amaros.navigation
 /**
  * تعريف قابل للتوسعة لمحتوى الغرفة.
  * هذا الملف يصف الهيكل فقط؛ لا يحتوي على منطق تداول.
+ * NEWS_SESSIONS جزء مستقل من كتالوج الغرف حتى تبقى إضافة الأخبار معزولة.
  */
 data class AmarRoomSection(
     val id: String,
