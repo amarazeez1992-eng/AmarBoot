@@ -2,6 +2,15 @@ package com.personal.gridbot.amaros.broker
 
 import com.google.gson.annotations.SerializedName
 
+/** B41: broker-neutral terminal ACK returned by the authenticated bridge. */
+data class AmarBot1CommandAck(
+    @SerializedName("requestId") val requestId: String,
+    @SerializedName("status") val status: String = "PENDING",
+    @SerializedName("accepted") val accepted: Boolean = false,
+    @SerializedName("timestamp_ms") val timestampMs: Long = 0L,
+    @SerializedName("message") val message: String? = null,
+)
+
 /** B41: broker-neutral snapshot emitted by the MT5 BOT 1 wrapper. */
 data class AmarBot1RemoteState(
     @SerializedName("available") val available: Boolean = false,
