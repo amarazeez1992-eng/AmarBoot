@@ -3,19 +3,22 @@
 ## Completed on mobile/GitHub
 
 - Interface B lifecycle controls now use the verified BOT1 command gateway.
+- Interface B quick controls now expose the complete lifecycle/destructive set: `START`, `STOP`, `REBUILD`, `CLOSE_BUY`, `CLOSE_SELL`, and `CLOSE_ALL`.
 - Apply + Verify sends `UPDATE_SETTINGS` only through the authenticated/device-bound command path.
-- Quick controls send `CLOSE_BUY`, `CLOSE_SELL`, `CLOSE_ALL`, and `REBUILD` through the verified lifecycle path.
+- Every lifecycle/destructive command is delegated through the verified facade.
 - A command is shown as successful only after ACK + fresh MT5 runtime state satisfies the command postcondition.
 - Read-only account discovery is used to obtain the MT5 account login; it does not authorize execution.
 - Runtime absence, account unavailability, stale state, or verification failure remains fail-closed.
 - Strategy vault remains local configuration storage and does not authorize live execution.
 - Zero/OFF defaults remain the mobile UI defaults.
+- Global visual effects remain presentation-only and never issue trading commands.
 
 ## Intentionally not fabricated
 
 - No bridge URL, bearer token, signing secret, account number, broker symbol suffix, or live authorization is embedded in the repository.
 - No MQL5 compile result is claimed from CI because GitHub Actions does not compile the MT5 Expert Advisor.
 - Android timeframe selection remains a UI/context selection until the MT5-side timeframe contract is implemented and verified.
+- Mobile/GitHub completion does not imply that the real MT5 terminal, broker, HTTPS bridge, or live account has been validated.
 
 ## Laptop is now the final external validation stage
 
