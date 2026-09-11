@@ -105,6 +105,16 @@ class AmarMt5CommandClient(
         postJson("/bot1/commands", body, envelope.requestId)
     }
 
+    /** Read-only account discovery used by the live BOT1 UI; never authorizes execution by itself. */
+    suspend fun accountSnapshot(): AmarMt5AccountSnapshot? = withContext(Dispatchers.IO) {
+        val request = authenticatedGet("/account")
+        httpClient.newCall(request).execute().use { response ->
+            val raw = response.body?.string().orEmpty()
+            if (!response.isSuccessful || raw.isBlank()) return@withContext null
+            runCatching { gson.fromJson(raw, AmarMt5AccountSnapshot::class.java) }.getOrNull()
+        }
+    }
+
     suspend fun bot1Status(requestId: String): AmarBot1CommandAck = withContext(Dispatchers.IO) {
         require(requestId.isNotBlank() && requestId.length <= 128 && requestId.none { it == '/' || it == '\\' || it == '\n' || it == '\r' })
         val request = authenticatedGet("/bot1/commands/$requestId")
