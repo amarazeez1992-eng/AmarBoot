@@ -3,10 +3,12 @@
 //| BOT 1 remote target-symbol execution wrapper                     |
 //+------------------------------------------------------------------+
 #property copyright "AMAR"
-#property version   "2.14"
+#property version   "2.15"
 #property strict
 
 #include <AMAR/AmarBot1CommandReceiver.mqh>
+
+#define AMAR_BOT1_STATE_FILE "AMAR_BOT1_STATE.json"
 
 input string InpRemoteTargetSymbol = ""; // blank = chart symbol (backward-compatible)
 input int    InpRemotePollSeconds  = 1;
@@ -14,6 +16,9 @@ input int    InpRemoteMaxTickAgeMs = 5000;
 
 string g_remoteTargetSymbol = "";
 CAmarBot1CommandReceiver g_remoteReceiver;
+string g_lastRequestId = "";
+string g_lastCommandStatus = "IDLE";
+string g_lastError = "";
 
 string AmarTargetSymbol()
 {
@@ -42,6 +47,44 @@ bool AmarTargetReady(string symbol)
    return true;
 }
 
+int AmarPendingCount()
+{
+   int count=0;
+   for(int i=0;i<OrdersTotal();i++)
+   {
+      ulong ticket=OrderGetTicket(i);
+      if(ticket==0 || !OrderSelect(ticket)) continue;
+      if(OrderGetInteger(ORDER_MAGIC)!=Magic) continue;
+      if(OrderGetString(ORDER_SYMBOL)!=AmarTargetSymbol()) continue;
+      count++;
+   }
+   return count;
+}
+
+void AmarWriteState()
+{
+   string symbol=AmarTargetSymbol();
+   bool marketReady=AmarTargetReady(symbol);
+   int h=FileOpen(AMAR_BOT1_STATE_FILE,FILE_WRITE|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ);
+   if(h==INVALID_HANDLE) return;
+
+   string safeError=g_lastError;
+   StringReplace(safeError,"\"","'");
+   StringReplace(safeError,"\r"," ");
+   StringReplace(safeError,"\n"," ");
+   string safeRequest=g_lastRequestId;
+   StringReplace(safeRequest,"\"","'");
+   string state=IsTrading ? "RUNNING" : "OFF";
+   string payload=StringFormat(
+      "{\"bot_id\":\"BOT_1\",\"magic\":%d,\"strategy_version\":\"2.00\",\"runtime_state\":\"%s\",\"target_symbol\":\"%s\",\"chart_symbol\":\"%s\",\"is_trading\":%s,\"buy_enabled\":%s,\"sell_enabled\":%s,\"lot_start\":%.8f,\"grid_step\":%d,\"max_orders\":%d,\"martingale\":%.8f,\"basket_tp\":%.8f,\"basket_sl\":%.8f,\"trailing\":%d,\"open_positions\":%d,\"pending_orders\":%d,\"market_ready\":%s,\"heartbeat_ms\":%I64d,\"last_request_id\":\"%s\",\"last_command_status\":\"%s\",\"last_error\":\"%s\"}",
+      Magic,state,symbol,_Symbol,IsTrading?"true":"false",BuyEnabled?"true":"false",SellEnabled?"true":"false",
+      LotStart,GridStep,MaxOrders,Martingale,BasketTP,BasketSL,Trail,CountBotPositions(),AmarPendingCount(),marketReady?"true":"false",
+      (long)TimeCurrent()*1000,safeRequest,g_lastCommandStatus,safeError);
+   FileWriteString(h,payload+"\n");
+   FileFlush(h);
+   FileClose(h);
+}
+
 #define Symbol() AmarTargetSymbol()
 #define OnInit AmarOriginalOnInit
 #define OnDeinit AmarOriginalOnDeinit
@@ -66,6 +109,7 @@ bool ApplyRemoteTarget(string requested)
    if(StringLen(requested) <= 0) return false;
    if(!AmarTargetReady(requested))
    {
+      g_lastError="TARGET_MARKET_UNHEALTHY";
       Print("AMAR FAIL-CLOSED: target symbol unavailable or market unhealthy: ",requested);
       return false;
    }
@@ -81,12 +125,13 @@ bool ApplyRemoteTarget(string requested)
 
 bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
 {
+   g_lastError="";
    if(cmd.hasTargetSymbol && !ApplyRemoteTarget(cmd.targetSymbol)) return false;
 
    switch(cmd.type)
    {
       case AMAR_CMD_START:
-         if(!AmarTargetReady(AmarTargetSymbol())) return false;
+         if(!AmarTargetReady(AmarTargetSymbol())) { g_lastError="MARKET_NOT_READY"; return false; }
          IsTrading=true;
          BuildGrid();
          return true;
@@ -94,25 +139,25 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          IsTrading=false;
          return true;
       case AMAR_CMD_REBUILD:
-         if(!IsTrading || !AmarTargetReady(AmarTargetSymbol())) return false;
+         if(!IsTrading || !AmarTargetReady(AmarTargetSymbol())) { g_lastError="REBUILD_GATE_BLOCKED"; return false; }
          CloseAll(); DeletePending(); ResetCounters(); BuildGrid();
          return true;
       case AMAR_CMD_CLOSE_ALL:
          CloseAll(); DeletePending(); ResetCounters();
          return true;
       case AMAR_CMD_SET_BUY_ENABLED:
-         if(!cmd.hasEnabled) return false;
+         if(!cmd.hasEnabled) { g_lastError="INVALID_BUY_SETTING"; return false; }
          BuyEnabled=cmd.enabled;
          if(IsTrading && AmarTargetReady(AmarTargetSymbol())) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
       case AMAR_CMD_SET_SELL_ENABLED:
-         if(!cmd.hasEnabled) return false;
+         if(!cmd.hasEnabled) { g_lastError="INVALID_SELL_SETTING"; return false; }
          SellEnabled=cmd.enabled;
          if(IsTrading && AmarTargetReady(AmarTargetSymbol())) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
       case AMAR_CMD_UPDATE_SETTINGS:
-         if(!cmd.hasSettings || !cmd.hasBuyEnabled || !cmd.hasSellEnabled) return false;
-         if(!AmarTargetReady(AmarTargetSymbol())) return false;
+         if(!cmd.hasSettings || !cmd.hasBuyEnabled || !cmd.hasSellEnabled) { g_lastError="INVALID_SETTINGS"; return false; }
+         if(!AmarTargetReady(AmarTargetSymbol())) { g_lastError="MARKET_NOT_READY"; return false; }
          LotStart=cmd.lotStart;
          GridStep=(int)cmd.gridStep;
          MaxOrders=cmd.maxOrders;
@@ -125,6 +170,7 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
          if(IsTrading) { CloseAll(); DeletePending(); ResetCounters(); BuildGrid(); }
          return true;
       default:
+         g_lastError="UNSUPPORTED_COMMAND";
          return false;
    }
 }
@@ -132,6 +178,7 @@ bool ApplyRemoteCommand(const AmarBot1RemoteCommand &cmd)
 void OnTick()
 {
    if(_Symbol==AmarTargetSymbol()) AmarOriginalOnTick();
+   AmarWriteState();
 }
 
 void OnTimer()
@@ -139,19 +186,26 @@ void OnTimer()
    AmarBot1RemoteCommand cmd;
    if(g_remoteReceiver.Read(cmd))
    {
+      g_lastRequestId=cmd.requestId;
       bool ok=ApplyRemoteCommand(cmd);
-      g_remoteReceiver.Ack(cmd.requestId,ok,ok?"VERIFIED":"FAILED_FAIL_CLOSED");
+      g_lastCommandStatus=ok ? "VERIFIED" : "FAILED";
+      if(!ok && g_lastError=="") g_lastError="FAILED_FAIL_CLOSED";
+      g_remoteReceiver.Ack(cmd.requestId,ok,ok?"VERIFIED":g_lastError);
       Print(ok ? "AMAR remote command verified" : "AMAR remote command rejected/fail-closed");
       ChartRedraw(0);
    }
    if(_Symbol!=AmarTargetSymbol()) AmarTargetCycle();
+   AmarWriteState();
 }
 
 int OnInit()
 {
    g_remoteTargetSymbol=InpRemoteTargetSymbol;
+   g_lastError="";
    if(StringLen(g_remoteTargetSymbol)>0 && !AmarTargetReady(g_remoteTargetSymbol))
    {
+      g_lastError="INITIAL_TARGET_NOT_READY";
+      AmarWriteState();
       Print("AMAR FAIL-CLOSED: configured target symbol unavailable or market unhealthy: ",g_remoteTargetSymbol);
       return INIT_FAILED;
    }
@@ -161,9 +215,13 @@ int OnInit()
    if(seconds<1) seconds=1;
    if(!EventSetTimer(seconds))
    {
+      g_lastError="TIMER_INIT_FAILED";
+      AmarWriteState();
       Print("AMAR FAIL-CLOSED: EventSetTimer failed. Error=",GetLastError());
       return INIT_FAILED;
    }
+   g_lastCommandStatus="ARMED";
+   AmarWriteState();
    Print("AMAR remote target control armed for: ",AmarTargetSymbol());
    return INIT_SUCCEEDED;
 }
@@ -171,5 +229,7 @@ int OnInit()
 void OnDeinit(const int reason)
 {
    EventKillTimer();
+   g_lastCommandStatus="STOPPED";
+   AmarWriteState();
    AmarOriginalOnDeinit(reason);
 }
