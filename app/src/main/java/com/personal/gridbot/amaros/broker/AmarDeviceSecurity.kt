@@ -7,15 +7,15 @@ import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.Signature
 import java.util.Base64
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
-/** B42: device-bound identity. Private material never leaves Android Keystore. */
+/** B42/B48: device-bound identity. Private material never leaves Android Keystore. */
 class AmarDeviceSecurity(
-    private val alias: String = "amar_bot1_device_key"
+    private val alias: String = "amar_bot1_device_key",
+    private val sequenceStore: AmarDeviceSequenceStore = AmarInMemoryDeviceSequenceStore(),
 ) {
     private val keyStore: KeyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
-    private val sequence = AtomicLong(System.currentTimeMillis())
+    private val fallbackSequence = AtomicLong(System.currentTimeMillis())
 
     init {
         ensureKeyPair()
@@ -27,7 +27,17 @@ class AmarDeviceSecurity(
         digest.joinToString("") { "%02x".format(it) }
     }
 
-    fun nextSequence(): Long = sequence.incrementAndGet()
+    /** Monotonically increasing and persistent when a persistent store is supplied. */
+    @Synchronized
+    fun nextSequence(): Long {
+        val current = sequenceStore.read(deviceId)
+        val fallback = fallbackSequence.get()
+        val next = maxOf(current, fallback) + 1L
+        require(next > current) { "AMAR device sequence overflow" }
+        sequenceStore.write(deviceId, next)
+        fallbackSequence.set(next)
+        return next
+    }
 
     fun publicKeyBase64(): String = Base64.getEncoder().encodeToString(publicKeyBytes())
 
