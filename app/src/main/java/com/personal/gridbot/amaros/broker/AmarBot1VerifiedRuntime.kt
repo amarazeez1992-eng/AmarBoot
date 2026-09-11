@@ -8,13 +8,19 @@ import com.personal.gridbot.amaros.bots.AmarBotIdentity
 import com.personal.gridbot.amaros.bots.AmarBotRuntimeState
 import com.personal.gridbot.amaros.bots.AmarBotSyncState
 
-/** B43-B46: converts terminal read-back into the existing canonical runtime model. */
+/** B43-B46/B51: converts terminal read-back into the existing canonical runtime model. */
 class AmarBot1VerifiedRuntime(
     private val reconciliation: AmarBot1ReconciliationEngine = AmarBot1ReconciliationEngine()
 ) {
     fun actualFromRemote(state: AmarBot1RemoteState): AmarBot1ActualState {
-        val identity = if (state.botId != null && state.magic != null && state.strategyVersion != null) {
-            AmarBotIdentity(botId = state.botId, magic = state.magic, version = state.strategyVersion)
+        val identity = if (state.botId != null && state.magic != null &&
+            state.strategyId != null && state.strategyVersion != null) {
+            AmarBotIdentity(
+                botId = state.botId,
+                magic = state.magic,
+                version = state.strategyVersion,
+                strategyId = state.strategyId,
+            )
         } else null
         val runtime = state.runtimeState?.let { runCatching { AmarBotRuntimeState.valueOf(it) }.getOrNull() }
         val config = if (state.lotStart != null && state.gridStep != null && state.maxOrders != null &&
@@ -45,6 +51,9 @@ class AmarBot1VerifiedRuntime(
 
     fun reconcile(desired: AmarBot1DesiredState, state: AmarBot1RemoteState): AmarBotSyncState {
         if (!state.available || !state.fresh || !state.marketReady) return AmarBotSyncState.UNKNOWN
+        if (state.targetSymbol.isNullOrBlank() || state.heartbeatMs == null || state.heartbeatMs <= 0L) {
+            return AmarBotSyncState.UNKNOWN
+        }
         return reconciliation.evaluate(desired, actualFromRemote(state))
     }
 
