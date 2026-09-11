@@ -12,6 +12,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 private enum class NewsTab(val title: String) { NEWS("A — الأخبار"), SESSIONS("B — السوق والسيولة"), DAILY("C — التقرير اليومي") }
 private data class Session(val name: String, val zone: String, val openHour: Int, val closeHour: Int)
@@ -34,28 +35,34 @@ fun AmarNewsSessionsScreen() {
 }
 
 @Composable private fun NewsPanel() = LazyColumn(Modifier.fillMaxSize().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-    item { Header("الأخبار", "المصادر الحية لم تُفعّل بعد؛ لا يتم عرض بيانات مُختلقة.") }
-    item { InfoCard("المصادر الموثوقة", "سيتم ربط المصادر الرسمية ومصادر الأخبار المرخّصة مع ترجمة عربية وذاكرة مؤقتة.") }
-    item { InfoCard("التقويم الاقتصادي", "الفائدة والتضخم والوظائف والبنوك المركزية ستظهر مع الوقت والتأثير والمصدر.") }
-    item { InfoCard("الذهب والفوركس والسلع", "أي تحديث سوقي سيُعرض من بيانات فعلية فقط، مع حالة المصدر ووقت التحديث.") }
+    item { Header("الأخبار", "مصادر الأخبار الحية لم تُربط بعد؛ لا يتم عرض بيانات مُختلقة.") }
+    item { InfoCard("المصادر الموثوقة", "سيتم ربط المصادر الرسمية ومصادر الأخبار المرخّصة مع ترجمة عربية وذاكرة مؤقتة عند تفعيل طبقة البيانات الخارجية.") }
+    item { InfoCard("التقويم الاقتصادي", "الفائدة والتضخم والوظائف والبنوك المركزية ستظهر مع الوقت والتأثير والمصدر بعد ربط مصدر تقويم فعلي.") }
+    item { InfoCard("الذهب والفوركس والسلع", "أي تحديث سوقي سيُعرض من بيانات فعلية فقط، مع حالة المصدر ووقت آخر تحديث.") }
 }
 
 @Composable private fun SessionsPanel() {
-    val now = ZonedDateTime.now()
+    var now by remember { mutableStateOf(ZonedDateTime.now()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            now = ZonedDateTime.now()
+            delay(1000)
+        }
+    }
     val sessions = listOf(Session("آسيا", "Asia/Tokyo", 9, 18), Session("لندن", "Europe/London", 8, 17), Session("نيويورك", "America/New_York", 8, 17))
     LazyColumn(Modifier.fillMaxSize().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { Header("السوق والسيولة", "الوقت ديناميكي حسب المنطقة الزمنية. السيولة الفعلية تحتاج مصدر سوق حي.") }
+        item { Header("السوق والسيولة", "الوقت وحالة الجلسات ديناميكيان حسب المنطقة الزمنية. السيولة الفعلية تحتاج مصدر سوق حي.") }
         items(sessions) { SessionCard(it, now) }
-        item { InfoCard("التداخلات", "لندن ↔ نيويورك تداخل رئيسي. قوة السيولة هنا وصف اعتيادي وليست قراءة لحظية.") }
+        item { InfoCard("التداخلات", "لندن ↔ نيويورك تداخل رئيسي. وصف السيولة هنا اعتيادي وليس قراءة لحظية للسوق.") }
     }
 }
 
 @Composable private fun DailyPanel() {
     val previous = ZonedDateTime.now().minusDays(1).toLocalDate()
     LazyColumn(Modifier.fillMaxSize().padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        item { Header("التقرير اليومي", "تقرير يوم ${previous.format(DateTimeFormatter.ISO_DATE)}") }
-        item { InfoCard("بيانات OHLC", "سيتم حساب الافتتاح والأعلى والأدنى والإغلاق والتغير والنسبة من مصدر أسعار موثوق.") }
-        item { InfoCard("الفجوة اليومية", "سيتم حساب اتجاه وحجم الفجوة عند توفر إغلاق اليوم السابق وافتتاح اليوم التالي.") }
+        item { Header("التقرير اليومي", "تجهيز تقرير يوم ${previous.format(DateTimeFormatter.ISO_DATE)} — بانتظار مصدر الأسعار الفعلي.") }
+        item { InfoCard("بيانات OHLC", "سيتم حساب الافتتاح والأعلى والأدنى والإغلاق والتغير والنسبة من مصدر أسعار موثوق؛ لا توجد أرقام تجريبية معروضة.") }
+        item { InfoCard("الفجوة اليومية", "سيتم حساب اتجاه وحجم الفجوة عند توفر إغلاق اليوم السابق وافتتاح اليوم التالي من مصدر فعلي.") }
         item { InfoCard("الخط الزمني", "الافتتاح → آسيا → لندن → تداخل لندن/نيويورك → نيويورك → الإغلاق. التحليل الفعلي يعتمد على البيانات.") }
     }
 }
@@ -70,14 +77,15 @@ fun AmarNewsSessionsScreen() {
     val seconds = Duration.between(local, target).seconds.coerceAtLeast(0)
     val hours = seconds / 3600
     val minutes = (seconds % 3600) / 60
+    val remaining = seconds % 60
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(session.name, style = MaterialTheme.typography.titleMedium)
                 Text(if (active) "● مفتوحة" else "○ مغلقة", color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("المرجع: ${local.format(DateTimeFormatter.ofPattern("HH:mm:ss"))} — ${zone.id}")
-            Text(if (active) "الإغلاق بعد ${hours}س ${minutes}د" else "الافتتاح بعد ${hours}س ${minutes}د")
+            Text("الوقت المحلي: ${local.format(DateTimeFormatter.ofPattern("HH:mm:ss"))} — ${zone.id}")
+            Text(if (active) "الإغلاق بعد ${hours}س ${minutes}د ${remaining}ث" else "الافتتاح بعد ${hours}س ${minutes}د ${remaining}ث")
             Text("السيولة: لا توجد قراءة لحظية متصلة بعد", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
