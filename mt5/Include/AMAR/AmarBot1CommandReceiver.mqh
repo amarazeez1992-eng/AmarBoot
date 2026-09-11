@@ -1,10 +1,11 @@
 #property strict
 
-// B38 terminal-side receiver. The bridge authenticates the command before it
-// reaches FILE_COMMON; MT5 verifies expiry/shape again and reports a terminal ACK.
+// B39 terminal-side receiver. The bridge authenticates the command before it
+// reaches FILE_COMMON; MT5 verifies expiry/shape again and reports a durable ACK.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
 #define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
+#define AMAR_BOT1_ACK_SCAN_LIMIT 256
 
 enum AMAR_BOT1_COMMAND
   {
@@ -101,6 +102,29 @@ private:
       return StringFind(src,"\"target_symbol\"")>=0;
      }
 
+   bool HasProcessedRequest(string requestId)
+     {
+      if(requestId=="" || !FileIsExist(AMAR_BOT1_ACK_FILE,FILE_COMMON)) return false;
+      int h=FileOpen(AMAR_BOT1_ACK_FILE,FILE_READ|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ|FILE_SHARE_WRITE);
+      if(h==INVALID_HANDLE) return false;
+      int scanned=0;
+      while(!FileIsEnding(h) && scanned<AMAR_BOT1_ACK_SCAN_LIMIT)
+        {
+         string line=FileReadString(h);
+         if(StringLen(line)>0)
+           {
+            scanned++;
+            if(ValueAfter(line,"request_id")==requestId)
+              {
+               FileClose(h);
+               return true;
+              }
+           }
+        }
+      FileClose(h);
+      return false;
+     }
+
    bool Reject(string requestId,string reason)
      {
       if(requestId!="")
@@ -117,7 +141,7 @@ public:
    bool Read(AmarBot1RemoteCommand &out)
      {
       ZeroMemory(out);
-      int h=FileOpen(AMAR_BOT1_COMMAND_FILE,FILE_READ|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ);
+      int h=FileOpen(AMAR_BOT1_COMMAND_FILE,FILE_READ|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ|FILE_SHARE_WRITE);
       if(h==INVALID_HANDLE) return false;
       string line="";
       while(!FileIsEnding(h))
@@ -133,6 +157,7 @@ public:
       out.expiresAtMs=ParseLong(line,"expires_at_ms");
       if(out.requestId=="" || out.idempotencyKey=="" || out.expiresAtMs<=0) return false;
       if(out.requestId==m_lastRequestId) return false;
+      if(HasProcessedRequest(out.requestId)) return false;
 
       long nowMs=(long)TimeCurrent()*1000;
       if(out.expiresAtMs<=nowMs) return Reject(out.requestId,"EXPIRED");
@@ -182,8 +207,9 @@ public:
 
    void Ack(string requestId,bool accepted,string message)
      {
-      int h=FileOpen(AMAR_BOT1_ACK_FILE,FILE_WRITE|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ);
+      int h=FileOpen(AMAR_BOT1_ACK_FILE,FILE_READ|FILE_WRITE|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ|FILE_SHARE_WRITE);
       if(h==INVALID_HANDLE) return;
+      FileSeek(h,0,SEEK_END);
       string safe=message;
       StringReplace(safe,"\"","'");
       StringReplace(safe,"\r"," ");
