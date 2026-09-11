@@ -1,35 +1,48 @@
-# Grid Trade Bot - تطبيق شخصي
+# AMAR BOT — Grid Trade Bot
 
-بوت تداول شبكي حقيقي (Grid Trading) لحساب MT5 عبر MetaApi.cloud، بواجهة Compose بنفس فكرة التطبيق الأصلي.
+مشروع تداول شخصي مبني على Kotlin/Jetpack Compose مع طبقة BOT 1 runtime، MT5 bridge architecture، security boundaries وBot Vault.
 
-## خطوات التشغيل (من الموبايل بالكامل، بدون لابتوب)
+## الحالة الحالية
 
-### 1) رفع المشروع على GitHub
-- افتح تطبيق/موقع GitHub من الموبايل.
-- أنشئ Repository جديد (خاص Private أفضل).
-- ارفع كل هذي الملفات والمجلدات (Add file → Upload files) بنفس الهيكلية.
+- **BOT 1**: البوت الحقيقي المعتمد، مع runtime identity/state/config و10 strategy slots.
+- **BOT 2–4**: خزائن إعداد فقط؛ لا توجد محركات تداول مستقلة لها بعد.
+- **Bot Vault**: حفظ دائم، إضافة/تعديل/حذف/تفريغ Bots، وحفظ/تحرير/حذف/تفريغ Strategies.
+- **Security**: Fail-closed، TTL، replay/idempotency، scope validation وreceiver-side HMAC verification.
+- **AI Supervisor**: استشاري فقط؛ لا يملك صلاحية تنفيذ Broker مباشرة.
+- **MT5**: الربط الحي ما زال gated حتى اكتمال Compile وDemo runtime verification.
 
-### 2) تفعيل البناء التلقائي
-- بعد الرفع، روح لتبويب **Actions** بالمستودع.
-- فعّل الـ Workflow (إذا طلب تفعيل).
-- كل مرة ترفع تعديل، البناء يشتغل تلقائيًا ويطلع ملف APK جاهز تحت "Artifacts".
+## B34 — Runtime
+المسار التشغيلي المعتمد:
 
-### 3) تحميل الـ APK وتثبيته
-- من صفحة الـ Actions run، نزّل `GridTradeBot-debug-apk` (ملف zip فيه الـ APK).
-- فكه وثبّته على جوالك (فعّل "تثبيت من مصادر غير معروفة" إذا طلب أندرويد ذلك).
+`UI → Command → Validate → Accept → Execute → ACK → Verify → Reconcile → Audit`
 
-### 4) قبل التشغيل - عبّي بيانات MetaApi
-افتح ملف:
-`app/src/main/java/com/personal/gridbot/network/MetaApiClient.kt`
+الحالة الفعلية لا تُصنع من زر في الواجهة؛ يجب أن تأتي من runtime/MT5.
 
-وعدّل هذي السطرين ببياناتك الحقيقية من metaapi.cloud بعد ربط حساب JustMarkets Demo:
+## B35 — MT5 EA
+تم فحص مصدر `Grid_Martingale_Basket_AMAR_v3.mq5` الموجود ضمن ملفات المشروع. قبل أي Live authorization يجب تثبيت المصدر في مسار MT5 بالمستودع، ثم تنفيذ:
 
-```kotlin
-var authToken: String = "PUT_YOUR_METAAPI_TOKEN_HERE"
-var accountId: String = "PUT_YOUR_METAAPI_ACCOUNT_ID_HERE"
-```
+1. symbol + magic isolation؛
+2. فصل BOT1-only عن manual-managed؛
+3. منع global close أثناء grid rebuild؛
+4. broker stop-level/volume/price validation؛
+5. retcode handling؛
+6. ACK + read-back + reconciliation؛
+7. MetaEditor compile؛
+8. Demo runtime tests.
 
-⚠️ لا تشارك الـ Token مع أي أحد، ولا ترفعه على مستودع عام (Public).
+## B36 — AI Supervisor
+AI يقدم تحليلًا واقتراحات فقط:
 
-## تحذير
-هذا كود أولي (Starter) لبوت تداول حقيقي. اختبره على حساب Demo فترة كافية، وراقب السجلات (`bot_logs`) قبل أي تفكير باستخدامه بحساب حقيقي. التداول الآلي فيه مخاطر مالية حقيقية.
+`AI → Proposal → Decision → Simulation → Risk Policy → Execution Policy → Security Gateway → User Approval → MT5`
+
+لا يوجد Direct AI Trading.
+
+## Safety
+
+`liveTrading=false` هو الوضع الآمن الافتراضي. إدخال بيانات الحساب لا يمنح صلاحية تداول. Emergency Lock وأي فشل في permission/risk/security/connector/idempotency يؤدي إلى **BLOCK**.
+
+## CI
+
+Workflow البناء يحتوي على Python bridge tests، Android SDK validation، Gradle validation، unit tests، assembleDebug، APK checksum وartifact upload.
+
+ملاحظة: لا نعتبر التغيير ناجحًا حتى تظهر نتيجة CI الفعلية بنجاح؛ غياب run ليس Pass.
