@@ -2,14 +2,15 @@
 
 The authenticated bridge writes one command at a time into the MT5
 FILE_COMMON sandbox. A command cannot be overwritten while it is still
-pending. This prevents a fast sequence of phone commands from silently
-replacing an older command before MT5 has consumed it.
+pending. Expired commands are safely superseded because the terminal can no
+longer be expected to execute them.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 import tempfile
+import time
 
 COMMAND_FILE = "AMAR_BOT1_COMMANDS.jsonl"
 ACK_FILE = "AMAR_BOT1_ACK.jsonl"
@@ -60,9 +61,11 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
         pending = _read_last_json(path)
         if pending:
             pending_id = str(pending.get("request_id", ""))
+            pending_expires = int(pending.get("expires_at_ms", 0) or 0)
             ack = _read_last_json(directory / ACK_FILE)
             ack_id = str(ack.get("request_id", "")) if ack else ""
-            if pending_id and pending_id != str(record["request_id"]) and pending_id != ack_id:
+            still_pending = pending_expires > int(time.time() * 1000) and pending_id != ack_id
+            if pending_id and pending_id != str(record["request_id"]) and still_pending:
                 raise QueueBusyError("previous BOT 1 command is awaiting MT5 acknowledgement")
 
     target_symbol = record.get("target_symbol")
