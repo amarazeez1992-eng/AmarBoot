@@ -15,6 +15,8 @@ enum AMAR_BOT1_COMMAND
    AMAR_CMD_STOP,
    AMAR_CMD_REBUILD,
    AMAR_CMD_CLOSE_ALL,
+   AMAR_CMD_CLOSE_BUY,
+   AMAR_CMD_CLOSE_SELL,
    AMAR_CMD_SET_BUY_ENABLED,
    AMAR_CMD_SET_SELL_ENABLED,
    AMAR_CMD_UPDATE_SETTINGS
@@ -204,6 +206,8 @@ public:
       else if(cmd=="STOP") out.type=AMAR_CMD_STOP;
       else if(cmd=="REBUILD") out.type=AMAR_CMD_REBUILD;
       else if(cmd=="CLOSE_ALL") out.type=AMAR_CMD_CLOSE_ALL;
+      else if(cmd=="CLOSE_BUY") out.type=AMAR_CMD_CLOSE_BUY;
+      else if(cmd=="CLOSE_SELL") out.type=AMAR_CMD_CLOSE_SELL;
       else if(cmd=="SET_BUY_ENABLED") out.type=AMAR_CMD_SET_BUY_ENABLED;
       else if(cmd=="SET_SELL_ENABLED") out.type=AMAR_CMD_SET_SELL_ENABLED;
       else if(cmd=="UPDATE_SETTINGS") out.type=AMAR_CMD_UPDATE_SETTINGS;
