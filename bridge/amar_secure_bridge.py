@@ -14,11 +14,12 @@ from pathlib import Path
 import MetaTrader5 as mt5
 
 from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
-from amar_command_channel import validate, REPLAY_STORE
+from amar_command_channel import validate, REPLAY_STORE, require_live_replay_ledger
 from amar_bot1_secure_channel import validate as validate_bot1, canonical as canonical_bot1
 from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FILE
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
+require_live_replay_ledger(LIVE_ENABLED)
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
 ALLOWED_TARGET_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_SYMBOLS", "").split(",") if x.strip()) or ALLOWED_SYMBOLS
 ALLOWED_TARGET_PATTERNS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_PATTERNS", "").split(",") if x.strip())
@@ -254,25 +255,3 @@ class SecureHandler(Handler):
             state = _read_bot1_state()
             return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR), "symbolDiscovery": bool(ALLOWED_TARGET_SYMBOLS or ALLOWED_TARGET_PATTERNS), "botStateFresh": bool(state.get("fresh"))})
         return super().do_GET()
-
-
-def main():
-    if not TOKEN or not CERT or not KEY:
-        raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
-    if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
-        raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
-    if not ALLOWED_SYMBOLS or (not ALLOWED_TARGET_SYMBOLS and not ALLOWED_TARGET_PATTERNS):
-        raise SystemExit("AMAR_ALLOWED_SYMBOLS and target allow-list are required")
-    from http.server import ThreadingHTTPServer
-    import ssl
-    server = ThreadingHTTPServer((HOST, PORT), SecureHandler)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.minimum_version = ssl.TLSVersion.TLSv1_2
-    context.load_cert_chain(certfile=CERT, keyfile=KEY)
-    server.socket = context.wrap_socket(server.socket, server_side=True)
-    print(f"AMAR secure bridge listening on https://{HOST}:{PORT}; live={LIVE_ENABLED}; bot1_queue={bool(COMMON_FILES_DIR)}")
-    server.serve_forever()
-
-
-if __name__ == "__main__":
-    main()
