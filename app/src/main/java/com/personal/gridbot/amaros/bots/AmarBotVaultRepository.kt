@@ -18,9 +18,7 @@ class AmarBotVaultRepository(context: Context) {
         }.getOrElse { defaultBots() }
     }
 
-    fun save(bots: List<AmarSavedBot>) {
-        persist(bots)
-    }
+    fun save(bots: List<AmarSavedBot>) = persist(bots)
 
     /** Adds a configuration slot only; it never creates a trading engine. */
     fun addBot(name: String? = null): AmarSavedBot {
@@ -128,22 +126,48 @@ data class AmarSavedStrategy(
     val entryRule: String = "أساسي",
     val metadata: String = ""
 ) {
+    /** Stable JSON contract. Numeric values are emitted as canonical strings to avoid org.json floating-point edge cases. */
     fun toJson(): JSONObject = JSONObject().apply {
-        put("number", number); put("name", name); put("risk", riskProfile)
-        put("rebuildRule", rebuildRule); put("entryRule", entryRule); put("metadata", metadata)
-        put("lot", profile.lot); put("step", profile.gridStep); put("max", profile.maxOrders)
-        put("multiplier", profile.multiplier); put("tp", profile.basketTp); put("sl", profile.basketSl)
-        put("trailing", profile.trailing); put("buy", profile.buyEnabled); put("sell", profile.sellEnabled)
+        put("schemaVersion", 2)
+        put("number", number)
+        put("name", name)
+        put("risk", riskProfile)
+        put("rebuildRule", rebuildRule)
+        put("entryRule", entryRule)
+        put("metadata", metadata)
+        put("lot", profile.lot.toString())
+        put("step", profile.gridStep.toString())
+        put("max", profile.maxOrders)
+        put("multiplier", profile.multiplier.toString())
+        put("tp", profile.basketTp.toString())
+        put("sl", profile.basketSl.toString())
+        put("trailing", profile.trailing.toString())
+        put("buy", profile.buyEnabled)
+        put("sell", profile.sellEnabled)
     }
 
     companion object {
+        private fun readDouble(o: JSONObject, key: String, fallback: Double): Double {
+            val value = o.opt(key) ?: return fallback
+            return when (value) {
+                is Number -> value.toDouble()
+                is String -> value.toDoubleOrNull() ?: fallback
+                else -> fallback
+            }
+        }
+
         fun fromJson(o: JSONObject): AmarSavedStrategy = AmarSavedStrategy(
-            number = o.optInt("number"), name = o.optString("name", "استراتيجية"),
+            number = o.optInt("number"),
+            name = o.optString("name", "استراتيجية"),
             profile = AmarBot1RuntimeConfig(
-                lot = o.optDouble("lot", 0.01), gridStep = o.optDouble("step", 30.0),
-                maxOrders = o.optInt("max", 10), multiplier = o.optDouble("multiplier", 2.0),
-                basketTp = o.optDouble("tp", 50.0), basketSl = o.optDouble("sl", -30.0),
-                trailing = o.optDouble("trailing", 0.0), buyEnabled = o.optBoolean("buy", true),
+                lot = readDouble(o, "lot", 0.01),
+                gridStep = readDouble(o, "step", 30.0),
+                maxOrders = o.optInt("max", 10),
+                multiplier = readDouble(o, "multiplier", 2.0),
+                basketTp = readDouble(o, "tp", 50.0),
+                basketSl = readDouble(o, "sl", -30.0),
+                trailing = readDouble(o, "trailing", 0.0),
+                buyEnabled = o.optBoolean("buy", true),
                 sellEnabled = o.optBoolean("sell", true)
             ),
             riskProfile = o.optString("risk", "قياسي"),
