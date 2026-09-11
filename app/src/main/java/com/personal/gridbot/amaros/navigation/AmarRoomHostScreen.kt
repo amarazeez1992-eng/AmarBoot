@@ -15,7 +15,6 @@ import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
 import com.personal.gridbot.amaros.design.AmarAppearanceScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.rooms.news.AmarNewsSessionsScreen
-import com.personal.gridbot.amaros.security.AmarProtectionCenter
 import com.personal.gridbot.amaros.security.AmarProtectionCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 import com.personal.gridbot.ui.theme.AmarThemeMode
@@ -31,41 +30,29 @@ fun AmarRoomHostScreen(room: AmarRoom, onBackHome: () -> Unit, themeMode: AmarTh
                 Column(modifier = Modifier.weight(1f)) { Text("عمار", style = MaterialTheme.typography.headlineSmall); Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium) }
                 Button(onClick = onBackHome) { Text("الرئيسية") }
             }
-            try {
-                when (room) {
-                    AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                    AmarRoom.CHART -> { val runtime = AmarMt5RuntimeRegistry.current(); if (runtime == null) AmarTradingChartScreen(symbol = "الذهب") else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData) }
-                    AmarRoom.ACCOUNTS -> AmarAccountsScreen()
-                    AmarRoom.NEWS_SESSIONS -> AmarNewsSessionsScreen()
-                    AmarRoom.SETTINGS -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("الخلفيات والمظهر") }
-                            Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الحماية") }
-                            Button(onClick = { settingsMode = 2 }, modifier = Modifier.weight(1f)) { Text("متقدم") }
-                        }
-                        when (settingsMode) {
-                            0 -> AmarAppearanceScreen(themeMode, onThemeModeChange)
-                            1 -> AmarProtectionCenterScreen(context)
-                            else -> AmarDeveloperOptionsScreen()
-                        }
-                    }
-                    else -> AmarRoomWorkspace(room)
+            when (room) {
+                AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
+                AmarRoom.CHART -> {
+                    val runtime = AmarMt5RuntimeRegistry.current()
+                    if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
+                    else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
                 }
-            } catch (error: Throwable) {
-                AmarProtectionCenter.recordFailure(context, room.titleAr, error)
-                ProtectedRoomFailure(room.titleAr)
+                AmarRoom.ACCOUNTS -> AmarAccountsScreen()
+                AmarRoom.NEWS_SESSIONS -> AmarNewsSessionsScreen()
+                AmarRoom.SETTINGS -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Button(onClick = { settingsMode = 0 }, modifier = Modifier.weight(1f)) { Text("الخلفيات والمظهر") }
+                        Button(onClick = { settingsMode = 1 }, modifier = Modifier.weight(1f)) { Text("الحماية") }
+                        Button(onClick = { settingsMode = 2 }, modifier = Modifier.weight(1f)) { Text("متقدم") }
+                    }
+                    when (settingsMode) {
+                        0 -> AmarAppearanceScreen(themeMode, onThemeModeChange)
+                        1 -> AmarProtectionCenterScreen(context)
+                        else -> AmarDeveloperOptionsScreen()
+                    }
+                }
+                else -> AmarRoomWorkspace(room)
             }
-        }
-    }
-}
-
-@Composable
-private fun ProtectedRoomFailure(roomName: String) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("⚠ تم عزل الوحدة", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.error)
-            Text("حدث عطل داخل: $roomName")
-            Text("تم منع الخطأ من إسقاط بقية التطبيق. افتح الإعدادات ← الحماية لمعرفة التفاصيل والحل.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

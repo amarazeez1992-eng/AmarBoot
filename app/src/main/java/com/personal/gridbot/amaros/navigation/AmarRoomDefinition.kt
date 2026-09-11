@@ -111,6 +111,11 @@ object AmarRoomCatalog {
             AmarRoomSection("security", "حماية بيانات الدخول", "🛡", "تخزين آمن للبيانات الحساسة"),
             AmarRoomSection("connection", "حالة الاتصال", "↔", "حالة موصل الوسيط مستقبلاً")
         ))
+        AmarRoom.NEWS_SESSIONS -> AmarRoomDefinition(room, "الأخبار والسوق والسيولة والتقرير اليومي", listOf(
+            AmarRoomSection("news", "A — الأخبار", "◉", "الأخبار والتقويم الاقتصادي"),
+            AmarRoomSection("sessions", "B — السوق والسيولة", "◷", "الجلسات والتداخلات والنشاط"),
+            AmarRoomSection("daily", "C — التقرير اليومي", "◆", "OHLC والفجوة وتحليل الجلسات")
+        ))
         AmarRoom.SETTINGS -> AmarRoomDefinition(room, "إعدادات وتجهيز AMAR", listOf(
             AmarRoomSection("appearance", "المظهر", "✦", "الألوان والثيمات والحركة"),
             AmarRoomSection("workspace", "مساحة العمل", "▦", "التخطيط والتنقل"),
