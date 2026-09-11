@@ -25,8 +25,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 enum class AmarBotInterface(val label: String) {
@@ -50,7 +50,7 @@ object AmarBotInterfaceRegistry {
     }
 }
 
-/** Fixed Bot-Lab shell. Global market state/timeframe are shared by all bots, strategies and interfaces. */
+/** Thin shell: each internal interface owns its complete scrolling layout. */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -60,29 +60,26 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        AmarBotLabGlobalContext()
         InterfaceSelector(selectedInterface) { next ->
             selectedInterface = next
             AmarBotInterfaceRegistry.save(context, selectedBot, next)
         }
 
-        Box(Modifier.fillMaxWidth().weight(1f)) {
-            AnimatedContent(
-                targetState = selectedInterface,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "amar-bot-interface"
-            ) { active ->
-                when (active) {
-                    AmarBotInterface.A -> AmarBotLabProfessionalScreen(onBackHome = onBackHome)
-                    AmarBotInterface.B -> AmarBotLabInterfaceBScreenV2(
-                        onBackHome = onBackHome,
-                        selectedBot = selectedBot,
-                        onBotSelected = { bot ->
-                            selectedBot = bot
-                            selectedInterface = AmarBotInterfaceRegistry.load(context, bot)
-                        }
-                    )
-                }
+        AnimatedContent(
+            targetState = selectedInterface,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "amar-bot-interface"
+        ) { active ->
+            when (active) {
+                AmarBotInterface.A -> AmarBotLabProfessionalScreen(onBackHome = onBackHome)
+                AmarBotInterface.B -> AmarBotLabInterfaceBScreenV2(
+                    onBackHome = onBackHome,
+                    selectedBot = selectedBot,
+                    onBotSelected = { bot ->
+                        selectedBot = bot
+                        selectedInterface = AmarBotInterfaceRegistry.load(context, bot)
+                    }
+                )
             }
         }
     }
@@ -101,8 +98,7 @@ private fun InterfaceSelector(selected: AmarBotInterface, onSelect: (AmarBotInte
         AmarBotInterface.entries.forEach { item ->
             val active = item == selected
             Box(
-                Modifier.height(40.dp)
-                    .weight(1f)
+                Modifier.weight(1f).height(40.dp)
                     .background(if (active) Color(0xFF19E6FF) else Color(0xFF102533), RoundedCornerShape(10.dp))
                     .border(1.dp, if (active) Color(0xFF6CFAFF) else Color(0xFF1C4657), RoundedCornerShape(10.dp))
                     .clickable { onSelect(item) },
