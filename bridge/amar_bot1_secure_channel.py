@@ -1,6 +1,7 @@
 """Fail-closed BOT 1 lifecycle command validation."""
 from __future__ import annotations
 
+import base64
 import fnmatch
 import hashlib
 import hmac
@@ -8,9 +9,13 @@ import os
 import time
 from decimal import Decimal, InvalidOperation
 
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+
 MAX_CLOCK_SKEW_MS = int(os.environ.get("AMAR_COMMAND_MAX_SKEW_MS", "30000"))
 COMMAND_TTL_MS = int(os.environ.get("AMAR_COMMAND_TTL_MS", "15000"))
 SIGNING_SECRET = os.environ.get("AMAR_COMMAND_SIGNING_SECRET", "")
+REQUIRE_DEVICE_SIGNATURE = os.environ.get("AMAR_REQUIRE_DEVICE_SIGNATURE", "1") == "1"
 
 
 def decimal_string(value) -> str:
@@ -40,6 +45,7 @@ def canonical(payload: dict) -> str:
         decimal_string(settings.get("trailing", "")),
         "" if settings.get("buy_enabled") is None else str(settings.get("buy_enabled")).lower(),
         "" if settings.get("sell_enabled") is None else str(settings.get("sell_enabled")).lower(),
+        payload.get("device_id", ""), str(payload.get("sequence", "")), payload.get("device_public_key", ""),
     ]
     return "|".join(str(v) for v in values)
 
@@ -49,6 +55,22 @@ def valid_signature(payload: dict) -> bool:
         return False
     expected = hmac.new(SIGNING_SECRET.encode(), canonical(payload).encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, str(payload.get("signature", "")))
+
+
+def valid_device_signature(payload: dict) -> bool:
+    try:
+        public_key = serialization.load_der_public_key(base64.b64decode(payload["device_public_key"], validate=True))
+        signature = base64.b64decode(payload["device_signature"], validate=True)
+        public_key.verify(
+            signature,
+            canonical(payload).encode("utf-8"),
+            padding.PKCS1v15(),
+            hashes.SHA256(),
+        )
+        digest = hashlib.sha256(public_key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)).hexdigest()
+        return hmac.compare_digest(digest, str(payload.get("device_id", "")))
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return False
 
 
 def _valid_symbol_text(value) -> bool:
@@ -78,14 +100,16 @@ def validate(
 ) -> tuple[bool, str]:
     if not isinstance(payload, dict):
         return False, "invalid request"
-    required = ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "account_login", "bot_magic", "symbol", "command", "signature")
-    if any(not payload.get(k) for k in required):
+    required = ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "account_login", "bot_magic", "symbol", "command", "signature", "device_id", "sequence", "device_public_key", "device_signature")
+    if any(k not in payload or payload.get(k) in (None, "") for k in required):
         return False, "missing command fields"
     try:
         issued = int(payload["issued_at_ms"]); expires = int(payload["expires_at_ms"])
-        login = int(payload["account_login"]); magic = int(payload["bot_magic"])
+        login = int(payload["account_login"]); magic = int(payload["bot_magic"]); sequence = int(payload["sequence"])
     except (TypeError, ValueError):
         return False, "invalid numeric fields"
+    if sequence <= 0:
+        return False, "invalid command sequence"
     now = int(time.time() * 1000)
     if issued > now + MAX_CLOCK_SKEW_MS or expires <= now or expires - issued > COMMAND_TTL_MS:
         return False, "expired command"
@@ -94,7 +118,6 @@ def validate(
     symbol = payload["symbol"]
     if not _valid_symbol_text(symbol) or symbol not in allowed_symbols:
         return False, "symbol not allow-listed"
-
     target = payload.get("target_symbol")
     if target is not None:
         if not _valid_symbol_text(target):
@@ -102,7 +125,6 @@ def validate(
         target_allow = allowed_target_symbols if allowed_target_symbols is not None else allowed_symbols
         if not symbol_allowed(target, target_allow, allowed_target_patterns):
             return False, "target symbol not allow-listed"
-
     commands = {"START", "STOP", "REBUILD", "CLOSE_ALL", "SET_BUY_ENABLED", "SET_SELL_ENABLED", "UPDATE_SETTINGS"}
     if payload.get("command") not in commands:
         return False, "unsupported command"
@@ -115,6 +137,8 @@ def validate(
         for key in ("lot_start", "grid_step", "max_orders", "martingale", "basket_tp", "basket_sl", "trailing", "buy_enabled", "sell_enabled"):
             if key not in settings:
                 return False, "incomplete settings"
+    if REQUIRE_DEVICE_SIGNATURE and not valid_device_signature(payload):
+        return False, "invalid device signature"
     if not valid_signature(payload):
         return False, "invalid signature"
     return True, "accepted"
