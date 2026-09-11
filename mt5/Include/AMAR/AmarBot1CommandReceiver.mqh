@@ -1,11 +1,12 @@
 #property strict
 
-// B39/B42 terminal-side receiver. The bridge authenticates the command before it
+// B39/B42/B47 terminal-side receiver. The bridge authenticates the command before it
 // reaches FILE_COMMON; MT5 verifies expiry/shape/sequence again and reports ACK.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
 #define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
 #define AMAR_BOT1_ACK_SCAN_LIMIT 256
+#define AMAR_BOT1_SEQUENCE_PREFIX "AMAR_BOT1_SEQ_"
 
 enum AMAR_BOT1_COMMAND
   {
@@ -106,6 +107,31 @@ private:
       return StringFind(src,"\"target_symbol\"")>=0;
      }
 
+   string SequenceVariableName(string deviceId)
+     {
+      string compact=deviceId;
+      StringReplace(compact,"-","");
+      if(StringLen(compact)>48) compact=StringSubstr(compact,0,48);
+      return AMAR_BOT1_SEQUENCE_PREFIX+compact;
+     }
+
+   long PersistedSequence(string deviceId)
+     {
+      if(deviceId=="") return 0;
+      string name=SequenceVariableName(deviceId);
+      if(!GlobalVariableCheck(name)) return 0;
+      double value=0.0;
+      if(!GlobalVariableGet(name,value)) return 0;
+      if(!MathIsValidNumber(value) || value<0.0) return 0;
+      return (long)value;
+     }
+
+   bool PersistSequence(string deviceId,long sequence)
+     {
+      if(deviceId=="" || sequence<=0) return false;
+      return GlobalVariableSet(SequenceVariableName(deviceId),(double)sequence)>0;
+     }
+
    bool HasProcessedRequest(string requestId)
      {
       if(requestId=="" || !FileIsExist(AMAR_BOT1_ACK_FILE,FILE_COMMON)) return false;
@@ -168,7 +194,10 @@ public:
       long nowMs=(long)TimeCurrent()*1000;
       if(out.expiresAtMs<=nowMs) return Reject(out.requestId,"EXPIRED");
       if(out.deviceId=="" || out.sequence<=0) return Reject(out.requestId,"INVALID_SEQUENCE");
-      if(out.deviceId==m_lastDeviceId && out.sequence<=m_lastSequence) return Reject(out.requestId,"OUT_OF_ORDER_SEQUENCE");
+
+      long persisted=PersistedSequence(out.deviceId);
+      long floor=MathMax(m_lastDeviceId==out.deviceId ? m_lastSequence : 0,persisted);
+      if(out.sequence<=floor) return Reject(out.requestId,"OUT_OF_ORDER_SEQUENCE");
 
       string cmd=ValueAfter(line,"command");
       if(cmd=="START") out.type=AMAR_CMD_START;
@@ -209,6 +238,9 @@ public:
          out.hasSellEnabled=ParseBool(line,"sell_enabled",out.sellEnabled);
          if(!out.hasBuyEnabled || !out.hasSellEnabled) return Reject(out.requestId,"INVALID_SIDE_SETTINGS");
         }
+
+      if(!PersistSequence(out.deviceId,out.sequence))
+        return Reject(out.requestId,"SEQUENCE_PERSISTENCE_FAILED");
       m_lastRequestId=out.requestId;
       m_lastDeviceId=out.deviceId;
       m_lastSequence=out.sequence;
