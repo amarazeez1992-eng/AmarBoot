@@ -86,9 +86,7 @@ fun AmarBotLabInterfaceBScreenV2(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { BotSelector(selectedBot, onBotSelected) }
-            item {
-                StrategySelector(selectedStrategy) { selectedStrategy = it }
-            }
+            item { StrategySelector(selectedStrategy) { selectedStrategy = it } }
             item { TimeframeStatus(timeframe) }
             item {
                 StrategyEditor(
@@ -125,13 +123,34 @@ fun AmarBotLabInterfaceBScreenV2(
 }
 
 @Composable
+private fun BChip(
+    text: String,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(34.dp),
+        contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (selected) BC else B2,
+            contentColor = if (selected) Color.Black else BT
+        )
+    ) {
+        Text(text, fontSize = 8.sp, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
 private fun BotSelector(selectedBot: Int, onBotSelected: (Int) -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp)) {
             Text("البوتات", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 (1..10).forEach { bot ->
-                    Chip(
+                    BChip(
                         text = "V$bot",
                         selected = bot == selectedBot,
                         modifier = Modifier.weight(1f),
@@ -150,7 +169,7 @@ private fun StrategySelector(selectedStrategy: Int, onStrategySelected: (Int) ->
             Text("الاستراتيجيات", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 (1..10).forEach { number ->
-                    Chip(
+                    BChip(
                         text = number.toString().padStart(2, '0'),
                         selected = number == selectedStrategy,
                         modifier = Modifier.weight(1f),
@@ -240,8 +259,8 @@ private fun StrategyEditor(
             ValueSlider("مضاعف الشبكة", multiplier, 0.5f..5f, 0.05f) { multiplier = it }
             ValueSlider("مسافة الشبكة", gridStep, 0f..500f, 1f) { gridStep = it }
             ValueSlider("عدد الأوامر", maxOrders, 1f..50f, 1f) { maxOrders = it }
-            ValueSlider("هدف السلة \$", basketTp, 0f..1000f, 1f) { basketTp = it }
-            ValueSlider("وقف السلة \$", basketSl, -1000f..0f, 1f) { basketSl = it }
+            ValueSlider("هدف السلة \\$", basketTp, 0f..1000f, 1f) { basketTp = it }
+            ValueSlider("وقف السلة \\$", basketSl, -1000f..0f, 1f) { basketSl = it }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 ToggleButton("BUY", buyEnabled, Modifier.weight(1f)) { buyEnabled = !buyEnabled }
