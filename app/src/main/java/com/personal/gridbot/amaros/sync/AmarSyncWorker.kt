@@ -29,10 +29,11 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
 
         repeat(2) { attempt ->
             val requestBase = base
+            val requestRevision = revision
             val body = JsonObject().apply {
                 addProperty("schemaVersion", 1)
                 addProperty("deviceId", config.deviceId)
-                addProperty("revision", revision)
+                addProperty("revision", requestRevision)
                 addProperty("baseHash", sha256(requestBase))
                 addProperty("snapshotHash", sha256(candidate))
                 add("snapshot", JsonParser.parseString(candidate))
@@ -50,9 +51,9 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                         val conflict = JsonParser.parseString(raw).asJsonObject
                         val remote = conflict.get("snapshot")?.takeIf { it.isJsonArray }?.toString()
                             ?: return@use
-                        candidate = AmarSyncMerge.merge(requestBase, candidate, remote)
+                        candidate = if (requestRevision == 0L) remote else AmarSyncMerge.merge(requestBase, candidate, remote)
                         base = remote
-                        revision = conflict.get("revision")?.asLong ?: revision
+                        revision = conflict.get("revision")?.asLong ?: requestRevision
                         return@use
                     }
                     if (!response.isSuccessful) return@withContext if (response.code in 408..599) Result.retry() else Result.failure()
@@ -61,7 +62,7 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
                     val remote = json.get("snapshot")?.takeIf { it.isJsonArray }?.toString() ?: candidate
                     val remoteHash = json.optString("snapshotHash", sha256(remote))
                     if (remoteHash != sha256(remote)) return@withContext Result.retry()
-                    val newRevision = json.optLong("revision", revision + 1L)
+                    val newRevision = json.optLong("revision", requestRevision + 1L)
                     AmarSyncConfig.saveState(applicationContext, newRevision, remote)
                     repo.replaceSnapshotJson(remote)
                     return@withContext Result.success()
@@ -85,12 +86,9 @@ class AmarSyncWorker(appContext: Context, params: WorkerParameters) : CoroutineW
         .joinToString("") { "%02x".format(it) }
 }
 
-private fun JsonObject.optBoolean(name: String, fallback: Boolean): Boolean =
-    if (has(name) && !get(name).isJsonNull) get(name).asBoolean else fallback
-private fun JsonObject.optString(name: String, fallback: String): String =
-    if (has(name) && !get(name).isJsonNull) get(name).asString else fallback
-private fun JsonObject.optLong(name: String, fallback: Long): Long =
-    if (has(name) && !get(name).isJsonNull) get(name).asLong else fallback
+private fun JsonObject.optBoolean(name: String, fallback: Boolean): Boolean = if (has(name) && !get(name).isJsonNull) get(name).asBoolean else fallback
+private fun JsonObject.optString(name: String, fallback: String): String = if (has(name) && !get(name).isJsonNull) get(name).asString else fallback
+private fun JsonObject.optLong(name: String, fallback: Long): Long = if (has(name) && !get(name).isJsonNull) get(name).asLong else fallback
 
 data class AmarSyncConfig(
     val endpoint: String,
