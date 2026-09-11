@@ -64,6 +64,10 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
         mutableStateOf(AmarTradingTimeframeContext.selected.remainingMillis())
     }
 
+    LaunchedEffect(Unit) {
+        AmarTradingSymbolContext.load(context)
+    }
+
     LaunchedEffect(AmarTradingTimeframeContext.selected) {
         while (true) {
             remaining = AmarTradingTimeframeContext.selected.remainingMillis()
@@ -75,6 +79,7 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
         GlobalTimeframeBar(remaining) { next ->
             AmarTradingTimeframeContext.selected = next
         }
+        AmarTradingSymbolSelector(context)
         InterfaceSelector(selectedInterface) { next ->
             selectedInterface = next
             AmarBotInterfaceRegistry.save(context, selectedBot, next)
