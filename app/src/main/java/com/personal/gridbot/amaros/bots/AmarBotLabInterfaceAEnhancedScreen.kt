@@ -30,21 +30,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.LocalTime
+import java.util.Calendar
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
@@ -76,23 +75,13 @@ fun AmarBotLabInterfaceAEnhancedScreen(onBackHome: () -> Unit) {
     Column(Modifier.fillMaxSize().background(A0)) {
         Header(selectedBot, onBackHome)
         VirtualClock()
-        Text(
-            "اسحب الأقسام لترتيب مختبر البوت • اضغط القسم لفتح إعداداته",
-            color = AM,
-            fontSize = 9.sp,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-        )
+        Text("اسحب الأقسام لترتيب مختبر البوت • اضغط القسم لفتح إعداداته", color = AM, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
 
-        LazyColumn(
-            Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             itemsIndexed(order, key = { _, item -> item.name }) { index, tile ->
-                val active = tile == selectedTile
                 DragTile(
                     tile = tile,
-                    active = active,
+                    active = tile == selectedTile,
                     dragging = dragging == tile,
                     offsetY = if (dragging == tile) offsetY else 0f,
                     onSelect = { selectedTile = tile },
@@ -113,7 +102,6 @@ fun AmarBotLabInterfaceAEnhancedScreen(onBackHome: () -> Unit) {
                     onDragEnd = { dragging = null; offsetY = 0f }
                 )
             }
-
             item {
                 when (selectedTile) {
                     TileType.SETTINGS -> SettingsPanel(lot, multiplier, { lot = it }, { multiplier = it })
@@ -128,15 +116,8 @@ fun AmarBotLabInterfaceAEnhancedScreen(onBackHome: () -> Unit) {
 
 @Composable
 private fun Header(bot: Int, onBackHome: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(A1).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Button(
-            onClick = onBackHome,
-            colors = ButtonDefaults.buttonColors(containerColor = AC, contentColor = Color.Black),
-            contentPadding = PaddingValues(horizontal = 13.dp, vertical = 5.dp)
-        ) { Text("⌂", fontWeight = FontWeight.Black) }
+    Row(Modifier.fillMaxWidth().background(A1).padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Button(onClick = onBackHome, colors = ButtonDefaults.buttonColors(containerColor = AC, contentColor = Color.Black), contentPadding = PaddingValues(horizontal = 13.dp, vertical = 5.dp)) { Text("⌂", fontWeight = FontWeight.Black) }
         Column(Modifier.weight(1f).padding(horizontal = 9.dp)) {
             Text("AMAR BOT LAB", color = AC, fontSize = 19.sp, fontWeight = FontWeight.Black)
             Text("واجهة 1 • BOT $bot • نظام تفاعلي", color = AM, fontSize = 9.sp)
@@ -147,42 +128,31 @@ private fun Header(bot: Int, onBackHome: () -> Unit) {
 
 @Composable
 private fun VirtualClock() {
-    var time by remember { mutableStateOf(LocalTime.now()) }
+    var hour by remember { mutableIntStateOf(0) }
+    var minute by remember { mutableIntStateOf(0) }
+    var second by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
         while (true) {
-            time = LocalTime.now()
+            val now = Calendar.getInstance()
+            hour = now.get(Calendar.HOUR_OF_DAY)
+            minute = now.get(Calendar.MINUTE)
+            second = now.get(Calendar.SECOND)
             delay(1000)
         }
     }
-    val secondAngle = time.second * 6f
-    val minuteAngle = (time.minute + time.second / 60f) * 6f
-    val hourAngle = ((time.hour % 12) + time.minute / 60f) * 30f
-    val accent by animateColorAsState(
-        if (time.second % 2 == 0) AC else AG,
-        tween(450),
-        label = "clock-accent"
-    )
+    val secondAngle = second * 6f
+    val minuteAngle = (minute + second / 60f) * 6f
+    val hourAngle = ((hour % 12) + minute / 60f) * 30f
+    val accent by animateColorAsState(if (second % 2 == 0) AC else AG, tween(450), label = "clock-accent")
 
-    Box(
-        Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 2.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
-            Modifier.size(104.dp).clip(CircleShape).background(A1),
-            contentAlignment = Alignment.Center
-        ) {
+    Box(Modifier.fillMaxWidth().padding(top = 7.dp, bottom = 2.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(104.dp).clip(CircleShape).background(A1), contentAlignment = Alignment.Center) {
             Box(Modifier.size(96.dp).clip(CircleShape).background(A2), contentAlignment = Alignment.Center) {
                 ClockHand(hourAngle, 25.dp, 4.dp, AT)
                 ClockHand(minuteAngle, 34.dp, 3.dp, accent)
                 ClockHand(secondAngle, 40.dp, 1.dp, AR)
                 Box(Modifier.size(8.dp).clip(CircleShape).background(accent))
-                Text(
-                    String.format("%02d:%02d", time.hour, time.minute),
-                    color = AT,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.offset(y = 27.dp)
-                )
+                Text(String.format("%02d:%02d", hour, minute), color = AT, fontSize = 8.sp, fontWeight = FontWeight.Black, modifier = Modifier.offset(y = 27.dp))
             }
         }
     }
@@ -190,30 +160,15 @@ private fun VirtualClock() {
 
 @Composable
 private fun ClockHand(angle: Float, length: androidx.compose.ui.unit.Dp, width: androidx.compose.ui.unit.Dp, color: Color) {
-    Box(
-        Modifier.size(width, length)
-            .offset(y = (-length.value / 2f).dp)
-            .background(color, RoundedCornerShape(50))
-    )
+    Box(Modifier.size(width, length).rotate(angle).offset(y = (-length.value / 2f).dp).background(color, RoundedCornerShape(50)))
 }
 
 @Composable
-private fun DragTile(
-    tile: TileType,
-    active: Boolean,
-    dragging: Boolean,
-    offsetY: Float,
-    onSelect: () -> Unit,
-    onDragStart: () -> Unit,
-    onDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit
-) {
+private fun DragTile(tile: TileType, active: Boolean, dragging: Boolean, offsetY: Float, onSelect: () -> Unit, onDragStart: () -> Unit, onDrag: (Float) -> Unit, onDragEnd: () -> Unit) {
     val color by animateColorAsState(if (active) AC else A2, tween(220), label = "tile-color")
     val textColor = if (active) Color.Black else AT
     Box(
-        Modifier.fillMaxWidth()
-            .offset { IntOffset(0, offsetY.roundToInt()) }
-            .background(color, RoundedCornerShape(14.dp))
+        Modifier.fillMaxWidth().offset { IntOffset(0, offsetY.roundToInt()) }.background(color, RoundedCornerShape(14.dp))
             .pointerInput(tile) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { onDragStart() },
@@ -232,37 +187,24 @@ private fun DragTile(
             Text(if (dragging) "↕" else "⋮⋮", color = if (active) Color.Black else AC, fontSize = 18.sp)
         }
     }
-    if (active) {
-        Spacer(Modifier.height(1.dp))
-    }
 }
 
 @Composable
-private fun SettingsPanel(lot: Float, multiplier: Float, onLot: (Float) -> Unit, onMultiplier: (Float) -> Unit) {
-    DynamicPanel("إعدادات البوت", "القيمة واللون يتحركان مع السحب") {
-        DynamicSlider("اللوت", lot, 0.01f..1f, 0.01f, onLot)
-        DynamicSlider("مضاعف اللوت", multiplier, 0.1f..5f, 0.1f, onMultiplier)
-    }
+private fun SettingsPanel(lot: Float, multiplier: Float, onLot: (Float) -> Unit, onMultiplier: (Float) -> Unit) = DynamicPanel("إعدادات البوت", "القيمة واللون يتحركان مع السحب") {
+    DynamicSlider("اللوت", lot, 0.01f..1f, 0.01f, onLot)
+    DynamicSlider("مضاعف اللوت", multiplier, 0.1f..5f, 0.1f, onMultiplier)
 }
 
 @Composable
-private fun GridPanel(grid: Float, maxOrders: Float, onGrid: (Float) -> Unit, onMax: (Float) -> Unit) {
-    DynamicPanel("الشبكة", "تحكم مباشر وتفاعلي") {
-        DynamicSlider("مسافة الشبكة", grid, 1f..500f, 1f, onGrid)
-        DynamicSlider("عدد الأوامر", maxOrders, 1f..50f, 1f, onMax)
-    }
+private fun GridPanel(grid: Float, maxOrders: Float, onGrid: (Float) -> Unit, onMax: (Float) -> Unit) = DynamicPanel("الشبكة", "تحكم مباشر وتفاعلي") {
+    DynamicSlider("مسافة الشبكة", grid, 1f..500f, 1f, onGrid)
+    DynamicSlider("عدد الأوامر", maxOrders, 1f..50f, 1f, onMax)
 }
 
 @Composable
 private fun DynamicSlider(label: String, value: Float, range: ClosedFloatingPointRange<Float>, step: Float, onValue: (Float) -> Unit) {
     val fraction = ((value - range.start) / (range.endInclusive - range.start)).coerceIn(0f, 1f)
-    val color by animateColorAsState(
-        when {
-            fraction < .35f -> AC
-            fraction < .70f -> Color(0xFFB77CFF)
-            else -> AG
-        }, tween(180), label = "value-color"
-    )
+    val color by animateColorAsState(when { fraction < .35f -> AC; fraction < .70f -> Color(0xFFB77CFF); else -> AG }, tween(180), label = "value-color")
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = AT, fontSize = 9.sp, modifier = Modifier.weight(1f))
@@ -275,10 +217,7 @@ private fun DynamicSlider(label: String, value: Float, range: ClosedFloatingPoin
 @Composable
 private fun CommandsPanel() = DynamicPanel("الأوامر", "أزرار جاهزة لقناة BOT1") {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Command("START", AG)
-        Command("STOP", Color(0xFFFFC84A))
-        Command("REBUILD", AC)
-        Command("CLOSE", AR)
+        Command("START", AG, Modifier.weight(1f)); Command("STOP", Color(0xFFFFC84A), Modifier.weight(1f)); Command("REBUILD", AC, Modifier.weight(1f)); Command("CLOSE", AR, Modifier.weight(1f))
     }
 }
 
@@ -288,8 +227,8 @@ private fun AddonsPanel() = DynamicPanel("الإضافات", "مساحة توس�
 }
 
 @Composable
-private fun Command(label: String, color: Color) {
-    Box(Modifier.weight(1f).height(42.dp).background(color, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+private fun Command(label: String, color: Color, modifier: Modifier) {
+    Box(modifier.height(42.dp).background(color, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
         Text(label, color = Color.Black, fontSize = 8.sp, fontWeight = FontWeight.Black)
     }
 }
