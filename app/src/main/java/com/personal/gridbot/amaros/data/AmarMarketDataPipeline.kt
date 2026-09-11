@@ -15,8 +15,16 @@ class AmarMarketDataPipeline : AmarMarketDataProvider {
     override fun stop() = Unit
 
     override fun publish(snapshot: MarketSnapshot) {
-        if (snapshot.bid <= 0.0 || snapshot.ask <= 0.0 || snapshot.ask < snapshot.bid || snapshot.timestampEpochMs <= 0L) {
-            AmarMarketStateStore.publish(AmarMarketState(symbol = snapshot.symbol, timeframe = snapshot.timeframe, quality = MarketDataQuality.INVALID))
+        val invalid = !snapshot.bid.isFinite() || !snapshot.ask.isFinite() ||
+            snapshot.bid <= 0.0 || snapshot.ask < snapshot.bid || snapshot.timestampEpochMs <= 0L
+        if (invalid) {
+            AmarMarketStateStore.publish(
+                AmarMarketState(
+                    symbol = snapshot.symbol,
+                    timeframe = snapshot.timeframe,
+                    quality = MarketDataQuality.INVALID
+                )
+            )
             return
         }
         AmarMarketStateStore.publish(
