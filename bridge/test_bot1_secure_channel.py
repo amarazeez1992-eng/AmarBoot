@@ -48,6 +48,13 @@ class Bot1SecureChannelTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(message, "accepted")
 
+    def test_side_close_commands_are_valid(self):
+        for command in ("CLOSE_BUY", "CLOSE_SELL"):
+            with self.subTest(command=command):
+                ok, message = validate(_payload(command=command), 123, 20260908, {"XAUUSD"})
+                self.assertTrue(ok)
+                self.assertEqual(message, "accepted")
+
     def test_wrong_scope_is_rejected(self):
         ok, _ = validate(_payload(), 999, 20260908, {"XAUUSD"})
         self.assertFalse(ok)
