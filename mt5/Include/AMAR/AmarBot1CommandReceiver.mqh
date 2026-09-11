@@ -1,8 +1,7 @@
 #property strict
 
-// B37 BOT 1 terminal-side receiver. Commands are produced by the authenticated
-// bridge and read from the MT5 FILE_COMMON sandbox. Expiry/request identity is
-// checked again at the terminal so stale files cannot trigger execution.
+// B38 terminal-side receiver. The bridge authenticates the command before it
+// reaches FILE_COMMON; MT5 verifies expiry again and reports a terminal ACK.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
 #define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
@@ -129,6 +128,7 @@ public:
       if(out.expiresAtMs<=nowMs)
         {
          m_lastRequestId=out.requestId;
+         Ack(out.requestId,false,"EXPIRED");
          return false;
         }
 
@@ -140,7 +140,12 @@ public:
       else if(cmd=="SET_BUY_ENABLED") out.type=AMAR_CMD_SET_BUY_ENABLED;
       else if(cmd=="SET_SELL_ENABLED") out.type=AMAR_CMD_SET_SELL_ENABLED;
       else if(cmd=="UPDATE_SETTINGS") out.type=AMAR_CMD_UPDATE_SETTINGS;
-      else return false;
+      else
+        {
+         m_lastRequestId=out.requestId;
+         Ack(out.requestId,false,"UNSUPPORTED_COMMAND");
+         return false;
+        }
 
       if(HasTargetSymbol(line))
         {
@@ -164,7 +169,8 @@ public:
             !ParseDouble(line,"basket_tp",out.basketTp) ||
             !ParseDouble(line,"basket_sl",out.basketSl) ||
             !ParseDouble(line,"trailing",out.trailing) ||
-            out.lotStart<=0 || out.gridStep<=0 || out.maxOrders<=0 || out.martingale<=0 || out.trailing<0)
+            out.lotStart<=0 || out.gridStep<=0 || out.maxOrders<=0 || out.martingale<=0 || out.trailing<0 ||
+            !MathIsValidNumber(out.basketTp) || !MathIsValidNumber(out.basketSl))
            return false;
          out.hasBuyEnabled=ParseBool(line,"buy_enabled",out.buyEnabled);
          out.hasSellEnabled=ParseBool(line,"sell_enabled",out.sellEnabled);
@@ -182,7 +188,8 @@ public:
       StringReplace(safe,"\"","'");
       StringReplace(safe,"\r"," ");
       StringReplace(safe,"\n"," ");
-      string payload=StringFormat("{\"request_id\":\"%s\",\"accepted\":%s,\"timestamp_ms\":%I64d,\"message\":\"%s\"}",requestId,accepted?"true":"false",(long)TimeCurrent()*1000,safe);
+      string status=accepted ? "VERIFIED" : "FAILED";
+      string payload=StringFormat("{\"request_id\":\"%s\",\"accepted\":%s,\"status\":\"%s\",\"timestamp_ms\":%I64d,\"message\":\"%s\"}",requestId,accepted?"true":"false",status,(long)TimeCurrent()*1000,safe);
       FileWriteString(h,payload+"\n");
       FileFlush(h);
       FileClose(h);
