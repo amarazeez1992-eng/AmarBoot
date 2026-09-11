@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.visual
 
+import android.content.Context
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -15,8 +17,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.broker.AmarBot1CommandRuntimeRegistry
 import kotlinx.coroutines.delay
-import kotlin.math.abs
 
 /** Global visual state. Visual effects never issue trading commands. */
 enum class AmarTradingVisualState { NORMAL, PROFIT, LOSS }
@@ -51,19 +50,18 @@ object AmarVisualEffectsPreference {
     private const val PREFS = "amar_visual_effects"
     private const val KEY_ENABLED = "enabled"
 
-    fun load(context: android.content.Context): Boolean =
-        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
-            .getBoolean(KEY_ENABLED, true)
+    fun load(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ENABLED, true)
 
-    fun save(context: android.content.Context, enabled: Boolean) {
-        context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+    fun save(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_ENABLED, enabled).apply()
     }
 }
 
-/** Polls the verified BOT1 read-only runtime state and translates real P/L into visual state. */
+/** Polls verified BOT1 read-only state and translates real P/L into global visual state. */
 @Composable
-fun AmarGlobalVisualStateCollector(context: android.content.Context) {
+fun AmarGlobalVisualStateCollector(context: Context) {
     LaunchedEffect(Unit) {
         AmarGlobalVisualStateStore.setEnabled(AmarVisualEffectsPreference.load(context))
         var previous: AmarTradingVisualState? = null
@@ -78,9 +76,10 @@ fun AmarGlobalVisualStateCollector(context: android.content.Context) {
                 pnl < 0.0 -> AmarTradingVisualState.LOSS
                 else -> AmarTradingVisualState.NORMAL
             }
-            val nonce = if (previous != null && previous != next) System.nanoTime() else AmarGlobalVisualStateStore.current().eventNonce
+            val current = AmarGlobalVisualStateStore.current()
+            val nonce = if (previous != null && previous != next) System.nanoTime() else current.eventNonce
             AmarGlobalVisualStateStore.publish(
-                AmarGlobalVisualStateStore.current().copy(
+                current.copy(
                     tradingState = next,
                     floatingProfitLoss = pnl,
                     sourceFresh = fresh,
@@ -93,7 +92,7 @@ fun AmarGlobalVisualStateCollector(context: android.content.Context) {
     }
 }
 
-/** Full-screen visual layer: ambient rainbow snake border + profit/loss atmosphere. */
+/** Full-screen visual layer: animated rainbow snake border + trading atmosphere. */
 @Composable
 fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
     val state = AmarGlobalVisualStateStore.current()
@@ -134,16 +133,14 @@ fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
         AmarTradingVisualState.PROFIT, AmarTradingVisualState.LOSS -> pulse
         AmarTradingVisualState.NORMAL -> 0f
     }
-    val safeModifier = modifier
-        .fillMaxSize()
-        .clip(RoundedCornerShape(18.dp))
 
-    Canvas(safeModifier) {
+    Canvas(
+        modifier.fillMaxSize().clip(RoundedCornerShape(18.dp))
+    ) {
         val inset = 3.dp.toPx()
         val radius = 18.dp.toPx()
         val rectW = size.width - inset * 2
         val rectH = size.height - inset * 2
-        val baseStroke = 1.7.dp.toPx()
 
         rotate(travel, pivot = center) {
             drawRoundRect(
@@ -151,11 +148,10 @@ fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
                 topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
                 size = androidx.compose.ui.geometry.Size(rectW, rectH),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(radius, radius),
-                style = Stroke(width = baseStroke, cap = StrokeCap.Round),
+                style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round),
                 alpha = 0.72f
             )
         }
-
         rotate(-travel * 0.42f, pivot = center) {
             drawRoundRect(
                 brush = rainbow,
@@ -166,7 +162,6 @@ fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
                 alpha = secondaryPulse
             )
         }
-
         if (accentAlpha > 0f) {
             drawRoundRect(
                 color = accent,
@@ -188,29 +183,24 @@ fun AmarGlobalVisualAtmosphere(modifier: Modifier = Modifier) {
     }
 }
 
-/** Compact visual toggle: green = enabled, red = disabled, no text. */
+/** One compact button: green enabled, red disabled, no text. */
 @Composable
-fun AmarVisualEffectsToggle(
-    context: android.content.Context,
-    modifier: Modifier = Modifier,
-) {
+fun AmarVisualEffectsToggle(context: Context, modifier: Modifier = Modifier) {
     val enabled = AmarGlobalVisualStateStore.current().enabled
     val color = if (enabled) Color(0xFF00E6A0) else Color(0xFFFF4058)
     Box(
         modifier = modifier
-            .size(28.dp)
+            .size(30.dp)
             .clip(RoundedCornerShape(50))
-            .then(
-                Modifier
-                    .fillMaxSize()
-            )
+            .clickable {
+                val next = !AmarGlobalVisualStateStore.current().enabled
+                AmarVisualEffectsPreference.save(context, next)
+                AmarGlobalVisualStateStore.setEnabled(next)
+            }
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            drawCircle(color = color, radius = size.minDimension * 0.34f)
-            drawCircle(color = color, radius = size.minDimension * 0.48f, alpha = 0.18f, style = Stroke(width = 2.dp.toPx()))
+            drawCircle(color = color, radius = size.minDimension * 0.30f)
+            drawCircle(color = color, radius = size.minDimension * 0.46f, alpha = 0.18f, style = Stroke(width = 2.dp.toPx()))
         }
-        androidx.compose.foundation.clickable.NoRippleIndication
     }
 }
-
-private object androidx_placeholder
