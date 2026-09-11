@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,10 +35,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.personal.gridbot.amaros.broker.AmarBot1RemoteCommandType
+import com.personal.gridbot.amaros.broker.AmarBot1RemoteSettings
+import com.personal.gridbot.amaros.broker.AmarBot1UiCommandGateway
 import com.personal.gridbot.amaros.chart.AmarTimeframe
 import java.util.Locale
 import kotlin.math.round
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val B0 = Color(0xFF050817)
 private val B1 = Color(0xFF0B1230)
@@ -57,12 +62,14 @@ fun AmarBotLabInterfaceBScreenV2(
 ) {
     val context = LocalContext.current
     val repo = remember(context) { AmarBotVaultRepository(context) }
+    val scope = rememberCoroutineScope()
     var bots by remember { mutableStateOf(repo.load()) }
     var selectedStrategy by remember { mutableStateOf(1) }
     var notice by remember { mutableStateOf("") }
     val strategy = bots.firstOrNull { it.botNumber == selectedBot }
         ?.strategies?.firstOrNull { it.number == selectedStrategy }
     val timeframe = AmarTradingTimeframeContext.selected
+    val symbol = AmarTradingSymbolContext.selected.brokerSymbol
 
     Column(Modifier.fillMaxSize().background(B0)) {
         Row(
@@ -75,7 +82,7 @@ fun AmarBotLabInterfaceBScreenV2(
             ) { Text("⌂") }
             Column(Modifier.weight(1f).padding(horizontal = 8.dp)) {
                 Text("AMAR • INTERFACE B", color = BC, fontSize = 17.sp, fontWeight = FontWeight.Black)
-                Text("V$selectedBot • مختبر الهاتف", color = BM, fontSize = 9.sp)
+                Text("V$selectedBot • مختبر الهاتف • ${symbol.ifBlank { "لا يوجد رمز" }}", color = BM, fontSize = 9.sp)
             }
             Box(Modifier.size(11.dp).background(BG, RoundedCornerShape(50)))
         }
@@ -95,17 +102,40 @@ fun AmarBotLabInterfaceBScreenV2(
                     onSave = { saved ->
                         repo.saveStrategy(selectedBot, saved)
                         bots = repo.load()
-                        notice = "✓ تم حفظ الاستراتيجية $selectedStrategy"
+                        notice = "✓ تم حفظ الاستراتيجية $selectedStrategy محليًا"
                     },
                     onDelete = { number ->
                         repo.deleteStrategy(selectedBot, number)
                         bots = repo.load()
                         notice = "تم حذف الاستراتيجية $number"
                     },
-                    onApply = { notice = "✓ تم تطبيق الإعدادات على واجهة B" }
+                    onApply = { settings ->
+                        scope.launch {
+                            notice = "جاري إرسال الإعدادات والتحقق من MT5…"
+                            val result = AmarBot1UiCommandGateway.execute(
+                                symbol = symbol,
+                                command = AmarBot1RemoteCommandType.UPDATE_SETTINGS,
+                                targetSymbol = symbol,
+                                settings = settings,
+                            )
+                            notice = result.message
+                        }
+                    }
                 )
             }
-            item { QuickCommands { notice = it } }
+            item {
+                QuickCommands(symbol) { command ->
+                    scope.launch {
+                        notice = "جاري تنفيذ ${command.label} والتحقق…"
+                        val result = AmarBot1UiCommandGateway.execute(
+                            symbol = symbol,
+                            command = command.type,
+                            targetSymbol = if (command.type == AmarBot1RemoteCommandType.REBUILD || command.type == AmarBot1RemoteCommandType.START) symbol else null,
+                        )
+                        notice = result.message
+                    }
+                }
+            }
             if (notice.isNotBlank()) {
                 item {
                     Card(colors = CardDefaults.cardColors(containerColor = B2)) {
@@ -192,7 +222,7 @@ private fun StrategyEditor(
     strategyNumber: Int,
     onSave: (AmarSavedStrategy) -> Unit,
     onDelete: (Int) -> Unit,
-    onApply: () -> Unit
+    onApply: (AmarBot1RemoteSettings) -> Unit
 ) {
     var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.0).toFloat()) }
     var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 0.0).toFloat()) }
@@ -202,6 +232,18 @@ private fun StrategyEditor(
     var basketSl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf((strategy?.profile?.basketSl ?: 0.0).toFloat()) }
     var buyEnabled by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: false) }
     var sellEnabled by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: false) }
+
+    fun remoteSettings() = AmarBot1RemoteSettings(
+        lotStart = lot.toDouble(),
+        gridStep = gridStep.toDouble(),
+        maxOrders = maxOrders.toInt().coerceAtLeast(0),
+        martingale = multiplier.toDouble(),
+        basketTp = basketTp.toDouble(),
+        basketSl = basketSl.toDouble(),
+        trailing = 0.0,
+        buyEnabled = buyEnabled,
+        sellEnabled = sellEnabled,
+    )
 
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -219,7 +261,7 @@ private fun StrategyEditor(
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                Button(onClick = onApply, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BC, contentColor = Color.Black)) { Text("تطبيق") }
+                Button(onClick = { onApply(remoteSettings()) }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = BC, contentColor = Color.Black)) { Text("تطبيق + تحقق") }
                 Button(
                     onClick = {
                         onSave(
@@ -282,18 +324,20 @@ private fun ToggleButton(label: String, enabled: Boolean, modifier: Modifier, on
     ) { Text(if (enabled) "● $label ON" else "○ $label OFF", fontSize = 9.sp, fontWeight = FontWeight.Black) }
 }
 
+private data class UiCommand(val label: String, val type: AmarBot1RemoteCommandType)
+
 @Composable
-private fun QuickCommands(notice: (String) -> Unit) {
+private fun QuickCommands(symbol: String, onCommand: (UiCommand) -> Unit) {
     Card(colors = CardDefaults.cardColors(containerColor = B1)) {
         Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text("أوامر سريعة", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
+            Text("أوامر سريعة • ${symbol.ifBlank { "لا يوجد رمز" }}", color = BT, fontWeight = FontWeight.Black, fontSize = 12.sp)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CommandButton("إغلاق الشراء", BR, Modifier.weight(1f)) { notice("طلب إغلاق الشراء — انتظار تأكيد Runtime") }
-                CommandButton("إغلاق البيع", BP, Modifier.weight(1f)) { notice("طلب إغلاق البيع — انتظار تأكيد Runtime") }
+                CommandButton("إغلاق الشراء", BR, Modifier.weight(1f)) { onCommand(UiCommand("إغلاق الشراء", AmarBot1RemoteCommandType.CLOSE_BUY)) }
+                CommandButton("إغلاق البيع", BP, Modifier.weight(1f)) { onCommand(UiCommand("إغلاق البيع", AmarBot1RemoteCommandType.CLOSE_SELL)) }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                CommandButton("إغلاق الكل", BR, Modifier.weight(1f)) { notice("⚠ طلب إغلاق الكل — انتظار التحقق") }
-                CommandButton("إعادة البناء", BC, Modifier.weight(1f)) { notice("طلب إعادة البناء — انتظار Runtime") }
+                CommandButton("إغلاق الكل", BR, Modifier.weight(1f)) { onCommand(UiCommand("إغلاق الكل", AmarBot1RemoteCommandType.CLOSE_ALL)) }
+                CommandButton("إعادة البناء", BC, Modifier.weight(1f)) { onCommand(UiCommand("إعادة البناء", AmarBot1RemoteCommandType.REBUILD)) }
             }
         }
     }
