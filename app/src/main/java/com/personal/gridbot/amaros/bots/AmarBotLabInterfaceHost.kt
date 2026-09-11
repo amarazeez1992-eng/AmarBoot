@@ -88,6 +88,9 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
         // العقدة المشتركة: حالة السوق واحدة بصرياً ومنطقياً لجميع الواجهات.
         AmarSharedMarketStatus()
 
+        // العقدة التنفيذية المشتركة: كل أمر يمر عبر Runtime + ACK + state verification.
+        AmarBot1LiveControlPanel()
+
         AnimatedContent(
             targetState = selectedInterface,
             transitionSpec = { fadeIn() togetherWith fadeOut() },
