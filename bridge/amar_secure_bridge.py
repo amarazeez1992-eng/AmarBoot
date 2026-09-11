@@ -4,6 +4,7 @@ Authenticated BOT 1 lifecycle channel: bearer access + HMAC + TTL/clock
 validation + account/magic scope + source/target symbol allow-lists +
 replay/idempotency + single-flight MT5 queue + terminal ACK verification.
 """
+import fnmatch
 import hmac
 import json
 import os
@@ -12,7 +13,7 @@ from pathlib import Path
 
 import MetaTrader5 as mt5
 
-from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, json_response, mt5_ready
+from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
 from amar_command_channel import validate, REPLAY_STORE
 from amar_bot1_secure_channel import validate as validate_bot1, canonical as canonical_bot1
 from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FILE
@@ -20,6 +21,7 @@ from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FI
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
 ALLOWED_TARGET_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_SYMBOLS", "").split(",") if x.strip()) or ALLOWED_SYMBOLS
+ALLOWED_TARGET_PATTERNS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_TARGET_PATTERNS", "").split(",") if x.strip())
 COMMON_FILES_DIR = os.environ.get("AMAR_MT5_COMMON_FILES_DIR", "").strip()
 MAX_BODY_BYTES = min(max(int(os.environ.get("AMAR_MAX_BODY_BYTES", "32768")), 1024), 262144)
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
@@ -29,6 +31,10 @@ def _authorized_account():
     if not mt5_ready():
         return None
     return mt5.account_info()
+
+
+def _target_allowed(symbol: str) -> bool:
+    return symbol in ALLOWED_TARGET_SYMBOLS or any(fnmatch.fnmatchcase(symbol, pattern) for pattern in ALLOWED_TARGET_PATTERNS)
 
 
 def _read_ack_for_request(request_id: str) -> dict:
@@ -48,6 +54,29 @@ def _read_ack_for_request(request_id: str) -> dict:
         return {"status": "PENDING", "request_id": request_id}
     except (OSError, UnicodeError):
         return {"status": "PENDING", "request_id": request_id}
+
+
+def _discover_target_symbols():
+    if not mt5_ready():
+        return []
+    items = mt5.symbols_get() or ()
+    discovered = []
+    for item in items:
+        name = str(getattr(item, "name", ""))
+        if not name or not _target_allowed(name):
+            continue
+        trade_mode = getattr(item, "trade_mode", None)
+        if trade_mode is not None and int(trade_mode) == 0:
+            continue
+        discovered.append({
+            "symbol": name,
+            "visible": bool(getattr(item, "visible", False)),
+            "path": str(getattr(item, "path", "")),
+            "digits": int(getattr(item, "digits", 0)),
+            "point": float(getattr(item, "point", 0.0)),
+            "tradeMode": int(trade_mode) if trade_mode is not None else None,
+        })
+    return sorted(discovered, key=lambda x: x["symbol"].upper())
 
 
 def execute_market_command(payload):
@@ -122,15 +151,6 @@ class SecureHandler(Handler):
             raise ValueError("incomplete payload")
         return json.loads(raw.decode("utf-8"))
 
-    def _reply(self, status, payload):
-        self.send_response(status)
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Pragma", "no-cache")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("Content-Security-Policy", "default-src 'none'")
-        self.end_headers()
-        self.wfile.write(json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
-
     def do_POST(self):
         path = self.path.split("?", 1)[0]
         if not self._authorized():
@@ -147,7 +167,7 @@ class SecureHandler(Handler):
                     return json_response(self, 423, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "BOT 1 live control is locked"})
                 if not COMMON_FILES_DIR:
                     return json_response(self, 503, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": "MT5 common-files directory is not configured"})
-                valid, message = validate_bot1(payload, expected_login, BOT_MAGIC, set(ALLOWED_SYMBOLS), set(ALLOWED_TARGET_SYMBOLS))
+                valid, message = validate_bot1(payload, expected_login, BOT_MAGIC, set(ALLOWED_SYMBOLS), set(ALLOWED_TARGET_SYMBOLS), set(ALLOWED_TARGET_PATTERNS))
                 if not valid:
                     return json_response(self, 403, {"ok": False, "accepted": False, "executed": False, "requestId": payload.get("request_id", ""), "message": message})
                 expires = int(payload["expires_at_ms"])
@@ -194,11 +214,17 @@ class SecureHandler(Handler):
             if not REQUEST_ID_RE.fullmatch(request_id):
                 return json_response(self, 400, {"ok": False, "message": "invalid request id"})
             return json_response(self, 200, {"ok": True, **_read_ack_for_request(request_id)})
+        if path == "/bot1/symbols":
+            if not self._authorized():
+                return json_response(self, 401, {"ok": False, "message": "unauthorized"})
+            if not mt5_ready():
+                return json_response(self, 503, {"ok": False, "message": "MT5 unavailable"})
+            return json_response(self, 200, {"ok": True, "items": _discover_target_symbols()})
         if path == "/bot1/health":
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
             account = _authorized_account()
-            return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR)})
+            return json_response(self, 200, {"ok": bool(account), "connected": bool(account), "login": int(account.login) if account else 0, "live": LIVE_ENABLED, "queueConfigured": bool(COMMON_FILES_DIR), "symbolDiscovery": bool(ALLOWED_TARGET_SYMBOLS or ALLOWED_TARGET_PATTERNS)})
         return super().do_GET()
 
 
@@ -207,8 +233,8 @@ def main():
         raise SystemExit("AMAR_BRIDGE_TOKEN, AMAR_TLS_CERT and AMAR_TLS_KEY are required")
     if not os.environ.get("AMAR_COMMAND_SIGNING_SECRET"):
         raise SystemExit("AMAR_COMMAND_SIGNING_SECRET is required")
-    if not ALLOWED_SYMBOLS or not ALLOWED_TARGET_SYMBOLS:
-        raise SystemExit("AMAR_ALLOWED_SYMBOLS and AMAR_ALLOWED_TARGET_SYMBOLS are required")
+    if not ALLOWED_SYMBOLS or not ALLOWED_TARGET_SYMBOLS and not ALLOWED_TARGET_PATTERNS:
+        raise SystemExit("AMAR_ALLOWED_SYMBOLS and target allow-list are required")
     from http.server import ThreadingHTTPServer
     import ssl
     server = ThreadingHTTPServer((HOST, PORT), SecureHandler)
