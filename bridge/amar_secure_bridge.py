@@ -1,19 +1,20 @@
 """AMAR secure bridge entrypoint.
 
-Extends the read-only bridge with /commands and B37 /bot1/commands. Live
-execution remains FAIL-CLOSED. Every write command is authenticated, signed,
-time-bounded, replay-protected, account scoped, BOT-MAGIC scoped and symbol
-allow-listed before it can reach the MT5 common-file queue.
+Extends the read-only bridge with /commands and the authenticated BOT 1
+lifecycle channel. Live execution is fail-closed: a command must pass bearer
+access, HMAC, TTL/clock checks, account+magic scope, symbol allow-listing and
+replay/idempotency gates before entering the MT5 FILE_COMMON queue.
 """
 import json
 import os
+from pathlib import Path
 
 import MetaTrader5 as mt5
 
 from amar_mt5_bridge import Handler, HOST, PORT, CERT, KEY, TOKEN, BOT_MAGIC, json_response, mt5_ready
 from amar_command_channel import validate, REPLAY_STORE
 from amar_bot1_secure_channel import validate as validate_bot1, canonical as canonical_bot1
-from amar_bot1_file_queue import enqueue as enqueue_bot1
+from amar_bot1_file_queue import enqueue as enqueue_bot1, QueueBusyError, ACK_FILE
 
 LIVE_ENABLED = os.environ.get("AMAR_LIVE_EXECUTION", "0") == "1"
 ALLOWED_SYMBOLS = frozenset(x.strip() for x in os.environ.get("AMAR_ALLOWED_SYMBOLS", "").split(",") if x.strip())
@@ -24,6 +25,24 @@ def _authorized_account():
     if not mt5_ready():
         return None
     return mt5.account_info()
+
+
+def _read_latest_ack(request_id: str) -> dict:
+    if not COMMON_FILES_DIR:
+        return {"status": "UNAVAILABLE", "request_id": request_id}
+    path = Path(COMMON_FILES_DIR) / ACK_FILE
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if not lines:
+            return {"status": "PENDING", "request_id": request_id}
+        value = json.loads(lines[-1])
+        if not isinstance(value, dict):
+            return {"status": "PENDING", "request_id": request_id}
+        if str(value.get("request_id", "")) != request_id:
+            return {"status": "PENDING", "request_id": request_id}
+        return value
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {"status": "PENDING", "request_id": request_id}
 
 
 def execute_market_command(payload):
@@ -116,10 +135,13 @@ class SecureHandler(Handler):
                     return json_response(self, 409, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": "duplicate command"})
                 try:
                     enqueue_bot1(json.dumps(payload, separators=(",", ":"), sort_keys=True, allow_nan=False), COMMON_FILES_DIR)
+                except QueueBusyError as exc:
+                    REPLAY_STORE.release_idempotency(idem_key)
+                    return json_response(self, 409, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": str(exc)})
                 except Exception as exc:
                     REPLAY_STORE.release_idempotency(idem_key)
                     return json_response(self, 500, {"ok": False, "accepted": False, "executed": False, "requestId": payload["request_id"], "message": f"queue failure: {type(exc).__name__}"})
-                return json_response(self, 202, {"ok": True, "accepted": True, "executed": False, "requestId": payload["request_id"], "message": "BOT 1 command queued for MT5 verification"})
+                return json_response(self, 202, {"ok": True, "accepted": True, "executed": False, "stage": "QUEUED", "requestId": payload["request_id"], "message": "BOT 1 command queued for MT5 verification"})
 
             if path != "/commands":
                 return json_response(self, 404, {"ok": False, "message": "not found"})
@@ -143,7 +165,16 @@ class SecureHandler(Handler):
             return json_response(self, 500, {"ok": False, "accepted": False, "message": f"command failure: {type(exc).__name__}"})
 
     def do_GET(self):
-        if self.path.split("?", 1)[0] == "/bot1/health":
+        path = self.path.split("?", 1)[0]
+        if path.startswith("/bot1/commands/"):
+            if not self._authorized():
+                return json_response(self, 401, {"ok": False, "message": "unauthorized"})
+            request_id = path.rsplit("/", 1)[-1].strip()
+            if not request_id or len(request_id) > 128 or any(c in request_id for c in "/\\\r\n"):
+                return json_response(self, 400, {"ok": False, "message": "invalid request id"})
+            return json_response(self, 200, {"ok": True, **_read_latest_ack(request_id)})
+
+        if path == "/bot1/health":
             if not self._authorized():
                 return json_response(self, 401, {"ok": False, "message": "unauthorized"})
             account = _authorized_account()
