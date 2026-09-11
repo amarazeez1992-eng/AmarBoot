@@ -33,6 +33,7 @@ class Bot1Settings:
     trailing: float
     buy_enabled: bool
     sell_enabled: bool
+    target_symbol: str = ""
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.lot_start) or self.lot_start <= 0:
@@ -47,16 +48,32 @@ class Bot1Settings:
             raise ValueError("invalid basket target")
         if not math.isfinite(self.trailing) or self.trailing < 0:
             raise ValueError("invalid trailing")
+        if not isinstance(self.target_symbol, str):
+            raise ValueError("invalid target_symbol")
+        if "\n" in self.target_symbol or "\r" in self.target_symbol:
+            raise ValueError("invalid target_symbol")
 
 
-def encode(command: CommandType, settings: Bot1Settings | None = None, enabled: bool | None = None) -> str:
+def encode(
+    command: CommandType,
+    settings: Bot1Settings | None = None,
+    enabled: bool | None = None,
+    target_symbol: str | None = None,
+) -> str:
     if command == CommandType.UPDATE_SETTINGS and settings is None:
         raise ValueError("settings required")
     if command in (CommandType.SET_BUY_ENABLED, CommandType.SET_SELL_ENABLED) and enabled is None:
         raise ValueError("enabled required")
+    if target_symbol is not None:
+        if not isinstance(target_symbol, str) or not target_symbol.strip():
+            raise ValueError("invalid target_symbol")
+        if "\n" in target_symbol or "\r" in target_symbol:
+            raise ValueError("invalid target_symbol")
     payload = {"command": command.value}
     if settings is not None:
         payload["settings"] = asdict(settings)
     if enabled is not None:
         payload["enabled"] = enabled
+    if target_symbol is not None:
+        payload["target_symbol"] = target_symbol.strip()
     return json.dumps(payload, separators=(",", ":"), sort_keys=True, allow_nan=False)
