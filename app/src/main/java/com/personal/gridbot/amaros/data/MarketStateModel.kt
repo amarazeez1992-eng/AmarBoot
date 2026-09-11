@@ -20,8 +20,8 @@ data class AmarMarketState(
     val timestampEpochMs: Long = 0L,
     val quality: MarketDataQuality = MarketDataQuality.UNAVAILABLE
 ) {
-    val spread: Double get() = if (bid > 0.0 && ask >= bid) ask - bid else 0.0
-    val mid: Double get() = if (bid > 0.0 && ask > 0.0) (bid + ask) / 2.0 else 0.0
+    val spread: Double get() = if (bid.isFinite() && ask.isFinite() && bid > 0.0 && ask >= bid) ask - bid else 0.0
+    val mid: Double get() = if (bid.isFinite() && ask.isFinite() && bid > 0.0 && ask > 0.0) (bid + ask) / 2.0 else 0.0
     val isLive: Boolean get() = quality == MarketDataQuality.LIVE && source.isNotBlank() && timestampEpochMs > 0L
 }
 
@@ -30,9 +30,10 @@ object AmarMarketStateStore {
     @Volatile private var state: AmarMarketState = AmarMarketState()
     fun current(): AmarMarketState = state
     fun publish(next: AmarMarketState) {
-        state = if (next.quality == MarketDataQuality.LIVE && (next.source == "NONE" || next.timestampEpochMs <= 0L)) {
-            next.copy(quality = MarketDataQuality.INVALID)
-        } else next
+        val invalid = next.quality == MarketDataQuality.LIVE &&
+            (!next.bid.isFinite() || !next.ask.isFinite() || next.bid <= 0.0 || next.ask < next.bid ||
+                next.source.isBlank() || next.timestampEpochMs <= 0L)
+        state = if (invalid) next.copy(quality = MarketDataQuality.INVALID) else next
     }
     fun reset() { state = AmarMarketState() }
 }
