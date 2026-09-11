@@ -92,6 +92,7 @@ fun AmarBotLabInterfaceBScreenV2(
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item { AmarBotLabGlobalContext() }
             item { BotSelector(selectedBot, onBotSelected) }
             item { StrategySelector(selectedStrategy) { selectedStrategy = it } }
             item { TimeframeStatus(timeframe) }
