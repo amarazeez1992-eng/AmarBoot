@@ -9,6 +9,7 @@
 - **Bot Vault**: حفظ دائم، إضافة/تعديل/حذف/تفريغ Bots، وحفظ/تحرير/حذف/تفريغ Strategies.
 - **Security**: Fail-closed، TTL، replay/idempotency، scope validation وreceiver-side HMAC verification.
 - **AI Supervisor**: استشاري فقط؛ لا يملك صلاحية تنفيذ Broker مباشرة.
+- **Bot Lab**: واجهة 1 هي الواجهة النشطة الوحيدة، مع الحفاظ على مسار BOT1 التشغيلي والتحقق منه. واجهة 2 متقاعدة.
 - **MT5**: الربط الحي ما زال gated حتى اكتمال Compile وDemo runtime verification.
 
 ## B34 — Runtime
@@ -19,7 +20,7 @@
 الحالة الفعلية لا تُصنع من زر في الواجهة؛ يجب أن تأتي من runtime/MT5.
 
 ## B35 — MT5 EA
-تم فحص مصدر `Grid_Martingale_Basket_AMAR_v3.mq5` الموجود ضمن ملفات المشروع. قبل أي Live authorization يجب تثبيت المصدر في مسار MT5 بالمستودع، ثم تنفيذ:
+تم فحص مصدر EA الموجود ضمن ملفات المشروع. كود البوت الأساسي لا يُعدَّل ضمن تحسينات التطبيق والواجهة. قبل أي Live authorization يجب تثبيت المصدر في مسار MT5 بالمستودع، ثم تنفيذ:
 
 1. symbol + magic isolation؛
 2. فصل BOT1-only عن manual-managed؛
@@ -45,4 +46,4 @@ AI يقدم تحليلًا واقتراحات فقط:
 
 Workflow البناء يحتوي على Python bridge tests، Android SDK validation، Gradle validation، unit tests، assembleDebug، APK checksum وartifact upload.
 
-ملاحظة: لا نعتبر التغيير ناجحًا حتى تظهر نتيجة CI الفعلية بنجاح؛ غياب run ليس Pass.
+لا نعتبر التغيير ناجحًا حتى تظهر نتيجة CI الفعلية بنجاح؛ غياب run ليس Pass.
