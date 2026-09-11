@@ -1,12 +1,14 @@
 package com.personal.gridbot.amaros.supervisor
 
 import com.personal.gridbot.amaros.analytics.AmarAnalyticsSnapshot
+import com.personal.gridbot.amaros.bots.AmarBotSupervisorProposal
 import com.personal.gridbot.amaros.core.AmarRuntimeController
 import com.personal.gridbot.amaros.explainability.AmarDecisionExplanation
 import com.personal.gridbot.amaros.guardian.AmarGuardianDecision
 import com.personal.gridbot.amaros.security.AmarSecurityState
+import java.util.UUID
 
-/** B20 Supervisor contract. It observes and recommends; it cannot execute trades. */
+/** B20/B36 Supervisor contract. It observes and recommends; it cannot execute trades. */
 data class AmarSupervisorSnapshot(
     val health: String,
     val guardianAllowed: Boolean,
@@ -32,4 +34,20 @@ class AmarSupervisor {
         }
         return AmarSupervisorSnapshot(runtime.health.status.name, guardian.allowed, security.mode.name, recommendation, explanation, analytics)
     }
+
+    /** Advisory only: no broker, bridge or command-client capability is exposed here. */
+    fun propose(
+        title: String,
+        rationale: String,
+        confidence: Double,
+        requiresSimulation: Boolean = true
+    ): AmarBotSupervisorProposal = AmarBotSupervisorProposal(
+        proposalId = UUID.randomUUID().toString(),
+        title = title,
+        rationale = rationale,
+        confidence = confidence,
+        requiresSimulation = requiresSimulation,
+        requiresUserApproval = true,
+        executable = false,
+    )
 }
