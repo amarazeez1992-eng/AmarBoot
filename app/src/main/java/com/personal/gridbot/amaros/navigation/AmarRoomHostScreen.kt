@@ -24,7 +24,7 @@ import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
 import com.personal.gridbot.ui.theme.AmarThemeMode
 
 @Composable
-fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMode,onThemeModeChange:(AmarThemeMode)->Unit){
+fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMode,onThemeModeChange:(AmarThemeMode)->Unit,homeLayout:Int=1,onHomeLayoutChange:(Int)->Unit={}){
  if(room==AmarRoom.BOT_LAB){AmarBotLabInterfaceHost(onBackHome);return}
  val context=LocalContext.current; var settingsMode by remember{mutableIntStateOf(0)}
  Surface(color=MaterialTheme.colorScheme.background,modifier=Modifier.fillMaxSize()){
@@ -39,7 +39,10 @@ fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMod
     AmarRoom.ALERTS->AmarAlertsModernScreen()
     AmarRoom.POSITIONS->AmarPositionsModernScreen()
     AmarRoom.NEWS_SESSIONS->AmarMarketPulseModernScreen()
-    AmarRoom.SETTINGS->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)){Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){Button({settingsMode=0},Modifier.weight(1f)){Text("الخلفيات والمظهر")};Button({settingsMode=1},Modifier.weight(1f)){Text("الحماية")};Button({settingsMode=2},Modifier.weight(1f)){Text("متقدم")}};when(settingsMode){0->AmarAppearanceScreen(themeMode,onThemeModeChange);1->AmarProtectionCenterScreen(context);else->AmarDeveloperOptionsScreen()}}
+    AmarRoom.SETTINGS->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)){
+      Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){Button({settingsMode=0},Modifier.weight(1f)){Text("الواجهات")};Button({settingsMode=1},Modifier.weight(1f)){Text("الحماية")};Button({settingsMode=2},Modifier.weight(1f)){Text("متقدم")}}
+      when(settingsMode){0->AmarAppearanceScreen(themeMode,onThemeModeChange,homeLayout,onHomeLayoutChange);1->AmarProtectionCenterScreen(context);else->AmarDeveloperOptionsScreen()}
+    }
     else->AmarRoomWorkspace(room)
    }
   }
