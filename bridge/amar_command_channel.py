@@ -9,6 +9,8 @@ same idempotency key and a fresh nonce.
 B49 adds an optional durable replay ledger. When
 AMAR_COMMAND_REPLAY_LEDGER_PATH is configured, replay state is persisted with
 atomic replace + fsync and ledger corruption/write failures fail closed.
+Live execution additionally requires an explicitly configured absolute ledger
+path so restart-safe replay protection cannot be accidentally omitted.
 """
 import hashlib
 import hmac
@@ -25,6 +27,16 @@ COMMAND_TTL_MS = int(os.environ.get("AMAR_COMMAND_TTL_MS", "15000"))
 MAX_CACHE = int(os.environ.get("AMAR_COMMAND_CACHE_SIZE", "4096"))
 SIGNING_SECRET = os.environ.get("AMAR_COMMAND_SIGNING_SECRET", "")
 REPLAY_LEDGER_PATH = os.environ.get("AMAR_COMMAND_REPLAY_LEDGER_PATH", "").strip()
+
+
+def require_live_replay_ledger(live_enabled: bool) -> None:
+    """Fail closed when live execution lacks restart-durable replay storage."""
+    if not live_enabled:
+        return
+    if not REPLAY_LEDGER_PATH:
+        raise RuntimeError("AMAR live execution requires AMAR_COMMAND_REPLAY_LEDGER_PATH")
+    if not os.path.isabs(REPLAY_LEDGER_PATH):
+        raise RuntimeError("AMAR replay ledger path must be absolute in live mode")
 
 
 def decimal_string(value):
