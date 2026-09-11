@@ -1,10 +1,11 @@
 #property strict
 
-// BOT 1 terminal-side command receiver. Include this module from BOT 1 when
-// the EA source is available. It only accepts the local queue format and
-// never turns live trading on by itself.
+// B37 BOT 1 terminal-side receiver. Commands are produced by the authenticated
+// bridge and read from the MT5 FILE_COMMON sandbox. Expiry/request identity is
+// checked again at the terminal so stale files cannot trigger execution.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
+#define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
 
 enum AMAR_BOT1_COMMAND
   {
@@ -37,12 +38,15 @@ struct AmarBot1RemoteCommand
    bool sellEnabled;
    bool hasTargetSymbol;
    string targetSymbol;
+   string requestId;
+   string idempotencyKey;
+   long expiresAtMs;
   };
 
 class CAmarBot1CommandReceiver
   {
 private:
-   string m_lastPayload;
+   string m_lastRequestId;
 
    string ValueAfter(string src,string key)
      {
@@ -86,13 +90,20 @@ private:
       return true;
      }
 
+   long ParseLong(string src,string key)
+     {
+      string v=ValueAfter(src,key);
+      if(v=="") return 0;
+      return (long)StringToInteger(v);
+     }
+
    bool HasTargetSymbol(string src)
      {
       return StringFind(src,"\"target_symbol\"")>=0;
      }
 
 public:
-   CAmarBot1CommandReceiver():m_lastPayload("") {}
+   CAmarBot1CommandReceiver():m_lastRequestId("") {}
 
    bool Read(AmarBot1RemoteCommand &out)
      {
@@ -106,8 +117,20 @@ public:
          if(StringLen(candidate)>0) line=candidate;
         }
       FileClose(h);
-      if(line=="" || line==m_lastPayload) return false;
-      m_lastPayload=line;
+      if(line=="") return false;
+
+      out.requestId=ValueAfter(line,"request_id");
+      out.idempotencyKey=ValueAfter(line,"idempotency_key");
+      out.expiresAtMs=ParseLong(line,"expires_at_ms");
+      if(out.requestId=="" || out.idempotencyKey=="" || out.expiresAtMs<=0) return false;
+      if(out.requestId==m_lastRequestId) return false;
+
+      long nowMs=(long)TimeCurrent()*1000;
+      if(out.expiresAtMs<=nowMs)
+        {
+         m_lastRequestId=out.requestId;
+         return false;
+        }
 
       string cmd=ValueAfter(line,"command");
       if(cmd=="START") out.type=AMAR_CMD_START;
@@ -146,13 +169,22 @@ public:
          out.hasBuyEnabled=ParseBool(line,"buy_enabled",out.buyEnabled);
          out.hasSellEnabled=ParseBool(line,"sell_enabled",out.sellEnabled);
          if(!out.hasBuyEnabled || !out.hasSellEnabled) return false;
-         if(HasTargetSymbol(line))
-           {
-            out.targetSymbol=ValueAfter(line,"target_symbol");
-            out.hasTargetSymbol=(StringLen(out.targetSymbol)>0);
-            if(!out.hasTargetSymbol) return false;
-           }
         }
+      m_lastRequestId=out.requestId;
       return true;
+     }
+
+   void Ack(string requestId,bool accepted,string message)
+     {
+      int h=FileOpen(AMAR_BOT1_ACK_FILE,FILE_WRITE|FILE_TXT|FILE_COMMON|FILE_ANSI|FILE_SHARE_READ);
+      if(h==INVALID_HANDLE) return;
+      string safe=message;
+      StringReplace(safe,"\"","'");
+      StringReplace(safe,"\r"," ");
+      StringReplace(safe,"\n"," ");
+      string payload=StringFormat("{\"request_id\":\"%s\",\"accepted\":%s,\"timestamp_ms\":%I64d,\"message\":\"%s\"}",requestId,accepted?"true":"false",(long)TimeCurrent()*1000,safe);
+      FileWriteString(h,payload+"\n");
+      FileFlush(h);
+      FileClose(h);
      }
   };

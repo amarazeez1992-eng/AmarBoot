@@ -1,8 +1,8 @@
 """Local BOT 1 command queue for the MT5 terminal-side receiver.
 
-The bridge writes one authenticated, already-validated command per line. The
-EA polls the shared MT5 Files/Common directory. This module does not authorize
-live trading; the secure HTTP command layer must validate the request first.
+The bridge writes one authenticated, already-validated command per file. The
+EA polls the shared MT5 Files/Common directory. The queue is transport-only;
+live authorization remains in the secure bridge and terminal-side gates.
 """
 from __future__ import annotations
 
@@ -26,12 +26,18 @@ def enqueue(command_json: str, common_files_dir: str | Path) -> Path:
     record = json.loads(command_json)
     if not isinstance(record, dict) or record.get("command") not in SUPPORTED_COMMANDS:
         raise ValueError("unsupported BOT 1 command")
-    if "target_symbol" in record:
-        target_symbol = record["target_symbol"]
+    for key in ("request_id", "idempotency_key", "nonce", "issued_at_ms", "expires_at_ms", "symbol"):
+        if key not in record or not record[key]:
+            raise ValueError(f"missing {key}")
+    if int(record["expires_at_ms"]) <= int(record["issued_at_ms"]):
+        raise ValueError("invalid command expiry")
+    target_symbol = record.get("target_symbol")
+    if target_symbol is not None:
         if not isinstance(target_symbol, str) or not target_symbol.strip():
             raise ValueError("invalid target_symbol")
         if "\n" in target_symbol or "\r" in target_symbol:
             raise ValueError("invalid target_symbol")
+        record["target_symbol"] = target_symbol.strip()
     data = (json.dumps(record, separators=(",", ":"), sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
     fd, tmp = tempfile.mkstemp(prefix="AMAR_BOT1_", dir=directory)
     try:
