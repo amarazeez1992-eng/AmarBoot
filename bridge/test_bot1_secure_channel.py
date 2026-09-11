@@ -9,15 +9,17 @@ import amar_bot1_secure_channel as channel
 
 def _payload(command="REBUILD", expires=None):
     now = int(time.time() * 1000)
+    secret = channel.SIGNING_SECRET or "test-secret"
+    channel.SIGNING_SECRET = secret
     payload = {
         "request_id": "req-1", "idempotency_key": "idem-1", "nonce": "nonce-1",
-        "issued_at_ms": now, "expires_at_ms": expires or now + 5000,
+        "issued_at_ms": now, "expires_at_ms": expires if expires is not None else now + 5000,
         "account_login": 123, "bot_magic": 20260908, "symbol": "XAUUSD",
         "command": command, "target_symbol": "XAUUSD", "enabled": None,
         "settings": None, "signature": "",
     }
     import hashlib, hmac
-    payload["signature"] = hmac.new(b"test-secret", canonical(payload).encode(), hashlib.sha256).hexdigest()
+    payload["signature"] = hmac.new(secret.encode(), canonical(payload).encode(), hashlib.sha256).hexdigest()
     return payload
 
 
