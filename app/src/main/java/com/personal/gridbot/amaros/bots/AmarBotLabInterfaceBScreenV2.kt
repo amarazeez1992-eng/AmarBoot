@@ -94,6 +94,7 @@ fun AmarBotLabInterfaceBScreenV2(
         ) {
             item { AmarBotLabGlobalContext() }
             item { BotSelector(selectedBot, onBotSelected) }
+            item { BotManagementControls(repo) { bots = repo.load() } }
             item { StrategySelector(selectedStrategy) { selectedStrategy = it } }
             item { TimeframeStatus(timeframe) }
             item {
@@ -181,6 +182,30 @@ private fun BotSelector(selectedBot: Int, onBotSelected: (Int) -> Unit) {
                     BChip("V$bot", bot == selectedBot, Modifier.weight(1f)) { onBotSelected(bot) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BotManagementControls(
+    repo: AmarBotVaultRepository,
+    onChanged: () -> Unit
+) {
+    Card(colors = CardDefaults.cardColors(containerColor = B1)) {
+        Row(
+            Modifier.fillMaxWidth().padding(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Button(
+                onClick = { repo.addBot(); onChanged() },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = BC, contentColor = Color.Black)
+            ) { Text("+ إضافة بوت", fontSize = 9.sp, fontWeight = FontWeight.Black) }
+            Button(
+                onClick = { repo.addBot(); onChanged() },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = BG, contentColor = Color.Black)
+            ) { Text("إنشاء بوت", fontSize = 9.sp, fontWeight = FontWeight.Black) }
         }
     }
 }
