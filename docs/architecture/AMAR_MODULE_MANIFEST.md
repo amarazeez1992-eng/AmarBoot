@@ -5,96 +5,71 @@
 
 ## قواعد المشروع
 - أضف ولا تهدم.
-- لا حذف أو إعادة هيكلة للوحدات القديمة دون ضرورة هندسية حقيقية.
 - فصل واجهة المستخدم عن منطق التداول.
-- BOT 1 هو البوت الحقيقي المعتمد: `Grid_Martingale_Basket_v2`.
-- BOT 2–4 خزائن/ملفات إعداد فقط، وليست محركات تداول فعلية.
-- واجهة المستخدم تعرض الحالة ولا تنشئ حالة تداول وهمية.
-- التداول الحقيقي لا يُفعل بمجرد إدخال بيانات الحساب.
-- أي فشل في الصلاحيات/المخاطر/الأمان/الاتصال/صلاحية الأمر = BLOCK.
+- BOT 1 هو البوت الحقيقي المعتمد؛ BOT 2–4 خزائن إعداد فقط.
+- UI لا يصنع حالة تداول وهمية؛ runtime/MT5 هو مصدر الحالة الفعلية.
+- التداول الحقيقي لا يُفعل بمجرد اختيار حساب أو إدخال بيانات.
+- أي فشل في الصلاحيات أو المخاطر أو الأمان أو الاتصال أو صلاحية الأمر = BLOCK.
 
 ## B1-B20 — Foundation
-B1 App Shell — مكتمل  
-B2 Design System — مكتمل  
-B3 Room Navigation — مكتمل  
-B4 Living UI/Motion — مكتمل  
-B5 Data Fabric — مكتمل  
-B6 Intelligence Foundation — مكتمل  
-B7 Decision Engine — مكتمل  
-B8 Safety / Execution Boundary — مكتمل Demo  
-B9 Intelligence Runtime Integration — مكتمل Demo  
-B10 Demo Event Runtime — مكتمل Demo  
-B11 Event / State Expansion — مكتمل Demo  
-B12 Runtime Monitoring — مكتمل Demo  
-B13 Memory Foundation — مكتمل Demo + durable repository  
-B14 Knowledge Foundation — مكتمل Demo + durable repository  
-B15 Analytics — مكتمل  
-B16 Explainability — مكتمل  
-B17 Guardian — مكتمل  
-B18 Security Runtime — مكتمل  
-B19 Audit — مكتمل  
-B20 Supervisor — مكتمل  
+B1-B20 — مكتمل وفق الوحدات السابقة؛ B20 Supervisor مراقب/استشاري وليس منفذ Broker.
 
 ## B21-B25 — Simulation / API / Adapter Architecture
 B21 Testing Engine — مكتمل  
-B22 Simulation Engine — مكتمل Paper/Demo only  
-B23 AMAR GRID Integration — مكتمل كـplanner، دون تنفيذ وسيط  
-B24 Trading Application API — مكتمل كحدود API  
-B25 Broker Adapter Architecture — مكتمل كـcontract/boundary  
+B22 Simulation Engine — Paper/Demo only  
+B23 AMAR GRID Integration — planner دون تنفيذ وسيط  
+B24 Trading Application API — حدود API  
+B25 Broker Adapter Architecture — contract/boundary
 
 ## B26-B33 — MT5 / Bridge / BOT1 Boundaries
-B26 MT5 Adapter — معماري/حدود اتصال  
-B27 Local Self-hosted Bridge — scaffold منفذ  
-B28 Execution Safety Boundary — منفذ fail-closed  
-B29 MT5 Read-Only Live Connection — حدود runtime منفذة، لا تنفيذ حي تلقائي  
-B30 BOT1 Live State Mapping — contract منفذ  
-B31 Secure Command Channel — HMAC/TTL/replay/idempotency/scope منفذ  
-B32 Runtime Integration — scaffold منفذ  
-B33 BOT1 Integration Boundary — منفذ كحد تنفيذ آمن  
+B26 MT5 Adapter — حدود اتصال  
+B27 Local Self-hosted Bridge — scaffold  
+B28 Execution Safety Boundary — fail-closed  
+B29 MT5 Read-Only Live Connection — runtime boundary، دون تنفيذ حي تلقائي  
+B30 BOT1 Live State Mapping — contract  
+B31 Secure Command Channel — HMAC/TTL/replay/idempotency/scope + receiver-side signature verification  
+B32 Runtime Integration — scaffold  
+B33 BOT1 Integration Boundary — تنفيذ آمن
 
 ## B34 — AMAR BOT RUNTIME PROFESSIONAL LAYER — منفذ
-- Bot Identity: ID/Magic/Version/Strategy ID.
-- Configuration and runtime state model.
-- State machine: OFF/STARTING/RUNNING/STOPPING/REBUILDING/CLOSING/ERROR/EMERGENCY_LOCK.
-- Command lifecycle: Validate → Accept → Execute → Acknowledge → Verify → Audit.
+- Identity/config/state machine: OFF/STARTING/RUNNING/STOPPING/REBUILDING/CLOSING/ERROR/EMERGENCY_LOCK.
+- Command lifecycle مع انتقالات مغلقة: CREATED → VALIDATED → ACCEPTED → EXECUTING → ACKNOWLEDGED → VERIFIED.
 - Desired vs Actual reconciliation: MATCHED/DRIFT/UNKNOWN/ERROR.
-- Execution/Position/Pending/Grid/Basket/Trailing/Martingale/Risk boundaries.
-- Event/Audit/Telemetry boundaries.
-- Persistent Bot Vault.
-- BOT 1: ten independent strategy slots with save/edit/delete/reset behavior.
-- Strategy metadata: risk profile, rebuild rule, entry rule and metadata notes.
+- Fail-closed Execution Policy بجميع بوابات permission/risk/security/connector/idempotency.
+- Persistent Bot Vault: إضافة/تعديل/حذف/تفريغ BOT؛ BOT 1 محمي من الحذف.
+- عشر خانات Strategy لكل Bot، مع حفظ/تحرير/حذف/تفريغ وعلامة `✓` للحفظ.
+- Strategy metadata: risk/rebuild/entry/notes.
+- UI يعرض طلب الأمر ولا يزيف runtime state.
 
-## B35 — BOT 1 REAL EA INTEGRATION — غير مكتمل عمدًا
-الحدود والـcontroller والـprotocol موجودة، لكن المصدر الأصلي `Grid_Martingale_Basket_v2.mq5` غير موجود في المستودع الحالي. لذلك لا يجوز ادعاء اكتمال الربط الفعلي أو Compile/Runtime verification في MT5 قبل إدخال المصدر واختباره.
+## B35 — BOT 1 REAL EA INTEGRATION — قيد التنفيذ / غير مصرح Live
+تم العثور على المصدر الحقيقي `Grid_Martingale_Basket_AMAR_v3.mq5` وفحصه. المصدر يتضمن Grid/Pending/Tracking/Basket/Individual/Enhancement/Trailing/Profile engines. fileciteturn1342file0L19-L68
 
-عند توفر المصدر، يجب التحقق من:
-- symbol + magic isolation لكل عملية؛
-- عدم لمس صفقات/أوامر غير BOT1؛
-- ACK + post-command verification؛
-- reconciliation؛
-- emergency lock/fail-closed؛
-- Compile وسلوك فعلي في MT5.
+حالة B35 الحالية: **SOURCE AUDITED / INTEGRATION NOT YET VERIFIED**.
+المتبقي الإلزامي قبل أي Live authorization:
+- إدخال المصدر إلى المستودع تحت مسار MT5 ثابت؛
+- إصلاح عزل الصفقات: الدوال الحالية تعتبر الصفقات اليدوية managed عندما `ManageManualPositions=true`، بينما `CloseAll` وBasket قد يغلقانها؛ يجب فصل `BOT1_ONLY` عن `MANUAL_MANAGED` قبل الربط الحي. fileciteturn1342file0L76-L121
+- منع BuildGrid من استخدام `CloseAll` العالمي كأثر جانبي لإعادة البناء؛
+- التحقق من stop-level/price validity وtrade retcodes؛
+- ربط command ACK + post-command verification + reconciliation؛
+- Compile واختبار سلوك فعلي في MT5 Demo.
 
-## B36 — AMAR AI SUPERVISOR — معماري/حدود منفذة
-AI ليس منفذ Broker مباشرًا. المسار المعتمد:
-`AI Agent → Analysis/Proposal → Decision Engine → Simulation → Risk Policy → Execution Policy → Security Gateway → User Approval → MT5`
-
-الأدوار: تحليل BOT1، الأداء والسحب، جودة التنفيذ، anomaly detection، تحليل السياق، تقييم الاستراتيجيات، مقترحات optimization عبر simulation، التقارير والشرح والمراقبة.
+## B36 — AMAR AI SUPERVISOR — منفذ كطبقة استشارية
+- Supervisor proposal model موجود ويمنع `executable=true`.
+- AI proposal لا يمتلك broker/bridge execution capability.
+- المسار الإلزامي: AI Analysis → Proposal → Decision → Simulation → Risk Policy → Execution Policy → Security Gateway → User Approval → MT5.
+- لا يوجد Direct AI Trading.
 
 ## Bot Vault
-- BOT 1–4 كخانات إعداد.
-- BOT 2–4 لا تُعتبر Bots فعلية.
-- كل Bot يملك 10 Strategy Slots.
-- الحفظ دائم عبر Android storage.
-- الاستراتيجية المحفوظة تظهر بعلامة `✓` خضراء.
-- التطبيع يمنع أكثر من 10 استراتيجيات ويزيل التكرار.
-- Reset يمسح ملف الإعدادات المحفوظ فقط ولا يغلق MT5 أو الصفقات الحقيقية.
+- BOT 1–4 افتراضيًا؛ BOT 2–4 Vault only.
+- يمكن إضافة Bots جديدة كخانات إعداد.
+- Delete محظور لـ BOT 1 من طبقة Vault.
+- Reset/تفريغ يمسح الإعداد المحفوظ فقط ولا يلمس MT5.
+- كل Bot يملك حتى 10 Strategies.
 
 ## CI Gate
-الترتيب الإلزامي:
-`Python bridge tests → Android SDK validation → Gradle model → clean → testDebugUnitTest → assembleDebug → APK checksum → artifact upload`
+الترتيب الإلزامي: Python bridge tests → Android SDK validation → Gradle model → clean → testDebugUnitTest → assembleDebug → APK checksum → artifact upload.
 
-لا يعتبر أي تغيير مكتملًا حتى يمر CI بنجاح.
+لا يعتبر B35 أو المشروع Live-ready إلا بعد نجاح CI وCompile/Runtime verification في MT5 Demo.
 
 ## Non-negotiable safety
-`liveTrading=false` افتراضيًا. لا توجد صلاحية تداول حقيقي لمجرد اختيار حساب أو إدخال credentials. كل تنفيذ حي يمر عبر صلاحيات ومخاطر وأمان وقناة أوامر وتحقق لاحق.
+`liveTrading=false` افتراضيًا. لا توجد صلاحية تداول حقيقي لمجرد إدخال credentials. Emergency Lock وRisk/Security/Permission gates تفشل إلى BLOCK.
