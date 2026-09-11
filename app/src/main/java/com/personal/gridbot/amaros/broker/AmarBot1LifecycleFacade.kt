@@ -30,6 +30,12 @@ class AmarBot1LifecycleFacade(
     suspend fun closeAll(): AmarBrokerResult =
         execute(AmarBot1RemoteCommandType.CLOSE_ALL)
 
+    suspend fun closeBuy(): AmarBrokerResult =
+        execute(AmarBot1RemoteCommandType.CLOSE_BUY)
+
+    suspend fun closeSell(): AmarBrokerResult =
+        execute(AmarBot1RemoteCommandType.CLOSE_SELL)
+
     suspend fun setBuyEnabled(enabled: Boolean): AmarBrokerResult =
         execute(AmarBot1RemoteCommandType.SET_BUY_ENABLED, enabled = enabled)
 
