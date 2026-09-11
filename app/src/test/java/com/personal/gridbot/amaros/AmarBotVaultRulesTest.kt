@@ -26,13 +26,15 @@ class AmarBotVaultRulesTest {
 
     @Test fun profileMetadata_roundTripsThroughJson() {
         val original = AmarSavedStrategy(4, "Gold", AmarBot1RuntimeConfig(), "محافظ", "بعد الإغلاق", "يدوي", "ملاحظة")
-        val restored = AmarSavedStrategy.fromJson(original.toJson())
+        val json = original.toJsonString()
+        val restored = AmarSavedStrategy.fromJsonString(json)
         assertEquals(original.number, restored.number)
         assertEquals(original.name, restored.name)
         assertEquals(original.riskProfile, restored.riskProfile)
         assertEquals(original.rebuildRule, restored.rebuildRule)
         assertEquals(original.entryRule, restored.entryRule)
         assertEquals(original.metadata, restored.metadata)
-        assertTrue(restored.profile.lot > 0.0)
+        assertEquals(original.profile, restored.profile)
+        assertTrue(json.contains("schemaVersion"))
     }
 }
