@@ -1,7 +1,7 @@
 #property strict
 
-// B39 terminal-side receiver. The bridge authenticates the command before it
-// reaches FILE_COMMON; MT5 verifies expiry/shape again and reports a durable ACK.
+// B39/B42 terminal-side receiver. The bridge authenticates the command before it
+// reaches FILE_COMMON; MT5 verifies expiry/shape/sequence again and reports ACK.
 
 #define AMAR_BOT1_COMMAND_FILE "AMAR_BOT1_COMMANDS.jsonl"
 #define AMAR_BOT1_ACK_FILE "AMAR_BOT1_ACK.jsonl"
@@ -40,6 +40,8 @@ struct AmarBot1RemoteCommand
    string targetSymbol;
    string requestId;
    string idempotencyKey;
+   string deviceId;
+   long sequence;
    long expiresAtMs;
   };
 
@@ -47,6 +49,8 @@ class CAmarBot1CommandReceiver
   {
 private:
    string m_lastRequestId;
+   string m_lastDeviceId;
+   long m_lastSequence;
 
    string ValueAfter(string src,string key)
      {
@@ -136,7 +140,7 @@ private:
      }
 
 public:
-   CAmarBot1CommandReceiver():m_lastRequestId("") {}
+   CAmarBot1CommandReceiver():m_lastRequestId(""),m_lastDeviceId(""),m_lastSequence(0) {}
 
    bool Read(AmarBot1RemoteCommand &out)
      {
@@ -154,6 +158,8 @@ public:
 
       out.requestId=ValueAfter(line,"request_id");
       out.idempotencyKey=ValueAfter(line,"idempotency_key");
+      out.deviceId=ValueAfter(line,"device_id");
+      out.sequence=ParseLong(line,"sequence");
       out.expiresAtMs=ParseLong(line,"expires_at_ms");
       if(out.requestId=="" || out.idempotencyKey=="" || out.expiresAtMs<=0) return false;
       if(out.requestId==m_lastRequestId) return false;
@@ -161,6 +167,8 @@ public:
 
       long nowMs=(long)TimeCurrent()*1000;
       if(out.expiresAtMs<=nowMs) return Reject(out.requestId,"EXPIRED");
+      if(out.deviceId=="" || out.sequence<=0) return Reject(out.requestId,"INVALID_SEQUENCE");
+      if(out.deviceId==m_lastDeviceId && out.sequence<=m_lastSequence) return Reject(out.requestId,"OUT_OF_ORDER_SEQUENCE");
 
       string cmd=ValueAfter(line,"command");
       if(cmd=="START") out.type=AMAR_CMD_START;
@@ -202,6 +210,8 @@ public:
          if(!out.hasBuyEnabled || !out.hasSellEnabled) return Reject(out.requestId,"INVALID_SIDE_SETTINGS");
         }
       m_lastRequestId=out.requestId;
+      m_lastDeviceId=out.deviceId;
+      m_lastSequence=out.sequence;
       return true;
      }
 
