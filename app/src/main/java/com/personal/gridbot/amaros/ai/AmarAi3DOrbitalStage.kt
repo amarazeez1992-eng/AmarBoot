@@ -23,11 +23,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
-import kotlin.math.roundToInt
 
 private val StageBg = Color(0xFF02050A)
 private val StageDeep = Color(0xFF071522)
@@ -105,9 +103,7 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 else -> ry
             }
 
-            drawRect(
-                Brush.verticalGradient(listOf(StageBg, StageDeep, StageBg))
-            )
+            drawRect(Brush.verticalGradient(listOf(StageBg, StageDeep, StageBg)))
             drawCircle(StageCyan.copy(alpha = .055f), size.minDimension * .32f, androidx.compose.ui.geometry.Offset(cx, cy))
             drawCircle(StageBlue.copy(alpha = .035f), size.minDimension * .48f, androidx.compose.ui.geometry.Offset(cx, cy))
             drawCircle(StageMagenta.copy(alpha = .022f), size.minDimension * .60f, androidx.compose.ui.geometry.Offset(cx, cy))
@@ -133,7 +129,6 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 drawLine(StageCyan.copy(alpha = .12f), routePoints[i], routePoints[i + 1], 1.5f, cap = StrokeCap.Round)
             }
 
-            // The physical AI body follows exactly the same convoy route as the AI/news overlay.
             withTransform({
                 translate(convoyX, convoyY)
                 rotate(spin, pivot = androidx.compose.ui.geometry.Offset(cx, cy))
@@ -145,15 +140,12 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 val headCy = cy - size.height * .18f + localBob
                 val headTop = headCy - headH / 2f
 
-                // Rear halo / depth plate.
                 drawRoundRect(
                     brush = Brush.linearGradient(listOf(StageBlue.copy(alpha = .20f), StageMagenta.copy(alpha = .08f))),
                     topLeft = androidx.compose.ui.geometry.Offset(headCx - headW * .62f, headCy - headH * .62f),
                     size = androidx.compose.ui.geometry.Size(headW * 1.24f, headH * 1.24f),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(headW * .25f, headH * .25f)
                 )
-
-                // Head shell.
                 drawRoundRect(
                     brush = Brush.linearGradient(listOf(Color(0xFF214D62), Color(0xFF07121B), Color(0xFF163042))),
                     topLeft = androidx.compose.ui.geometry.Offset(headCx - headW / 2f, headTop),
@@ -168,14 +160,11 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                     style = Stroke(2.4f)
                 )
                 drawCircle(StageCyan.copy(alpha = .18f), headW * .50f, androidx.compose.ui.geometry.Offset(headCx, headCy))
-
-                // Precision optical sensors.
                 drawCircle(StageWhite.copy(alpha = pulse), headW * .052f, androidx.compose.ui.geometry.Offset(headCx - headW * .19f, headCy))
                 drawCircle(StageWhite.copy(alpha = pulse), headW * .052f, androidx.compose.ui.geometry.Offset(headCx + headW * .19f, headCy))
                 drawLine(StageGold.copy(alpha = .9f), androidx.compose.ui.geometry.Offset(headCx, headTop), androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .35f), 2.2f, cap = StrokeCap.Round)
                 drawCircle(StageMagenta.copy(alpha = pulse), 4.5f, androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .39f))
 
-                // Torso with layered depth.
                 val bodyW = size.width * .22f
                 val bodyH = size.height * .23f
                 val bodyTop = cy - size.height * .015f + localBob
@@ -219,11 +208,10 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 drawLine(StageGold.copy(alpha = .75f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .23f, legY + 24f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .34f, legY + 24f), 4f, cap = StrokeCap.Round)
             }
 
-            // Small route marker follows the same position, making movement unmistakable.
             drawCircle(StageGold.copy(alpha = .65f), 4f, androidx.compose.ui.geometry.Offset(cx + convoyX, cy + convoyY))
         }
 
-        // AI + NEWS + MARKET are one convoy and move together using pixel translation.
+        // AI + NEWS + MARKET are a single moving convoy, not independent static labels.
         val stageWidth = 330f
         val stageHeight = 245f
         val convoyX = when (segment) {
@@ -247,10 +235,7 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                     translationY = convoyY
                 }
         ) {
-            Box(
-                Modifier
-                    .graphicsLayer { scaleX = 1.03f; scaleY = 1.03f }
-            ) {
+            Box(Modifier.graphicsLayer { scaleX = 1.03f; scaleY = 1.03f }) {
                 Text(
                     "◈  AMAR AI  •  SUPERVISOR",
                     color = StageCyan.copy(alpha = .98f),
