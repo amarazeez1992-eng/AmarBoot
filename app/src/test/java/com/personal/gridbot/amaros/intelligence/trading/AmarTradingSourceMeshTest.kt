@@ -24,9 +24,19 @@ class AmarTradingSourceMeshTest {
 
     @Test
     fun consensusIsNotProfitability() {
-        val text = AmarTradingSourceMesh.Report(
-            "x", 12, emptyList(), 5, 0, 41.6, emptyList(), "Consensus measures conceptual/source convergence only. It is NOT a profitability probability."
-        ).caveat
-        assertTrue(text.contains("NOT a profitability probability"))
+        val report = AmarTradingSourceMesh.Report(
+            query = "x",
+            searchedChannels = 12,
+            evidence = emptyList(),
+            supportingChannels = 5,
+            conflictChannels = 0,
+            consensusPct = 41.6,
+            authorityGrade = com.personal.gridbot.amaros.ai.core.AmarAiResearchAuthority.Grade.LOW,
+            authorityConfidencePct = 0.0,
+            independentChannels = 0,
+            newItems = emptyList(),
+            caveat = "Consensus measures conceptual/source convergence only. It is NOT a profitability probability."
+        )
+        assertTrue(report.caveat.contains("NOT a profitability probability"))
     }
 }
