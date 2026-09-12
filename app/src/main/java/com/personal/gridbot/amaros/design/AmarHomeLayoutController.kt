@@ -31,6 +31,6 @@ object AmarHomeLayoutController {
                 @keyframes amarHomeFloat{50%{translate:0 -7px;filter:brightness(1.08)}}
               `;
             })();
-        """.trimIndent()
+        """.trimIndent() + "\n" + AmarAiOrbController.script()
     }
 }
