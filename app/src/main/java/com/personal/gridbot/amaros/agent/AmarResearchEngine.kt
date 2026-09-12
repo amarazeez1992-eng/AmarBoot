@@ -7,9 +7,16 @@ interface AmarResearchEngine {
 
 data class ResearchRequest(
     val question: String,
-    val maxSources: Int = 8,
-    val requireIndependentSources: Boolean = true
-)
+    val maxSources: Int = 40,
+    val requireIndependentSources: Boolean = true,
+    val targetIndependentSources: Int = 40
+) {
+    init {
+        require(question.isNotBlank())
+        require(maxSources in 1..100)
+        require(targetIndependentSources in 1..maxSources)
+    }
+}
 
 data class ResearchReport(
     val findings: List<ResearchFinding>,
@@ -21,7 +28,9 @@ data class ResearchFinding(
     val sourceTitle: String,
     val sourceUri: String,
     val evidence: String,
-    val authority: Authority = Authority.UNKNOWN
+    val authority: Authority = Authority.UNKNOWN,
+    val stance: EvidenceStance = EvidenceStance.UNKNOWN
 )
 
+enum class EvidenceStance { SUPPORTS, OPPOSES, MIXED, UNKNOWN }
 enum class Authority { PRIMARY, OFFICIAL, PEER_REVIEWED, REPUTABLE, COMMUNITY, UNKNOWN }
