@@ -10,12 +10,19 @@ enum class AmarBotInterface(val label: String) {
 }
 
 object AmarBotInterfaceRegistry {
-    fun load(context: Context, botNumber: Int): AmarBotInterface = AmarBotInterface.A
+    fun load(context: Context, botNumber: Int): AmarBotInterface {
+        val stored = context.applicationContext
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getString("bot_$botNumber", AmarBotInterface.A.name)
+        return runCatching { AmarBotInterface.valueOf(stored ?: AmarBotInterface.A.name) }
+            .getOrDefault(AmarBotInterface.A)
+    }
 
     fun save(context: Context, botNumber: Int, interfaceId: AmarBotInterface) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        context.applicationContext
+            .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             .edit()
-            .putString("bot_$botNumber", AmarBotInterface.A.name)
+            .putString("bot_$botNumber", interfaceId.name)
             .apply()
     }
 }
