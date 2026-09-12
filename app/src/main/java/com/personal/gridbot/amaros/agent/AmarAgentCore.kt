@@ -73,7 +73,9 @@ data class AmarAgentTool(
     val id: String,
     val description: String,
     val scope: AmarToolScope = AmarToolScope.READ_ONLY,
-    val readOnly: Boolean = scope != AmarToolScope.EXECUTION_FUTURE
+    val readOnly: Boolean = scope == AmarToolScope.READ_ONLY ||
+        scope == AmarToolScope.RESEARCH ||
+        scope == AmarToolScope.SIMULATION
 )
 
 interface AmarAgentToolRegistry { fun availableTools(policy: AmarAgentPolicy): List<AmarAgentTool> }
