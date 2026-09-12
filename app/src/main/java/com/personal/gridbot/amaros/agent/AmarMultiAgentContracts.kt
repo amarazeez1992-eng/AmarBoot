@@ -32,7 +32,6 @@ data class AmarRoleReport(
     val risks: List<String> = emptyList()
 ) {
     init {
-        require(roleId.isNotBlank())
         require(confidence in 0.0..1.0)
     }
 }
@@ -46,10 +45,8 @@ data class AmarDeliberationResult(
     val consensusDirection: AmarDecisionDirection = AmarDecisionDirection.UNKNOWN
 )
 
-/**
- * Safety-first coordinator. Invalid role IDs, duplicate roles, unknown decisions,
- * ties and directional disagreement are explicit blockers.
- */
+/** Safety-first coordinator. Invalid role identity, duplicate roles, unknown decisions,
+ * ties and directional disagreement are explicit blockers. */
 class AmarDeliberationCoordinator(
     private val minimumConfidence: Double = 0.80,
     private val minimumRoles: Int = 2
@@ -79,6 +76,9 @@ class AmarDeliberationCoordinator(
         if (reports.size < minimumRoles) conflicts += "insufficient_roles"
         if (reports.any { it.conclusion.isBlank() }) conflicts += "blank_role_conclusion"
         if (reports.any { it.roleId.isBlank() }) conflicts += "blank_report_role_id"
+        if (reports.size == roles.size && reports.zip(roles).any { (report, role) -> report.roleId != role.id }) {
+            conflicts += "role_report_identity_mismatch"
+        }
 
         val confidence = reports.map { it.confidence }.averageOrNull() ?: 0.0
         val actionable = reports.filter { it.direction != AmarDecisionDirection.UNKNOWN }
@@ -86,8 +86,7 @@ class AmarDeliberationCoordinator(
 
         val directionCounts = actionable.groupingBy { it.direction }.eachCount()
         val strongest = directionCounts.values.maxOrNull() ?: 0
-        val tiedStrongest = strongest > 0 && directionCounts.values.count { it == strongest } > 1
-        if (tiedStrongest) conflicts += "direction_tie"
+        if (strongest > 0 && directionCounts.values.count { it == strongest } > 1) conflicts += "direction_tie"
         if (directionCounts.size > 1) conflicts += "direction_conflict"
 
         val consensusDirection = if (directionCounts.size == 1 && actionable.size == reports.size) {
@@ -108,6 +107,9 @@ class AmarDeliberationCoordinator(
         val approved = reports.size >= minimumRoles &&
             invalidRoleIds == 0 &&
             duplicateIds.isEmpty() &&
+            reports.none { it.roleId.isBlank() } &&
+            reports.size == roles.size &&
+            reports.zip(roles).all { (report, role) -> report.roleId == role.id } &&
             highConfidenceCount == reports.size &&
             consensusDirection != AmarDecisionDirection.UNKNOWN &&
             finalConflicts.isEmpty()
