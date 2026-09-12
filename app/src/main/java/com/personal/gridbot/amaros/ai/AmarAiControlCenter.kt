@@ -1,14 +1,23 @@
 package com.personal.gridbot.amaros.ai
 
 import android.content.Context
+import com.personal.gridbot.amaros.ai.core.AmarAiMt5Office
+import com.personal.gridbot.amaros.ai.core.AmarAiResearchAuthority
+import com.personal.gridbot.amaros.ai.core.AmarAiWorkspace
 
 /**
  * Central authority for the AI room.
  * AI may be enabled/disabled independently from manual bot operation.
  * Emergency stop is a higher-priority fail-closed gate for AI execution authority.
+ * Research and MT5-office data remain isolated from application runtime state.
  */
 class AmarAiControlCenter(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    val workspace: AmarAiWorkspace by lazy { AmarAiWorkspace(appContext) }
+    val mt5Office: AmarAiMt5Office get() = AmarAiMt5Office
+    val researchAuthority: AmarAiResearchAuthority get() = AmarAiResearchAuthority
 
     val aiEnabled: Boolean get() = prefs.getBoolean(KEY_AI_ENABLED, false)
     val emergencyStopped: Boolean get() = prefs.getBoolean(KEY_EMERGENCY_STOP, false)
