@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.personal.gridbot.amaros.ai.AmarAiAppCommandBus
+import com.personal.gridbot.amaros.ai.AmarAiSelfImprovementScheduler
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
 import com.personal.gridbot.amaros.design.AmarAiOrbMarketMotionController
 import com.personal.gridbot.amaros.design.AmarHomeLayoutController
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
         homeLayout = prefs.getInt(AmarSharedUiContract.PREF_HOME_LAYOUT, AmarHomeLayoutController.DEFAULT_LAYOUT).coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT)
         AmarGlobalVisualStateStore.setEnabled(AmarVisualEffectsPreference.load(this))
         AmarTradingDiscoveryScheduler.start(this)
+        AmarAiSelfImprovementScheduler.start(this)
         installProtectionHandler()
         enterImmersiveReferenceMode()
         root = FrameLayout(this)
