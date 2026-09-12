@@ -28,23 +28,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
-import kotlin.math.cos
-import kotlin.math.roundToInt
-import kotlin.math.sin
 
 private val StageBg = Color(0xFF03070B)
 private val StageCyan = Color(0xFF1DE5FF)
 private val StageGold = Color(0xFFFFC84A)
 private val StageWhite = Color(0xFFEFFFFF)
 
-/**
- * Living AI stage for the main AI interface.
- *
- * The AI robot, news signals and market-state badge travel as one coordinated
- * group through a smooth rectangular/elliptical route: bottom -> top -> right
- * -> left -> bottom. Nothing is removed from the existing AI systems; this is
- * a visual movement layer only.
- */
 @Composable
 fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "amar_ai_roaming")
@@ -66,7 +55,10 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
     val bob by transition.animateFloat(
         initialValue = -1f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(1900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        animationSpec = infiniteRepeatable(
+            tween(1900, easing = FastOutSlowInEasing),
+            RepeatMode.Reverse
+        ),
         label = "robot_bob"
     )
 
@@ -96,19 +88,25 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
 
             for (i in 0..2) {
                 val scale = 1f + i * .14f
+                val ovalRect = Rect(
+                    cx - rx * scale,
+                    cy - ry * scale,
+                    cx + rx * scale,
+                    cy + ry * scale
+                )
                 drawOval(
-                    Brush.linearGradient(
+                    brush = Brush.linearGradient(
                         listOf(
                             StageCyan.copy(alpha = .10f / scale),
                             StageGold.copy(alpha = .04f / scale)
                         )
                     ),
-                    Rect(cx - rx * scale, cy - ry * scale, cx + rx * scale, cy + ry * scale),
+                    topLeft = ovalRect.topLeft,
+                    size = ovalRect.size,
                     style = Stroke(width = 1.2f + i * .45f)
                 )
             }
 
-            // Route marker: a subtle path showing that the AI is roaming.
             val routePoints = listOf(
                 Offset(cx - rx * .88f, cy + ry * .80f),
                 Offset(cx - rx * .88f, cy - ry * .80f),
@@ -125,7 +123,6 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 )
             }
 
-            // The robot itself remains visually centered on the moving convoy.
             val localBob = bob * 5f
             val headW = size.width * .16f
             val headH = size.height * .18f
@@ -138,16 +135,16 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 headCy + headH / 2
             )
             drawRoundRect(
-                Brush.radialGradient(listOf(Color(0xFF183746), Color(0xFF071017))),
-                head,
-                .18f * headW,
-                .18f * headH
+                brush = Brush.radialGradient(listOf(Color(0xFF183746), Color(0xFF071017))),
+                topLeft = head.topLeft,
+                size = head.size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(.18f * headW, .18f * headH)
             )
             drawRoundRect(
-                StageCyan.copy(alpha = .78f),
-                head,
-                .18f * headW,
-                .18f * headH,
+                color = StageCyan.copy(alpha = .78f),
+                topLeft = head.topLeft,
+                size = head.size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(.18f * headW, .18f * headH),
                 style = Stroke(2.2f)
             )
             drawCircle(StageCyan.copy(alpha = .28f), headW * .48f, head.center)
@@ -160,13 +157,30 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
             val bodyH = size.height * .22f
             val bodyTop = cy - size.height * .02f + localBob
             val body = Rect(headCx - bodyW / 2, bodyTop, headCx + bodyW / 2, bodyTop + bodyH)
-            drawRoundRect(Brush.verticalGradient(listOf(Color(0xFF173A47), Color(0xFF061016))), body, 24f, 24f)
-            drawRoundRect(StageGold.copy(alpha = .58f), body, 24f, 24f, style = Stroke(2f))
             drawRoundRect(
-                StageCyan.copy(alpha = .22f),
-                Rect(body.left + bodyW * .12f, body.top + bodyH * .16f, body.right - bodyW * .12f, body.bottom - bodyH * .16f),
-                14f,
-                14f,
+                brush = Brush.verticalGradient(listOf(Color(0xFF173A47), Color(0xFF061016))),
+                topLeft = body.topLeft,
+                size = body.size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(24f, 24f)
+            )
+            drawRoundRect(
+                color = StageGold.copy(alpha = .58f),
+                topLeft = body.topLeft,
+                size = body.size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(24f, 24f),
+                style = Stroke(2f)
+            )
+            val innerBody = Rect(
+                body.left + bodyW * .12f,
+                body.top + bodyH * .16f,
+                body.right - bodyW * .12f,
+                body.bottom - bodyH * .16f
+            )
+            drawRoundRect(
+                color = StageCyan.copy(alpha = .22f),
+                topLeft = innerBody.topLeft,
+                size = innerBody.size,
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(14f, 14f),
                 style = Stroke(1.2f)
             )
 
@@ -181,8 +195,6 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
             drawLine(StageCyan.copy(alpha = .65f), Offset(headCx + bodyW * .23f, legY), Offset(headCx + bodyW * .23f, legY + 22f), 7f, cap = StrokeCap.Round)
         }
 
-        // All roaming information shares one position with the AI, so the
-        // news and market state visibly travel with it rather than staying fixed.
         val phase = route * 4f
         val segment = phase.toInt().coerceAtMost(3)
         val local = phase - segment
@@ -207,12 +219,7 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                 .align(Alignment.TopCenter)
                 .offset { IntOffset(x.roundToInt(), y.roundToInt()) }
         ) {
-            Text(
-                "🤖  AMAR AI",
-                color = StageCyan.copy(alpha = .95f),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Black
-            )
+            Text("🤖  AMAR AI", color = StageCyan.copy(alpha = .95f), fontSize = 9.sp, fontWeight = FontWeight.Black)
             Text(
                 "• أخبار • $marketText",
                 color = StageGold.copy(alpha = .95f),
