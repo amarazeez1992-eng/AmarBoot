@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.ai
 
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -10,17 +11,29 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Free-tier Gemini REST adapter. The user supplies their own API key. */
-class AmarGeminiClient(private val http: OkHttpClient = OkHttpClient()) {
+class AmarGeminiClient(
+    private val http: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(45, TimeUnit.SECONDS)
+        .callTimeout(60, TimeUnit.SECONDS)
+        .build()
+) {
     data class Result(val text: String, val raw: String)
 
     suspend fun generate(apiKey: String, model: String, system: String, prompt: String): Result = withContext(Dispatchers.IO) {
         require(apiKey.isNotBlank()) { "Gemini API key is required" }
+        val safeModel = model.trim()
+        require(safeModel.matches(Regex("[A-Za-z0-9._-]{1,100}"))) { "Invalid Gemini model name" }
+        require(system.isNotBlank()) { "AI system instruction is required" }
+        require(prompt.isNotBlank()) { "AI prompt is required" }
+
         val body = JSONObject()
             .put("systemInstruction", JSONObject().put("parts", JSONArray().put(JSONObject().put("text", system))))
             .put("contents", JSONArray().put(JSONObject().put("role", "user").put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
             .put("generationConfig", JSONObject().put("temperature", 0.2).put("responseMimeType", "application/json"))
         val request = Request.Builder()
-            .url("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent")
+            .url("https://generativelanguage.googleapis.com/v1beta/models/$safeModel:generateContent")
             .addHeader("x-goog-api-key", apiKey.trim())
             .addHeader("Content-Type", "application/json")
             .post(body.toString().toRequestBody("application/json".toMediaType()))
@@ -29,9 +42,12 @@ class AmarGeminiClient(private val http: OkHttpClient = OkHttpClient()) {
             val raw = response.body?.string().orEmpty()
             if (!response.isSuccessful) error("Gemini HTTP ${response.code}: ${extractError(raw)}")
             val text = runCatching {
-                JSONObject(raw).getJSONArray("candidates").getJSONObject(0)
-                    .getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text")
-            }.getOrElse { error("Gemini response could not be parsed") }
+                val candidates = JSONObject(raw).getJSONArray("candidates")
+                require(candidates.length() > 0) { "No Gemini candidates returned" }
+                val parts = candidates.getJSONObject(0).getJSONObject("content").getJSONArray("parts")
+                require(parts.length() > 0) { "Gemini returned no content parts" }
+                parts.getJSONObject(0).getString("text")
+            }.getOrElse { error("Gemini response could not be parsed: ${it.message.orEmpty()}") }
             Result(text, raw)
         }
     }
