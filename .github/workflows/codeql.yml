@@ -17,7 +17,8 @@ permissions:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -26,13 +27,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Configure Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Configure Gradle 8.7
+        if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.7'
+          cache-read-only: false
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+      - name: Build Android application for CodeQL
+        if: matrix.language == 'java-kotlin'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle clean assembleDebug --no-daemon --stacktrace
+
+      - name: Build JavaScript/TypeScript application for CodeQL
+        if: matrix.language == 'javascript-typescript'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f frontend/package.json ]; then
+            cd frontend
+            if [ -f package-lock.json ]; then
+              npm ci
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install --frozen-lockfile
+            elif [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile
+            else
+              npm install
+            fi
+          else
+            echo "No frontend package manifest found; CodeQL JavaScript analysis will use source extraction."
+          fi
 
       - name: Analyze
         uses: github/codeql-action/analyze@v4
