@@ -51,7 +51,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gradle clean assembleDebug --no-daemon --stacktrace
+          max_attempts=4
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Gradle build attempt ${attempt}/${max_attempts}"
+            if gradle clean assembleDebug --no-daemon --stacktrace; then
+              echo "Gradle build succeeded on attempt ${attempt}."
+              break
+            fi
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "Gradle build failed after ${max_attempts} attempts."
+              exit 1
+            fi
+            sleep_seconds=$((attempt * 30))
+            echo "Transient dependency/network failure is possible; retrying in ${sleep_seconds}s."
+            sleep "$sleep_seconds"
+          done
 
       - name: Build JavaScript/TypeScript application for CodeQL
         if: matrix.language == 'javascript-typescript'
