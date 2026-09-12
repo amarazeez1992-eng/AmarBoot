@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +48,6 @@ fun AmarBotDragDropBoard(
         working.chunked(5).forEachIndexed { rowIndex, row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 row.forEachIndexed { localIndex, number ->
-                    val index = rowIndex * 5 + localIndex
                     val isDragging = dragging == number
                     val scale by animateFloatAsState(if (isDragging) 1.10f else 1f, tween(140), label = "bot-drag-scale")
                     Box(
