@@ -22,12 +22,24 @@ object AmarDriftAndUncertaintyEngine {
     )
 
     fun drift(reference: List<Double>, recent: List<Double>): DriftReport {
-        if (reference.size < 5 || recent.size < 5) return DriftReport(0.0, 0.0, 1.0, true, listOf("insufficient samples for drift detection"))
-        val rm = mean(reference); val nm = mean(recent)
-        val rs = stdev(reference, rm); val ns = stdev(recent, nm)
-        val meanDelta = abs(nm - rm) / maxScale(reference + recent)
-        val volatilityDelta = abs(ns - rs) / maxScale(reference + recent)
-        val shift = (meanDelta * 0.55 + volatilityDelta * 0.45).coerceIn(0.0, 1.0)
+        if (reference.size < 5 || recent.size < 5) {
+            return DriftReport(0.0, 0.0, 1.0, true, listOf("insufficient samples for drift detection"))
+        }
+        val rm = mean(reference)
+        val nm = mean(recent)
+        val rs = stdev(reference, rm)
+        val ns = stdev(recent, nm)
+
+        // Mean drift is measured against pooled dispersion, not absolute price/value scale.
+        // This prevents a large regime translation (e.g. 1 -> 4) from being diluted simply
+        // because the raw values themselves are numerically large.
+        val pooledStdev = sqrt((rs * rs + ns * ns) / 2.0).coerceAtLeast(1e-9)
+        val rawMeanEffect = abs(nm - rm) / pooledStdev
+        val meanDelta = (rawMeanEffect / 3.0).coerceIn(0.0, 1.0)
+
+        // Volatility drift is a relative change between the two distributions.
+        val volatilityDelta = (abs(ns - rs) / maxOf(rs, ns, 1e-9)).coerceIn(0.0, 1.0)
+        val shift = (meanDelta * 0.65 + volatilityDelta * 0.35).coerceIn(0.0, 1.0)
         val severe = shift >= 0.50
         val reasons = buildList {
             if (meanDelta >= 0.25) add("mean shifted materially")
@@ -59,5 +71,4 @@ object AmarDriftAndUncertaintyEngine {
 
     private fun mean(values: List<Double>) = values.average()
     private fun stdev(values: List<Double>, mean: Double): Double = sqrt(values.map { (it - mean) * (it - mean) }.average())
-    private fun maxScale(values: List<Double>): Double = (values.maxOrNull()?.let { abs(it) } ?: 1.0).coerceAtLeast(1e-9)
 }
