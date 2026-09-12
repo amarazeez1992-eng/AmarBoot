@@ -12,11 +12,17 @@ class AmarAgentCore(
     suspend fun ask(request: AmarAgentRequest): AmarAgentResponse {
         if (!policy.agentEnabled) return AmarAgentResponse.blocked("AMAR AI Agent is disabled by policy.")
         val tools = toolRegistry.availableTools(policy)
+        val safeMaximumSources = request.maximumSourceCount.coerceIn(1, policy.maxResearchSources.coerceAtLeast(1))
+        val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
         val context = AmarAgentContext(
             userText = request.text,
             tools = tools,
             executionAllowed = false,
-            brokerAccessAllowed = false
+            brokerAccessAllowed = false,
+            requestedSourceCount = safeRequestedSources,
+            maximumSourceCount = safeMaximumSources,
+            requireCrossValidation = request.requireCrossValidation,
+            requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
         )
         return reasoningProvider.respond(context)
     }
