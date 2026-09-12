@@ -4,18 +4,27 @@ package com.personal.gridbot.amaros.agent
 class AmarAgentPlanner {
     fun plan(request: AmarAgentRequest, availableTools: List<AmarAgentTool>): AmarAgentPlan {
         val intent = classify(request.text)
-        val researchRequired = intent == AgentIntent.RESEARCH || intent == AgentIntent.TRADE_ANALYSIS
         val tools = availableTools
-            .filter { !researchRequired || it.scope == AmarToolScope.RESEARCH || it.scope == AmarToolScope.READ_ONLY }
+            .filter { tool ->
+                when (intent) {
+                    AgentIntent.RESEARCH -> tool.scope == AmarToolScope.RESEARCH || tool.scope == AmarToolScope.READ_ONLY
+                    AgentIntent.TRADE_ANALYSIS -> tool.scope == AmarToolScope.RESEARCH ||
+                        tool.scope == AmarToolScope.READ_ONLY || tool.scope == AmarToolScope.SIMULATION
+                    AgentIntent.STRATEGY_DESIGN -> tool.scope == AmarToolScope.READ_ONLY ||
+                        tool.scope == AmarToolScope.STRATEGY_WRITE || tool.scope == AmarToolScope.SIMULATION
+                    AgentIntent.GENERAL -> tool.scope == AmarToolScope.READ_ONLY
+                }
+            }
             .map { it.id }
+            .distinct()
         return AmarAgentPlan(
             intent = intent,
             steps = listOf(
                 "normalize_request",
-                if (researchRequired) "retrieve_and_verify_evidence" else "inspect_local_context",
+                if (intent == AgentIntent.RESEARCH || intent == AgentIntent.TRADE_ANALYSIS) "retrieve_and_verify_evidence" else "inspect_local_context",
                 "reason_with_constraints",
                 "challenge_assumptions",
-                if (intent == AgentIntent.TRADE_ANALYSIS && request.requireBacktestWhenApplicable) "simulate_and_risk_check" else "produce_answer",
+                if (intent == AgentIntent.TRADE_ANALYSIS && request.requireBacktestWhenApplicable) "require_simulation_and_risk_check" else "produce_answer",
                 "audit_output"
             ),
             requiredTools = tools,
