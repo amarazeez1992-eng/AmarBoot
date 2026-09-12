@@ -40,8 +40,8 @@ class Bot1FileQueueTests(unittest.TestCase):
 
     def test_expired_pending_command_can_be_superseded(self):
         with TemporaryDirectory() as directory:
-            enqueue(_command("req-1", expires_at_ms=int(time.time() * 1000) + 100), directory)
-            time.sleep(0.15)
+            enqueue(_command("req-1", expires_at_ms=int(time.time() * 1000) + 2000), directory)
+            time.sleep(2.1)
             enqueue(_command("req-2"), directory)
             record = json.loads((Path(directory) / COMMAND_FILE).read_text(encoding="utf-8").splitlines()[-1])
             self.assertEqual(record["request_id"], "req-2")
