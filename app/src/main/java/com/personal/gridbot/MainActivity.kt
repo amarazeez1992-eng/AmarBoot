@@ -36,6 +36,7 @@ import com.personal.gridbot.ui.theme.AmarPlatinum
 import com.personal.gridbot.ui.theme.AmarTheme
 import com.personal.gridbot.ui.theme.AmarThemeMode
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -79,9 +80,7 @@ class MainActivity : ComponentActivity() {
                     when (command) {
                         is AmarAiAppCommandBus.Command.OpenRoom -> showRoom(command.room)
                         is AmarAiAppCommandBus.Command.SetVisualEffects -> setVisualEffectsEnabled(command.enabled)
-                        is AmarAiAppCommandBus.Command.QueueBotCommand -> {
-                            runCatching { AmarBotCommandEngine(this@MainActivity).queue(command.botNumber, command.command) }
-                        }
+                        is AmarAiAppCommandBus.Command.QueueBotCommand -> runCatching { AmarBotCommandEngine(this@MainActivity).queue(command.botNumber, command.command) }
                     }
                 }
             }
