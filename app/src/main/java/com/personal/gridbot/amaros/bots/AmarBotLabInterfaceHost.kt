@@ -1,7 +1,10 @@
 package com.personal.gridbot.amaros.bots
 
 import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 
 private const val PREFS = "amar_bot_interfaces"
 
@@ -27,14 +30,11 @@ object AmarBotInterfaceRegistry {
     }
 }
 
-/**
- * Single active Bot-Lab interface.
- *
- * The enhanced visual prototype is intentionally not the runtime host:
- * production remains wired to the existing Bot Lab business logic,
- * persistence, command lifecycle and verified BOT1 gateway.
- */
+/** Production Interface 1 host. Interface 2 is intentionally not referenced or modified. */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
-    AmarBotLabProfessionalScreen(onBackHome = onBackHome)
+    Box(Modifier.fillMaxSize()) {
+        AmarBotLabProfessionalScreen(onBackHome = onBackHome)
+        AmarBotLabEngineStatusOverlay()
+    }
 }
