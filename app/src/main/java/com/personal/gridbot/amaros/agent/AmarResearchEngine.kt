@@ -29,7 +29,11 @@ data class ResearchFinding(
     val sourceUri: String,
     val evidence: String,
     val authority: Authority = Authority.UNKNOWN,
-    val stance: EvidenceStance = EvidenceStance.UNKNOWN
+    val stance: EvidenceStance = EvidenceStance.UNKNOWN,
+    val publisher: String = "",
+    val sourceType: AmarSourceType = AmarSourceType.UNKNOWN,
+    val retrievedAtEpochMs: Long = System.currentTimeMillis(),
+    val fingerprint: String = AmarEvidenceLedger.fingerprintOf("$sourceUri|$evidence")
 )
 
 enum class EvidenceStance { SUPPORTS, OPPOSES, MIXED, UNKNOWN }
