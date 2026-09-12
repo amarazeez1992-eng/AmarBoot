@@ -20,9 +20,9 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.INTAKE, request.text)
         val mandates = hierarchy.defaultMandates()
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
-
         val plan = planner.plan(request, availableTools)
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
+
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
@@ -86,12 +86,12 @@ class AmarAgentOrchestrator(
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
         val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}")
 
-        return AmarAgentRunResult(answer = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, sessionEvents = session.events())
+        return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, sessionEvents = session.events())
     }
 }
 
 data class AmarAgentRunResult(
-    val answer: AmarAgentResponse,
+    val response: AmarAgentResponse,
     val plan: AmarAgentPlan,
     val research: ResearchReport?,
     val sourceVerification: AmarSourceVerification?,
@@ -99,6 +99,4 @@ data class AmarAgentRunResult(
     val critique: AmarCritique,
     val finalVerification: AmarDecisionVerification,
     val sessionEvents: List<AmarAgentEvent>
-) {
-    val response: AmarAgentResponse get() = answer
-}
+)
