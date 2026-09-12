@@ -8,17 +8,9 @@ import org.junit.Test
 
 class AmarAgentStageTwoTest {
     @Test fun coordinator_detects_direction_conflict_and_never_approves_it() = runBlocking {
-        val roleA = object : AmarAnalystRole {
-            override val id = "A"
-            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("A", "BUY", 0.90, AmarDecisionDirection.BUY)
-        }
-        val roleB = object : AmarAnalystRole {
-            override val id = "B"
-            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("B", "SELL", 0.90, AmarDecisionDirection.SELL)
-        }
-
+        val roleA = role("A", "BUY", AmarDecisionDirection.BUY, 0.90)
+        val roleB = role("B", "SELL", AmarDecisionDirection.SELL, 0.90)
         val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(roleA, roleB))
-
         assertEquals(2, result.reports.size)
         assertTrue(result.conflicts.contains("direction_conflict"))
         assertEquals(AmarDecisionDirection.UNKNOWN, result.consensusDirection)
@@ -26,17 +18,9 @@ class AmarAgentStageTwoTest {
     }
 
     @Test fun duplicate_role_ids_are_reported_instead_of_silently_dropped() = runBlocking {
-        val roleA = object : AmarAnalystRole {
-            override val id = "A"
-            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("A", "BUY", 0.90, AmarDecisionDirection.BUY)
-        }
-        val duplicate = object : AmarAnalystRole {
-            override val id = "A"
-            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("A", "BUY", 0.90, AmarDecisionDirection.BUY)
-        }
-
-        val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(roleA, duplicate))
-
+        val result = AmarDeliberationCoordinator().deliberate(
+            AmarAnalysisContext("test"), listOf(role("A", "BUY", AmarDecisionDirection.BUY, 0.90), role("A", "BUY", AmarDecisionDirection.BUY, 0.90))
+        )
         assertTrue(result.conflicts.contains("duplicate_role_ids:A"))
         assertFalse(result.approvedForSimulation)
     }
@@ -46,16 +30,20 @@ class AmarAgentStageTwoTest {
             override val id = ""
             override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("", "BUY", 0.90, AmarDecisionDirection.BUY)
         }
-        val valid = object : AmarAnalystRole {
-            override val id = "B"
-            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("B", "BUY", 0.90, AmarDecisionDirection.BUY)
-        }
-
-        val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(invalid, valid))
-
+        val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(invalid, role("B", "BUY", AmarDecisionDirection.BUY, 0.90)))
         assertEquals(2, result.reports.size)
         assertTrue(result.conflicts.contains("blank_role_id"))
         assertTrue(result.conflicts.contains("blank_report_role_id"))
+        assertFalse(result.approvedForSimulation)
+    }
+
+    @Test fun role_report_identity_mismatch_is_a_hard_block() = runBlocking {
+        val mismatched = object : AmarAnalystRole {
+            override val id = "A"
+            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("B", "BUY", 0.90, AmarDecisionDirection.BUY)
+        }
+        val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(mismatched, role("C", "BUY", AmarDecisionDirection.BUY, 0.90)))
+        assertTrue(result.conflicts.contains("role_report_identity_mismatch"))
         assertFalse(result.approvedForSimulation)
     }
 
@@ -69,9 +57,7 @@ class AmarAgentStageTwoTest {
                 return AmarAgentResponse("HOLD: لا توجد إشارة قابلة للاعتماد")
             }
         }
-
         val result = AmarStageTwoEngine(provider).deliberate("تحليل", emptyList())
-
         assertEquals(4, calls.size)
         assertEquals(4, result.deliberation.reports.size)
         assertEquals(AmarDecisionDirection.HOLD, result.chosenDirection)
@@ -82,32 +68,22 @@ class AmarAgentStageTwoTest {
     }
 
     @Test fun opposing_evidence_reduces_confidence_and_blocks_approval() = runBlocking {
-        val provider = object : AmarReasoningProvider {
-            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("BUY مع تحفظ")
-        }
+        val provider = fixedProvider("BUY مع تحفظ")
         val evidence = listOf(
             ResearchFinding("support", "https://a.example", "support", authority = Authority.OFFICIAL, stance = EvidenceStance.SUPPORTS),
             ResearchFinding("oppose", "https://b.example", "oppose", authority = Authority.REPUTABLE, stance = EvidenceStance.OPPOSES)
         )
-
         val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
-
         assertEquals(4, result.deliberation.reports.size)
         assertTrue(result.confidence < 0.80)
         assertFalse(result.approvedForSimulation)
     }
 
     @Test fun unknown_evidence_does_not_count_as_hold_support() = runBlocking {
-        val provider = object : AmarReasoningProvider {
-            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("HOLD")
-        }
-        val evidence = listOf(
+        val result = AmarStageTwoEngine(fixedProvider("HOLD")).deliberate("تحليل", listOf(
             ResearchFinding("unknown", "https://a.example", "unknown", authority = Authority.PRIMARY, stance = EvidenceStance.UNKNOWN),
             ResearchFinding("unknown2", "https://b.example", "unknown2", authority = Authority.OFFICIAL, stance = EvidenceStance.UNKNOWN)
-        )
-
-        val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
-
+        ))
         assertEquals(AmarDecisionDirection.HOLD, result.chosenDirection)
         assertEquals(0.0, result.confidence, 0.0)
         assertTrue(result.deliberation.conflicts.contains("insufficient_role_confidence"))
@@ -115,16 +91,10 @@ class AmarAgentStageTwoTest {
     }
 
     @Test fun same_direction_high_confidence_requires_independent_mixed_evidence() = runBlocking {
-        val provider = object : AmarReasoningProvider {
-            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("HOLD")
-        }
-        val evidence = listOf(
+        val result = AmarStageTwoEngine(fixedProvider("HOLD")).deliberate("تحليل", listOf(
             ResearchFinding("mixed", "https://a.example", "mixed", authority = Authority.PRIMARY, stance = EvidenceStance.MIXED),
             ResearchFinding("mixed2", "https://b.example", "mixed2", authority = Authority.OFFICIAL, stance = EvidenceStance.MIXED)
-        )
-
-        val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
-
+        ))
         assertEquals(AmarDecisionDirection.HOLD, result.chosenDirection)
         assertTrue(result.approvedForSimulation)
         assertFalse(result.executionAllowed)
@@ -132,29 +102,27 @@ class AmarAgentStageTwoTest {
     }
 
     @Test fun blank_fingerprints_do_not_collapse_distinct_evidence() = runBlocking {
-        val provider = object : AmarReasoningProvider {
-            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("BUY")
-        }
-        val evidence = listOf(
+        val result = AmarStageTwoEngine(fixedProvider("BUY")).deliberate("تحليل", listOf(
             ResearchFinding("one", "https://a.example", "one", fingerprint = "", authority = Authority.PRIMARY, stance = EvidenceStance.SUPPORTS),
             ResearchFinding("two", "https://b.example", "two", fingerprint = "", authority = Authority.OFFICIAL, stance = EvidenceStance.SUPPORTS)
-        )
-
-        val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
-
+        ))
         assertEquals(2, result.deliberation.reports.first().supportingEvidence.size)
         assertTrue(result.approvedForSimulation)
     }
 
     @Test fun unknown_direction_is_a_hard_block() = runBlocking {
-        val provider = object : AmarReasoningProvider {
-            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("البيانات غير كافية")
-        }
-
-        val result = AmarStageTwoEngine(provider).deliberate("تحليل", emptyList())
-
+        val result = AmarStageTwoEngine(fixedProvider("البيانات غير كافية")).deliberate("تحليل", emptyList())
         assertEquals(AmarDecisionDirection.UNKNOWN, result.chosenDirection)
         assertTrue(result.deliberation.conflicts.contains("unknown_role_direction"))
         assertFalse(result.approvedForSimulation)
+    }
+
+    private fun role(id: String, conclusion: String, direction: AmarDecisionDirection, confidence: Double) = object : AmarAnalystRole {
+        override val id = id
+        override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport(id, conclusion, confidence, direction)
+    }
+
+    private fun fixedProvider(answer: String) = object : AmarReasoningProvider {
+        override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse(answer)
     }
 }
