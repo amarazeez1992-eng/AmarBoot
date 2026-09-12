@@ -1,26 +1,25 @@
 package com.personal.gridbot.amaros.design
 
-/** Independent premium digital clock controller for the home WebView. */
+/** Independent compact premium digital clock controller for the home WebView. */
 object AmarDigitalClockController {
     fun script(): String = """
         (function(){
           var c=document.getElementById('clock');
           if(!c)return;
-          if(window.__amarDigitalClockTimer)clearInterval(window.__amarDigitalClockTimer);
+          if(window.__amarDigitalClockTimer)clearTimeout(window.__amarDigitalClockTimer);
           c.className='amar-digital-clock';
           c.innerHTML='<span class="adc-time">00:00:00</span><span class="adc-date">--/--/----</span>';
-          c.style.cssText='position:relative;width:112px;height:62px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-sizing:border-box;overflow:hidden;direction:ltr;background:linear-gradient(145deg,rgba(8,20,35,.96),rgba(31,20,68,.94));border:1px solid rgba(102,231,255,.78);box-shadow:0 0 0 1px rgba(177,108,255,.25),0 0 28px rgba(0,217,255,.34),0 0 44px rgba(148,91,255,.18),inset 0 0 22px rgba(104,211,255,.13);backdrop-filter:blur(14px);font-family:monospace;z-index:20;';
+          c.style.cssText='position:relative;width:100px;height:54px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-sizing:border-box;overflow:hidden;direction:ltr;background:linear-gradient(135deg,rgba(4,4,8,.98),rgba(24,10,42,.96) 42%,rgba(17,12,45,.96) 68%,rgba(8,5,18,.98));border:1px solid rgba(241,196,76,.92);box-shadow:0 0 0 1px rgba(236,72,153,.34),0 0 0 3px rgba(92,55,180,.16),0 0 18px rgba(241,196,76,.25),0 0 30px rgba(168,85,247,.22),0 0 34px rgba(236,72,153,.12),inset 0 0 16px rgba(99,58,180,.22);backdrop-filter:blur(12px);font-family:monospace;z-index:20;';
           var style=document.getElementById('amarDigitalClockStyle');
           if(!style){style=document.createElement('style');style.id='amarDigitalClockStyle';document.head.appendChild(style)}
           style.textContent=`
-            #clock.amar-digital-clock:before{content:"";position:absolute;inset:-35%;background:conic-gradient(from 0deg,transparent,#00eaff55,transparent,#b86cff55,transparent,#00eaff44,transparent);animation:adcSpin 7s linear infinite;z-index:0}
-            #clock.amar-digital-clock:after{content:"";position:absolute;left:-35%;top:0;width:35%;height:100%;background:linear-gradient(90deg,transparent,#ffffffaa,transparent);transform:skewX(-18deg);animation:adcShine 3.2s ease-in-out infinite;z-index:3}
+            #clock.amar-digital-clock:before{content:"";position:absolute;inset:-55%;background:conic-gradient(from 20deg,transparent 0deg,#f1c44c99 48deg,transparent 82deg,#7c3aed99 130deg,transparent 178deg,#ec489999 228deg,transparent 278deg,#312e8199 325deg,transparent 360deg);animation:adcSpin 8s linear infinite;z-index:0}
+            #clock.amar-digital-clock:after{content:"";position:absolute;inset:1px;border-radius:13px;background:linear-gradient(115deg,transparent 0%,rgba(241,196,76,.14) 25%,transparent 43%,rgba(236,72,153,.10) 72%,transparent 100%);z-index:1;pointer-events:none}
             #clock.amar-digital-clock .adc-time,#clock.amar-digital-clock .adc-date{position:relative;z-index:2;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
-            #clock.amar-digital-clock .adc-time{font-size:18px;font-weight:1000;letter-spacing:1.5px;color:#8ff7ff;text-shadow:0 0 6px #00eaff,0 0 14px #8b6cff,0 0 22px #00eaff;line-height:20px}
-            #clock.amar-digital-clock .adc-date{font-size:8px;font-weight:900;letter-spacing:1.2px;color:#d6c9ff;text-shadow:0 0 7px #a86cff;line-height:11px}
+            #clock.amar-digital-clock .adc-time{font-size:16px;font-weight:1000;letter-spacing:1px;color:#f7e7b2;text-shadow:0 0 4px #f1c44c,0 0 9px #a855f7,0 0 15px #ec4899;line-height:18px}
+            #clock.amar-digital-clock .adc-date{font-size:7px;font-weight:900;letter-spacing:1px;color:#d9d2ff;text-shadow:0 0 5px #7c3aed,0 0 8px #ec4899;line-height:9px}
             @keyframes adcSpin{to{transform:rotate(360deg)}}
-            @keyframes adcShine{0%,35%{left:-35%;opacity:0}50%{opacity:1}70%,100%{left:115%;opacity:0}}
-            @keyframes adcPulse{50%{filter:brightness(1.18)}}
+            @keyframes adcPulse{50%{filter:brightness(1.12)}}
           `;
           function tick(){
             var d=new Date();
@@ -32,9 +31,10 @@ object AmarDigitalClockController {
             if(timeNode)timeNode.textContent=time;
             if(dateNode)dateNode.textContent=date;
             c.style.animation='adcPulse 2.8s ease-in-out infinite';
+            var delay=1000-(Date.now()%1000)+8;
+            window.__amarDigitalClockTimer=setTimeout(tick,delay);
           }
           tick();
-          window.__amarDigitalClockTimer=setInterval(tick,1000);
         })();
     """.trimIndent()
 }
