@@ -2,7 +2,7 @@ package com.personal.gridbot.amaros.agent
 
 /**
  * Central pipeline for high-confidence answers.
- * It coordinates research, verification, reasoning and criticism without granting execution.
+ * It coordinates research, verification and criticism without granting execution.
  */
 class AmarAgentOrchestrator(
     private val planner: AmarAgentPlanner,
@@ -28,11 +28,13 @@ class AmarAgentOrchestrator(
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "multi-source research")
+            val sourceLimit = minOf(request.maximumSourceCount, safeBudget.maxSources).coerceAtLeast(1)
             researchEngine.research(
                 ResearchRequest(
                     question = request.text,
-                    maxSources = minOf(request.maximumSourceCount, safeBudget.maxSources),
-                    requireIndependentSources = request.requireCrossValidation
+                    maxSources = sourceLimit,
+                    requireIndependentSources = request.requireCrossValidation,
+                    targetIndependentSources = minOf(safeBudget.targetIndependentSources, sourceLimit)
                 )
             )
         } else null
@@ -50,6 +52,9 @@ class AmarAgentOrchestrator(
                 appendLine("sources=${report.findings.size}")
                 appendLine("confidence=${verification?.confidence ?: 0.0}")
                 appendLine("consensus=${consensus?.consensusScore ?: 0.0}")
+                appendLine("supporting=${consensus?.supportingSources ?: 0}")
+                appendLine("opposing=${consensus?.opposingSources ?: 0}")
+                appendLine("unknown=${consensus?.unknownSources ?: 0}")
                 report.conflicts.take(20).forEach { appendLine("conflict=$it") }
             }
         }
