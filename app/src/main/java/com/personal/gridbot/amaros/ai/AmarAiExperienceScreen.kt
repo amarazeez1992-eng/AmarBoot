@@ -12,29 +12,21 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardVoice
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -154,7 +146,7 @@ fun AmarAiExperienceScreen() {
                                 Text(if (mine) "أنت" else if (message.role == AmarAiConversationState.Role.AI) "AMAR AI" else "النظام", style = MaterialTheme.typography.labelMedium, color = Color(0xFF4D4F5B))
                                 Text(message.text, color = Color(0xFF20222A))
                                 if (!mine && message.text.isNotBlank()) {
-                                    IconButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(message.text)) }, modifier = Modifier.size(30.dp)) { Icon(Icons.Default.ContentCopy, "نسخ") }
+                                    TextButton(onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(message.text)) }) { Text("نسخ") }
                                 }
                             }
                         }
@@ -162,7 +154,6 @@ fun AmarAiExperienceScreen() {
                 }
             }
 
-            // ChatGPT/Gemini-like composer with an animated perimeter.
             Box(Modifier.fillMaxWidth().padding(horizontal = 1.dp)) {
                 Box(
                     Modifier.matchParentSize().padding(1.dp).clip(RoundedCornerShape(25.dp)).rotate(ringRotation / 18f)
@@ -170,26 +161,16 @@ fun AmarAiExperienceScreen() {
                 )
                 Surface(shape = RoundedCornerShape(24.dp), color = Color.White, modifier = Modifier.fillMaxWidth().padding(2.dp)) {
                     Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        if (selectedImage != null) {
-                            Text("📷 صورة جاهزة للتحليل", color = Color(0xFF6D4AFF), style = MaterialTheme.typography.labelMedium)
-                        }
-                        OutlinedTextField(
-                            value = request,
-                            onValueChange = { request = it },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 70.dp),
-                            placeholder = { Text("اكتب لـ AMAR AI أو اضغط الاتصال للتحدث مباشرة…") },
-                            colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color(0xFFFFB000))
-                        )
+                        if (selectedImage != null) Text("📷 صورة جاهزة للتحليل", color = Color(0xFF6D4AFF), style = MaterialTheme.typography.labelMedium)
+                        OutlinedTextField(value = request, onValueChange = { request = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 70.dp), placeholder = { Text("اكتب لـ AMAR AI أو اضغط الاتصال للتحدث مباشرة…") }, colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.Transparent, focusedBorderColor = Color(0xFFFFB000)))
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                IconButton(onClick = { imagePicker.launch("image/*") }) { Icon(Icons.Default.AddPhotoAlternate, "إرسال صورة", tint = Color(0xFF6254D9)) }
+                                IconButton(onClick = { imagePicker.launch("image/*") }) { Icon(Icons.Default.Add, "إرسال صورة", tint = Color(0xFF6254D9)) }
                                 IconButton(onClick = { request = ""; selectedImage = null }) { Icon(Icons.Default.Delete, "حذف", tint = Color(0xFFE05252)) }
-                                IconButton(onClick = { clipboard.getText()?.text?.let { request = it } }) { Icon(Icons.Default.ContentCopy, "لصق", tint = Color(0xFF536274)) }
+                                TextButton(onClick = { clipboard.getText()?.text?.let { request = it } }) { Text("لصق") }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
-                                FilledTonalIconButton(onClick = { toggleLive() }, colors = IconButtonDefaults.filledTonalIconButtonColors(containerColor = if (liveState == AmarAiLiveConversationEngine.State.IDLE) Color(0xFFFFE5B3) else Color(0xFFFFD1D1))) {
-                                    Icon(if (liveState == AmarAiLiveConversationEngine.State.IDLE) Icons.Default.Mic else Icons.Default.Stop, "محادثة مباشرة")
-                                }
+                                FilledTonalButton(onClick = { toggleLive() }) { Text(if (liveState == AmarAiLiveConversationEngine.State.IDLE) "🎙 تحدث" else "■ إيقاف") }
                                 FilledIconButton(onClick = { submit(request) }, enabled = request.isNotBlank() && !busy) { Icon(Icons.Default.Send, "إرسال") }
                             }
                         }
@@ -205,9 +186,7 @@ fun AmarAiExperienceScreen() {
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("الصلاحية: ${if (aiEnabled && !emergency) "مفعّلة" else "متوقفة"}", color = Color(0xFF606571), style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = { if (emergency) control.clearEmergencyStop() else control.emergencyStop(); refreshControl() }) {
-                    Text(if (emergency) "استئناف" else "إيقاف طوارئ", color = if (emergency) Color(0xFF087443) else Color(0xFFB3263A))
-                }
+                TextButton(onClick = { if (emergency) control.clearEmergencyStop() else control.emergencyStop(); refreshControl() }) { Text(if (emergency) "استئناف" else "إيقاف طوارئ", color = if (emergency) Color(0xFF087443) else Color(0xFFB3263A)) }
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -216,12 +195,7 @@ fun AmarAiExperienceScreen() {
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 OutlinedTextField(strategyName, { strategyName = it }, Modifier.weight(1f), label = { Text("اسم الاستراتيجية") }, singleLine = true)
-                Button(onClick = {
-                    if (strategyName.isNotBlank()) {
-                        notes.save(strategyName.trim(), conversation.messages.joinToString("\n\n") { it.text }, "DRAFT")
-                        strategyName = ""
-                    }
-                }, enabled = strategyName.isNotBlank()) { Text("حفظ") }
+                Button(onClick = { if (strategyName.isNotBlank()) { notes.save(strategyName.trim(), conversation.messages.joinToString("\n\n") { it.text }, "DRAFT"); strategyName = "" } }, enabled = strategyName.isNotBlank()) { Text("حفظ") }
             }
         }
     }
