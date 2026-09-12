@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,8 +28,9 @@ import androidx.compose.ui.input.pointer.consume
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 
-/** Shared Bot-Lab drag/drop surface: every bot can be moved and dropped onto another bot. */
+/** Shared Bot-Lab drag/drop surface: all ten bots can be selected and reordered. */
 @Composable
 fun AmarBotDragDropBoard(
     botNumbers: List<Int>,
@@ -38,16 +39,10 @@ fun AmarBotDragDropBoard(
     onReorder: (List<Int>) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var dragging by remember(botNumbers) { mutableStateOf<Int?>(null) }
+    var dragging by remember { mutableStateOf<Int?>(null) }
+    var dragDistanceX by remember { mutableStateOf(0f) }
+    var dragDistanceY by remember { mutableStateOf(0f) }
     var working by remember(botNumbers) { mutableStateOf(botNumbers) }
-
-    fun move(from: Int, to: Int) {
-        if (from == to || from !in working.indices || to !in working.indices) return
-        working = working.toMutableList().apply {
-            add(to, removeAt(from))
-        }
-        onReorder(working)
-    }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("اسحب أي بوت وأسقطه فوق بوت آخر لترتيب البوتات", color = Color(0xFF78A9B8), fontSize = 9.sp)
@@ -61,12 +56,42 @@ fun AmarBotDragDropBoard(
                         Modifier.weight(1f).height(42.dp).scale(scale)
                             .background(if (selectedBot == number) Color(0xFF1DE5FF) else Color(0xFF0E2230), RoundedCornerShape(11.dp))
                             .border(1.dp, if (isDragging) Color(0xFFFFC84A) else if (selectedBot == number) Color(0xFF8DFAFF) else Color(0xFF1A3E4D), RoundedCornerShape(11.dp))
-                            .pointerInput(working, number) {
+                            .clickable { onSelectBot(number) }
+                            .pointerInput(number) {
                                 detectDragGestures(
-                                    onDragStart = { dragging = number },
-                                    onDrag = { change, dragAmount -> change.consume() },
-                                    onDragEnd = { dragging = null },
-                                    onDragCancel = { dragging = null }
+                                    onDragStart = {
+                                        dragging = number
+                                        dragDistanceX = 0f
+                                        dragDistanceY = 0f
+                                    },
+                                    onDrag = { change, amount ->
+                                        change.consume()
+                                        dragDistanceX += amount.x
+                                        dragDistanceY += amount.y
+                                    },
+                                    onDragEnd = {
+                                        val from = working.indexOf(number)
+                                        if (from >= 0) {
+                                            val columns = 5
+                                            val cellWidth = size.width.toFloat().coerceAtLeast(1f)
+                                            val cellHeight = 48.dp.toPx().coerceAtLeast(1f)
+                                            val colShift = (dragDistanceX / cellWidth).roundToInt()
+                                            val rowShift = (dragDistanceY / cellHeight).roundToInt()
+                                            val target = (from + rowShift * columns + colShift).coerceIn(0, working.lastIndex)
+                                            if (target != from) {
+                                                working = working.toMutableList().apply { add(target, removeAt(from)) }
+                                                onReorder(working)
+                                            }
+                                        }
+                                        dragging = null
+                                        dragDistanceX = 0f
+                                        dragDistanceY = 0f
+                                    },
+                                    onDragCancel = {
+                                        dragging = null
+                                        dragDistanceX = 0f
+                                        dragDistanceY = 0f
+                                    }
                                 )
                             }
                             .padding(horizontal = 3.dp),
