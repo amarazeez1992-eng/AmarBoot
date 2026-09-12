@@ -71,4 +71,18 @@ class AmarAgentStageOneTest {
         assertTrue(critic.review("شرح عام", emptyList(), requireEvidence = false).accepted)
         assertFalse(critic.review("تحليل تداول", emptyList(), requireEvidence = true).accepted)
     }
+
+    @Test fun trading_tools_respect_capability_scopes() {
+        val tools = AmarTradingTools()
+        val noResearch = tools.availableTools(AmarAgentPolicy(allowResearch = false, allowSimulation = false, allowStrategyDrafting = false))
+
+        assertTrue(noResearch.none { it.id == "market_research" })
+        assertTrue(noResearch.none { it.id == "simulation" })
+        assertTrue(noResearch.none { it.id == "strategy_draft" })
+
+        val full = tools.availableTools(AmarAgentPolicy())
+        assertEquals(AmarToolScope.RESEARCH, full.first { it.id == "market_research" }.scope)
+        assertEquals(AmarToolScope.SIMULATION, full.first { it.id == "simulation" }.scope)
+        assertEquals(AmarToolScope.STRATEGY_WRITE, full.first { it.id == "strategy_draft" }.scope)
+    }
 }
