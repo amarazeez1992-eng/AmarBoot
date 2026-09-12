@@ -8,9 +8,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,9 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
+import kotlin.math.cos
+import kotlin.math.sin
 
 private val StageBg = Color(0xFF02050A)
-private val StageDeep = Color(0xFF071522)
+private val StageDeep = Color(0xFF081521)
 private val StageCyan = Color(0xFF28E7FF)
 private val StageBlue = Color(0xFF397BFF)
 private val StageGold = Color(0xFFFFC84A)
@@ -37,33 +39,30 @@ private val StageWhite = Color(0xFFF2FBFF)
 
 @Composable
 fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "amar_ai_professional_roaming")
+    val transition = rememberInfiniteTransition(label = "amar_ai_roaming")
     val route by transition.animateFloat(
         0f,
         1f,
-        infiniteRepeatable(
-            animation = tween(14000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "convoy_route"
+        infiniteRepeatable(tween(12000, easing = FastOutSlowInEasing), RepeatMode.Restart),
+        label = "roaming_route"
     )
     val pulse by transition.animateFloat(
-        .72f,
+        .55f,
         1f,
-        infiniteRepeatable(tween(850), RepeatMode.Reverse),
-        label = "ai_pulse"
+        infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "pulse"
     )
     val bob by transition.animateFloat(
         -1f,
         1f,
         infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "ai_bob"
+        label = "bob"
     )
     val spin by transition.animateFloat(
-        -2.5f,
-        2.5f,
-        infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "ai_spin"
+        -2f,
+        2f,
+        infiniteRepeatable(tween(2300, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "spin"
     )
 
     val market = AmarMarketStateStore.snapshot
@@ -73,79 +72,69 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
         "NEUTRAL" -> "محايد"
         else -> "—"
     }
-    val marketText = if (market.symbol.isNotBlank()) {
-        "السوق • ${market.symbol} • $direction"
-    } else {
-        "حالة السوق • $direction"
-    }
+    val marketText = if (market.symbol.isNotBlank()) "السوق ${market.symbol} • $direction" else "السوق • $direction"
 
+    // One normalized route is shared by the robot, AI identity, news and market state.
     val phase = route * 4f
     val segment = phase.toInt().coerceAtMost(3)
     val local = phase - segment
     val eased = local * local * (3f - 2f * local)
+    val nx = when (segment) {
+        0 -> -1f
+        1 -> -1f + 2f * eased
+        2 -> 1f
+        else -> 1f - 2f * eased
+    }
+    val ny = when (segment) {
+        0 -> 1f - 2f * eased
+        1 -> -1f
+        2 -> -1f + 2f * eased
+        else -> 1f
+    }
 
-    Box(modifier.fillMaxWidth().height(300.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxWidth().height(300.dp).padding(horizontal = 8.dp)) {
+    Box(modifier.fillMaxWidth().height(235.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
             val cx = size.width / 2f
-            val cy = size.height * .50f
-            val rx = size.width * .36f
-            val ry = size.height * .29f
-            val convoyX = when (segment) {
-                0 -> -rx
-                1 -> -rx + rx * 2f * eased
-                2 -> rx
-                else -> rx - rx * 2f * eased
-            }
-            val convoyY = when (segment) {
-                0 -> ry - ry * 2f * eased
-                1 -> -ry
-                2 -> -ry + ry * 2f * eased
-                else -> ry
-            }
+            val cy = size.height / 2f
+            val rx = size.width * .32f
+            val ry = size.height * .28f
+            val convoyX = nx * rx
+            val convoyY = ny * ry
 
             drawRect(Brush.verticalGradient(listOf(StageBg, StageDeep, StageBg)))
-            drawCircle(StageCyan.copy(alpha = .055f), size.minDimension * .32f, androidx.compose.ui.geometry.Offset(cx, cy))
-            drawCircle(StageBlue.copy(alpha = .035f), size.minDimension * .48f, androidx.compose.ui.geometry.Offset(cx, cy))
-            drawCircle(StageMagenta.copy(alpha = .022f), size.minDimension * .60f, androidx.compose.ui.geometry.Offset(cx, cy))
+            drawCircle(StageCyan.copy(alpha = .05f), size.minDimension * .25f, androidx.compose.ui.geometry.Offset(cx, cy))
+            drawCircle(StageBlue.copy(alpha = .035f), size.minDimension * .42f, androidx.compose.ui.geometry.Offset(cx, cy))
 
             for (i in 0..3) {
-                val scale = 1f + i * .13f
+                val scale = 1f + i * .12f
                 drawOval(
-                    brush = Brush.sweepGradient(listOf(StageCyan.copy(alpha = .10f / scale), StageBlue.copy(alpha = .045f / scale), StageGold.copy(alpha = .07f / scale), StageCyan.copy(alpha = .10f / scale))),
+                    brush = Brush.sweepGradient(listOf(StageCyan.copy(alpha = .10f / scale), StageBlue.copy(alpha = .04f / scale), StageGold.copy(alpha = .065f / scale), StageCyan.copy(alpha = .10f / scale))),
                     topLeft = androidx.compose.ui.geometry.Offset(cx - rx * scale, cy - ry * scale),
                     size = androidx.compose.ui.geometry.Size(rx * 2f * scale, ry * 2f * scale),
-                    style = Stroke(width = 1.1f + i * .4f)
+                    style = Stroke(width = 1f + i * .35f)
                 )
             }
 
-            val routePoints = listOf(
-                androidx.compose.ui.geometry.Offset(cx - rx, cy + ry),
-                androidx.compose.ui.geometry.Offset(cx - rx, cy - ry),
-                androidx.compose.ui.geometry.Offset(cx + rx, cy - ry),
-                androidx.compose.ui.geometry.Offset(cx + rx, cy + ry),
-                androidx.compose.ui.geometry.Offset(cx - rx, cy + ry)
-            )
-            for (i in 0 until routePoints.lastIndex) {
-                drawLine(StageCyan.copy(alpha = .12f), routePoints[i], routePoints[i + 1], 1.5f, cap = StrokeCap.Round)
+            val p1 = androidx.compose.ui.geometry.Offset(cx - rx, cy + ry)
+            val p2 = androidx.compose.ui.geometry.Offset(cx - rx, cy - ry)
+            val p3 = androidx.compose.ui.geometry.Offset(cx + rx, cy - ry)
+            val p4 = androidx.compose.ui.geometry.Offset(cx + rx, cy + ry)
+            listOf(p1 to p2, p2 to p3, p3 to p4, p4 to p1).forEach { (a, b) ->
+                drawLine(StageCyan.copy(alpha = .11f), a, b, 1.4f, cap = StrokeCap.Round)
             }
 
             withTransform({
                 translate(convoyX, convoyY)
                 rotate(spin, pivot = androidx.compose.ui.geometry.Offset(cx, cy))
             }) {
-                val localBob = bob * 4f
-                val headW = size.width * .16f
-                val headH = size.height * .17f
+                val lift = bob * 3.5f
+                val headW = size.width * .14f
+                val headH = size.height * .15f
                 val headCx = cx
-                val headCy = cy - size.height * .18f + localBob
+                val headCy = cy - size.height * .15f + lift
                 val headTop = headCy - headH / 2f
 
-                drawRoundRect(
-                    brush = Brush.linearGradient(listOf(StageBlue.copy(alpha = .20f), StageMagenta.copy(alpha = .08f))),
-                    topLeft = androidx.compose.ui.geometry.Offset(headCx - headW * .62f, headCy - headH * .62f),
-                    size = androidx.compose.ui.geometry.Size(headW * 1.24f, headH * 1.24f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(headW * .25f, headH * .25f)
-                )
+                drawCircle(StageCyan.copy(alpha = .10f), headW * .72f, androidx.compose.ui.geometry.Offset(headCx, headCy))
                 drawRoundRect(
                     brush = Brush.linearGradient(listOf(Color(0xFF214D62), Color(0xFF07121B), Color(0xFF163042))),
                     topLeft = androidx.compose.ui.geometry.Offset(headCx - headW / 2f, headTop),
@@ -153,111 +142,80 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(headW * .18f, headH * .18f)
                 )
                 drawRoundRect(
-                    brush = Brush.horizontalGradient(listOf(StageCyan.copy(alpha = .9f), StageBlue.copy(alpha = .65f), StageGold.copy(alpha = .75f))),
+                    brush = Brush.horizontalGradient(listOf(StageCyan, StageBlue, StageGold)),
                     topLeft = androidx.compose.ui.geometry.Offset(headCx - headW / 2f, headTop),
                     size = androidx.compose.ui.geometry.Size(headW, headH),
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(headW * .18f, headH * .18f),
-                    style = Stroke(2.4f)
+                    style = Stroke(2f)
                 )
-                drawCircle(StageCyan.copy(alpha = .18f), headW * .50f, androidx.compose.ui.geometry.Offset(headCx, headCy))
-                drawCircle(StageWhite.copy(alpha = pulse), headW * .052f, androidx.compose.ui.geometry.Offset(headCx - headW * .19f, headCy))
-                drawCircle(StageWhite.copy(alpha = pulse), headW * .052f, androidx.compose.ui.geometry.Offset(headCx + headW * .19f, headCy))
-                drawLine(StageGold.copy(alpha = .9f), androidx.compose.ui.geometry.Offset(headCx, headTop), androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .35f), 2.2f, cap = StrokeCap.Round)
-                drawCircle(StageMagenta.copy(alpha = pulse), 4.5f, androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .39f))
+                drawCircle(StageWhite.copy(alpha = pulse), headW * .045f, androidx.compose.ui.geometry.Offset(headCx - headW * .18f, headCy))
+                drawCircle(StageWhite.copy(alpha = pulse), headW * .045f, androidx.compose.ui.geometry.Offset(headCx + headW * .18f, headCy))
+                drawLine(StageGold.copy(alpha = .9f), androidx.compose.ui.geometry.Offset(headCx, headTop), androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .32f), 2f, cap = StrokeCap.Round)
+                drawCircle(StageMagenta.copy(alpha = pulse), 4f, androidx.compose.ui.geometry.Offset(headCx, headTop - headH * .36f))
 
-                val bodyW = size.width * .22f
-                val bodyH = size.height * .23f
-                val bodyTop = cy - size.height * .015f + localBob
+                val bodyW = size.width * .19f
+                val bodyH = size.height * .21f
+                val bodyTop = cy + size.height * .01f + lift
                 val bodyLeft = headCx - bodyW / 2f
                 drawRoundRect(
                     brush = Brush.linearGradient(listOf(Color(0xFF1C4050), Color(0xFF050B11), Color(0xFF182A47))),
                     topLeft = androidx.compose.ui.geometry.Offset(bodyLeft, bodyTop),
                     size = androidx.compose.ui.geometry.Size(bodyW, bodyH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(26f, 26f)
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(22f, 22f)
                 )
                 drawRoundRect(
-                    brush = Brush.horizontalGradient(listOf(StageCyan.copy(alpha = .55f), StageBlue.copy(alpha = .70f), StageGold.copy(alpha = .55f))),
+                    brush = Brush.horizontalGradient(listOf(StageCyan.copy(alpha = .65f), StageBlue, StageGold.copy(alpha = .65f))),
                     topLeft = androidx.compose.ui.geometry.Offset(bodyLeft, bodyTop),
                     size = androidx.compose.ui.geometry.Size(bodyW, bodyH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(26f, 26f),
-                    style = Stroke(2f)
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(22f, 22f),
+                    style = Stroke(1.8f)
                 )
                 drawRoundRect(
-                    brush = Brush.radialGradient(listOf(StageCyan.copy(alpha = .35f), StageBlue.copy(alpha = .05f))),
-                    topLeft = androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * .15f, bodyTop + bodyH * .16f),
-                    size = androidx.compose.ui.geometry.Size(bodyW * .70f, bodyH * .68f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(18f, 18f)
-                )
-                drawRoundRect(
-                    brush = Brush.horizontalGradient(listOf(StageCyan.copy(alpha = .9f), StageGold.copy(alpha = .7f))),
-                    topLeft = androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * .27f, bodyTop + bodyH * .29f),
-                    size = androidx.compose.ui.geometry.Size(bodyW * .46f, bodyH * .18f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f)
+                    brush = Brush.horizontalGradient(listOf(StageCyan.copy(alpha = .85f), StageGold.copy(alpha = .7f))),
+                    topLeft = androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * .28f, bodyTop + bodyH * .28f),
+                    size = androidx.compose.ui.geometry.Size(bodyW * .44f, bodyH * .17f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(7f, 7f)
                 )
 
-                val armY = bodyTop + bodyH * .42f
-                drawLine(StageCyan.copy(alpha = .82f), androidx.compose.ui.geometry.Offset(bodyLeft, armY), androidx.compose.ui.geometry.Offset(bodyLeft - bodyW * .30f, armY + 17f), 6f, cap = StrokeCap.Round)
-                drawLine(StageBlue.copy(alpha = .86f), androidx.compose.ui.geometry.Offset(bodyLeft + bodyW, armY), androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * 1.30f, armY + 17f), 6f, cap = StrokeCap.Round)
-                drawCircle(StageGold.copy(alpha = .95f), 5.5f, androidx.compose.ui.geometry.Offset(bodyLeft - bodyW * .30f, armY + 17f))
-                drawCircle(StageMagenta.copy(alpha = .90f), 5.5f, androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * 1.30f, armY + 17f))
+                val armY = bodyTop + bodyH * .40f
+                drawLine(StageCyan.copy(alpha = .85f), androidx.compose.ui.geometry.Offset(bodyLeft, armY), androidx.compose.ui.geometry.Offset(bodyLeft - bodyW * .27f, armY + 13f), 5f, cap = StrokeCap.Round)
+                drawLine(StageBlue.copy(alpha = .9f), androidx.compose.ui.geometry.Offset(bodyLeft + bodyW, armY), androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * 1.27f, armY + 13f), 5f, cap = StrokeCap.Round)
+                drawCircle(StageGold, 4.5f, androidx.compose.ui.geometry.Offset(bodyLeft - bodyW * .27f, armY + 13f))
+                drawCircle(StageMagenta, 4.5f, androidx.compose.ui.geometry.Offset(bodyLeft + bodyW * 1.27f, armY + 13f))
 
                 val legY = bodyTop + bodyH
-                drawLine(StageBlue.copy(alpha = .8f), androidx.compose.ui.geometry.Offset(headCx - bodyW * .23f, legY), androidx.compose.ui.geometry.Offset(headCx - bodyW * .23f, legY + 24f), 7f, cap = StrokeCap.Round)
-                drawLine(StageCyan.copy(alpha = .8f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .23f, legY), androidx.compose.ui.geometry.Offset(headCx + bodyW * .23f, legY + 24f), 7f, cap = StrokeCap.Round)
-                drawLine(StageGold.copy(alpha = .75f), androidx.compose.ui.geometry.Offset(headCx - bodyW * .23f, legY + 24f), androidx.compose.ui.geometry.Offset(headCx - bodyW * .34f, legY + 24f), 4f, cap = StrokeCap.Round)
-                drawLine(StageGold.copy(alpha = .75f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .23f, legY + 24f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .34f, legY + 24f), 4f, cap = StrokeCap.Round)
+                drawLine(StageBlue.copy(alpha = .85f), androidx.compose.ui.geometry.Offset(headCx - bodyW * .20f, legY), androidx.compose.ui.geometry.Offset(headCx - bodyW * .20f, legY + 18f), 6f, cap = StrokeCap.Round)
+                drawLine(StageCyan.copy(alpha = .85f), androidx.compose.ui.geometry.Offset(headCx + bodyW * .20f, legY), androidx.compose.ui.geometry.Offset(headCx + bodyW * .20f, legY + 18f), 6f, cap = StrokeCap.Round)
             }
 
-            drawCircle(StageGold.copy(alpha = .65f), 4f, androidx.compose.ui.geometry.Offset(cx + convoyX, cy + convoyY))
+            val satellite = androidx.compose.ui.geometry.Offset(
+                cx + cos(route * Math.PI * 2).toFloat() * rx * 1.16f,
+                cy + sin(route * Math.PI * 2).toFloat() * ry * 1.16f
+            )
+            drawCircle(StageGold.copy(alpha = .75f), 3.5f, satellite)
         }
 
-        // AI + NEWS + MARKET are a single moving convoy, not independent static labels.
-        val stageWidth = 330f
-        val stageHeight = 245f
-        val convoyX = when (segment) {
-            0 -> -stageWidth / 2f
-            1 -> -stageWidth / 2f + stageWidth * eased
-            2 -> stageWidth / 2f
-            else -> stageWidth / 2f - stageWidth * eased
-        }
-        val convoyY = when (segment) {
-            0 -> stageHeight / 2f - stageHeight * eased
-            1 -> -stageHeight / 2f
-            2 -> -stageHeight / 2f + stageHeight * eased
-            else -> stageHeight / 2f
-        }
-
+        // The information convoy uses the exact same normalized route as the robot.
         Box(
             Modifier
                 .align(Alignment.Center)
                 .graphicsLayer {
-                    translationX = convoyX
-                    translationY = convoyY
+                    translationX = nx * 120f
+                    translationY = ny * 66f
                 }
         ) {
-            Box(Modifier.graphicsLayer { scaleX = 1.03f; scaleY = 1.03f }) {
-                Text(
-                    "◈  AMAR AI  •  SUPERVISOR",
-                    color = StageCyan.copy(alpha = .98f),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    "NEWS ROOM  •  $marketText",
-                    color = StageGold.copy(alpha = .98f),
-                    fontSize = 7.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+            Box {
+                Text("◈ AMAR AI  •  SUPERVISOR", color = StageCyan, fontSize = 8.sp, fontWeight = FontWeight.Black)
+                Text("NEWS  •  $marketText", color = StageGold, fontSize = 7.sp, fontWeight = FontWeight.Bold)
             }
         }
 
         Text(
-            "AMAR AI  •  المشرف الذكي  •  AI + NEWS + MARKET",
-            color = StageCyan.copy(alpha = .88f),
-            fontSize = 8.sp,
-            fontWeight = FontWeight.Black,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 5.dp)
+            "AI • NEWS • MARKET  /  LIVE ROAMING",
+            color = StageCyan.copy(alpha = .72f),
+            fontSize = 7.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }
