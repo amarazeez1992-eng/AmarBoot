@@ -10,7 +10,7 @@ class AmarAgentVerifier {
         val issues = mutableListOf<String>()
         if (answer.isBlank()) issues += "empty_answer"
         if (!critique.accepted) issues += critique.issues
-        if (consensus != null && consensus.totalSources > 0 && consensus.consensusScore < 0.70) {
+        if (consensus != null && consensus.totalSources > 0 && consensus.consensusScore < 0.80) {
             issues += "weak_source_consensus"
         }
         return AmarDecisionVerification(
