@@ -9,6 +9,7 @@ object AmarAiMt5Office {
 
     val assets = listOf(
         Asset("mt5.ea.grid.v2", "Grid_Martingale_Basket_v2", "EA", "mt5/Experts/Grid_Martingale_Basket_v2.mq5", "protected execution reference; inspect only", false),
+        Asset("mt5.ea.remote", "Grid_Martingale_Basket_v2_RemoteTarget", "EA", "mt5/Experts/Grid_Martingale_Basket_v2_RemoteTarget.mq5", "remote-target reference; inspect only", false),
         Asset("mt5.bridge", "MT5 Bridge", "transport", "bridge/", "future command/ACK/verify/reconcile boundary", false),
         Asset("mt5.grid.engine", "Grid Planning Engine", "engine", "app/.../amaros/bots/AmarGridPlanningEngine.kt", "deterministic grid planning", false),
         Asset("mt5.bot.lab", "Bot Lab", "workspace", "app/.../amaros/bots/", "bot discovery and command planning", false),
