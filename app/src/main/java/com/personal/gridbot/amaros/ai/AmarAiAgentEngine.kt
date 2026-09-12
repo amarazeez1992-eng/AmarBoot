@@ -65,7 +65,7 @@ class AmarAiAgentEngine(
             .put("mt5Office", AmarAiMt5Office.catalogText())
             .put("executionPolicy", "BROKER EXECUTION DISABLED")
             .put("approvalBoundary", "DRAFT/CHALLENGER only; explicit human approval required")
-            .put("deterministicTools", "inspect_app, engine_market, tracking, candle, analyze_market, multi_source_research, test_strategy, validate_results, precision_audit, uncertainty_audit")
+            .put("deterministicTools", "inspect_app, engine_market, tracking, candle, analyze_market, multi_source_research, test_strategy, validate_results, precision_audit, uncertainty_audit, self_audit")
     }
 
     private fun systemPrompt() = """
@@ -77,6 +77,7 @@ Challenge leakage, repainting, overfit, unrealistic fills, missing costs, slippa
 If runtime data is unavailable, explicitly say DATA_UNAVAILABLE / fail-closed; never fill gaps from imagination.
 For market/candle/position questions, prefer deterministic tools: engine_market, candle, tracking and inspect_app.
 For research questions, use multi_source_research and inspect conflicts, provenance, freshness and license/reuse status.
+When asked how to improve AMAR, call self_audit and return prioritized proposals with rationale and validation requirements.
 Lifecycle: Idea -> Draft -> Discuss -> Evaluate -> Test -> OOS -> Stress -> Compare -> Risk Gate -> User Approval -> Adopt.
 Never auto-adopt. strategy_save is always DRAFT. approval_proposal only records human review.
 Broker execution is disabled; never claim an order was executed. Android queue acceptance is not broker execution.
@@ -85,6 +86,12 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
 
     private suspend fun executeTool(tool: String, args: String): String? {
         return when (tool) {
+            "self_audit" -> {
+                val c = context ?: return "SELF_AUDIT|ERROR=no_context"
+                val audit = AmarAiSelfImprovementEngine(c).audit()
+                "SELF_AUDIT|score=${"%.1f".format(audit.score)}/10|proposals=${audit.proposals.size}|strengths=${audit.strengths.joinToString(" || ")}|warnings=${audit.warnings.joinToString(" || ")}\n" +
+                    audit.proposals.joinToString("\n") { "PROPOSAL|${it.id}|${it.area}|P${it.priority}|${it.title}|${it.reason}|ACTION=${it.action}|EVIDENCE=${it.evidenceRequirement}" }
+            }
             "trading_library_search" -> {
                 val hits = AmarTradingKnowledgeLibrary.search(args, 12)
                 "LIBRARY|$args|" + hits.joinToString(" || ") { "${it.name}:${it.concepts.joinToString(",")}" }
@@ -209,20 +216,19 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
         return "UNCERTAINTY|uncertainty=${"%.1f".format(r.uncertaintyPct)}|confidence=${"%.1f".format(r.confidencePct)}|reasons=${r.reasons.joinToString(" || ")}"
     }
 
-    private fun parseDoubles(args: String): List<Double> = args.split(',', ';', ' ', '\n').mapNotNull { it.trim().toDoubleOrNull() }
-
-    private fun parsePlan(raw: String): Plan {
-        val cleaned = raw.trim().removePrefix("```").removeSuffix("```").trim()
-        return runCatching {
-            val json = JSONObject(cleaned)
-            val array = json.optJSONArray("actions") ?: JSONArray()
-            val actions = buildList {
-                for (i in 0 until array.length()) {
-                    val a = array.optJSONObject(i) ?: continue
-                    add(a.optString("tool", "proposal") to a.optString("args", ""))
-                }
-            }
-            Plan(json.optString("answer", cleaned), actions)
-        }.getOrElse { Plan(cleaned, emptyList()) }
+    private fun parsePlan(text: String): Plan {
+        val raw = runCatching { JSONObject(text.trim().removePrefix("```json").removeSuffix("```").trim()) }.getOrNull()
+            ?: return Plan(text, emptyList())
+        val answer = raw.optString("answer", text)
+        val actions = mutableListOf<Pair<String, String>>()
+        val array: JSONArray = raw.optJSONArray("actions") ?: JSONArray()
+        for (i in 0 until array.length()) {
+            val a = array.optJSONObject(i) ?: continue
+            val tool = a.optString("tool").trim()
+            if (tool.isNotBlank()) actions += tool to a.optString("args")
+        }
+        return Plan(answer, actions)
     }
+
+    private fun parseDoubles(args: String): List<Double> = args.split(',', '|', ';', ' ', '\n', '\t').mapNotNull { it.toDoubleOrNull() }
 }
