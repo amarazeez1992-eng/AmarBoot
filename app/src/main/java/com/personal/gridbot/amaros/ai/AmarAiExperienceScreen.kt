@@ -36,9 +36,9 @@ fun AmarAiExperienceScreen() {
                 Text("لوحة الذكاء التفاعلية", style = MaterialTheme.typography.titleLarge, color = Color(0xFFFFC857))
                 Text("AMAR AI مستشار فعلي: يقرأ الأدلة المتاحة ويقترح، ولا ينفذ أوامر الوسيط.", color = Color(0xFFB7D9E2), style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    AssistChip(onClick = { preset("حلل حالة السوق الحالية اعتمادًا على بيانات AmarMarketStateStore، واذكر جودة البيانات والمخاطر ولا تخترع أي قيمة.") }, label = { Text("تحليل السوق") }, modifier = Modifier.weight(1f))
-                    AssistChip(onClick = { preset("صمم اقتراح اختبار حتمي للاستراتيجية الحالية باستخدام B21/B22، واذكر خطوات الاختبار والنتيجة المتوقعة، ولا تدّعِ أن الاختبار تم تشغيله.") }, label = { Text("اختبار") }, modifier = Modifier.weight(1f))
-                    AssistChip(onClick = { preset("ابحث في مكتبة عمار عن الموارد والاستراتيجيات المناسبة للطلب الحالي، ثم لخص أفضل الخيارات مع سبب الاختيار.") }, label = { Text("المكتبة") }, modifier = Modifier.weight(1f))
+                    AssistChip(onClick = { preset(AmarAiShortcutContract.MARKET_ANALYSIS) }, label = { Text("تحليل السوق") }, modifier = Modifier.weight(1f))
+                    AssistChip(onClick = { preset(AmarAiShortcutContract.STRATEGY_TEST) }, label = { Text("اختبار") }, modifier = Modifier.weight(1f))
+                    AssistChip(onClick = { preset(AmarAiShortcutContract.LIBRARY_SEARCH) }, label = { Text("المكتبة") }, modifier = Modifier.weight(1f))
                 }
                 OutlinedTextField(key, { key = it; saved = false }, Modifier.fillMaxWidth(), label = { Text("Gemini API Key") }, visualTransformation = PasswordVisualTransformation(), singleLine = true)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
