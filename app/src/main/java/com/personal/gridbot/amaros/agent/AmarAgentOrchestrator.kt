@@ -19,7 +19,7 @@ class AmarAgentOrchestrator(
         val safeMaximumSources = request.maximumSourceCount.coerceIn(1, safeBudget.maxSources.coerceAtLeast(1))
         val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
         val safeTools = availableTools
-            .filter { it.scope != AmarToolScope.EXECUTION_FUTURE && it.readOnly }
+            .filter { it.scope != AmarToolScope.EXECUTION_FUTURE }
             .distinctBy { it.id }
         val session = AmarAgentSession(budget = safeBudget)
         session.record(AmarAgentStage.INTAKE, request.text)
