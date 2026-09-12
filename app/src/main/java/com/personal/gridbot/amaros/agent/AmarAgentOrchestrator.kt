@@ -2,7 +2,8 @@ package com.personal.gridbot.amaros.agent
 
 /**
  * Central pipeline for high-confidence answers.
- * It coordinates research, verification and criticism without granting execution.
+ * It coordinates research, verification, layered decision review and criticism
+ * without granting execution.
  */
 class AmarAgentOrchestrator(
     private val planner: AmarAgentPlanner,
@@ -11,7 +12,9 @@ class AmarAgentOrchestrator(
     private val consensusEngine: AmarAgentEvidenceConsensus,
     private val critic: AmarAgentCritic,
     private val verifier: AmarAgentVerifier,
-    private val reasoningProvider: AmarReasoningProvider
+    private val reasoningProvider: AmarReasoningProvider,
+    private val hierarchy: AmarAgentHierarchy = AmarAgentHierarchy(),
+    private val decisionCouncil: AmarDecisionCouncil = AmarDecisionCouncil()
 ) {
     suspend fun run(
         request: AmarAgentRequest,
@@ -22,12 +25,18 @@ class AmarAgentOrchestrator(
         val session = AmarAgentSession(budget = safeBudget)
         session.record(AmarAgentStage.INTAKE, request.text)
 
+        val mandates = hierarchy.defaultMandates()
+        session.record(
+            AmarAgentStage.PLAN,
+            "roles=${mandates.joinToString(",") { it.role.name }}"
+        )
+
         val plan = planner.plan(request, availableTools)
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
-            session.record(AmarAgentStage.RETRIEVE, "multi-source research")
+            session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
             val sourceLimit = minOf(request.maximumSourceCount, safeBudget.maxSources).coerceAtLeast(1)
             researchEngine.research(
                 ResearchRequest(
@@ -40,7 +49,7 @@ class AmarAgentOrchestrator(
         } else null
 
         val verification = report?.let {
-            session.record(AmarAgentStage.VERIFY, "source quality and independence")
+            session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
             sourceVerifier.verify(it.findings)
         }
         val consensus = report?.let { consensusEngine.summarize(it.findings) }
@@ -59,7 +68,7 @@ class AmarAgentOrchestrator(
             }
         }
 
-        session.record(AmarAgentStage.REASON, "reasoning with evidence and uncertainty")
+        session.record(AmarAgentStage.REASON, "ANALYST/ADVISOR: reasoning with evidence and uncertainty")
         val enriched = request.copy(text = request.text + "\n\n" + evidenceText)
         val answer = reasoningProvider.respond(
             AmarAgentContext(
@@ -74,17 +83,43 @@ class AmarAgentOrchestrator(
             )
         )
 
-        session.record(AmarAgentStage.CHALLENGE, "adversarial critique")
+        session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
         val critique = critic.review(answer.answer, report?.findings.orEmpty())
-        session.record(AmarAgentStage.VALIDATE, critique.recommendation)
+
+        val direction = inferDecisionDirection(answer.answer)
+        val primaryOpinion = AmarAgentOpinion(
+            role = AmarAgentRole.ANALYST,
+            conclusion = answer.answer,
+            confidence = (verification?.confidence ?: consensus?.consensusScore ?: 0.0),
+            direction = direction,
+            risks = critique.issues
+        )
+        val councilReview = decisionCouncil.review(listOf(primaryOpinion))
+        session.record(
+            AmarAgentStage.VALIDATE,
+            "DECISION_CONFIRMATION: direction=${direction.name}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}"
+        )
+
         val decisionVerification = verifier.verify(answer.answer, consensus, critique)
-        session.record(if (decisionVerification.approved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, "final gate")
+        val hierarchyApproved = councilReview.approved && councilReview.conflicts.isEmpty()
+        val finalApproved = decisionVerification.approved && hierarchyApproved
+
+        session.record(
+            if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED,
+            if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked"
+        )
+
+        val finalResponse = if (finalApproved) answer else answer.copy(
+            status = AmarAgentResponse.Status.ERROR,
+            answer = "لم يتم اعتماد الإجابة بعد: ${buildList {
+                addAll(decisionVerification.issues)
+                addAll(councilReview.conflicts)
+                if (!councilReview.approved && councilReview.conflicts.isEmpty()) add(councilReview.reason)
+            }.distinct().joinToString(", ")}"
+        )
 
         return AmarAgentRunResult(
-            response = if (decisionVerification.approved) answer else answer.copy(
-                status = AmarAgentResponse.Status.ERROR,
-                answer = "لم يتم اعتماد الإجابة بعد: ${decisionVerification.issues.joinToString(", ")}" 
-            ),
+            response = finalResponse,
             plan = plan,
             research = report,
             sourceVerification = verification,
@@ -93,6 +128,20 @@ class AmarAgentOrchestrator(
             finalVerification = decisionVerification,
             sessionEvents = session.events()
         )
+    }
+
+    private fun inferDecisionDirection(text: String): AmarDecisionDirection {
+        val normalized = text.lowercase()
+        val hasBuy = listOf("buy", "شراء", "شراءً", "شراء ").any(normalized::contains)
+        val hasSell = listOf("sell", "بيع", "بيعاً", "بيع ").any(normalized::contains)
+        val hasHold = listOf("hold", "انتظار", "محايد", "لا تدخل").any(normalized::contains)
+
+        return when {
+            hasBuy && !hasSell -> AmarDecisionDirection.BUY
+            hasSell && !hasBuy -> AmarDecisionDirection.SELL
+            hasHold && !hasBuy && !hasSell -> AmarDecisionDirection.HOLD
+            else -> AmarDecisionDirection.UNKNOWN
+        }
     }
 }
 
