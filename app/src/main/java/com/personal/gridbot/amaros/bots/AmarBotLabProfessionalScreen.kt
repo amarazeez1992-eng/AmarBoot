@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -233,38 +234,35 @@ private fun SelectChip(text: String, selected: Boolean, modifier: Modifier, onCl
 @Composable
 private fun StrategyEditor(strategy: AmarSavedStrategy?, number: Int, save: (AmarSavedStrategy) -> Unit, delete: (Int) -> Unit) {
     var name by remember(strategy?.number, strategy?.name) { mutableStateOf(strategy?.name ?: "Strategy ${number.toString().padStart(2, '0')}") }
-    var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf((strategy?.profile?.lot ?: 0.01).toString()) }
-    var step by remember(strategy?.number, strategy?.profile?.gridStep) { mutableStateOf((strategy?.profile?.gridStep ?: 30.0).toString()) }
-    var max by remember(strategy?.number, strategy?.profile?.maxOrders) { mutableStateOf((strategy?.profile?.maxOrders ?: 10).toString()) }
-    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf((strategy?.profile?.multiplier ?: 2.0).toString()) }
-    var tp by remember(strategy?.number, strategy?.profile?.basketTp) { mutableStateOf((strategy?.profile?.basketTp ?: 50.0).toString()) }
-    var sl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf((strategy?.profile?.basketSl ?: -30.0).toString()) }
-    var trailing by remember(strategy?.number, strategy?.profile?.trailing) { mutableStateOf((strategy?.profile?.trailing ?: 0.0).toString()) }
+    var lot by remember(strategy?.number, strategy?.profile?.lot) { mutableStateOf(strategy?.profile?.lot ?: 0.01) }
+    var step by remember(strategy?.number, strategy?.profile?.gridStep) { mutableStateOf(strategy?.profile?.gridStep ?: 30.0) }
+    var max by remember(strategy?.number, strategy?.profile?.maxOrders) { mutableStateOf((strategy?.profile?.maxOrders ?: 10).toDouble()) }
+    var multiplier by remember(strategy?.number, strategy?.profile?.multiplier) { mutableStateOf(strategy?.profile?.multiplier ?: 2.0) }
+    var tp by remember(strategy?.number, strategy?.profile?.basketTp) { mutableStateOf(strategy?.profile?.basketTp ?: 50.0) }
+    var sl by remember(strategy?.number, strategy?.profile?.basketSl) { mutableStateOf(strategy?.profile?.basketSl ?: -30.0) }
+    var trailing by remember(strategy?.number, strategy?.profile?.trailing) { mutableStateOf(strategy?.profile?.trailing ?: 0.0) }
     var buy by remember(strategy?.number, strategy?.profile?.buyEnabled) { mutableStateOf(strategy?.profile?.buyEnabled ?: true) }
     var sell by remember(strategy?.number, strategy?.profile?.sellEnabled) { mutableStateOf(strategy?.profile?.sellEnabled ?: true) }
 
     LabCard("إعدادات الاستراتيجية ${number.toString().padStart(2, '0')}", if (strategy == null) "جديدة" else "محفوظة") {
         OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text("اسم الاستراتيجية") }, singleLine = true)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            CompactField("Lot", lot, { lot = it }, Modifier.weight(1f)); CompactField("Grid", step, { step = it }, Modifier.weight(1f)); CompactField("Max", max, { max = it }, Modifier.weight(1f))
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            CompactField("Multiplier", multiplier, { multiplier = it }, Modifier.weight(1f)); CompactField("Basket TP", tp, { tp = it }, Modifier.weight(1f)); CompactField("Basket SL", sl, { sl = it }, Modifier.weight(1f))
-        }
-        CompactField("Trailing", trailing, { trailing = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Lot", lot, 0.01, 1.0, 0.01, LabCyan, "%.2f", { lot = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Grid", step, 1.0, 300.0, 1.0, LabCyan, "%.0f", { step = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Max Orders", max, 1.0, 100.0, 1.0, LabGold, "%.0f", { max = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Multiplier", multiplier, 1.0, 5.0, 0.01, LabBlue, "%.2f", { multiplier = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Basket TP", tp, 0.0, 500.0, 0.5, LabGreen, "%.1f", { tp = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Basket SL", sl, -500.0, 0.0, 0.5, LabRed, "%.1f", { sl = it }, Modifier.fillMaxWidth())
+        AmarDragValueControl("Trailing", trailing, 0.0, 300.0, 0.5, LabCyan, "%.1f", { trailing = it }, Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { ToggleState("BUY", buy, { buy = !buy }, Modifier.weight(1f)); ToggleState("SELL", sell, { sell = !sell }, Modifier.weight(1f)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Button(onClick = {
-                val p = AmarBot1RuntimeConfig(lot.toDoubleOrNull() ?: 0.01, step.toDoubleOrNull() ?: 30.0, (max.toIntOrNull() ?: 10).coerceAtLeast(1), multiplier.toDoubleOrNull() ?: 2.0, tp.toDoubleOrNull() ?: 50.0, sl.toDoubleOrNull() ?: -30.0, (trailing.toDoubleOrNull() ?: 0.0).coerceAtLeast(0.0), buy, sell)
+                val p = AmarBot1RuntimeConfig(lot, step, max.toInt().coerceAtLeast(1), multiplier, tp, sl, trailing.coerceAtLeast(0.0), buy, sell)
                 save(AmarSavedStrategy(number, name.ifBlank { "Strategy $number" }, p))
             }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = LabGreen, contentColor = Color.Black)) { Text(if (strategy == null) "＋ إضافة / حفظ" else "✓ حفظ التعديل", fontWeight = FontWeight.Black, fontSize = 10.sp) }
             Button(onClick = { delete(number) }, modifier = Modifier.weight(.55f), colors = ButtonDefaults.buttonColors(containerColor = LabRed, contentColor = Color.White)) { Text("حذف", fontWeight = FontWeight.Black, fontSize = 10.sp) }
         }
     }
 }
-
-@Composable
-private fun CompactField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) { OutlinedTextField(value, onChange, modifier, label = { Text(label, fontSize = 9.sp) }, singleLine = true) }
 
 @Composable
 private fun ToggleState(label: String, enabled: Boolean, toggle: () -> Unit, modifier: Modifier) {
