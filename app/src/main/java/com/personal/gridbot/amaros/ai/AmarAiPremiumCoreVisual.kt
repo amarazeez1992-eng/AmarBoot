@@ -74,12 +74,15 @@ fun AmarAiPremiumCoreVisual(modifier: Modifier = Modifier) {
             Triple(pink, rotation + 120f, 1),
             Triple(gold, rotation + 240f, 2)
         ).forEach { (color, angle, _) ->
-            val radians = Math.toRadians(angle.toDouble())
             Box(
                 Modifier.align(Alignment.Center)
-                    .offset(x = (cos(radians) * orbitRadius).toFloat().dp, y = (sin(radians) * orbitRadius).toFloat().dp)
+                    .graphicsLayer {
+                        val radians = Math.toRadians(angle.toDouble())
+                        translationX = (cos(radians) * orbitRadius).toFloat()
+                        translationY = (sin(radians) * orbitRadius).toFloat()
+                    }
                     .size(9.dp)
-                    .shadow(12.dp, CircleShape)
+                    .shadow(8.dp, CircleShape)
                     .background(color, CircleShape)
             )
         }
@@ -87,7 +90,7 @@ fun AmarAiPremiumCoreVisual(modifier: Modifier = Modifier) {
         Box(
             Modifier.align(Alignment.Center).size(128.dp)
                 .graphicsLayer { scaleX = pulse; scaleY = pulse }
-                .shadow(38.dp, CircleShape)
+                .shadow(28.dp, CircleShape)
                 .background(
                     Brush.radialGradient(listOf(Color.White, cyan, indigo, purple, pink, black)),
                     CircleShape
