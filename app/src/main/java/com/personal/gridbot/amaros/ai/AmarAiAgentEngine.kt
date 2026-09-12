@@ -1,7 +1,11 @@
 package com.personal.gridbot.amaros.ai
 
 import android.content.Context
+import com.personal.gridbot.amaros.ai.core.AmarAiApprovalLedger
+import com.personal.gridbot.amaros.ai.core.AmarAiControlCenter
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
+import com.personal.gridbot.amaros.intelligence.advanced.AmarDriftAndUncertaintyEngine
+import com.personal.gridbot.amaros.intelligence.advanced.AmarStrategyEvolutionEngine
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingIntelligenceRegistry
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibrary
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
@@ -24,10 +28,10 @@ class AmarAiAgentEngine(
         val evidence = plan.actions.mapNotNull { executeTool(it.first, it.second) }
         if (evidence.isEmpty()) return Result(plan.answer, plan.actions.map { "${it.first}: ${it.second}" }, emptyList())
         val finalPrompt = buildPrompt(request) + "\n\nEVIDENCE:\n" + evidence.joinToString("\n") +
-            "\n\nFINAL REVIEW: separate SOURCE/VERIFIED/HYPOTHESIS/INFERENCE; detect leakage, overfit, repainting, costs, slippage, regime mismatch and uncertainty; never invent results; finish with the exact approval step required from the user."
+            "\n\nFINAL REVIEW: separate SOURCE/VERIFIED/HYPOTHESIS/INFERENCE; detect leakage, overfit, repainting, costs, slippage, regime mismatch, drift and uncertainty; never invent results; finish with the exact approval step required from the user."
         val second = gemini.generate(apiKey, model, systemPrompt(), finalPrompt)
         val finalPlan = parsePlan(second.text)
-        return Result(finalPlan.answer, plan.actions.map { "${it.first}: ${it.second}" }, evidence)
+        return Result(finalPlan.answer, finalPlan.actions.map { "${it.first}: ${it.second}" }, evidence)
     }
 
     private fun buildPrompt(request: String): String {
@@ -37,8 +41,15 @@ class AmarAiAgentEngine(
             .put("spread", s.spread).put("direction", s.direction.name).put("strength", s.strength)
             .put("candleOpen", s.candleOpen).put("candleHigh", s.candleHigh).put("candleLow", s.candleLow).put("candleClose", s.candleClose)
             .put("session", s.session).put("source", s.source.name).put("quality", s.quality.name)
+        val control = context?.let { AmarAiControlCenter(it) }
+        val authority = JSONObject()
+            .put("aiEnabled", control?.aiEnabled ?: false)
+            .put("emergencyStopped", control?.emergencyStopped ?: true)
+            .put("executionAuthorized", control?.executionAuthorized ?: false)
+            .put("brokerExecution", "DISABLED")
         val contextJson = JSONObject()
             .put("market", market)
+            .put("aiAuthority", authority)
             .put("capabilities", AmarTradingIntelligenceRegistry.intelligenceEngines.joinToString(", "))
             .put("knowledgeDomains", AmarTradingKnowledgeLibrary.domains.size)
             .put("knowledgeGovernance", AmarTradingKnowledgeLibrary.governance())
@@ -50,6 +61,7 @@ class AmarAiAgentEngine(
             .put("researchProtocol", AmarTradingResearchRegistry.protocol())
             .put("executionPolicy", "CURRENT BUILD: advisory/local strategy management; broker execution transport remains disabled until MT5 bridge phase")
             .put("authority", "User is final decision maker. Never silently change an approved strategy.")
+            .put("approvalBoundary", "AI can create DRAFT/CHALLENGER proposals. Only explicit human approval may promote a strategy to APPROVED.")
             .put("precisionPolicy", "Precision means evidence quality, validation and uncertainty control, never promised profitability.")
         return "USER REQUEST:\n$request\n\nAPP CONTEXT:\n$contextJson"
     }
@@ -57,22 +69,21 @@ class AmarAiAgentEngine(
     private fun systemPrompt() = """
 You are AMAR AI Supervisor inside AmarBoot.
 Act as a senior global trading research, strategy engineering, quantitative validation, risk and decision-intelligence system with a deep internal trading knowledge library.
-For research questions, do NOT stop at the first source. Prefer multi-source research and independent evidence aggregation. Use the multi_source_research tool for important claims and strategy ideas.
+For important research, do not stop at the first source. Use multi-source research and independent evidence aggregation.
 Search official/primary sources, open-source code repositories, research frameworks, TradingView/Pine ecosystems and established trading-engineering projects when relevant.
-Never invent market data, prices, broker state, source claims, backtest statistics or execution results.
+Never invent market data, broker state, source claims, backtest statistics or execution results.
 Use SOURCE for external material, VERIFIED for measured reproducible evidence, HYPOTHESIS for untested ideas, and INFERENCE for reasoning.
-Challenge look-ahead leakage, repainting, overfitting, data snooping, hidden exposure, unrealistic fills, spread/slippage omission, regime mismatch and undefined failure modes.
-TradingView has a very large public script ecosystem, but public does not mean automatically reusable: respect script privacy and licensing. Protected/invite-only/paid proprietary content is not copied.
-LuxAlgo is a high-value engineering/reference ecosystem, never proof of profitability. Respect Vela/PineTS and addon licenses and attribution.
-GitHub is a discovery and code-evidence source. Inspect repository provenance and license before recommending reuse. A repository being public does not automatically grant unrestricted reuse.
-When the user describes a bot by behavior, use bot_discovery to find candidate open-source implementations, source URLs and relevant strategy families. Do not claim that a repository is safe/reusable until its license is checked.
-When multiple sources support a concept, report the number of independent channels searched and the evidence convergence. Never convert source convergence into a fabricated profitability percentage.
-A 75% or any other success rate is allowed only when measured by reproducible AMAR backtest/OOS/stress validation with sample size and assumptions shown.
-TradingView is a chart/data/alert boundary, never broker authority. Pine/PineTS results require independent AMAR validation, OOS and stress testing.
-Prefer deterministic calculations, reproducible datasets, experiment IDs, dataset fingerprints, provenance and auditable evidence.
+Challenge look-ahead leakage, repainting, overfitting, data snooping, hidden exposure, unrealistic fills, spread/slippage omission, regime mismatch, distribution drift and undefined failure modes.
+TradingView public scripts are discovery inputs, not automatically reusable. Protected, invite-only, paid or credentialed proprietary content is never copied.
+GitHub is a discovery and code-evidence source. Inspect repository provenance and license before recommending reuse.
+LuxAlgo is a reference/engineering ecosystem, never proof of profitability. Respect Vela/PineTS and addon licenses.
+Never convert source convergence into a fabricated profitability percentage.
+A numerical success claim requires reproducible AMAR backtest/OOS/stress evidence with dataset, sample size, assumptions and costs.
 Strategy lifecycle: Idea -> Draft -> Discuss -> Evaluate -> Test -> OOS -> Stress -> Compare -> Risk Gate -> User Approval -> Adopt. No autonomous adoption.
+AI may save DRAFT/CHALLENGER notes only. It may never call an approval operation or silently promote a strategy.
 Current broker execution is disabled; never claim an order was sent, opened, closed or modified.
-Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library_search|library_search|analyze_market|research_external|multi_source_research|bot_discovery|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit","args":"short description"}],"approvalRequired":true}
+Emergency stop outranks all AI authority.
+Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library_search|library_search|analyze_market|research_external|multi_source_research|bot_discovery|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit|evolution_gate|champion_challenger|counterfactual|uncertainty_audit|approval_proposal","args":"short description"}],"approvalRequired":true}
 """.trimIndent()
 
     private suspend fun executeTool(tool: String, args: String): String? {
@@ -101,7 +112,7 @@ Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library
                 val report = runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }
                     .getOrElse { return "multi_source_research => FAILED=${it.message ?: "unknown error"}" }
                 val fresh = if (report.newItems.isEmpty()) "none" else report.newItems.take(8).joinToString(" | ") { it.title }
-                "MULTI_SOURCE|query=${report.query}|channels=${report.searchedChannels}|evidence=${report.evidence.size}|supportingChannels=${report.supportingChannels}|conflictChannels=${report.conflictChannels}|convergence=${"%.1f".format(report.consensusPct)}%|new=$fresh|caveat=${report.caveat}\n" + report.evidence.take(30).joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }
+                "MULTI_SOURCE|query=${report.query}|channels=${report.searchedChannels}|evidence=${report.evidence.size}|supportingChannels=${report.supportingChannels}|conflictChannels=${report.conflictChannels}|convergence=${"%.1f".format(report.consensusPct)}%|authority=${report.authorityGrade}|authorityConfidence=${"%.1f".format(report.authorityConfidencePct)}%|new=$fresh|caveat=${report.caveat}\n" + report.evidence.take(30).joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }
             }
             "bot_discovery" -> {
                 val q = args.lowercase()
@@ -128,6 +139,31 @@ Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library
                 else AmarTradingPrecisionEngine.defaultResearchGate().let { AmarTradingPrecisionEngine.Input(it.scorePct / 100.0, it.confidencePct / 100.0, it.scorePct / 100.0, 0.25, 0.40, 0.20, 0.35, it.uncertaintyPct / 100.0) }
                 val r = AmarTradingPrecisionEngine.evaluate(input)
                 "precision_audit => score=${"%.1f".format(r.scorePct)}% confidence=${"%.1f".format(r.confidencePct)}% uncertainty=${"%.1f".format(r.uncertaintyPct)}% gate=${r.gate} reasons=${r.reasons.joinToString(" | ")}"
+            }
+            "evolution_gate" -> {
+                val p = args.split(',', ';').mapNotNull { it.trim().toDoubleOrNull() }
+                if (p.size < 7) "evolution_gate => expected expectancy,dd,pf,sample,oos,stress,leakage(0/1)"
+                else {
+                    val candidate = AmarStrategyEvolutionEngine.mutate("AI-CANDIDATE", "user-requested governed mutation", AmarStrategyEvolutionEngine.MutationType.ENTRY)
+                    val score = AmarStrategyEvolutionEngine.Score(p[0], p[1], p[2], p[3].toInt(), p[4], p[5], p[6] > 0.5, 0.0)
+                    val d = AmarStrategyEvolutionEngine.gate(candidate, score)
+                    "evolution_gate => gate=${d.gate} score=${"%.3f".format(d.score)} reasons=${d.reasons.joinToString(" | ")}"
+                }
+            }
+            "champion_challenger" -> "champion_challenger => compare measured champion/challenger OOS, stress, PF and DD; no automatic adoption."
+            "counterfactual" -> "counterfactual => alternative-vs-base deltas require measured score vectors; no invented outcome."
+            "uncertainty_audit" -> {
+                val p = args.split(',', ';').mapNotNull { it.trim().toDoubleOrNull() }
+                if (p.size < 5) "uncertainty_audit => expected sample,expectancyStdev,oosWindows,failedWindows,drift"
+                else {
+                    val r = AmarDriftAndUncertaintyEngine.uncertainty(p[0].toInt(), p[1], p[2].toInt(), p[3].toInt(), p[4])
+                    "uncertainty_audit => uncertainty=${"%.1f".format(r.uncertaintyPct)}% confidence=${"%.1f".format(r.confidencePct)}% reasons=${r.reasons.joinToString(" | ")}"
+                }
+            }
+            "approval_proposal" -> {
+                val c = context ?: return "approval_proposal => unavailable: no Android context"
+                val proposal = AmarAiApprovalLedger(c).propose(args)
+                "approval_proposal => id=${proposal.id}|status=${proposal.status}|fingerprint=${proposal.fingerprint}|HUMAN_APPROVAL_REQUIRED"
             }
             "inspect_bot" -> "inspect_bot => BOT Lab boundary available; no runtime mutation performed."
             "strategy_save" -> {
