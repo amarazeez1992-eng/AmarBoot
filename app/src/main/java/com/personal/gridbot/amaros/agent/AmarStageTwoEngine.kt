@@ -27,7 +27,10 @@ class AmarStageTwoEngine(
         )
 
         val base = coordinator.deliberate(context, roles)
-        val independentSourceCount = sanitizedEvidence.mapNotNull(::sourceHost).distinct().size
+        val independentSourceCount = sanitizedEvidence
+            .mapNotNull { finding -> sourceHost(finding.sourceUri) }
+            .distinct()
+            .size
         val evidenceGateConflict = if (independentSourceCount < MIN_INDEPENDENT_SOURCES) {
             "insufficient_independent_evidence"
         } else null
