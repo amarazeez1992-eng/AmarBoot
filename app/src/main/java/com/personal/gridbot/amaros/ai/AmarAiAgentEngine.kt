@@ -3,6 +3,7 @@ package com.personal.gridbot.amaros.ai
 import android.content.Context
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingIntelligenceRegistry
+import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibrary
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import org.json.JSONArray
 import org.json.JSONObject
@@ -38,6 +39,8 @@ class AmarAiAgentEngine(
         val contextJson = JSONObject()
             .put("market", market)
             .put("capabilities", AmarTradingIntelligenceRegistry.intelligenceEngines.joinToString(", "))
+            .put("knowledgeDomains", AmarTradingKnowledgeLibrary.domains.size)
+            .put("knowledgeGovernance", AmarTradingKnowledgeLibrary.governance())
             .put("researchCatalog", AmarTradingIntelligenceRegistry.catalogText())
             .put("researchGovernance", AmarTradingIntelligenceRegistry.governance())
             .put("researchHierarchy", AmarTradingResearchRegistry.catalogText())
@@ -50,20 +53,27 @@ class AmarAiAgentEngine(
 
     private fun systemPrompt() = """
 You are AMAR AI Supervisor inside AmarBoot.
-Act as a senior trading research, strategy engineering, quantitative validation, risk and decision-intelligence system.
+Act as a senior trading research, strategy engineering, quantitative validation, risk and decision-intelligence system with an internal trading knowledge library.
+Use the internal taxonomy to decompose requests into concepts, then research official sources and public/open-source implementations before forming a strategy.
 Never invent market data, prices, broker state, source claims, backtest statistics or execution results.
 Use SOURCE for external material, VERIFIED for measured reproducible evidence, HYPOTHESIS for untested ideas, and INFERENCE for reasoning.
 Challenge look-ahead leakage, repainting, overfitting, data snooping, hidden exposure, unrealistic fills, spread/slippage omission, regime mismatch and undefined failure modes.
-Tier-1 regulators/exchanges/central institutions outrank marketing and community sources. LuxAlgo is an engineering/reference ecosystem, never proof of profitability. Respect open-source licenses and never reproduce restricted content.
-TradingView is a future chart/data/alert boundary, never broker authority. Pine/PineTS results require independent AMAR validation, OOS and stress testing.
-Prefer deterministic calculations, reproducible datasets, experiment IDs, dataset fingerprints and auditable evidence.
+TradingView has a very large public script ecosystem, but public does not mean automatically reusable: respect script privacy and licensing. Protected/invite-only/paid proprietary content is not copied.
+LuxAlgo is a high-value engineering/reference ecosystem, never proof of profitability. Respect Vela/PineTS and addon licenses and attribution.
+TradingView is a chart/data/alert boundary, never broker authority. Pine/PineTS results require independent AMAR validation, OOS and stress testing.
+Prefer deterministic calculations, reproducible datasets, experiment IDs, dataset fingerprints, provenance and auditable evidence.
 Strategy lifecycle: Idea -> Draft -> Discuss -> Evaluate -> Test -> OOS -> Stress -> Compare -> Risk Gate -> User Approval -> Adopt. No autonomous adoption.
 Current broker execution is disabled; never claim an order was sent, opened, closed or modified.
-Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"library_search|analyze_market|research_external|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit","args":"short description"}],"approvalRequired":true}
+Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library_search|library_search|analyze_market|research_external|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit","args":"short description"}],"approvalRequired":true}
 """.trimIndent()
 
     private suspend fun executeTool(tool: String, args: String): String? {
         return when (tool) {
+            "trading_library_search" -> {
+                val hits = AmarTradingKnowledgeLibrary.search(args, 12)
+                if (hits.isEmpty()) "trading_library_search($args) => NO_INTERNAL_DOMAIN_MATCH"
+                else "trading_library_search($args) => " + hits.joinToString(" | ") { "${it.name}: ${it.concepts.joinToString(", ")}" }
+            }
             "library_search" -> {
                 val catalog = AmarTradingIntelligenceRegistry.intelligenceEngines
                 val q = args.lowercase()
