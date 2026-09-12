@@ -14,7 +14,8 @@ class AmarAgentOrchestrator(
     private val verifier: AmarAgentVerifier,
     private val reasoningProvider: AmarReasoningProvider,
     private val hierarchy: AmarAgentHierarchy = AmarAgentHierarchy(),
-    private val decisionCouncil: AmarDecisionCouncil = AmarDecisionCouncil()
+    private val decisionCouncil: AmarDecisionCouncil = AmarDecisionCouncil(),
+    private val directionEngine: AmarDecisionDirectionEngine = AmarDecisionDirectionEngine()
 ) {
     suspend fun run(
         request: AmarAgentRequest,
@@ -26,10 +27,7 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.INTAKE, request.text)
 
         val mandates = hierarchy.defaultMandates()
-        session.record(
-            AmarAgentStage.PLAN,
-            "roles=${mandates.joinToString(",") { it.role.name }}"
-        )
+        session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
 
         val plan = planner.plan(request, availableTools)
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
@@ -85,16 +83,32 @@ class AmarAgentOrchestrator(
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
         val critique = critic.review(answer.answer, report?.findings.orEmpty())
+        val direction = directionEngine.detect(answer.answer)
 
-        val direction = inferDecisionDirection(answer.answer)
-        val primaryOpinion = AmarAgentOpinion(
-            role = AmarAgentRole.ANALYST,
-            conclusion = answer.answer,
-            confidence = (verification?.confidence ?: consensus?.consensusScore ?: 0.0),
-            direction = direction,
-            risks = critique.issues
-        )
-        val councilReview = decisionCouncil.review(listOf(primaryOpinion))
+        val decisionRelevant = plan.intent == AgentIntent.TRADE_ANALYSIS && direction != AmarDecisionDirection.UNKNOWN
+        val councilReview = if (decisionRelevant) {
+            val confidence = (verification?.confidence ?: consensus?.consensusScore ?: 0.0)
+            decisionCouncil.review(
+                listOf(
+                    AmarAgentOpinion(
+                        role = AmarAgentRole.ANALYST,
+                        conclusion = answer.answer,
+                        confidence = confidence,
+                        direction = direction,
+                        risks = critique.issues
+                    )
+                )
+            )
+        } else {
+            AmarDecisionReview(
+                opinions = emptyList(),
+                consensusScore = 0.0,
+                conflicts = emptyList(),
+                approved = true,
+                reason = "hierarchy review not required for this response"
+            )
+        }
+
         session.record(
             AmarAgentStage.VALIDATE,
             "DECISION_CONFIRMATION: direction=${direction.name}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}"
@@ -109,13 +123,14 @@ class AmarAgentOrchestrator(
             if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked"
         )
 
+        val finalIssues = mutableListOf<String>()
+        finalIssues += decisionVerification.issues
+        finalIssues += councilReview.conflicts
+        if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
+
         val finalResponse = if (finalApproved) answer else answer.copy(
             status = AmarAgentResponse.Status.ERROR,
-            answer = "لم يتم اعتماد الإجابة بعد: ${buildList {
-                addAll(decisionVerification.issues)
-                addAll(councilReview.conflicts)
-                if (!councilReview.approved && councilReview.conflicts.isEmpty()) add(councilReview.reason)
-            }.distinct().joinToString(", ")}"
+            answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}"
         )
 
         return AmarAgentRunResult(
@@ -128,20 +143,6 @@ class AmarAgentOrchestrator(
             finalVerification = decisionVerification,
             sessionEvents = session.events()
         )
-    }
-
-    private fun inferDecisionDirection(text: String): AmarDecisionDirection {
-        val normalized = text.lowercase()
-        val hasBuy = listOf("buy", "شراء", "شراءً", "شراء ").any(normalized::contains)
-        val hasSell = listOf("sell", "بيع", "بيعاً", "بيع ").any(normalized::contains)
-        val hasHold = listOf("hold", "انتظار", "محايد", "لا تدخل").any(normalized::contains)
-
-        return when {
-            hasBuy && !hasSell -> AmarDecisionDirection.BUY
-            hasSell && !hasBuy -> AmarDecisionDirection.SELL
-            hasHold && !hasBuy && !hasSell -> AmarDecisionDirection.HOLD
-            else -> AmarDecisionDirection.UNKNOWN
-        }
     }
 }
 
