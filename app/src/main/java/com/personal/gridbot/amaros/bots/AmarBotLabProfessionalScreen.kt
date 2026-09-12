@@ -194,9 +194,11 @@ private fun BotLabContent(
     onSelectBot: (Int) -> Unit, onSelectStrategy: (Int) -> Unit, onCommand: (String) -> Unit,
     onSaveStrategy: (AmarSavedStrategy) -> Unit, onDeleteStrategy: (Int) -> Unit
 ) {
+    val catalogCount = bots.size
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         item { AmarBotLabGlobalContext() }
         item { BotPicker(selectedBot, onSelectBot) }
+        item { Text("كتالوج البوتات المحفوظ: $catalogCount/10", color = if (catalogCount >= 10) LabGreen else LabGold, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp)) }
         item { StrategyPicker(currentBot, selectedStrategy, onSelectStrategy) }
         item { StrategyEditor(currentStrategy, selectedStrategy, onSaveStrategy, onDeleteStrategy) }
         item { BotCommandPanel(commandState, commandName, onCommand) }
