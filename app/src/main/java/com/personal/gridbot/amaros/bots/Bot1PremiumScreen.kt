@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.bots
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -90,6 +89,7 @@ fun Bot1PremiumScreen() {
             item { MainControls(running, { running = !running }) }
             item { DirectionControls(buy, sell, { buy = !buy }, { sell = !sell }) }
             item { StrategyVault(selectedStrategy) { selectedStrategy = it } }
+            item { AmarBotOrderSettingsPanel() }
             item {
                 if (tab == 0) {
                     SettingsPanel(
@@ -110,7 +110,7 @@ private fun NeonHeader(running: Boolean) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text("عمار", color = Cyan, fontSize = 30.sp, fontWeight = FontWeight.Black)
-            Text("مختبر البوتات الذكي", color = Muted, fontSize = 11.sp)
+            Text("مختبر البوتات الذكي • الواجهة 1", color = Muted, fontSize = 11.sp)
         }
         NeonDot(if (running) Teal else Red, 14.dp)
         Spacer(Modifier.width(7.dp))
@@ -123,9 +123,7 @@ private fun BotVault(selected: Int, select: (Int) -> Unit) {
     Column {
         SectionTitle("خزنة البوتات", "٤ خانات مستقلة للحفظ والتشغيل")
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (1..4).forEach { bot ->
-                BotCard(bot, bot == selected, select)
-            }
+            (1..4).forEach { bot -> BotCard(bot, bot == selected, select) }
         }
     }
 }
@@ -134,12 +132,9 @@ private fun BotVault(selected: Int, select: (Int) -> Unit) {
 private fun BotCard(bot: Int, selected: Boolean, select: (Int) -> Unit) {
     val accent = when (bot) { 1 -> Cyan; 2 -> Purple; 3 -> Pink; else -> Gold }
     Column(
-        Modifier
-            .width(88.dp)
-            .background(if (selected) Panel2 else Panel, RoundedCornerShape(18.dp))
+        Modifier.width(88.dp).background(if (selected) Panel2 else Panel, RoundedCornerShape(18.dp))
             .border(1.dp, if (selected) accent else Line, RoundedCornerShape(18.dp))
-            .clickable { select(bot) }
-            .padding(10.dp),
+            .clickable { select(bot) }.padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         NeonDot(accent, 25.dp)
@@ -158,9 +153,7 @@ private fun NeonCore(running: Boolean, bot: Int) {
     )
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Box(
-            Modifier
-                .size(218.dp)
-                .graphicsLayer { scaleX = pulse; scaleY = pulse }
+            Modifier.size(218.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
                 .shadow(28.dp, CircleShape)
                 .background(Brush.radialGradient(listOf(Color(0xFF173E4B), Bg)), CircleShape)
                 .border(2.dp, Brush.sweepGradient(listOf(Cyan, Purple, Pink, Gold, Cyan)), CircleShape),
@@ -202,9 +195,7 @@ private fun StrategyVault(selected: Int, select: (Int) -> Unit) {
         Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
             (1..10).chunked(2).forEach { pair ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    pair.forEach { strategy ->
-                        StrategyCard(strategy, strategy == selected, select, Modifier.weight(1f))
-                    }
+                    pair.forEach { strategy -> StrategyCard(strategy, strategy == selected, select, Modifier.weight(1f)) }
                 }
             }
         }
@@ -215,11 +206,9 @@ private fun StrategyVault(selected: Int, select: (Int) -> Unit) {
 private fun StrategyCard(number: Int, selected: Boolean, select: (Int) -> Unit, modifier: Modifier) {
     val accent = listOf(Cyan, Teal, Blue, Purple, Pink, Gold)[(number - 1) % 6]
     Column(
-        modifier
-            .background(if (selected) Panel2 else Panel, RoundedCornerShape(15.dp))
+        modifier.background(if (selected) Panel2 else Panel, RoundedCornerShape(15.dp))
             .border(1.dp, if (selected) accent else Line, RoundedCornerShape(15.dp))
-            .clickable { select(number) }
-            .padding(9.dp)
+            .clickable { select(number) }.padding(9.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             NeonDot(accent, 10.dp)
@@ -238,7 +227,7 @@ private fun SettingsPanel(
 ) {
     Card(colors = CardDefaults.cardColors(Panel), shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            SectionTitle("لوحة الإعدادات", "اسحب المؤشر بدل الكتابة")
+            SectionTitle("لوحة الإعدادات", "القيم تتحكم بها من المؤشرات")
             NeonSlider("اللوت", lot, 0.01f, 1f, "%.2f", setLot, Teal)
             NeonSlider("مسافة الشبكة", step, 1f, 300f, "%.0f", setStep, Cyan)
             NeonSlider("الحد الأقصى للصفقات", maxOrders, 1f, 100f, "%.0f", setMax, Blue)
@@ -295,11 +284,8 @@ private fun BottomTabs(tab: Int, set: (Int) -> Unit) {
 @Composable
 private fun SafetyPanel() {
     Box(
-        Modifier
-            .fillMaxWidth()
-            .background(Color(0xFF171A25), RoundedCornerShape(18.dp))
-            .border(1.dp, Gold.copy(alpha = .6f), RoundedCornerShape(18.dp))
-            .padding(12.dp)
+        Modifier.fillMaxWidth().background(Color(0xFF171A25), RoundedCornerShape(18.dp))
+            .border(1.dp, Gold.copy(alpha = .6f), RoundedCornerShape(18.dp)).padding(12.dp)
     ) {
         Column {
             Text("حاجز الأمان", color = Gold, fontWeight = FontWeight.Black)
@@ -319,23 +305,13 @@ private fun SectionTitle(title: String, subtitle: String) {
 @Composable
 private fun NeonButton(text: String, color: Color, modifier: Modifier, onClick: () -> Unit) {
     Box(
-        modifier
-            .height(50.dp)
-            .background(Brush.linearGradient(listOf(Panel2, Panel)), RoundedCornerShape(15.dp))
-            .border(1.3.dp, color.copy(alpha = .8f), RoundedCornerShape(15.dp))
-            .clickable(onClick = onClick),
+        modifier.height(50.dp).background(Brush.linearGradient(listOf(Panel2, Panel)), RoundedCornerShape(15.dp))
+            .border(1.3.dp, color.copy(alpha = .8f), RoundedCornerShape(15.dp)).clickable(onClick = onClick),
         contentAlignment = Alignment.Center
-    ) {
-        Text(text, color = color, fontSize = 10.sp, fontWeight = FontWeight.Black)
-    }
+    ) { Text(text, color = color, fontSize = 10.sp, fontWeight = FontWeight.Black) }
 }
 
 @Composable
 private fun NeonDot(color: Color, size: androidx.compose.ui.unit.Dp) {
-    Box(
-        Modifier
-            .size(size)
-            .shadow(10.dp, CircleShape)
-            .background(color, CircleShape)
-    )
+    Box(Modifier.size(size).shadow(10.dp, CircleShape).background(color, CircleShape))
 }
