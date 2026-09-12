@@ -54,14 +54,14 @@ object AmarAiActionEngine {
         }
 
         val botMatch = Regex("(?:بوت|bot)\\s*(\\d+)").find(q)
-        val lotMatch = Regex("(?:lot|لوت)\\s*(?:إلى|الى|to)?\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)
-        if (lotMatch != null) {
+        val explicitLot = Regex("(?:lot|لوت)\\s*(?:إلى|الى|to)?\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)
+        val targetLot = explicitLot?.groupValues?.getOrNull(1) ?: Regex("(?:إلى|الى|to)\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)
+        if (targetLot != null && (q.contains("لوت") || q.contains("lot"))) {
             val bot = botMatch?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
-            val lot = lotMatch.groupValues[1]
-            AmarAiAppCommandBus.queueBotCommand(bot, "SET_LOT:$lot")
-            return Result(true, "سجلت أمر تغيير اللوت للبوت $bot إلى $lot، والحالة ستبقى PENDING_MT5 حتى يؤكد الجسر التنفيذ.")
+            AmarAiAppCommandBus.queueBotCommand(bot, "SET_LOT:$targetLot")
+            return Result(true, "سجلت أمر تغيير اللوت للبوت $bot إلى $targetLot، والحالة ستبقى PENDING_MT5 حتى يؤكد الجسر التنفيذ.")
         }
-        if (q.contains("ارفع مستوى اللوت") || q.contains("ارفع اللوت") || q.contains("increase lot")) {
+        if (q.contains("ارفع مستوى اللوت") || q.contains("ارفع اللوت") || q.contains("ارفع لوت") || q.contains("increase lot")) {
             return Result(true, "أستطيع رفع اللوت، لكن أعطني القيمة المطلوبة مثلاً: لوت 0.02 للبوت 1، ولن أخمّن قيمة مالية.")
         }
 
