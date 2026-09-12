@@ -31,6 +31,8 @@
 7. MetaEditor compile؛
 8. Demo runtime tests.
 
+> **Protected baseline:** `mt5/Experts/Grid_Martingale_Basket_v2.mq5` version 2.01, SHA-1 `1125cabef6b4a4b1d5eb2c5deaa4b5e7458479ad25`. It remains unchanged by application/AI hardening work.
+
 ## B36 — AI Supervisor
 AI يقدم تحليلًا واقتراحات فقط:
 
@@ -41,6 +43,29 @@ AI يقدم تحليلًا واقتراحات فقط:
 ## Safety
 
 `liveTrading=false` هو الوضع الآمن الافتراضي. إدخال بيانات الحساب لا يمنح صلاحية تداول. Emergency Lock وأي فشل في permission/risk/security/connector/idempotency يؤدي إلى **BLOCK**.
+
+## Open Source
+
+AmarBoot is now an open-source repository. AMAR-owned source code is licensed under the MIT License.
+Third-party software, scripts, APIs, data, trademarks, and documentation remain subject to their own licenses and terms.
+
+Before reusing TradingView, GitHub, LuxAlgo, bot, or strategy material, check provenance and the original license. Public visibility is not blanket permission to copy proprietary content.
+
+See:
+- `LICENSE`
+- `SECURITY.md`
+- `CONTRIBUTING.md`
+- `CODE_OF_CONDUCT.md`
+- `docs/OPEN_SOURCE_POLICY.md`
+- `docs/security/AMAR_SECURITY_AUDIT_2026-09-12.md`
+
+## Security
+
+The repository uses a fail-closed execution model. Queue acceptance is never treated as broker execution success.
+Execution requires authenticated/scoped commands, idempotency/replay controls, ACK, runtime read-back,
+reconciliation, and audit evidence.
+
+Public-repository security controls include Dependabot configuration, CodeQL scanning, and local-secret exclusions.
 
 ## CI
 
