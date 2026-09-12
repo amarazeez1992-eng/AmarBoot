@@ -1,14 +1,16 @@
 package com.personal.gridbot.amaros.agent
 
-/** Future AI Agent boundary. Provider-agnostic and incapable of direct execution. */
-data class AmarAgentRequest(val sessionId: String, val instruction: String, val context: Map<String, String> = emptyMap())
-data class AmarAgentResponse(val sessionId: String, val message: String, val confidence: Double = 0.0, val traceId: String? = null)
-
+/**
+ * Compatibility boundary for provider implementations.
+ * The canonical request/response/tool types live in AmarAgentCore.kt.
+ * This file intentionally does not redeclare them, avoiding duplicate JVM/Kotlin types.
+ */
 interface AmarAgentProvider {
     suspend fun respond(request: AmarAgentRequest): AmarAgentResponse
 }
 
-interface AmarAgentTool {
+/** Legacy tool contract retained under a distinct name until all integrations migrate. */
+interface AmarLegacyAgentTool {
     val name: String
     suspend fun execute(input: Map<String, String>): Map<String, String>
 }
