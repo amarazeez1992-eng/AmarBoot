@@ -49,17 +49,21 @@ object AmarTradingDiscoveryScheduler {
     private const val WORK_NAME = "amar_trading_discovery"
 
     fun start(context: Context) {
-        val request = androidx.work.PeriodicWorkRequestBuilder<AmarTradingDiscoveryWorker>(30, java.util.concurrent.TimeUnit.MINUTES)
-            .setConstraints(
-                androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .build()
+        runCatching {
+            val app = context.applicationContext
+            val request = androidx.work.PeriodicWorkRequestBuilder<AmarTradingDiscoveryWorker>(30, java.util.concurrent.TimeUnit.MINUTES)
+                .setConstraints(
+                    androidx.work.Constraints.Builder()
+                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 30, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
+            androidx.work.WorkManager.getInstance(app).enqueueUniquePeriodicWork(
+                WORK_NAME,
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                request
             )
-            .build()
-        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            WORK_NAME,
-            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
-            request
-        )
+        }
     }
 }
