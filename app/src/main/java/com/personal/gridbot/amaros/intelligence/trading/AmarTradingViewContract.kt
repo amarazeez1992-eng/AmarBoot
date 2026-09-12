@@ -40,9 +40,12 @@ object AmarTradingViewContract {
             symbol = j.getString("symbol"),
             timeframe = j.optString("timeframe", ""),
             event = j.getString("event"),
-            side = j.optString("side", null),
-            price = if (j.has("price")) j.optDouble("price") else null,
-            strategy = j.optString("strategy", null)
+            side = j.stringOrNull("side"),
+            price = if (j.has("price") && !j.isNull("price")) j.optDouble("price") else null,
+            strategy = j.stringOrNull("strategy")
         )
     }
+
+    private fun JSONObject.stringOrNull(key: String): String? =
+        if (has(key) && !isNull(key)) getString(key) else null
 }
