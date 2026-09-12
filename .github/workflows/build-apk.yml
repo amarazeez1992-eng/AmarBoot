@@ -86,7 +86,8 @@ jobs:
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
-          "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -P 16 -v 4 "$apk"
+          # Build-tools 34.0.0 uses lowercase -p for page-align during check.
+          "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -p -v 4 "$apk"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$apk"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$apk"
           "$ANDROID_HOME/build-tools/34.0.0/apkanalyzer" manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
