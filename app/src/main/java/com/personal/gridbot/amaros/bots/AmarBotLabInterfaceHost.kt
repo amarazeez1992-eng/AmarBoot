@@ -84,10 +84,8 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
 
         Box(Modifier.fillMaxSize()) {
             if (selected == AmarBotInterface.A) {
-                // واجهة 1 الأصلية المختصرة + نظام السحب للأرقام، بدون حذف أو استبدال مختبر البوت.
-                AmarBotLabInterface1Screen(onBackHome)
+                AmarBotLabProfessionalScreen(onBackHome)
             } else {
-                // واجهة 2 تبقى كما هي.
                 AmarBotLabInterface2Screen(onBackHome)
             }
         }
