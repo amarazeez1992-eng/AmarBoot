@@ -35,7 +35,11 @@ class AmarAgentOrchestrator(
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
-            val sourceLimit = minOf(request.maximumSourceCount, safeBudget.maxSources).coerceAtLeast(1)
+            val sourceLimit = minOf(
+                request.requestedSourceCount.coerceAtLeast(1),
+                request.maximumSourceCount.coerceAtLeast(1),
+                safeBudget.maxSources
+            )
             researchEngine.research(
                 ResearchRequest(
                     question = request.text,
@@ -74,7 +78,7 @@ class AmarAgentOrchestrator(
                 tools = availableTools,
                 executionAllowed = false,
                 brokerAccessAllowed = false,
-                requestedSourceCount = request.requestedSourceCount,
+                requestedSourceCount = request.requestedSourceCount.coerceAtLeast(1),
                 maximumSourceCount = safeBudget.maxSources,
                 requireCrossValidation = request.requireCrossValidation,
                 requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
@@ -82,7 +86,11 @@ class AmarAgentOrchestrator(
         )
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
-        val critique = critic.review(answer.answer, report?.findings.orEmpty())
+        val critique = critic.review(
+            answer.answer,
+            report?.findings.orEmpty(),
+            requireEvidence = needsResearch
+        )
         val direction = directionEngine.detect(answer.answer)
 
         val decisionRelevant = plan.intent == AgentIntent.TRADE_ANALYSIS && direction != AmarDecisionDirection.UNKNOWN
