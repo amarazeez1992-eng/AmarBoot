@@ -6,16 +6,17 @@ import androidx.compose.runtime.Composable
 private const val PREFS = "amar_bot_interfaces"
 
 enum class AmarBotInterface(val label: String) {
-    A("واجهة 1")
+    A("واجهة 1"),
+    B("واجهة 2 — سحب وإفلات")
 }
 
 object AmarBotInterfaceRegistry {
     fun load(context: Context, botNumber: Int): AmarBotInterface {
         val stored = context.applicationContext
             .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString("bot_$botNumber", AmarBotInterface.A.name)
-        return runCatching { AmarBotInterface.valueOf(stored ?: AmarBotInterface.A.name) }
-            .getOrDefault(AmarBotInterface.A)
+            .getString("bot_$botNumber", AmarBotInterface.B.name)
+        return runCatching { AmarBotInterface.valueOf(stored ?: AmarBotInterface.B.name) }
+            .getOrDefault(AmarBotInterface.B)
     }
 
     fun save(context: Context, botNumber: Int, interfaceId: AmarBotInterface) {
@@ -28,13 +29,11 @@ object AmarBotInterfaceRegistry {
 }
 
 /**
- * Single active Bot-Lab interface.
- *
- * The enhanced visual prototype is intentionally not the runtime host:
- * production remains wired to the existing Bot Lab business logic,
- * persistence, command lifecycle and verified BOT1 gateway.
+ * Bot-Lab interface host.
+ * Interface 2 is now the active visual surface; Interface 1 remains intact
+ * and can still be selected through the existing registry contract.
  */
 @Composable
 fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
-    AmarBotLabProfessionalScreen(onBackHome = onBackHome)
+    AmarBotLabInterface2Screen(onBackHome = onBackHome)
 }
