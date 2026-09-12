@@ -25,5 +25,8 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Run AMAR AI agent tests
+      - name: Run Stage 2 regression tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest'
+
+      - name: Run full unit test suite
         run: gradle :app:testDebugUnitTest
