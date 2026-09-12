@@ -2,6 +2,7 @@ package com.personal.gridbot.amaros.ai
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,11 +75,7 @@ class AmarAiLiveConversationEngine(
                             .getOrElse { "تعذر الرد الآن: ${it.message ?: "خطأ غير معروف"}" }
                     }
                     onAnswer(answer)
-                    if (active) {
-                        speak(answer)
-                        // TTS is intentionally followed by a fresh listening turn.
-                        listen()
-                    }
+                    if (active) speak(answer)
                 }
             }
             override fun onError(code: Int) {
@@ -97,6 +94,15 @@ class AmarAiLiveConversationEngine(
                 if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.setLanguage(Locale.getDefault())
                 }
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) { onState(State.SPEAKING) }
+                    override fun onDone(utteranceId: String?) {
+                        if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
+                    }
+                    override fun onError(utteranceId: String?) {
+                        if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
+                    }
+                })
             }
         }
     }
