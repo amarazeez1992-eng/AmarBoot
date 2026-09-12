@@ -54,7 +54,8 @@ class MainActivity : ComponentActivity() {
         homeLayout = prefs.getInt(AmarSharedUiContract.PREF_HOME_LAYOUT, AmarHomeLayoutController.DEFAULT_LAYOUT).coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT)
         AmarGlobalVisualStateStore.setEnabled(AmarVisualEffectsPreference.load(this))
         AmarTradingDiscoveryScheduler.start(this)
-        installProtectionHandler(); enterImmersiveReferenceMode()
+        installProtectionHandler()
+        enterImmersiveReferenceMode()
         root = FrameLayout(this)
         home = WebView(this).apply {
             webViewClient = object : WebViewClient() { override fun onPageFinished(view: WebView?, url: String?) { enhanceHome(); applyHomeTheme() } }
@@ -82,9 +83,41 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun installProtectionHandler() { val previous = Thread.getDefaultUncaughtExceptionHandler(); Thread.setDefaultUncaughtExceptionHandler { thread, error -> runCatching { AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "التطبيق", error) }; previous?.uncaughtException(thread, error) } }
-    private fun enterImmersiveReferenceMode() { @Suppress("DEPRECATION") window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE; if (android.os.Build.VERSION.SDK_INT >= 30) window.insetsController?.let { it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()); it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE } }
-    private fun effectiveDark(): Boolean = when (themeMode) { AmarThemeMode.DARK -> true; AmarThemeMode.LIGHT -> false; AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES }
+    private fun installProtectionHandler() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            runCatching {
+                AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "التطبيق", error)
+            }
+            previous?.uncaughtException(thread, error)
+        }
+    }
+
+    private fun enterImmersiveReferenceMode() {
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.let { controller ->
+                controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            val flags = android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = flags
+        }
+    }
+
+    private fun effectiveDark(): Boolean = when (themeMode) {
+        AmarThemeMode.DARK -> true
+        AmarThemeMode.LIGHT -> false
+        AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun palette() = if (effectiveDark()) AmarPlatinum else AmarDay
 
     private fun enhanceHome() {
