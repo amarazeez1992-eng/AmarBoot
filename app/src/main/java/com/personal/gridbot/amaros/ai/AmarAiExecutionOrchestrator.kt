@@ -2,7 +2,6 @@ package com.personal.gridbot.amaros.ai
 
 import android.content.Context
 import com.personal.gridbot.amaros.runtime.AmarBotCommandEngine
-import org.json.JSONObject
 
 /** App-side execution contract. Durable now; MT5/Bridge adapter is the final execution stage. */
 object AmarAiExecutionOrchestrator {
@@ -32,14 +31,19 @@ object AmarAiExecutionOrchestrator {
         return Result(true, "VALIDATED", "الأمر صالح للإرسال")
     }
 
-    fun canonical(intent: Intent): String = JSONObject()
-        .put("schema", "AMAR_EXECUTION_INTENT_V1")
-        .put("type", intent.type.name)
-        .put("symbol", intent.symbol)
-        .put("side", intent.side)
-        .put("volume", intent.volume)
-        .put("amountUsd", intent.amountUsd)
-        .put("botNumber", intent.botNumber)
-        .put("status", "PENDING_MT5")
-        .toString()
+    /** JVM-safe canonical JSON: no Android org.json dependency is required by unit tests. */
+    fun canonical(intent: Intent): String {
+        fun q(value: String?): String = if (value == null) "null" else "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
+        fun n(value: Double?): String = value?.toString() ?: "null"
+        return "{" +
+            "\"schema\":\"AMAR_EXECUTION_INTENT_V1\"," +
+            "\"type\":\"${intent.type.name}\"," +
+            "\"symbol\":${q(intent.symbol)}," +
+            "\"side\":${q(intent.side)}," +
+            "\"volume\":${n(intent.volume)}," +
+            "\"amountUsd\":${n(intent.amountUsd)}," +
+            "\"botNumber\":${intent.botNumber}," +
+            "\"status\":\"PENDING_MT5\"" +
+            "}"
+    }
 }
