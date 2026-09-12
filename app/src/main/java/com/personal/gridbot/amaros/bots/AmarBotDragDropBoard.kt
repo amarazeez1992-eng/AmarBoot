@@ -46,7 +46,7 @@ import com.personal.gridbot.amaros.runtime.AmarBotOperationalEngine
 /**
  * Real Bot-Lab ordering surface.
  * Ten stable BOT identities are always rendered. Reordering changes only the
- * visual order; runtime statistics come from the operational database.
+ * visual order; strategy metadata and runtime statistics come from real stores.
  */
 @Composable
 fun AmarBotDragDropBoard(
@@ -59,6 +59,7 @@ fun AmarBotDragDropBoard(
     val context = LocalContext.current
     val orderStore = remember(context) { AmarBotOrderStore(context) }
     val runtimeEngine = remember(context) { AmarBotOperationalEngine(context) }
+    val repository = remember(context) { AmarBotVaultRepository(context) }
     val runtimeRows by runtimeEngine.observeBots().collectAsState(initial = emptyList())
     val allowedBots = remember(botNumbers) { (1..10).filter(botNumbers::contains).ifEmpty { (1..10).toList() } }
     val initialOrder = remember(allowedBots) { orderStore.load(allowedBots) }
@@ -66,64 +67,36 @@ fun AmarBotDragDropBoard(
     var dragging by remember { mutableStateOf<Int?>(null) }
     var lastPointerRoot by remember { mutableStateOf<Offset?>(null) }
     val bounds = remember { mutableStateMapOf<Int, Rect>() }
+    val botsByNumber = repository.load().associateBy { it.botNumber }
 
     LaunchedEffect(allowedBots) { runtimeEngine.ensureBotCatalog() }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            "10 بوتات مستقلة • اسحب البطاقة نفسها إلى بطاقة أخرى لإعادة الترتيب",
-            color = Color(0xFF8FEFFF),
-            fontSize = 9.sp
-        )
-
+        Text("10 بوتات مستقلة • اسحب البطاقة نفسها إلى بطاقة أخرى لإعادة الترتيب", color = Color(0xFF8FEFFF), fontSize = 9.sp)
         working.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 row.forEach { number ->
                     val runtime = runtimeRows.firstOrNull { it.botNumber == number }
+                    val bot = botsByNumber[number]
                     val isDragging = dragging == number
                     val isSelected = selectedBot == number
                     val pointer = lastPointerRoot
                     val dropTarget = dragging != null && dragging != number && pointer != null && bounds[number]?.contains(pointer) == true
                     val transition = rememberInfiniteTransition(label = "bot-card-$number")
                     val glow by transition.animateFloat(.55f, 1f, infiniteRepeatable(tween(1500 + number * 45), RepeatMode.Reverse), label = "bot-glow-$number")
-                    val scale by androidx.compose.animation.core.animateFloatAsState(
-                        when {
-                            isDragging -> 1.055f
-                            dropTarget -> 1.035f
-                            else -> 1f
-                        }, tween(140), label = "bot-drag-scale-$number"
-                    )
-                    val borderColor = when {
-                        isDragging -> Color(0xFFFFC84A)
-                        dropTarget -> Color(0xFF00F0A8)
-                        isSelected -> Color(0xFF8DFAFF)
-                        else -> Color(0xFF1A3E4D)
-                    }
-                    val background = when {
-                        isDragging -> Color(0xFF17394A)
-                        dropTarget -> Color(0xFF123B35)
-                        isSelected -> Color(0xFF163B49)
-                        else -> Color(0xFF0E2230)
-                    }
+                    val scale by androidx.compose.animation.core.animateFloatAsState(when { isDragging -> 1.055f; dropTarget -> 1.035f; else -> 1f }, tween(140), label = "bot-drag-scale-$number")
+                    val borderColor = when { isDragging -> Color(0xFFFFC84A); dropTarget -> Color(0xFF00F0A8); isSelected -> Color(0xFF8DFAFF); else -> Color(0xFF1A3E4D) }
+                    val background = when { isDragging -> Color(0xFF17394A); dropTarget -> Color(0xFF123B35); isSelected -> Color(0xFF163B49); else -> Color(0xFF0E2230) }
                     Box(
-                        Modifier
-                            .weight(1f)
-                            .height(86.dp)
-                            .scale(scale)
+                        Modifier.weight(1f).height(86.dp).scale(scale)
                             .onGloballyPositioned { bounds[number] = it.boundsInRoot() }
                             .background(background, RoundedCornerShape(14.dp))
                             .border(1.5.dp, borderColor.copy(alpha = if (isSelected || isDragging || dropTarget) 1f else glow), RoundedCornerShape(14.dp))
                             .clickable { onSelectBot(number) }
                             .pointerInput(number, working) {
                                 detectDragGestures(
-                                    onDragStart = { position ->
-                                        dragging = number
-                                        lastPointerRoot = bounds[number]?.let { it.topLeft + position }
-                                    },
-                                    onDrag = { change, _ ->
-                                        change.consume()
-                                        lastPointerRoot = bounds[number]?.let { it.topLeft + change.position }
-                                    },
+                                    onDragStart = { position -> dragging = number; lastPointerRoot = bounds[number]?.let { it.topLeft + position } },
+                                    onDrag = { change, _ -> change.consume(); lastPointerRoot = bounds[number]?.let { it.topLeft + change.position } },
                                     onDragEnd = {
                                         val dragged = dragging
                                         val pointerAtEnd = lastPointerRoot
@@ -131,24 +104,15 @@ fun AmarBotDragDropBoard(
                                             val targetNumber = working.firstOrNull { candidate -> candidate != dragged && bounds[candidate]?.contains(pointerAtEnd) == true }
                                             if (targetNumber != null) {
                                                 val reordered = AmarBotDragDropOrder.move(working, dragged, targetNumber)
-                                                if (reordered != working) {
-                                                    working = reordered
-                                                    orderStore.save(reordered)
-                                                    onReorder(reordered)
-                                                }
+                                                if (reordered != working) { working = reordered; orderStore.save(reordered); onReorder(reordered) }
                                             }
                                             onSelectBot(dragged)
                                         }
-                                        dragging = null
-                                        lastPointerRoot = null
+                                        dragging = null; lastPointerRoot = null
                                     },
-                                    onDragCancel = {
-                                        dragging = null
-                                        lastPointerRoot = null
-                                    }
+                                    onDragCancel = { dragging = null; lastPointerRoot = null }
                                 )
-                            }
-                            .padding(7.dp),
+                            }.padding(7.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -156,9 +120,9 @@ fun AmarBotDragDropBoard(
                                 Text("BOT ${number.toString().padStart(2, '0')}", color = if (isSelected) Color(0xFF8DFAFF) else Color(0xFFE9FBFF), fontSize = 11.sp, fontWeight = FontWeight.Black)
                                 Box(Modifier.size(7.dp).background(if (runtime?.status == "ACTIVE") Color(0xFF00E6A0) else if (runtime?.status == "ARMED") Color(0xFFFFC84A) else Color(0xFF536B78), CircleShape))
                             }
-                            Text(runtime?.name ?: "بوت $number", color = Color(0xFF7896A5), fontSize = 8.sp, maxLines = 1)
+                            Text(bot?.name ?: "بوت $number", color = Color(0xFF7896A5), fontSize = 8.sp, maxLines = 1)
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                MiniStat("است", "—")
+                                MiniStat("است", "${bot?.strategies?.size ?: 0}/10")
                                 MiniStat("صفقات", "${runtime?.openPositions ?: 0}")
                                 MiniStat("أوامر", "${runtime?.pendingOrders ?: 0}")
                                 MiniStat("لوت", String.format(java.util.Locale.US, "%.2f", runtime?.totalLots ?: 0.0))
