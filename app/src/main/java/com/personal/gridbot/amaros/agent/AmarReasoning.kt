@@ -6,7 +6,7 @@ interface AmarReasoning {
 }
 
 /** Safe local fallback: works without network or API keys. */
-class AmarLocalReasoning : AmarReasoning {
+class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
     override suspend fun generate(context: AmarAgentContext): AmarAgentResponse {
         val text = context.userText.trim()
         if (text.isEmpty()) return AmarAgentResponse("اكتب سؤالك التداولي وسأبدأ التحليل.")
@@ -15,4 +15,6 @@ class AmarLocalReasoning : AmarReasoning {
             actions = context.tools.map { it.id }
         )
     }
+
+    override suspend fun respond(context: AmarAgentContext): AmarAgentResponse = generate(context)
 }
