@@ -26,6 +26,7 @@ class AmarAgentOrchestrator(
         val mandates = hierarchy.defaultMandates()
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
         val plan = planner.plan(request, safeTools)
+        val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
@@ -64,7 +65,7 @@ class AmarAgentOrchestrator(
         val answer = reasoningProvider.respond(
             AmarAgentContext(
                 userText = request.text + "\n\n" + evidenceText,
-                tools = safeTools,
+                tools = plannedTools,
                 executionAllowed = false,
                 brokerAccessAllowed = false,
                 requestedSourceCount = safeRequestedSources,
