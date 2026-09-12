@@ -21,7 +21,7 @@ object AmarAiOrbController {
           if(s) s.remove();
           s=document.createElement('style'); s.id='amarAiPremiumStyle';
           s.textContent=`
-          #amarAiOrb{--ai-drift:3px;--ai-drift-duration:7s;--ai-market-intensity:.0;position:fixed;left:7vw;bottom:7vh;z-index:30;width:86px!important;height:86px!important;padding:0;border:0!important;border-radius:50%!important;background:radial-gradient(circle at 30% 24%,#ffffff 0%,#baf8ff 9%,#39d9ff 25%,#6c4dff 52%,#bd35ff 73%,#16052f 100%)!important;box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 14px #39d9ff,0 0 38px rgba(108,77,255,.85),0 0 76px rgba(189,53,255,.42),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(10,0,40,.7)!important;perspective:400px;transform-style:preserve-3d;overflow:visible!important;isolation:isolate;cursor:pointer;transition:filter .25s ease,transform .2s ease;animation:aiOrbDrift var(--ai-drift-duration) ease-in-out infinite}
+          #amarAiOrb{--ai-drift:5px;--ai-drift-duration:6.4s;--ai-market-intensity:.0;position:fixed;left:7vw;bottom:7vh;z-index:30;width:86px!important;height:86px!important;padding:0;border:0!important;border-radius:50%!important;background:radial-gradient(circle at 30% 24%,#ffffff 0%,#baf8ff 9%,#39d9ff 25%,#6c4dff 52%,#bd35ff 73%,#16052f 100%)!important;box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 14px #39d9ff,0 0 38px rgba(108,77,255,.85),0 0 76px rgba(189,53,255,.42),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(10,0,40,.7)!important;perspective:400px;transform-style:preserve-3d;overflow:visible!important;isolation:isolate;cursor:pointer;transition:filter .25s ease,transform .2s ease;animation:aiOrbDrift var(--ai-drift-duration) ease-in-out infinite}
           #amarAiOrb:before{content:'';position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 8%,#00eaff 13%,transparent 20% 37%,#ff4dff 44%,transparent 51% 70%,#7c5cff 78%,transparent 86%);filter:blur(2px);opacity:.9;z-index:-1;animation:aiHaloSpin 5s linear infinite}
           #amarAiOrb:after{content:'';position:absolute;inset:-17px;border-radius:50%;border:1px solid rgba(80,230,255,.28);box-shadow:0 0 24px rgba(80,230,255,.35);z-index:-2;animation:aiHaloPulse 2.4s ease-in-out infinite}
           #amarAiOrb .ai-core{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:900 20px/1 Arial,sans-serif;letter-spacing:1px;text-shadow:0 0 7px #fff,0 0 18px #00eaff,0 0 28px #c14cff;z-index:10;animation:aiCorePulse 1.8s ease-in-out infinite}
@@ -37,8 +37,8 @@ object AmarAiOrbController {
           #amarAiOrb .ai-particle{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 7px 2px #00eaff;z-index:9;animation:aiParticle 2.6s ease-in-out infinite}
           #amarAiOrb .p1{left:15%;top:30%}.p2{right:16%;top:38%;animation-delay:.5s!important}.p3{left:30%;bottom:17%;animation-delay:1s!important}.p4{right:27%;bottom:23%;animation-delay:1.5s!important}
           #amarAiOrb .ai-sheen{position:absolute;width:38px;height:16px;left:10px;top:10px;border-radius:50%;background:rgba(255,255,255,.75);filter:blur(6px);transform:rotate(-35deg);z-index:11;pointer-events:none;animation:aiSheen 2.8s ease-in-out infinite}
-          #amarAiOrb:hover{filter:brightness(1.25) saturate(1.3);transform:scale(1.08)!important;animation-play-state:paused}
-          #amarAiOrb:active{transform:scale(.94)!important;animation-play-state:paused}
+          #amarAiOrb:hover{filter:brightness(1.25) saturate(1.3);transform:scale(1.08)!important}
+          #amarAiOrb:active{transform:scale(.94)!important}
           #amarAiOrb.market-buy{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 calc(18px + 28px * var(--ai-market-intensity)) #35ffb0,0 0 42px rgba(41,255,176,.55),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(0,40,28,.68)!important}
           #amarAiOrb.market-sell{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 calc(18px + 28px * var(--ai-market-intensity)) #ff4d7d,0 0 42px rgba(255,55,112,.55),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(55,0,20,.68)!important}
           #amarAiOrb.market-neutral{box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 18px #39d9ff,0 0 38px rgba(108,77,255,.72),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(10,0,40,.7)!important}
@@ -59,8 +59,8 @@ object AmarAiOrbController {
           window.amarAiOrbSetMarketState=function(direction,intensity,quality,drift,duration){
             if(!a)return;
             var i=Math.max(0,Math.min(1,Number(intensity)||0));
-            var d=Math.max(2.5,Math.min(8.5,Number(drift)||3));
-            var t=Math.max(5,Math.min(7,Number(duration)||7));
+            var d=Math.max(2.5,Math.min(8.5,Number(drift)||5));
+            var t=Math.max(5,Math.min(7,Number(duration)||6.4));
             a.style.setProperty('--ai-market-intensity',i.toFixed(3));
             a.style.setProperty('--ai-drift',d.toFixed(2)+'px');
             a.style.setProperty('--ai-drift-duration',t.toFixed(2)+'s');
@@ -71,7 +71,7 @@ object AmarAiOrbController {
             a.dataset.marketDirection=direction||'unknown';
             a.dataset.marketQuality=quality||'unavailable';
           };
-          window.amarAiOrbSetMarketState('unknown',0,'unavailable',3,7);
+          window.amarAiOrbSetMarketState('unknown',0,'unavailable',5,6.4);
         })();
     """.trimIndent()
 }
