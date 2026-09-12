@@ -33,7 +33,7 @@ data class ResearchFinding(
     val publisher: String = "",
     val sourceType: AmarSourceType = AmarSourceType.UNKNOWN,
     val retrievedAtEpochMs: Long = System.currentTimeMillis(),
-    val fingerprint: String = AmarEvidenceLedger.fingerprintOf("$sourceUri|$evidence")
+    val fingerprint: String = AmarEvidence.fingerprintOf("$sourceUri|$evidence")
 )
 
 enum class EvidenceStance { SUPPORTS, OPPOSES, MIXED, UNKNOWN }
