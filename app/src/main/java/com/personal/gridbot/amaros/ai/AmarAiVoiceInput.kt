@@ -35,8 +35,6 @@ class AmarAiVoiceInput(private val context: Context) {
                 override fun onPartialResults(results: Bundle?) = listener.onPartial(best(results))
                 override fun onResults(results: Bundle?) = listener.onFinal(best(results))
                 override fun onError(error: Int) = listener.onError(error)
-                override fun onSegmentResults(segmentResults: Bundle?) = Unit
-                override fun onLanguageDetection(results: Bundle?) = Unit
             })
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
