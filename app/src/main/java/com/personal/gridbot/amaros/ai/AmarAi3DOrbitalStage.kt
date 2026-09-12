@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -76,7 +77,6 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
             val cy = size.height * .50f
             val rx = size.width * .38f
             val ry = size.height * .29f
-
             drawRect(Brush.verticalGradient(listOf(StageBg, Color(0xFF07131A), StageBg)))
             drawCircle(StageCyan.copy(alpha = .055f), size.minDimension * .32f, Offset(cx, cy))
             drawCircle(StageGold.copy(alpha = .028f), size.minDimension * .44f, Offset(cx, cy))
@@ -89,8 +89,6 @@ fun AmarAi3DOrbitalStage(modifier: Modifier = Modifier) {
             val routePoints = listOf(Offset(cx - rx * .88f, cy + ry * .80f), Offset(cx - rx * .88f, cy - ry * .80f), Offset(cx + rx * .88f, cy - ry * .80f), Offset(cx + rx * .88f, cy + ry * .80f))
             for (i in 0 until routePoints.lastIndex) drawLine(StageCyan.copy(alpha = .09f), routePoints[i], routePoints[i + 1], strokeWidth = 1.5f, cap = StrokeCap.Round)
 
-            // الروبوت يتحرك الآن بنفس إحداثيات قافلة الأخبار وحالة السوق.
-            androidx.compose.ui.graphics.drawscope.DrawScope::class
             withTransform({ translate(convoyX, convoyY) }) {
                 val localBob = bob * 5f
                 val headW = size.width * .16f
