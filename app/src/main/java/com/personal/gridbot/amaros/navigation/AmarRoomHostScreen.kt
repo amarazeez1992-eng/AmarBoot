@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.ai.AmarAiAgentScreen
+import com.personal.gridbot.amaros.ai.AmarAiExperienceScreen
 import com.personal.gridbot.amaros.bots.AmarBotLabInterfaceHost
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
@@ -18,10 +18,12 @@ import com.personal.gridbot.amaros.rooms.alerts.AmarAlertsModernScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
 import com.personal.gridbot.amaros.rooms.indicators.AmarIndicatorsModernScreen
 import com.personal.gridbot.amaros.rooms.library.AmarLibraryModernScreen
-import com.personal.gridbot.amaros.rooms.news.AmarMarketPulseModernScreen
+import com.personal.gridbot.amaros.rooms.news.AmarMarketPulse3DScreen
 import com.personal.gridbot.amaros.rooms.positions.AmarPositionsModernScreen
 import com.personal.gridbot.amaros.security.AmarProtectionCenterScreen
+import com.personal.gridbot.amaros.settings.AmarAppAccountCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
+import com.personal.gridbot.amaros.sync.AmarSyncCenterScreen
 import com.personal.gridbot.ui.theme.AmarThemeMode
 
 @Composable
@@ -39,11 +41,24 @@ fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMod
     AmarRoom.LIBRARY->AmarLibraryModernScreen()
     AmarRoom.ALERTS->AmarAlertsModernScreen()
     AmarRoom.POSITIONS->AmarPositionsModernScreen()
-    AmarRoom.NEWS_SESSIONS->AmarMarketPulseModernScreen()
-    AmarRoom.ANALYSIS->AmarAiAgentScreen()
+    AmarRoom.NEWS_SESSIONS->AmarMarketPulse3DScreen()
+    AmarRoom.ANALYSIS->AmarAiExperienceScreen()
     AmarRoom.SETTINGS->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)){
-      Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){Button({settingsMode=0},Modifier.weight(1f)){Text("الواجهات")};Button({settingsMode=1},Modifier.weight(1f)){Text("الحماية")};Button({settingsMode=2},Modifier.weight(1f)){Text("متقدم")}}
-      when(settingsMode){0->AmarAppearanceScreen(themeMode,onThemeModeChange,homeLayout,onHomeLayoutChange);1->AmarProtectionCenterScreen(context);else->AmarDeveloperOptionsScreen()}
+      Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)){
+       Button({settingsMode=0},Modifier.weight(1f)){Text("الواجهات")}
+       Button({settingsMode=1},Modifier.weight(1f)){Text("الحماية")}
+       Button({settingsMode=2},Modifier.weight(1f)){Text("متقدم")}
+       Button({settingsMode=3},Modifier.weight(1f)){Text("الحساب/المزامنة")}
+      }
+      when(settingsMode){
+       0->AmarAppearanceScreen(themeMode,onThemeModeChange,homeLayout,onHomeLayoutChange)
+       1->AmarProtectionCenterScreen(context)
+       2->AmarDeveloperOptionsScreen()
+       else->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)){
+        AmarAppAccountCenterScreen()
+        AmarSyncCenterScreen()
+       }
+      }
     }
     else->AmarRoomWorkspace(room)
    }
