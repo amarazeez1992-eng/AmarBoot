@@ -1,18 +1,12 @@
 package com.personal.gridbot.amaros.ai
 
-import android.content.Context
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarTimeframe
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
-import com.personal.gridbot.runtime.AmarStrategyValidationEngine
 import com.personal.gridbot.amaros.runtime.AmarGridPlanningEngine
 
-/**
- * Direct AI -> real application engines boundary.
- * This class intentionally calls engines, not the intelligence registry.
- * It remains read-only for broker/MT5 until the final laptop/CMG/Bridge/MT5 phase.
- */
+/** Direct AI -> real application engines boundary. Read-only for broker/MT5 until final laptop/CMG/Bridge/MT5 phase. */
 object AmarAiEngineBinding {
     fun market(): String {
         val s = AmarMarketStateStore.snapshot
@@ -41,7 +35,7 @@ object AmarAiEngineBinding {
         return "ENGINE_RISK|score=${"%.1f".format(r.scorePct)}|confidence=${"%.1f".format(r.confidencePct)}|uncertainty=${"%.1f".format(r.uncertaintyPct)}|gate=${r.gate}|reasons=${r.reasons.joinToString(" || ")}"
     }
 
-    suspend fun tracking(context: Context?, symbol: String? = null): String {
+    suspend fun tracking(symbol: String? = null): String {
         val runtime = AmarMt5RuntimeRegistry.current()
             ?: return "ENGINE_TRACKING|status=MT5_RUNTIME_NOT_INSTALLED|failClosed=true"
         val positions = runtime.client.positions(symbol)
