@@ -72,9 +72,11 @@ class AmarAgentStageOneTest {
         assertFalse(critic.review("تحليل تداول", emptyList(), requireEvidence = true).accepted)
     }
 
-    @Test fun trading_tools_respect_capability_scopes() {
+    @Test fun trading_tools_respect_capability_scopes_and_read_only_flags() {
         val tools = AmarTradingTools()
-        val noResearch = tools.availableTools(AmarAgentPolicy(allowResearch = false, allowSimulation = false, allowStrategyDrafting = false))
+        val noResearch = tools.availableTools(
+            AmarAgentPolicy(allowResearch = false, allowSimulation = false, allowStrategyDrafting = false)
+        )
 
         assertTrue(noResearch.none { it.id == "market_research" })
         assertTrue(noResearch.none { it.id == "simulation" })
@@ -84,5 +86,24 @@ class AmarAgentStageOneTest {
         assertEquals(AmarToolScope.RESEARCH, full.first { it.id == "market_research" }.scope)
         assertEquals(AmarToolScope.SIMULATION, full.first { it.id == "simulation" }.scope)
         assertEquals(AmarToolScope.STRATEGY_WRITE, full.first { it.id == "strategy_draft" }.scope)
+        assertFalse(full.first { it.id == "strategy_draft" }.readOnly)
+        assertTrue(full.first { it.id == "simulation" }.readOnly)
+    }
+
+    @Test fun source_verifier_requires_independent_evidence_and_ignores_invalid_findings() {
+        val verifier = AmarSourceVerifier()
+        val result = verifier.verify(
+            listOf(
+                ResearchFinding("valid-a", "https://example.com/a", "evidence-a", authority = Authority.PRIMARY),
+                ResearchFinding("valid-b", "https://example.org/b", "evidence-b", authority = Authority.OFFICIAL),
+                ResearchFinding("invalid", "", "ignored", authority = Authority.PRIMARY),
+                ResearchFinding("invalid-2", "https://example.net/c", "", authority = Authority.PRIMARY)
+            )
+        )
+
+        assertTrue(result.accepted)
+        assertEquals(2, result.totalSources)
+        assertEquals(2, result.independentSources)
+        assertTrue(result.confidence >= 0.70)
     }
 }
