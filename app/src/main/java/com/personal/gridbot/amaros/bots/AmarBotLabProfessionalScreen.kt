@@ -44,6 +44,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,7 +54,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.personal.gridbot.amaros.runtime.AmarBotCommandEngine
+import com.personal.gridbot.amaros.runtime.AmarBotOperationalEngine
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private val LabBg = Color(0xFF050C14)
 private val LabPanel = Color(0xFF0A1722)
@@ -74,6 +78,9 @@ private enum class CommandVisualState { READY, RUNNING, SUCCESS, ERROR }
 fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val repo = remember(context) { AmarBotVaultRepository(context) }
+    val commandEngine = remember(context) { AmarBotCommandEngine(context) }
+    val operationalEngine = remember(context) { AmarBotOperationalEngine(context) }
+    val scope = rememberCoroutineScope()
     var bots by remember { mutableStateOf(repo.load()) }
     val selectedBot = AmarBotLabSelectionContext.selectedBot
     var selectedStrategy by remember { mutableIntStateOf(1) }
@@ -86,6 +93,7 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
 
     fun refresh() { bots = repo.load() }
 
+    LaunchedEffect(Unit) { operationalEngine.ensureBotCatalog() }
     LaunchedEffect(commandState) {
         if (commandState == CommandVisualState.SUCCESS || commandState == CommandVisualState.ERROR) {
             delay(2600)
@@ -114,12 +122,22 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
                         onCommand = { name ->
                             commandName = name
                             commandState = CommandVisualState.RUNNING
-                            notice = "تم استلام طلب $name — بانتظار تأكيد التنفيذ من Runtime/MT5"
+                            scope.launch {
+                                runCatching { commandEngine.queue(selectedBot, name) }
+                                    .onSuccess { id ->
+                                        commandState = CommandVisualState.READY
+                                        notice = "تم حفظ الطلب #$id للبوت ${selectedBot.toString().padStart(2, '0')} — PENDING_MT5. لم يُدّعَ تنفيذ الوسيط."
+                                    }
+                                    .onFailure {
+                                        commandState = CommandVisualState.ERROR
+                                        notice = "فشل حفظ طلب $name: ${it.message ?: "خطأ غير معروف"}"
+                                    }
+                            }
                         },
                         onSaveStrategy = { strategy ->
                             repo.saveStrategy(selectedBot, strategy)
                             refresh()
-                            notice = "✓ تم حفظ الاستراتيجية ${strategy.number}"
+                            notice = "✓ تم حفظ الاستراتيجية ${strategy.number} في مخزن البوت"
                         },
                         onDeleteStrategy = { number ->
                             repo.deleteStrategy(selectedBot, number)
@@ -136,11 +154,7 @@ fun AmarBotLabProfessionalScreen(onBackHome: () -> Unit) {
 
 @Composable
 private fun LabHeader(currentBot: AmarSavedBot?, onBackHome: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(LabPanel).padding(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
-    ) {
+    Row(Modifier.fillMaxWidth().background(LabPanel).padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         Button(onClick = onBackHome, colors = ButtonDefaults.buttonColors(containerColor = LabGold, contentColor = Color.Black), contentPadding = PaddingValues(horizontal = 13.dp, vertical = 4.dp)) { Text("⌂", fontWeight = FontWeight.Black) }
         Column(Modifier.weight(1f)) {
             Text("AMAR BOT LAB", color = LabCyan, fontSize = 19.sp, fontWeight = FontWeight.Black)
@@ -192,13 +206,8 @@ private fun BotLabContent(
 
 @Composable
 private fun BotPicker(selected: Int, select: (Int) -> Unit) {
-    LabCard("إدارة البوتات", "سحب وإفلات — كل البوتات") {
-        AmarBotDragDropBoard(
-            botNumbers = (1..10).toList(),
-            selectedBot = selected,
-            onSelectBot = select,
-            onReorder = { }
-        )
+    LabCard("إدارة البوتات", "10 بطاقات • سحب وإفلات فعلي") {
+        AmarBotDragDropBoard(botNumbers = (1..10).toList(), selectedBot = selected, onSelectBot = select, onReorder = { })
     }
 }
 
@@ -216,9 +225,7 @@ private fun StrategyPicker(bot: AmarSavedBot?, selected: Int, select: (Int) -> U
 @Composable
 private fun SelectChip(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val color by animateColorAsState(if (selected) LabCyan else LabPanel2, tween(180), label = "chip")
-    Box(modifier.height(37.dp).background(color, RoundedCornerShape(10.dp)).clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Text(text, color = if (selected) Color.Black else LabText, fontSize = 9.sp, fontWeight = FontWeight.Black)
-    }
+    Box(modifier.height(37.dp).background(color, RoundedCornerShape(10.dp)).clickable(onClick = onClick), contentAlignment = Alignment.Center) { Text(text, color = if (selected) Color.Black else LabText, fontSize = 9.sp, fontWeight = FontWeight.Black) }
 }
 
 @Composable
@@ -243,22 +250,10 @@ private fun StrategyEditor(strategy: AmarSavedStrategy?, number: Int, save: (Ama
             CompactField("Multiplier", multiplier, { multiplier = it }, Modifier.weight(1f)); CompactField("Basket TP", tp, { tp = it }, Modifier.weight(1f)); CompactField("Basket SL", sl, { sl = it }, Modifier.weight(1f))
         }
         CompactField("Trailing", trailing, { trailing = it }, Modifier.fillMaxWidth())
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            ToggleState("BUY", buy, { buy = !buy }, Modifier.weight(1f)); ToggleState("SELL", sell, { sell = !sell }, Modifier.weight(1f))
-        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { ToggleState("BUY", buy, { buy = !buy }, Modifier.weight(1f)); ToggleState("SELL", sell, { sell = !sell }, Modifier.weight(1f)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Button(onClick = {
-                val p = AmarBot1RuntimeConfig(
-                    lot = lot.toDoubleOrNull() ?: 0.01,
-                    gridStep = step.toDoubleOrNull() ?: 30.0,
-                    maxOrders = (max.toIntOrNull() ?: 10).coerceAtLeast(1),
-                    multiplier = multiplier.toDoubleOrNull() ?: 2.0,
-                    basketTp = tp.toDoubleOrNull() ?: 50.0,
-                    basketSl = sl.toDoubleOrNull() ?: -30.0,
-                    trailing = (trailing.toDoubleOrNull() ?: 0.0).coerceAtLeast(0.0),
-                    buyEnabled = buy,
-                    sellEnabled = sell
-                )
+                val p = AmarBot1RuntimeConfig(lot.toDoubleOrNull() ?: 0.01, step.toDoubleOrNull() ?: 30.0, (max.toIntOrNull() ?: 10).coerceAtLeast(1), multiplier.toDoubleOrNull() ?: 2.0, tp.toDoubleOrNull() ?: 50.0, sl.toDoubleOrNull() ?: -30.0, (trailing.toDoubleOrNull() ?: 0.0).coerceAtLeast(0.0), buy, sell)
                 save(AmarSavedStrategy(number, name.ifBlank { "Strategy $number" }, p))
             }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = LabGreen, contentColor = Color.Black)) { Text(if (strategy == null) "＋ إضافة / حفظ" else "✓ حفظ التعديل", fontWeight = FontWeight.Black, fontSize = 10.sp) }
             Button(onClick = { delete(number) }, modifier = Modifier.weight(.55f), colors = ButtonDefaults.buttonColors(containerColor = LabRed, contentColor = Color.White)) { Text("حذف", fontWeight = FontWeight.Black, fontSize = 10.sp) }
@@ -267,21 +262,17 @@ private fun StrategyEditor(strategy: AmarSavedStrategy?, number: Int, save: (Ama
 }
 
 @Composable
-private fun CompactField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) {
-    OutlinedTextField(value, onChange, modifier, label = { Text(label, fontSize = 9.sp) }, singleLine = true)
-}
+private fun CompactField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) { OutlinedTextField(value, onChange, modifier, label = { Text(label, fontSize = 9.sp) }, singleLine = true) }
 
 @Composable
 private fun ToggleState(label: String, enabled: Boolean, toggle: () -> Unit, modifier: Modifier) {
     val color by animateColorAsState(if (enabled) LabGreen else LabRed, tween(220), label = "toggle")
-    Button(onClick = toggle, modifier = modifier.height(40.dp), colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.Black), shape = RoundedCornerShape(11.dp)) {
-        Text(if (enabled) "● $label  ON" else "○ $label  OFF", fontWeight = FontWeight.Black, fontSize = 10.sp)
-    }
+    Button(onClick = toggle, modifier = modifier.height(40.dp), colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = Color.Black), shape = RoundedCornerShape(11.dp)) { Text(if (enabled) "● $label  ON" else "○ $label  OFF", fontWeight = FontWeight.Black, fontSize = 10.sp) }
 }
 
 @Composable
 private fun BotCommandPanel(state: CommandVisualState, name: String, command: (String) -> Unit) {
-    LabCard("أوامر البوت", "الحالة مرتبطة بتأكيد Runtime") {
+    LabCard("أوامر البوت", "محرك أوامر حقيقي • حالة PENDING حتى ربط MT5") {
         CommandButton("▶ تشغيل", LabGreen, state, name == "تشغيل") { command("تشغيل") }
         CommandButton("■ إطفاء", LabGold, state, name == "إطفاء") { command("إطفاء") }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -298,21 +289,9 @@ private fun BotCommandPanel(state: CommandVisualState, name: String, command: (S
 
 @Composable
 private fun CommandButton(label: String, base: Color, state: CommandVisualState, active: Boolean, modifier: Modifier = Modifier.fillMaxWidth(), onClick: () -> Unit) {
-    val color = when {
-        active && state == CommandVisualState.RUNNING -> LabGold
-        active && state == CommandVisualState.SUCCESS -> LabGreen
-        active && state == CommandVisualState.ERROR -> LabRed
-        else -> base
-    }
-    val shown = when {
-        active && state == CommandVisualState.RUNNING -> "◌ جارٍ..."
-        active && state == CommandVisualState.SUCCESS -> "✓ تم التأكيد"
-        active && state == CommandVisualState.ERROR -> "✕ فشل"
-        else -> label
-    }
-    Button(onClick = onClick, modifier = modifier.height(43.dp), colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = if (color == LabGold || color == LabCyan || color == LabGreen) Color.Black else Color.White), shape = RoundedCornerShape(12.dp)) {
-        Text(shown, fontWeight = FontWeight.Black, fontSize = 10.sp)
-    }
+    val color = when { active && state == CommandVisualState.RUNNING -> LabGold; active && state == CommandVisualState.SUCCESS -> LabGreen; active && state == CommandVisualState.ERROR -> LabRed; else -> base }
+    val shown = when { active && state == CommandVisualState.RUNNING -> "◌ حفظ الطلب..."; active && state == CommandVisualState.SUCCESS -> "✓ تم حفظ الطلب"; active && state == CommandVisualState.ERROR -> "✕ فشل"; else -> label }
+    Button(onClick = onClick, modifier = modifier.height(43.dp), colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = if (color == LabGold || color == LabCyan || color == LabGreen) Color.Black else Color.White), shape = RoundedCornerShape(12.dp)) { Text(shown, fontWeight = FontWeight.Black, fontSize = 10.sp) }
 }
 
 @Composable
@@ -339,10 +318,9 @@ private fun MarketSummaryCard(connected: Boolean, count: Int) {
 }
 
 @Composable
-private fun MarketFrameCard(tf: com.personal.gridbot.amaros.chart.AmarTimeframe, provider: com.personal.gridbot.amaros.chart.AmarMarketDataProvider?) {
+private fun MarketFrameCard(tf: com.personal.gridbot.amaros.chart.AmarTimeframe, provider: com.personal.gridbot.amaros.broker.AmarMarketDataProvider?) {
     val candles = remember(provider, tf) { runCatching { provider?.candles("XAUUSD", tf).orEmpty() }.getOrDefault(emptyList()) }
-    val last = candles.lastOrNull()
-    val previous = candles.dropLast(1).lastOrNull()
+    val last = candles.lastOrNull(); val previous = candles.dropLast(1).lastOrNull()
     val buy = if (last != null && previous != null) ((last.close - previous.close) >= 0.0) else null
     val pct = if (last != null && previous != null && previous.close != 0.0) ((kotlin.math.abs(last.close - previous.close) / previous.close) * 100.0).coerceIn(0.0, 100.0) else null
     val stateText = when (buy) { true -> "شرائي"; false -> "بيعي"; null -> "UNKNOWN" }
@@ -350,10 +328,7 @@ private fun MarketFrameCard(tf: com.personal.gridbot.amaros.chart.AmarTimeframe,
     Card(colors = CardDefaults.cardColors(LabPanel), shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) { Text(tf.shortLabel, color = LabCyan, fontWeight = FontWeight.Black, fontSize = 15.sp); Text(tf.arabicLabel, color = LabMuted, fontSize = 8.sp) }
-            Text(stateText, color = stateColor, fontWeight = FontWeight.Black, fontSize = 12.sp)
-            Spacer(Modifier.width(10.dp))
-            Text(if (pct == null) "—" else String.format(java.util.Locale.US, "%.1f%%", pct), color = stateColor, fontWeight = FontWeight.Black, fontSize = 15.sp)
-            Box(Modifier.padding(start = 9.dp).size(12.dp).background(stateColor, CircleShape))
+            Text(stateText, color = stateColor, fontWeight = FontWeight.Black, fontSize = 12.sp); Spacer(Modifier.width(10.dp)); Text(if (pct == null) "—" else String.format(java.util.Locale.US, "%.1f%%", pct), color = stateColor, fontWeight = FontWeight.Black, fontSize = 15.sp); Box(Modifier.padding(start = 9.dp).size(12.dp).background(stateColor, CircleShape))
         }
     }
 }
@@ -362,10 +337,7 @@ private fun MarketFrameCard(tf: com.personal.gridbot.amaros.chart.AmarTimeframe,
 private fun LabCard(title: String, subtitle: String, content: @Composable ColumnScope.() -> Unit) {
     Card(colors = CardDefaults.cardColors(LabPanel), shape = RoundedCornerShape(19.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(11.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = LabText, fontSize = 16.sp, fontWeight = FontWeight.Black)
-                Text(subtitle, color = LabMuted, fontSize = 8.sp)
-            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(title, color = LabText, fontSize = 16.sp, fontWeight = FontWeight.Black); Text(subtitle, color = LabMuted, fontSize = 8.sp) }
             content()
         }
     }
@@ -375,7 +347,5 @@ private fun LabCard(title: String, subtitle: String, content: @Composable Column
 private fun NoticeBanner(text: String) {
     val transition = rememberInfiniteTransition(label = "notice")
     val alpha by transition.animateFloat(.65f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "notice-alpha")
-    Box(Modifier.fillMaxWidth().alpha(alpha).background(LabPanel2, RoundedCornerShape(14.dp)).border(1.dp, LabCyan, RoundedCornerShape(14.dp)).padding(12.dp)) {
-        Text(text, color = LabCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-    }
+    Box(Modifier.fillMaxWidth().alpha(alpha).background(LabPanel2, RoundedCornerShape(14.dp)).border(1.dp, LabCyan, RoundedCornerShape(14.dp)).padding(12.dp)) { Text(text, color = LabCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) }
 }
