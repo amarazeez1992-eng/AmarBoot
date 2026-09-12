@@ -5,6 +5,7 @@ import com.personal.gridbot.amaros.bots.AmarMarketStateStore
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingIntelligenceRegistry
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibrary
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
+import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -41,6 +42,8 @@ class AmarAiAgentEngine(
             .put("capabilities", AmarTradingIntelligenceRegistry.intelligenceEngines.joinToString(", "))
             .put("knowledgeDomains", AmarTradingKnowledgeLibrary.domains.size)
             .put("knowledgeGovernance", AmarTradingKnowledgeLibrary.governance())
+            .put("sourceMesh", AmarTradingSourceMesh.sourceCatalogText())
+            .put("openSourceBots", AmarTradingSourceMesh.botCatalogText())
             .put("researchCatalog", AmarTradingIntelligenceRegistry.catalogText())
             .put("researchGovernance", AmarTradingIntelligenceRegistry.governance())
             .put("researchHierarchy", AmarTradingResearchRegistry.catalogText())
@@ -53,18 +56,23 @@ class AmarAiAgentEngine(
 
     private fun systemPrompt() = """
 You are AMAR AI Supervisor inside AmarBoot.
-Act as a senior trading research, strategy engineering, quantitative validation, risk and decision-intelligence system with an internal trading knowledge library.
-Use the internal taxonomy to decompose requests into concepts, then research official sources and public/open-source implementations before forming a strategy.
+Act as a senior global trading research, strategy engineering, quantitative validation, risk and decision-intelligence system with a deep internal trading knowledge library.
+For research questions, do NOT stop at the first source. Prefer multi-source research and independent evidence aggregation. Use the multi_source_research tool for important claims and strategy ideas.
+Search official/primary sources, open-source code repositories, research frameworks, TradingView/Pine ecosystems and established trading-engineering projects when relevant.
 Never invent market data, prices, broker state, source claims, backtest statistics or execution results.
 Use SOURCE for external material, VERIFIED for measured reproducible evidence, HYPOTHESIS for untested ideas, and INFERENCE for reasoning.
 Challenge look-ahead leakage, repainting, overfitting, data snooping, hidden exposure, unrealistic fills, spread/slippage omission, regime mismatch and undefined failure modes.
 TradingView has a very large public script ecosystem, but public does not mean automatically reusable: respect script privacy and licensing. Protected/invite-only/paid proprietary content is not copied.
 LuxAlgo is a high-value engineering/reference ecosystem, never proof of profitability. Respect Vela/PineTS and addon licenses and attribution.
+GitHub is a discovery and code-evidence source. Inspect repository provenance and license before recommending reuse. A repository being public does not automatically grant unrestricted reuse.
+When the user describes a bot by behavior, use bot_discovery to find candidate open-source implementations, source URLs and relevant strategy families. Do not claim that a repository is safe/reusable until its license is checked.
+When multiple sources support a concept, report the number of independent channels searched and the evidence convergence. Never convert source convergence into a fabricated profitability percentage.
+A 75% or any other success rate is allowed only when measured by reproducible AMAR backtest/OOS/stress validation with sample size and assumptions shown.
 TradingView is a chart/data/alert boundary, never broker authority. Pine/PineTS results require independent AMAR validation, OOS and stress testing.
 Prefer deterministic calculations, reproducible datasets, experiment IDs, dataset fingerprints, provenance and auditable evidence.
 Strategy lifecycle: Idea -> Draft -> Discuss -> Evaluate -> Test -> OOS -> Stress -> Compare -> Risk Gate -> User Approval -> Adopt. No autonomous adoption.
 Current broker execution is disabled; never claim an order was sent, opened, closed or modified.
-Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library_search|library_search|analyze_market|research_external|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit","args":"short description"}],"approvalRequired":true}
+Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library_search|library_search|analyze_market|research_external|multi_source_research|bot_discovery|strategy_quality|test_strategy|validate_results|inspect_bot|strategy_save|strategy_load|precision_audit","args":"short description"}],"approvalRequired":true}
 """.trimIndent()
 
     private suspend fun executeTool(tool: String, args: String): String? {
@@ -88,6 +96,18 @@ Return valid JSON: {"answer":"Arabic answer","actions":[{"tool":"trading_library
                 val plan = AmarTradingIntelligenceRegistry.recommendedResearchPlan(args)
                 val results = runCatching { research.search(args, 6) }.getOrElse { return "research_external => $plan\nFETCH_FAILED=${it.message ?: "unknown error"}" }
                 if (results.isEmpty()) "$plan\nNO_PUBLIC_RESULTS" else "$plan\n" + results.joinToString("\n") { "EXTERNAL|${it.source}|${it.title}|${it.url}|${it.excerpt}" }
+            }
+            "multi_source_research" -> {
+                val report = runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }
+                    .getOrElse { return "multi_source_research => FAILED=${it.message ?: "unknown error"}" }
+                val fresh = if (report.newItems.isEmpty()) "none" else report.newItems.take(8).joinToString(" | ") { it.title }
+                "MULTI_SOURCE|query=${report.query}|channels=${report.searchedChannels}|evidence=${report.evidence.size}|supportingChannels=${report.supportingChannels}|conflictChannels=${report.conflictChannels}|convergence=${"%.1f".format(report.consensusPct)}%|new=$fresh|caveat=${report.caveat}\n" + report.evidence.take(30).joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }
+            }
+            "bot_discovery" -> {
+                val q = args.lowercase()
+                val internal = AmarTradingSourceMesh.bots.filter { q.isBlank() || (it.name + " " + it.focus).lowercase().contains(q) }
+                val report = runCatching { AmarTradingSourceMesh.research(context, "$args open source trading bot", research, 10) }.getOrNull()
+                "BOT_DISCOVERY|internal=${internal.joinToString(" | ") { "${it.name}:${it.repo}:${it.url}" }}|externalEvidence=${report?.evidence?.size ?: 0}|license=CHECK_BEFORE_REUSE"
             }
             "strategy_quality" -> {
                 val audit = AmarStrategyQualityEngine.audit(args)
