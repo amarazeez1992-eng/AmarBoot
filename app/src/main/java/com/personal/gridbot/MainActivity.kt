@@ -89,7 +89,17 @@ class MainActivity : ComponentActivity() {
         val js = """
         (function(){
           if(window.__amarEnhanced)return; window.__amarEnhanced=true;
-          if(!document.getElementById('amarNewsGate')){var g=document.createElement('button');g.id='amarNewsGate';g.type='button';g.textContent='غرفة\\nالأخبار\\nوالجلسات';g.onclick=function(){if(window.Android&&Android.openRoom)Android.openRoom('NEWS_SESSIONS')};g.style.cssText='position:absolute;right:50%;top:19%;transform:translateX(50%);z-index:11;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#c89425 20%,#101b23 62%,#05070b);border:1px solid #d8a83a;box-shadow:0 0 0 3px rgba(216,168,58,.12),0 0 28px rgba(0,217,255,.24);color:#fff4b0;font-size:8px;font-weight:1000;white-space:pre-line;animation:amarGatePulse 2.4s ease-in-out infinite';document.querySelector('.scene').appendChild(g);var st=document.createElement('style');st.textContent='@keyframes amarGatePulse{50%{scale:1.05;filter:brightness(1.15)}}';document.head.appendChild(st)}
+          if(!document.getElementById('amarNewsGate')){
+            var g=document.createElement('button');
+            g.id='amarNewsGate';g.type='button';g.textContent='غرفة\\nالأخبار\\nوالجلسات';
+            g.setAttribute('aria-label','غرفة الأخبار والجلسات');
+            g.onclick=function(){if(window.Android&&Android.openRoom)Android.openRoom('NEWS_SESSIONS')};
+            g.style.cssText='position:absolute;right:50%;top:19%;transform:translateX(50%);z-index:11;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0 0%,#d9a63b 19%,#8d5f1d 35%,#101b23 63%,#05070b 100%);border:1px solid #e6ba52;box-shadow:0 0 0 3px rgba(216,168,58,.13),0 0 20px rgba(0,217,255,.28),0 0 38px rgba(255,190,70,.16);color:#fff4b0;font-size:8px;font-weight:1000;white-space:pre-line;animation:amarNewsFloat 4.8s ease-in-out infinite,amarNewsPulse 2.2s ease-in-out infinite;transition:filter .2s ease,scale .2s ease;cursor:pointer';
+            document.querySelector('.scene').appendChild(g);
+            var st=document.createElement('style');
+            st.textContent='@keyframes amarNewsFloat{0%,100%{translate:0 0 rotate(0deg)}50%{translate:0 -7px rotate(2deg)}}@keyframes amarNewsPulse{0%,100%{filter:brightness(1) drop-shadow(0 0 0 rgba(0,234,255,0))}50%{filter:brightness(1.2) drop-shadow(0 0 9px rgba(0,234,255,.48))}}#amarNewsGate:before{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid rgba(0,234,255,.38);box-shadow:0 0 15px rgba(0,234,255,.25);animation:amarNewsRing 3.8s linear infinite;pointer-events:none}#amarNewsGate:after{content:"";position:absolute;width:24px;height:8px;left:10px;top:9px;border-radius:50%;background:rgba(255,255,255,.72);filter:blur(5px);transform:rotate(-32deg);animation:amarNewsShine 3.1s ease-in-out infinite;pointer-events:none}@keyframes amarNewsRing{to{transform:rotate(360deg)}}@keyframes amarNewsShine{0%,100%{translate:-3px -2px;opacity:.2}50%{translate:30px 27px;opacity:.85}}#amarNewsGate:hover{scale:1.08;filter:brightness(1.28)!important}#amarNewsGate:active{scale:.94}';
+            document.head.appendChild(st);
+          }
         })();
         """.trimIndent()
         home.evaluateJavascript(js, null)
