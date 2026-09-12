@@ -82,13 +82,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun installProtectionHandler() { AmarProtectionCenter.initialize(this) }
-    private fun enterImmersiveReferenceMode() { window.insetsController?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()) }
-    private fun enhanceHome() {}
-    private fun applyHomeTheme() {}
-    private fun showHome() { showingRoom = false; roomHost.visibility = android.view.View.GONE; home.visibility = android.view.View.VISIBLE }
+    private fun installProtectionHandler() { val previous = Thread.getDefaultUncaughtExceptionHandler(); Thread.setDefaultUncaughtExceptionHandler { thread, error -> runCatching { AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "التطبيق", error) }; previous?.uncaughtException(thread, error) } }
+    private fun enterImmersiveReferenceMode() { @Suppress("DEPRECATION") window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE; if (android.os.Build.VERSION.SDK_INT >= 30) window.insetsController?.let { it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()); it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE } }
+    private fun effectiveDark(): Boolean = when (themeMode) { AmarThemeMode.DARK -> true; AmarThemeMode.LIGHT -> false; AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES }
+    private fun palette() = if (effectiveDark()) AmarPlatinum else AmarDay
 
-    private inner class HomeBridge {
-        @JavascriptInterface fun openRoom(name: String) { runOnUiThread { currentRoom = AmarRoom.entries.firstOrNull { it.name == name }; showingRoom = currentRoom != null; home.visibility = android.view.View.GONE; roomHost.visibility = android.view.View.VISIBLE; roomHost.setContent { AmarTheme(themeMode) { currentRoom?.let { AmarRoomHostScreen(it) } } } } }
+    private fun enhanceHome() {
+        val js = """
+        (function(){
+          if(window.__amarEnhanced)return; window.__amarEnhanced=true;
+          if(!document.getElementById('amarNewsGate')){
+            var g=document.createElement('button');
+            g.id='amarNewsGate';g.type='button';g.textContent='غرفة\\nالأخبار\\nوالجلسات';
+            g.setAttribute('aria-label','غرفة الأخبار والجلسات');
+            g.onclick=function(){if(window.Android&&Android.openRoom)Android.openRoom('NEWS_SESSIONS')};
+            g.style.cssText='position:absolute;right:50%;top:19%;transform:translateX(50%);z-index:11;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0 0%,#d9a63b 19%,#8d5f1d 35%,#101b23 63%,#05070b 100%);border:1px solid #e6ba52;box-shadow:0 0 0 3px rgba(216,168,58,.13),0 0 20px rgba(0,217,255,.28),0 0 38px rgba(255,190,70,.16);color:#fff4b0;font-size:8px;font-weight:1000;white-space:pre-line;animation:amarNewsFloat 4.8s ease-in-out infinite,amarNewsPulse 2.2s ease-in-out infinite;transition:filter .2s ease,scale .2s ease;cursor:pointer';
+            document.querySelector('.scene').appendChild(g);
+            var st=document.createElement('style');
+            st.textContent='@keyframes amarNewsFloat{0%,100%{translate:0 0 rotate(0deg)}50%{translate:0 -7px rotate(2deg)}}@keyframes amarNewsPulse{0%,100%{filter:brightness(1) drop-shadow(0 0 0 rgba(0,234,255,0))}50%{filter:brightness(1.2) drop-shadow(0 0 9px rgba(0,234,255,.48))}}#amarNewsGate:before{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid rgba(0,234,255,.38);box-shadow:0 0 15px rgba(0,234,255,.25);animation:amarNewsRing 3.8s linear infinite;pointer-events:none}#amarNewsGate:after{content:"";position:absolute;width:24px;height:8px;left:10px;top:9px;border-radius:50%;background:rgba(255,255,255,.72);filter:blur(5px);transform:rotate(-32deg);animation:amarNewsShine 3.1s ease-in-out infinite;pointer-events:none}@keyframes amarNewsRing{to{transform:rotate(360deg)}}@keyframes amarNewsShine{0%,100%{translate:-3px -2px;opacity:.2}50%{translate:30px 27px;opacity:.85}}#amarNewsGate:hover{scale:1.08;filter:brightness(1.28)!important}#amarNewsGate:active{scale:.94}';
+            document.head.appendChild(st);
+          }
+        })();
+        """.trimIndent()
+        home.evaluateJavascript(js, null)
     }
+
+    private fun applyHomeTheme() { home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled(${AmarGlobalVisualStateStore.current().enabled})", null); applyHomeLayout() }
+    private fun applyHomeLayout() { home.evaluateJavascript(AmarHomeLayoutController.applyJavascript(homeLayout), null) }
+    private fun renderCurrentRoom() { currentRoom?.let { roomHost.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(it, ::showHome, themeMode, ::onThemeModeChanged, homeLayout, ::onHomeLayoutChanged) } } } }
+    private fun showRoom(room: AmarRoom) { currentRoom = room; showingRoom = true; home.visibility = android.view.View.GONE; roomHost.visibility = android.view.View.VISIBLE; renderCurrentRoom() }
+    private fun onThemeModeChanged(mode: AmarThemeMode) { themeMode = mode; prefs.edit().putString(AmarSharedUiContract.PREF_THEME_MODE, mode.name).apply(); applyHomeTheme(); renderCurrentRoom() }
+    private fun onHomeLayoutChanged(layout: Int) { homeLayout = layout.coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT); prefs.edit().putInt(AmarSharedUiContract.PREF_HOME_LAYOUT, homeLayout).apply(); if(!showingRoom){applyHomeLayout()} else {showHome();applyHomeLayout()} }
+    private fun showHome() { showingRoom = false; currentRoom = null; roomHost.visibility = android.view.View.GONE; home.visibility = android.view.View.VISIBLE; applyHomeTheme() }
+    private fun setVisualEffectsEnabled(enabled: Boolean) { AmarVisualEffectsPreference.save(this, enabled); AmarGlobalVisualStateStore.setEnabled(enabled); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled($enabled)", null) }
+    private inner class HomeBridge { @JavascriptInterface fun openRoom(name: String) { runOnUiThread { runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom) } }; @JavascriptInterface fun openHome() { runOnUiThread(::showHome) }; @JavascriptInterface fun setVisualEffectsEnabled(enabled: Boolean) { runOnUiThread { this@MainActivity.setVisualEffectsEnabled(enabled) } } }
 }
