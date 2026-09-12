@@ -41,13 +41,13 @@ fun AmarBotDragDropBoard(
     var dragging by remember { mutableStateOf<Int?>(null) }
     var dragDistanceX by remember { mutableStateOf(0f) }
     var dragDistanceY by remember { mutableStateOf(0f) }
-    var working by remember(botNumbers) { mutableStateOf(botNumbers) }
+    var working by remember(botNumbers) { mutableStateOf(botNumbers.distinct()) }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("اسحب أي بوت وأسقطه فوق بوت آخر لترتيب البوتات", color = Color(0xFF78A9B8), fontSize = 9.sp)
-        working.chunked(5).forEachIndexed { rowIndex, row ->
+        Text("اسحب أي بوت وأسقطه فوق بوت آخر — سيُحفظ الترتيب ويُفتح البوت لتعديل معلوماته", color = Color(0xFF78A9B8), fontSize = 9.sp)
+        working.chunked(5).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                row.forEachIndexed { localIndex, number ->
+                row.forEach { number ->
                     val isDragging = dragging == number
                     val scale by animateFloatAsState(if (isDragging) 1.10f else 1f, tween(140), label = "bot-drag-scale")
                     Box(
@@ -55,7 +55,7 @@ fun AmarBotDragDropBoard(
                             .background(if (selectedBot == number) Color(0xFF1DE5FF) else Color(0xFF0E2230), RoundedCornerShape(11.dp))
                             .border(1.dp, if (isDragging) Color(0xFFFFC84A) else if (selectedBot == number) Color(0xFF8DFAFF) else Color(0xFF1A3E4D), RoundedCornerShape(11.dp))
                             .clickable { onSelectBot(number) }
-                            .pointerInput(number) {
+                            .pointerInput(number, working) {
                                 detectDragGestures(
                                     onDragStart = {
                                         dragging = number
@@ -69,7 +69,7 @@ fun AmarBotDragDropBoard(
                                     },
                                     onDragEnd = {
                                         val from = working.indexOf(number)
-                                        if (from >= 0) {
+                                        if (from >= 0 && working.isNotEmpty()) {
                                             val columns = 5
                                             val cellWidth = size.width.toFloat().coerceAtLeast(1f)
                                             val cellHeight = 48.dp.toPx().coerceAtLeast(1f)
@@ -77,9 +77,11 @@ fun AmarBotDragDropBoard(
                                             val rowShift = (dragDistanceY / cellHeight).roundToInt()
                                             val target = (from + rowShift * columns + colShift).coerceIn(0, working.lastIndex)
                                             if (target != from) {
-                                                working = working.toMutableList().apply { add(target, removeAt(from)) }
-                                                onReorder(working)
+                                                val reordered = working.toMutableList().apply { add(target, removeAt(from)) }.toList()
+                                                working = reordered
+                                                onReorder(reordered)
                                             }
+                                            onSelectBot(number)
                                         }
                                         dragging = null
                                         dragDistanceX = 0f
