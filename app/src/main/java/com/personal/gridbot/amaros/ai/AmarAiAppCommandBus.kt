@@ -45,23 +45,14 @@ object AmarAiActionEngine {
         if (room != null && (q.contains("اذهب") || q.contains("افتح") || q.contains("روح") || q.contains("go") || q.contains("open") || q.contains("اعرض"))) {
             AmarAiAppCommandBus.openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
         }
-
-        if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) {
-            return Result(true, AmarAiEngineBinding.market())
-        }
-        if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) {
-            return Result(true, AmarAiEngineBinding.riskGate())
-        }
+        if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) return Result(true, AmarAiEngineBinding.market())
+        if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) return Result(true, AmarAiEngineBinding.riskGate())
         if (q.contains("راجع الاستراتيجية") || q.contains("validate strategy") || q.contains("تحقق من الاستراتيجية")) {
             val values = Regex("[-+]?\\d+(?:\\.\\d+)?").findAll(q).mapNotNull { it.value.toDoubleOrNull() }.toList()
             return Result(true, AmarAiEngineBinding.validate(values))
         }
-        if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) {
-            return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|${"لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره."}")
-        }
-        if (q.contains("الشمعة") && (q.contains("ربع ساعة") || q.contains("15m") || q.contains("m15"))) {
-            return Result(true, "ENGINE_CANDLE|status=MT5_RUNTIME_REQUIRED|timeframe=M15|لا توجد نسبة مخترعة بدون بيانات شموع فعلية.")
-        }
+        if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره.")
+        if (q.contains("الشمعة") && (q.contains("ربع ساعة") || q.contains("15m") || q.contains("m15"))) return Result(true, "ENGINE_CANDLE|status=MT5_RUNTIME_REQUIRED|timeframe=M15|لا توجد نسبة مخترعة بدون بيانات شموع فعلية.")
         if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
             val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
             AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
@@ -71,6 +62,16 @@ object AmarAiActionEngine {
         val symbol = Regex("(?:على|في|for|on)\\s*([a-z0-9._-]+)").find(q)?.groupValues?.getOrNull(1)?.uppercase()
         val volume = Regex("(?:لوت|lot)(?:\\s+(?:البوت|bot)\\s*\\d+)?\\s*(?:إلى|الى|to)?\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
         val usd = Regex("(?:\\$|دولار|usd)\\s*(\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+
+        val explicitBotLot = Regex("(?:ارفع|غيّر|غير|اضبط|set|increase)\\s+(?:لوت|lot)\\s+(?:البوت|bot)\\s*(\\d+)\\s*(?:إلى|الى|to)\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)
+        if (explicitBotLot != null) {
+            val targetBot = explicitBotLot.groupValues[1].toIntOrNull() ?: 1
+            val targetLot = explicitBotLot.groupValues[2].toDoubleOrNull()
+            if (targetBot !in 1..10 || targetLot == null || targetLot <= 0.0) return Result(true, "قيمة اللوت أو رقم البوت غير صالح.")
+            AmarAiAppCommandBus.queueBotCommand(targetBot, "SET_LOT:$targetLot")
+            return Result(true, "سجلت تغيير لوت البوت $targetBot إلى $targetLot، والحالة PENDING_MT5.")
+        }
+
         if ((q.contains("افتح") || q.contains("فتح") || q.contains("open")) && (q.contains("شراء") || q.contains("buy") || q.contains("بيع") || q.contains("sell"))) {
             val side = if (q.contains("شراء") || q.contains("buy")) "BUY" else "SELL"
             if (symbol == null || volume == null) return Result(true, "أحتاج الرمز واللوت صراحةً. مثال: افتح شراء XAUUSD لوت 0.01")
