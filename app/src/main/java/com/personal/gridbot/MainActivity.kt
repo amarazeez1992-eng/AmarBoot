@@ -15,6 +15,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.personal.gridbot.amaros.bots.AmarMarketStateStore
+import com.personal.gridbot.amaros.design.AmarAiOrbMarketMotionController
 import com.personal.gridbot.amaros.design.AmarHomeLayoutController
 import com.personal.gridbot.amaros.design.AmarSharedUiContract
 import com.personal.gridbot.amaros.navigation.AmarRoom
@@ -27,6 +32,8 @@ import com.personal.gridbot.ui.theme.AmarDay
 import com.personal.gridbot.ui.theme.AmarPlatinum
 import com.personal.gridbot.ui.theme.AmarTheme
 import com.personal.gridbot.ui.theme.AmarThemeMode
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var root: FrameLayout
@@ -55,7 +62,22 @@ class MainActivity : ComponentActivity() {
         roomHost = ComposeView(this).apply { visibility = android.view.View.GONE }
         visualOverlay = ComposeView(this).apply { setContent { AmarGlobalVisualOverlay(this@MainActivity) } }
         root.addView(home, FrameLayout.LayoutParams(-1, -1)); root.addView(roomHost, FrameLayout.LayoutParams(-1, -1)); root.addView(visualOverlay, FrameLayout.LayoutParams(-1, -1)); setContentView(root)
+        startMarketVisualSync()
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) { override fun handleOnBackPressed() { if (showingRoom) showHome() else finish() } })
+    }
+
+    private fun startMarketVisualSync() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    if (!showingRoom && ::home.isInitialized) {
+                        val js = AmarAiOrbMarketMotionController.javascript(AmarMarketStateStore.snapshot)
+                        home.evaluateJavascript(js, null)
+                    }
+                    delay(750L)
+                }
+            }
+        }
     }
 
     private fun installProtectionHandler() { val previous = Thread.getDefaultUncaughtExceptionHandler(); Thread.setDefaultUncaughtExceptionHandler { thread, error -> runCatching { AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "التطبيق", error) }; previous?.uncaughtException(thread, error) } }
