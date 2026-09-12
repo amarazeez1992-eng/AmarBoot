@@ -13,7 +13,10 @@ class AmarAgentOrchestrator(
     private val decisionCouncil: AmarDecisionCouncil = AmarDecisionCouncil(),
     private val directionEngine: AmarDecisionDirectionEngine = AmarDecisionDirectionEngine(),
     private val roleOpinionEngine: AmarRoleOpinionEngine = AmarRoleOpinionEngine(),
-    private val stageTwoEngine: AmarStageTwoEngine = AmarStageTwoEngine(reasoningProvider)
+    private val stageTwoEngine: AmarStageTwoEngine = AmarStageTwoEngine(reasoningProvider),
+    private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
+    private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
+    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -82,6 +85,7 @@ class AmarAgentOrchestrator(
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
         val critique = critic.review(answer.answer, report?.findings.orEmpty(), requireEvidence = needsResearch)
+        val hardening = buildHardeningReport(answer.answer, report?.findings.orEmpty(), verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
         val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
@@ -111,11 +115,12 @@ class AmarAgentOrchestrator(
 
         session.record(
             AmarAgentStage.VALIDATE,
-            "DECISION_CONFIRMATION: direction=${direction.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}"
+            "DECISION_CONFIRMATION: direction=${direction.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}"
         )
         val decisionVerification = verifier.verify(answer.answer, consensus, critique, verification)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
-        val hierarchyApproved = stageTwoApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
+        val hardeningApproved = !needsResearch || hardening.approved
+        val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
         session.record(
             if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED,
@@ -124,6 +129,7 @@ class AmarAgentOrchestrator(
 
         val finalIssues = mutableListOf<String>()
         finalIssues += decisionVerification.issues
+        finalIssues += hardening.issues
         finalIssues += councilReview.conflicts
         if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
@@ -142,8 +148,28 @@ class AmarAgentOrchestrator(
             critique = critique,
             finalVerification = decisionVerification,
             stageTwo = stageTwo,
+            hardening = hardening,
             sessionEvents = session.events()
         )
+    }
+
+    private fun buildHardeningReport(
+        answer: String,
+        findings: List<ResearchFinding>,
+        verification: AmarSourceVerification?,
+        consensus: AmarConsensusReport?,
+        stageTwo: AmarStageTwoResult?
+    ): AmarStageTwoHardeningReport {
+        val quality = evidenceQualityEngine.assess(findings)
+        val claims = claimVerificationEngine.verify(answer, findings)
+        val raw = listOfNotNull(verification?.confidence, consensus?.consensusScore, stageTwo?.confidence).minOrNull() ?: 0.0
+        val calibrated = confidenceCalibrationEngine.calibrate(raw, quality.score, claims, (stageTwo?.deliberation?.conflicts?.size ?: 0) + quality.duplicateEvidenceCount)
+        val issues = mutableListOf<String>()
+        if (findings.isNotEmpty() && quality.independentSourceCount < 2) issues += "insufficient_independent_sources"
+        if (quality.duplicateEvidenceCount > 0) issues += "duplicate_evidence_detected"
+        if (findings.isNotEmpty() && !claims.accepted) issues += "claim_verification_failed"
+        if (findings.isNotEmpty() && calibrated < .80) issues += "confidence_below_threshold"
+        return AmarStageTwoHardeningReport(quality, claims, calibrated, issues.isEmpty(), issues.distinct())
     }
 
     private fun buildStageTwoText(result: AmarStageTwoResult?): String = buildString {
@@ -172,5 +198,6 @@ data class AmarAgentRunResult(
     val critique: AmarCritique,
     val finalVerification: AmarDecisionVerification,
     val stageTwo: AmarStageTwoResult? = null,
+    val hardening: AmarStageTwoHardeningReport? = null,
     val sessionEvents: List<AmarAgentEvent>
 )
