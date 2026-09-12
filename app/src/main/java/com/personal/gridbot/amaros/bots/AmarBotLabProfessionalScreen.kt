@@ -41,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -191,10 +192,13 @@ private fun BotLabContent(
 
 @Composable
 private fun BotPicker(selected: Int, select: (Int) -> Unit) {
-    LabCard("إدارة البوتات", "V1 إلى V10") {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            (1..10).forEach { n -> SelectChip("V$n", selected == n, Modifier.weight(1f)) { select(n) } }
-        }
+    LabCard("إدارة البوتات", "سحب وإفلات — كل البوتات") {
+        AmarBotDragDropBoard(
+            botNumbers = (1..10).toList(),
+            selectedBot = selected,
+            onSelectBot = select,
+            onReorder = { }
+        )
     }
 }
 
