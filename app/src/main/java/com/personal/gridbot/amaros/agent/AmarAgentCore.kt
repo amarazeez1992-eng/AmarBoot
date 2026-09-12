@@ -2,10 +2,7 @@ package com.personal.gridbot.amaros.agent
 
 /**
  * AMAR AI Agent Core.
- *
- * Independent orchestration layer for the proprietary AMAR trading agent.
- * No Gemini, ChatGPT, broker or MT5 dependency is required by this core.
- * External providers can be plugged in later through [AmarReasoningProvider].
+ * Provider-neutral and capability-gated. The model never receives direct broker authority.
  */
 class AmarAgentCore(
     private val reasoningProvider: AmarReasoningProvider,
@@ -13,9 +10,7 @@ class AmarAgentCore(
     private val policy: AmarAgentPolicy = AmarAgentPolicy()
 ) {
     suspend fun ask(request: AmarAgentRequest): AmarAgentResponse {
-        if (!policy.agentEnabled) {
-            return AmarAgentResponse.blocked("AMAR AI Agent is disabled by policy.")
-        }
+        if (!policy.agentEnabled) return AmarAgentResponse.blocked("AMAR AI Agent is disabled by policy.")
         val tools = toolRegistry.availableTools(policy)
         val context = AmarAgentContext(
             userText = request.text,
@@ -27,7 +22,13 @@ class AmarAgentCore(
     }
 }
 
-data class AmarAgentRequest(val text: String)
+data class AmarAgentRequest(
+    val text: String,
+    val requestedSourceCount: Int = 40,
+    val maximumSourceCount: Int = 100,
+    val requireCrossValidation: Boolean = true,
+    val requireBacktestWhenApplicable: Boolean = true
+)
 
 data class AmarAgentResponse(
     val answer: String,
@@ -35,17 +36,18 @@ data class AmarAgentResponse(
     val actions: List<String> = emptyList()
 ) {
     enum class Status { READY, BLOCKED, ERROR }
-
-    companion object {
-        fun blocked(message: String) = AmarAgentResponse(message, Status.BLOCKED)
-    }
+    companion object { fun blocked(message: String) = AmarAgentResponse(message, Status.BLOCKED) }
 }
 
 data class AmarAgentContext(
     val userText: String,
     val tools: List<AmarAgentTool>,
     val executionAllowed: Boolean,
-    val brokerAccessAllowed: Boolean
+    val brokerAccessAllowed: Boolean,
+    val requestedSourceCount: Int = 40,
+    val maximumSourceCount: Int = 100,
+    val requireCrossValidation: Boolean = true,
+    val requireBacktestWhenApplicable: Boolean = true
 )
 
 data class AmarAgentPolicy(
@@ -53,19 +55,19 @@ data class AmarAgentPolicy(
     val allowResearch: Boolean = true,
     val allowStrategyDrafting: Boolean = true,
     val allowSimulation: Boolean = true,
-    val allowBrokerExecution: Boolean = false
+    val allowBrokerExecution: Boolean = false,
+    val allowBroadResearch: Boolean = true,
+    val maxResearchSources: Int = 100,
+    val minimumEvidenceConfidence: Double = 0.80
 )
 
-interface AmarReasoningProvider {
-    suspend fun respond(context: AmarAgentContext): AmarAgentResponse
-}
+interface AmarReasoningProvider { suspend fun respond(context: AmarAgentContext): AmarAgentResponse }
 
 data class AmarAgentTool(
     val id: String,
     val description: String,
-    val readOnly: Boolean = true
+    val scope: AmarToolScope = AmarToolScope.READ_ONLY,
+    val readOnly: Boolean = scope != AmarToolScope.EXECUTION_FUTURE
 )
 
-interface AmarAgentToolRegistry {
-    fun availableTools(policy: AmarAgentPolicy): List<AmarAgentTool>
-}
+interface AmarAgentToolRegistry { fun availableTools(policy: AmarAgentPolicy): List<AmarAgentTool> }
