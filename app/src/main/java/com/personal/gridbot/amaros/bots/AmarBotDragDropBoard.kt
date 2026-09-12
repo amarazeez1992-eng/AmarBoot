@@ -17,20 +17,28 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 
-/** Shared Bot-Lab drag/drop surface: all ten bots can be selected, reordered and opened for editing. */
+/**
+ * Shared Bot-Lab drag/drop surface.
+ * Drop detection is target-based: the final pointer position is matched against
+ * the actual rendered BOT card bounds, rather than estimating a row/column shift.
+ */
 @Composable
 fun AmarBotDragDropBoard(
     botNumbers: List<Int>,
@@ -42,67 +50,104 @@ fun AmarBotDragDropBoard(
     val context = LocalContext.current
     val orderStore = remember(context) { AmarBotOrderStore(context) }
     val initialOrder = remember(botNumbers) { orderStore.load(botNumbers) }
-    var dragging by remember { mutableStateOf<Int?>(null) }
-    var dragDistanceX by remember { mutableStateOf(0f) }
-    var dragDistanceY by remember { mutableStateOf(0f) }
     var working by remember(initialOrder) { mutableStateOf(initialOrder) }
+    var dragging by remember { mutableStateOf<Int?>(null) }
+    var lastPointerRoot by remember { mutableStateOf<Offset?>(null) }
+    val bounds = remember { mutableStateMapOf<Int, Rect>() }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("اسحب أي BOT وأسقطه فوق BOT آخر لترتيبه. عند الإسقاط يُحدد البوت فورًا وتظهر معلوماته في محرر التعديل.", color = Color(0xFF78A9B8), fontSize = 9.sp)
+        Text(
+            "اسحب BOT وأسقطه مباشرة فوق BOT آخر. سيُحفظ الترتيب ويُفتح البوت المسقَط للتحرير.",
+            color = Color(0xFF8FEFFF),
+            fontSize = 9.sp
+        )
+
         working.chunked(5).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 row.forEach { number ->
                     val isDragging = dragging == number
-                    val scale by animateFloatAsState(if (isDragging) 1.10f else 1f, tween(140), label = "bot-drag-scale")
+                    val isSelected = selectedBot == number
+                    val dropTarget = dragging != null && dragging != number && bounds[number]?.contains(lastPointerRoot ?: Offset.Unspecified) == true
+                    val scale by animateFloatAsState(
+                        targetValue = when {
+                            isDragging -> 1.10f
+                            dropTarget -> 1.045f
+                            else -> 1f
+                        },
+                        animationSpec = tween(140),
+                        label = "bot-drag-scale"
+                    )
+                    val borderColor = when {
+                        isDragging -> Color(0xFFFFC84A)
+                        dropTarget -> Color(0xFF00F0A8)
+                        isSelected -> Color(0xFF8DFAFF)
+                        else -> Color(0xFF1A3E4D)
+                    }
+
                     Box(
-                        Modifier.weight(1f).height(42.dp).scale(scale)
-                            .background(if (selectedBot == number) Color(0xFF1DE5FF) else Color(0xFF0E2230), RoundedCornerShape(11.dp))
-                            .border(1.dp, if (isDragging) Color(0xFFFFC84A) else if (selectedBot == number) Color(0xFF8DFAFF) else Color(0xFF1A3E4D), RoundedCornerShape(11.dp))
+                        Modifier
+                            .weight(1f)
+                            .height(42.dp)
+                            .scale(scale)
+                            .onGloballyPositioned { coordinates -> bounds[number] = coordinates.boundsInRoot() }
+                            .background(
+                                when {
+                                    isDragging -> Color(0xFF17394A)
+                                    dropTarget -> Color(0xFF123B35)
+                                    isSelected -> Color(0xFF1DE5FF)
+                                    else -> Color(0xFF0E2230)
+                                },
+                                RoundedCornerShape(11.dp)
+                            )
+                            .border(1.5.dp, borderColor, RoundedCornerShape(11.dp))
                             .clickable { onSelectBot(number) }
                             .pointerInput(number, working) {
                                 detectDragGestures(
-                                    onDragStart = {
+                                    onDragStart = { position ->
                                         dragging = number
-                                        dragDistanceX = 0f
-                                        dragDistanceY = 0f
+                                        lastPointerRoot = bounds[number]?.let { it.topLeft + position }
                                     },
                                     onDrag = { change, amount ->
                                         change.consume()
-                                        dragDistanceX += amount.x
-                                        dragDistanceY += amount.y
+                                        val cardBounds = bounds[number]
+                                        lastPointerRoot = cardBounds?.let { it.topLeft + change.position }
                                     },
                                     onDragEnd = {
-                                        val from = working.indexOf(number)
-                                        if (from >= 0 && working.isNotEmpty()) {
-                                            val columns = 5
-                                            val cellWidth = size.width.toFloat().coerceAtLeast(1f)
-                                            val cellHeight = 48.dp.toPx().coerceAtLeast(1f)
-                                            val colShift = (dragDistanceX / cellWidth).roundToInt()
-                                            val rowShift = (dragDistanceY / cellHeight).roundToInt()
-                                            val target = (from + rowShift * columns + colShift).coerceIn(0, working.lastIndex)
-                                            if (target != from) {
-                                                val reordered = working.toMutableList().apply { add(target, removeAt(from)) }.toList()
+                                        val dragged = dragging
+                                        val pointer = lastPointerRoot
+                                        if (dragged != null && pointer != null) {
+                                            val from = working.indexOf(dragged)
+                                            val targetNumber = working.firstOrNull { candidate ->
+                                                candidate != dragged && bounds[candidate]?.contains(pointer) == true
+                                            }
+                                            val target = targetNumber?.let { working.indexOf(it) }
+                                            if (from >= 0 && target != null && target >= 0 && target != from) {
+                                                val reordered = working.toMutableList().apply {
+                                                    add(target, removeAt(from))
+                                                }.toList()
                                                 working = reordered
                                                 orderStore.save(reordered)
                                                 onReorder(reordered)
                                             }
-                                            onSelectBot(number)
+                                            onSelectBot(dragged)
                                         }
                                         dragging = null
-                                        dragDistanceX = 0f
-                                        dragDistanceY = 0f
+                                        lastPointerRoot = null
                                     },
                                     onDragCancel = {
                                         dragging = null
-                                        dragDistanceX = 0f
-                                        dragDistanceY = 0f
+                                        lastPointerRoot = null
                                     }
                                 )
                             }
                             .padding(horizontal = 3.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("BOT $number", color = if (selectedBot == number) Color.Black else Color(0xFFE9FBFF), fontSize = 9.sp)
+                        Text(
+                            "BOT $number",
+                            color = if (isSelected) Color.Black else Color(0xFFE9FBFF),
+                            fontSize = 9.sp
+                        )
                     }
                 }
                 repeat(5 - row.size) { Box(Modifier.weight(1f).height(42.dp)) }
