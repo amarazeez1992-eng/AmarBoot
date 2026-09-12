@@ -79,7 +79,7 @@ class AmarStageTwoEngine(
             )
             val answer = response.answer.trim()
             val hasOpposition = context.evidence.any { it.stance == EvidenceStance.OPPOSES }
-            val baseConfidence = if (answer.isBlank()) 0.0 else 0.75
+            val baseConfidence = if (answer.isBlank()) 0.0 else 0.85
             val confidence = if (hasOpposition) baseConfidence - 0.15 else baseConfidence
             return AmarRoleReport(
                 roleId = id,
