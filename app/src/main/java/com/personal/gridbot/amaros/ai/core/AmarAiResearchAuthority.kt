@@ -39,7 +39,7 @@ object AmarAiResearchAuthority {
         val conflicts = detectConflicts(items)
         val conflictPenalty = (conflicts.size * 12.5).coerceAtMost(50.0)
         val confidence = (0.30 * independence + 0.25 * freshness + 0.30 * provenance + 0.15 * 100.0 - conflictPenalty).coerceIn(0.0, 100.0)
-        val verified = items.any { it.validation.contains("VERIFIED", ignoreCase = true) } && provenance >= 85.0 && independence >= 50.0
+        val verified = items.any { it.validation.contains("VERIFIED", ignoreCase = true) } && provenance >= 85.0 && independence >= 50.0 && conflicts.isEmpty()
         val grade = when {
             verified -> Grade.VERIFIED
             confidence >= 85.0 && independent >= 3 && conflicts.isEmpty() -> Grade.VERY_HIGH
@@ -52,7 +52,7 @@ object AmarAiResearchAuthority {
             add("استقلال المصادر: ${"%.1f".format(independence)}%")
             add("حداثة: ${"%.1f".format(freshness)}%")
             add("اكتمال المصدر والمنهجية: ${"%.1f".format(provenance)}%")
-            if (conflicts.isNotEmpty()) add("تم تخفيض الثقة بسبب تعارضات تحتاج مراجعة")
+            if (conflicts.isNotEmpty()) add("تم تخفيض الثقة بسبب تعارضات دلالية محتملة")
             add("هذه الدرجة لا تعني احتمال نجاح الصفقة")
         }
         return Report(grade, confidence, independence, freshness, provenance, conflictPenalty, items.size, independent, conflicts, reasons)
@@ -83,24 +83,41 @@ object AmarAiResearchAuthority {
     }
 
     private fun detectConflicts(items: List<Evidence>): List<String> {
-        val positive = setOf("supports", "positive", "benefit", "improves", "effective", "bullish", "increase")
-        val negative = setOf("fails", "negative", "risk", "ineffective", "bearish", "decrease", "worse")
-        val out = mutableListOf<String>()
-        val groups = items.groupBy { normalizeClaim(it.title + " " + it.excerpt) }
-        groups.filterValues { it.size > 1 }.forEach { (claim, group) ->
-            val text = group.joinToString(" ") { it.excerpt.lowercase() }
-            val hasPos = positive.any(text::contains)
-            val hasNeg = negative.any(text::contains)
-            if (hasPos && hasNeg) out += "تعارض محتمل: $claim"
+        val positive = setOf("supports", "positive", "benefit", "improves", "effective", "bullish", "increase", "يدعم", "إيجابي", "فعال", "ارتفاع")
+        val negative = setOf("fails", "negative", "risk", "ineffective", "bearish", "decrease", "worse", "يفشل", "سلبي", "خطر", "غير فعال", "هبوط")
+        val prepared = items.map { item ->
+            val text = normalizeWords(item.title + " " + item.excerpt)
+            Triple(item, text, polarity(text, positive, negative))
         }
-        return out.distinct().take(10)
+        val out = mutableListOf<String>()
+        for (i in prepared.indices) {
+            for (j in i + 1 until prepared.size) {
+                val a = prepared[i]; val b = prepared[j]
+                if (a.first.source.equals(b.first.source, true)) continue
+                if (a.third == 0 || b.third == 0 || a.third == b.third) continue
+                val overlap = tokenOverlap(a.second, b.second)
+                if (overlap >= 0.30) out += "تعارض بين ${a.first.source} و${b.first.source}: overlap=${"%.2f".format(overlap)}"
+                if (out.size >= 10) return out.distinct()
+            }
+        }
+        return out.distinct()
     }
 
-    private fun normalizeClaim(text: String): String = text.lowercase()
+    private fun polarity(text: Set<String>, positive: Set<String>, negative: Set<String>): Int {
+        val pos = text.count { it in positive }; val neg = text.count { it in negative }
+        return when { pos > neg -> 1; neg > pos -> -1; else -> 0 }
+    }
+
+    private fun tokenOverlap(a: Set<String>, b: Set<String>): Double {
+        val common = a.intersect(b).count { it.length >= 4 }
+        val base = minOf(a.count { it.length >= 4 }, b.count { it.length >= 4 }).coerceAtLeast(1)
+        return common.toDouble() / base
+    }
+
+    private fun normalizeWords(text: String): Set<String> = text.lowercase()
         .replace(Regex("https?://\\S+"), " ")
         .replace(Regex("[^\\p{L}\\p{Nd} ]"), " ")
         .split(Regex("\\s+"))
-        .filter { it.length >= 4 }
-        .take(12)
-        .joinToString(" ")
+        .filter { it.length >= 3 }
+        .toSet()
 }
