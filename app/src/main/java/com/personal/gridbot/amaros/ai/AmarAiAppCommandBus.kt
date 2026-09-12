@@ -51,7 +51,7 @@ object AmarAiActionEngine {
         }
         val bot = Regex("(?:بوت|bot)\\s*(\\d+)").find(q)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
         val symbol = Regex("(?:على|في|for|on)\\s*([a-z0-9._-]+)").find(q)?.groupValues?.getOrNull(1)?.uppercase()
-        val volume = Regex("(?:لوت|lot)\\s*(?:إلى|الى|to)?\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+        val volume = Regex("(?:لوت|lot)(?:\\s+(?:البوت|bot)\\s*\\d+)?\\s*(?:إلى|الى|to)?\\s*(0?\\.\\d+|\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
         val usd = Regex("(?:\\$|دولار|usd)\\s*(\\d+(?:\\.\\d+)?)").find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
         if ((q.contains("افتح") || q.contains("فتح") || q.contains("open")) && (q.contains("شراء") || q.contains("buy") || q.contains("بيع") || q.contains("sell"))) {
             val side = if (q.contains("شراء") || q.contains("buy")) "BUY" else "SELL"
