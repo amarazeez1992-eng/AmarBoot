@@ -2,19 +2,37 @@ package com.personal.gridbot
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -43,51 +61,195 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var root: FrameLayout
-    private lateinit var home: WebView
-    private lateinit var roomHost: ComposeView
-    private lateinit var visualOverlay: ComposeView
+    private var home: WebView? = null
+    private var roomHost: ComposeView? = null
+    private var visualOverlay: ComposeView? = null
     private var showingRoom = false
     private var currentRoom: AmarRoom? = null
     private var themeMode by mutableStateOf(AmarThemeMode.DARK)
     private var homeLayout by mutableStateOf(AmarHomeLayoutController.DEFAULT_LAYOUT)
+    private var webViewRecoveryAttempted = false
+    private var startupFinished = false
     private val prefs by lazy { getSharedPreferences(AmarSharedUiContract.PREFS, MODE_PRIVATE) }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        themeMode = runCatching { AmarThemeMode.valueOf(prefs.getString(AmarSharedUiContract.PREF_THEME_MODE, AmarThemeMode.DARK.name) ?: AmarThemeMode.DARK.name) }.getOrDefault(AmarThemeMode.DARK)
-        homeLayout = prefs.getInt(AmarSharedUiContract.PREF_HOME_LAYOUT, AmarHomeLayoutController.DEFAULT_LAYOUT).coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT)
-        AmarGlobalVisualStateStore.setEnabled(runCatching { AmarVisualEffectsPreference.load(this) }.getOrDefault(true))
         installProtectionHandler()
-        enterImmersiveReferenceMode()
+        super.onCreate(savedInstanceState)
+
         root = FrameLayout(this)
-        home = WebView(this).apply {
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) { runCatching { enhanceHome(); applyHomeTheme() } }
-            }
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.cacheMode = WebSettings.LOAD_DEFAULT
-            settings.allowFileAccess = true
-            settings.allowContentAccess = false
-            settings.builtInZoomControls = false
-            settings.displayZoomControls = false
-            addJavascriptInterface(HomeBridge(), "Android")
-            loadUrl("file:///android_asset/amar_reference.html")
-        }
-        roomHost = ComposeView(this).apply { visibility = View.GONE }
-        visualOverlay = ComposeView(this).apply { setContent { AmarGlobalVisualOverlay(this@MainActivity) } }
-        root.addView(home, FrameLayout.LayoutParams(-1, -1))
-        root.addView(roomHost, FrameLayout.LayoutParams(-1, -1))
-        root.addView(visualOverlay, FrameLayout.LayoutParams(-1, -1))
         setContentView(root)
-        runCatching { AmarTradingDiscoveryScheduler.start(this) }
-        runCatching { AmarAiSelfImprovementScheduler.start(this) }
+
+        runCatching {
+            themeMode = AmarThemeMode.valueOf(
+                prefs.getString(AmarSharedUiContract.PREF_THEME_MODE, AmarThemeMode.DARK.name)
+                    ?: AmarThemeMode.DARK.name
+            )
+            homeLayout = prefs.getInt(
+                AmarSharedUiContract.PREF_HOME_LAYOUT,
+                AmarHomeLayoutController.DEFAULT_LAYOUT
+            ).coerceIn(
+                AmarHomeLayoutController.DEFAULT_LAYOUT,
+                AmarHomeLayoutController.LAYOUT_COUNT
+            )
+            AmarGlobalVisualStateStore.setEnabled(
+                runCatching { AmarVisualEffectsPreference.load(this) }.getOrDefault(true)
+            )
+            enterImmersiveReferenceMode()
+        }.onFailure { error ->
+            showStartupError("تهيئة التطبيق", error)
+        }
+
+        // The first frame is native and independent from WebView/Compose overlays.
+        // This prevents a WebView/provider/renderer problem from killing startup silently.
+        root.post { initializeHomeSafely() }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun initializeHomeSafely() {
+        if (startupFinished || isFinishing || isDestroyed) return
+        runCatching {
+            val provider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WebView.getCurrentWebViewPackage()
+            } else null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && provider == null) {
+                throw IllegalStateException("لا يوجد مزود Android WebView صالح على الجهاز")
+            }
+
+            val web = buildHomeWebView()
+            home = web
+            root.addView(web, 0, FrameLayout.LayoutParams(-1, -1))
+            startupFinished = true
+        }.onFailure { error ->
+            Log.e("AMAR_STARTUP", "Home WebView initialization failed", error)
+            showStartupError("تشغيل واجهة التطبيق", error)
+        }
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private fun buildHomeWebView(): WebView = WebView(this).apply {
+        webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                runCatching {
+                    enhanceHome()
+                    applyHomeTheme()
+                    ensureRoomHost()
+                    ensureVisualOverlay()
+                    startBackgroundSystemsOnce()
+                }.onFailure { error ->
+                    Log.e("AMAR_STARTUP", "Home page initialization failed", error)
+                    showStartupError("تهيئة واجهة عمار", error)
+                }
+            }
+
+            override fun onRenderProcessGone(
+                view: WebView?,
+                detail: RenderProcessGoneDetail?
+            ): Boolean {
+                Log.e(
+                    "AMAR_STARTUP",
+                    "WebView renderer terminated; crashed=${detail?.didCrash()}",
+                    null
+                )
+                runOnUiThread { recoverWebViewAfterRendererGone(view) }
+                return true
+            }
+        }
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        settings.cacheMode = WebSettings.LOAD_DEFAULT
+        settings.allowFileAccess = true
+        settings.allowContentAccess = false
+        settings.builtInZoomControls = false
+        settings.displayZoomControls = false
+        addJavascriptInterface(HomeBridge(), "Android")
+        loadUrl("file:///android_asset/amar_reference.html")
+    }
+
+    private fun recoverWebViewAfterRendererGone(deadView: WebView?) {
+        if (isFinishing || isDestroyed) return
+        if (webViewRecoveryAttempted) {
+            showStartupError("محرك WebView", IllegalStateException("تم إنهاء محرك WebView أكثر من مرة"))
+            return
+        }
+        webViewRecoveryAttempted = true
+        runCatching {
+            if (deadView != null) {
+                root.removeView(deadView)
+                deadView.stopLoading()
+                deadView.removeAllViews()
+                deadView.destroy()
+            }
+            home = null
+            val replacement = buildHomeWebView()
+            home = replacement
+            root.addView(replacement, 0, FrameLayout.LayoutParams(-1, -1))
+        }.onFailure { error ->
+            Log.e("AMAR_STARTUP", "WebView recovery failed", error)
+            showStartupError("استرداد WebView", error)
+        }
+    }
+
+    private fun ensureRoomHost() {
+        if (roomHost != null) return
+        roomHost = ComposeView(this).apply { visibility = View.GONE }
+        root.addView(this, FrameLayout.LayoutParams(-1, -1))
+    }
+
+    private fun ensureVisualOverlay() {
+        if (visualOverlay != null) return
+        visualOverlay = ComposeView(this).apply {
+            setContent { AmarGlobalVisualOverlay(this@MainActivity) }
+        }
+        root.addView(visualOverlay, FrameLayout.LayoutParams(-1, -1))
+    }
+
+    private var backgroundSystemsStarted = false
+    private fun startBackgroundSystemsOnce() {
+        if (backgroundSystemsStarted) return
+        backgroundSystemsStarted = true
+        lifecycleScope.launch {
+            runCatching { AmarTradingDiscoveryScheduler.start(this@MainActivity) }
+            runCatching { AmarAiSelfImprovementScheduler.start(this@MainActivity) }
+        }
         startMarketVisualSync()
         startAiCommandBridge()
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { if (showingRoom) showHome() else finish() }
+            override fun handleOnBackPressed() {
+                if (showingRoom) showHome() else finish()
+            }
         })
+    }
+
+    private fun showStartupError(stage: String, error: Throwable) {
+        runCatching {
+            AmarProtectionCenter.recordFailure(this, stage, error)
+            val message = buildString {
+                append(error.javaClass.simpleName)
+                if (!error.message.isNullOrBlank()) append("\n").append(error.message)
+            }.take(260)
+            val recovery = ComposeView(this).apply {
+                setContent {
+                    Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(24.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("عمار", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black)
+                            Spacer(Modifier.height(10.dp))
+                            Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(12.dp))
+                            Text(stage, color = Color(0xFFFFD36A), textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(8.dp))
+                            Text(message, color = Color(0xFF9DB5BF), fontSize = 11.sp, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+            root.removeAllViews()
+            root.addView(recovery, FrameLayout.LayoutParams(-1, -1))
+        }.onFailure { Log.e("AMAR_STARTUP", "Failed to render startup error", error) }
     }
 
     private fun startAiCommandBridge() {
@@ -97,7 +259,9 @@ class MainActivity : ComponentActivity() {
                     when (command) {
                         is AmarAiAppCommandBus.Command.OpenRoom -> showRoom(command.room)
                         is AmarAiAppCommandBus.Command.SetVisualEffects -> setVisualEffectsEnabled(command.enabled)
-                        is AmarAiAppCommandBus.Command.QueueBotCommand -> runCatching { AmarBotCommandEngine(this@MainActivity).queue(command.botNumber, command.command) }
+                        is AmarAiAppCommandBus.Command.QueueBotCommand -> runCatching {
+                            AmarBotCommandEngine(this@MainActivity).queue(command.botNumber, command.command)
+                        }
                     }
                 }
             }
@@ -108,7 +272,15 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    if (!showingRoom && ::home.isInitialized) runCatching { home.evaluateJavascript(AmarAiOrbMarketMotionController.javascript(AmarMarketStateStore.snapshot), null) }
+                    val web = home
+                    if (!showingRoom && web != null) {
+                        runCatching {
+                            web.evaluateJavascript(
+                                AmarAiOrbMarketMotionController.javascript(AmarMarketStateStore.snapshot),
+                                null
+                            )
+                        }
+                    }
                     delay(750L)
                 }
             }
@@ -118,13 +290,15 @@ class MainActivity : ComponentActivity() {
     private fun installProtectionHandler() {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
-            runCatching { AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "التطبيق", error) }
+            runCatching {
+                AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "بدء التشغيل", error)
+            }
             previous?.uncaughtException(thread, error)
         }
     }
 
     private fun enterImmersiveReferenceMode() {
-        if (android.os.Build.VERSION.SDK_INT >= 30) {
+        if (Build.VERSION.SDK_INT >= 30) {
             window.insetsController?.let { controller ->
                 controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                 controller.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -142,9 +316,11 @@ class MainActivity : ComponentActivity() {
         AmarThemeMode.LIGHT -> false
         AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     }
+
     private fun palette() = if (effectiveDark()) AmarPlatinum else AmarDay
 
     private fun enhanceHome() {
+        val web = home ?: return
         val js = """
         (function(){
           if(window.__amarEnhanced)return; window.__amarEnhanced=true;
@@ -153,20 +329,109 @@ class MainActivity : ComponentActivity() {
           }
         })();
         """.trimIndent()
-        home.evaluateJavascript(js, null)
+        web.evaluateJavascript(js, null)
     }
 
-    private fun applyHomeTheme() { runCatching { home.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled(${AmarGlobalVisualStateStore.current().enabled})", null); applyHomeLayout() } }
-    private fun applyHomeLayout() { home.evaluateJavascript(AmarHomeLayoutController.applyJavascript(homeLayout), null) }
-    private fun renderCurrentRoom() { currentRoom?.let { roomHost.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(it, ::showHome, themeMode, ::onThemeModeChanged, homeLayout, ::onHomeLayoutChanged) } } } }
-    private fun showRoom(room: AmarRoom) { currentRoom = room; showingRoom = true; home.visibility = View.GONE; roomHost.visibility = View.VISIBLE; renderCurrentRoom() }
-    private fun onThemeModeChanged(mode: AmarThemeMode) { themeMode = mode; prefs.edit().putString(AmarSharedUiContract.PREF_THEME_MODE, mode.name).apply(); applyHomeTheme(); renderCurrentRoom() }
-    private fun onHomeLayoutChanged(layout: Int) { homeLayout = layout.coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT); prefs.edit().putInt(AmarSharedUiContract.PREF_HOME_LAYOUT, homeLayout).apply(); if (!showingRoom) applyHomeLayout() else { showHome(); applyHomeLayout() } }
-    private fun showHome() { showingRoom = false; currentRoom = null; roomHost.visibility = View.GONE; home.visibility = View.VISIBLE; applyHomeTheme() }
-    private fun setVisualEffectsEnabled(enabled: Boolean) { AmarVisualEffectsPreference.save(this, enabled); AmarGlobalVisualStateStore.setEnabled(enabled); home.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled($enabled)", null) }
+    private fun applyHomeTheme() {
+        val web = home ?: return
+        runCatching {
+            web.evaluateJavascript("window.setTheme && window.setTheme('${themeMode.name}')", null)
+            web.evaluateJavascript(
+                "window.setVisualEffectsEnabled && window.setVisualEffectsEnabled(${AmarGlobalVisualStateStore.current().enabled})",
+                null
+            )
+            applyHomeLayout()
+        }
+    }
+
+    private fun applyHomeLayout() {
+        home?.evaluateJavascript(AmarHomeLayoutController.applyJavascript(homeLayout), null)
+    }
+
+    private fun renderCurrentRoom() {
+        val room = currentRoom ?: return
+        val host = roomHost ?: return
+        host.setContent {
+            AmarTheme(palette(), themeMode) {
+                AmarRoomHostScreen(
+                    room,
+                    ::showHome,
+                    themeMode,
+                    ::onThemeModeChanged,
+                    homeLayout,
+                    ::onHomeLayoutChanged
+                )
+            }
+        }
+    }
+
+    private fun showRoom(room: AmarRoom) {
+        ensureRoomHost()
+        ensureVisualOverlay()
+        currentRoom = room
+        showingRoom = true
+        home?.visibility = View.GONE
+        roomHost?.visibility = View.VISIBLE
+        renderCurrentRoom()
+    }
+
+    private fun onThemeModeChanged(mode: AmarThemeMode) {
+        themeMode = mode
+        prefs.edit().putString(AmarSharedUiContract.PREF_THEME_MODE, mode.name).apply()
+        applyHomeTheme()
+        renderCurrentRoom()
+    }
+
+    private fun onHomeLayoutChanged(layout: Int) {
+        homeLayout = layout.coerceIn(AmarHomeLayoutController.DEFAULT_LAYOUT, AmarHomeLayoutController.LAYOUT_COUNT)
+        prefs.edit().putInt(AmarSharedUiContract.PREF_HOME_LAYOUT, homeLayout).apply()
+        if (!showingRoom) applyHomeLayout() else {
+            showHome()
+            applyHomeLayout()
+        }
+    }
+
+    private fun showHome() {
+        showingRoom = false
+        currentRoom = null
+        roomHost?.visibility = View.GONE
+        home?.visibility = View.VISIBLE
+        applyHomeTheme()
+    }
+
+    private fun setVisualEffectsEnabled(enabled: Boolean) {
+        AmarVisualEffectsPreference.save(this, enabled)
+        AmarGlobalVisualStateStore.setEnabled(enabled)
+        home?.evaluateJavascript("window.setVisualEffectsEnabled && window.setVisualEffectsEnabled($enabled)", null)
+    }
+
+    override fun onDestroy() {
+        home?.let { web ->
+            runCatching {
+                root.removeView(web)
+                web.stopLoading()
+                web.removeAllViews()
+                web.destroy()
+            }
+        }
+        home = null
+        super.onDestroy()
+    }
+
     private inner class HomeBridge {
-        @JavascriptInterface fun openRoom(name: String) { runOnUiThread { runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom) } }
-        @JavascriptInterface fun openHome() { runOnUiThread(::showHome) }
-        @JavascriptInterface fun setVisualEffectsEnabled(enabled: Boolean) { runOnUiThread { this@MainActivity.setVisualEffectsEnabled(enabled) } }
+        @JavascriptInterface
+        fun openRoom(name: String) {
+            runOnUiThread {
+                runCatching { AmarRoom.valueOf(name) }.getOrNull()?.let(::showRoom)
+            }
+        }
+
+        @JavascriptInterface
+        fun openHome() { runOnUiThread(::showHome) }
+
+        @JavascriptInterface
+        fun setVisualEffectsEnabled(enabled: Boolean) {
+            runOnUiThread { this@MainActivity.setVisualEffectsEnabled(enabled) }
+        }
     }
 }
