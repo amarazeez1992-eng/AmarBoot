@@ -29,7 +29,7 @@ import com.personal.gridbot.ui.theme.AmarThemeMode
 @Composable
 fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMode,onThemeModeChange:(AmarThemeMode)->Unit,homeLayout:Int=1,onHomeLayoutChange:(Int)->Unit={}){
  if(room==AmarRoom.BOT_LAB){AmarBotLabInterfaceHost(onBackHome);return}
- val context=LocalContext.current; var settingsMode by remember{mutableIntStateOf(0)}
+ val context=LocalContext.current; var settingsMode by remember{mutableIntStateOf(0)}; var accountSyncMode by remember{mutableIntStateOf(0)}
  Surface(color=MaterialTheme.colorScheme.background,modifier=Modifier.fillMaxSize()){
   Column(Modifier.fillMaxSize().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
    Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.SpaceBetween){Column(Modifier.weight(1f)){Text("عمار",style=MaterialTheme.typography.headlineSmall);Text("${room.emoji} ${room.titleAr}",style=MaterialTheme.typography.titleMedium)};Button(onClick=onBackHome){Text("الرئيسية")}}
@@ -54,9 +54,12 @@ fun AmarRoomHostScreen(room: AmarRoom,onBackHome:()->Unit,themeMode:AmarThemeMod
        0->AmarAppearanceScreen(themeMode,onThemeModeChange,homeLayout,onHomeLayoutChange)
        1->AmarProtectionCenterScreen(context)
        2->AmarDeveloperOptionsScreen()
-       else->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(10.dp)){
-        AmarAppAccountCenterScreen()
-        AmarSyncCenterScreen()
+       else->Column(Modifier.fillMaxSize(),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)){
+         Button({accountSyncMode=0},Modifier.weight(1f)){Text("حساب AMAR")}
+         Button({accountSyncMode=1},Modifier.weight(1f)){Text("المزامنة واللابتوب")}
+        }
+        Box(Modifier.fillMaxSize()) { if(accountSyncMode==0) AmarAppAccountCenterScreen() else AmarSyncCenterScreen() }
        }
       }
     }
