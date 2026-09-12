@@ -90,7 +90,9 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -p -v 4 "$apk"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$apk"
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$apk"
-          "$ANDROID_HOME/build-tools/34.0.0/apkanalyzer" manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
+          apkanalyzer="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
+          test -x "$apkanalyzer"
+          "$apkanalyzer" manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
           sha256sum "$apk" | tee "$apk.sha256"
           ls -lh "$apk" "$apk.sha256"
 
