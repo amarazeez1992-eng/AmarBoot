@@ -60,44 +60,34 @@ fun AmarBotLabInterfaceHost(onBackHome: () -> Unit) {
             Button(
                 onClick = {
                     selected = AmarBotInterface.A
-                    AmarBotInterfaceRegistry.save(
-                        context,
-                        AmarBotLabSelectionContext.selectedBot,
-                        selected
-                    )
+                    AmarBotInterfaceRegistry.save(context, AmarBotLabSelectionContext.selectedBot, selected)
                 },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (selected == AmarBotInterface.A) Color(0xFF1DE5FF) else Color(0xFF0E2230),
                     contentColor = if (selected == AmarBotInterface.A) Color.Black else Color.White
                 )
-            ) {
-                Text("واجهة 1", fontWeight = FontWeight.Black, fontSize = 10.sp)
-            }
+            ) { Text("واجهة 1", fontWeight = FontWeight.Black, fontSize = 10.sp) }
 
             Button(
                 onClick = {
                     selected = AmarBotInterface.B
-                    AmarBotInterfaceRegistry.save(
-                        context,
-                        AmarBotLabSelectionContext.selectedBot,
-                        selected
-                    )
+                    AmarBotInterfaceRegistry.save(context, AmarBotLabSelectionContext.selectedBot, selected)
                 },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (selected == AmarBotInterface.B) Color(0xFF1DE5FF) else Color(0xFF0E2230),
                     contentColor = if (selected == AmarBotInterface.B) Color.Black else Color.White
                 )
-            ) {
-                Text("واجهة 2", fontWeight = FontWeight.Black, fontSize = 10.sp)
-            }
+            ) { Text("واجهة 2", fontWeight = FontWeight.Black, fontSize = 10.sp) }
         }
 
         Box(Modifier.fillMaxSize()) {
             if (selected == AmarBotInterface.A) {
-                AmarBotLabProfessionalScreen(onBackHome)
+                // واجهة 1 الأصلية المختصرة + نظام السحب للأرقام، بدون حذف أو استبدال مختبر البوت.
+                AmarBotLabInterface1Screen(onBackHome)
             } else {
+                // واجهة 2 تبقى كما هي.
                 AmarBotLabInterface2Screen(onBackHome)
             }
         }
