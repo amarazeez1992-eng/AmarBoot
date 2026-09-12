@@ -181,6 +181,32 @@ fun Bot1ProfessionalScreen() {
     } }
 }
 
-@Composable private fun ConfigSlider(label: String, value: Float, min: Float, max: Float, onChange: (Float) -> Unit) { Text("$label  ${"%.2f".format(value)}", color = Ink, fontSize = 10.sp); Slider(value, onChange, valueRange = min..max, colors = SliderDefaults.colors(thumbColor = Cyan, activeTrackColor = Cyan, inactiveTrackColor = Line)) }
+@Composable
+private fun ConfigSlider(label: String, value: Float, min: Float, max: Float, onChange: (Float) -> Unit) {
+    AmarDragValueControl(
+        label = label,
+        value = value.toDouble(),
+        min = min.toDouble(),
+        max = max.toDouble(),
+        step = when (label) {
+            "اللوت" -> 0.01
+            "المضاعف" -> 0.01
+            "هدف السلة", "خسارة السلة", "التتبع" -> 0.5
+            "مسافة الشبكة" -> 1.0
+            else -> 1.0
+        },
+        accent = when (label) {
+            "اللوت" -> Teal
+            "مسافة الشبكة" -> Cyan
+            "الحد الأقصى" -> Gold
+            "المضاعف" -> Color(0xFFB14DFF)
+            "هدف السلة" -> Teal
+            "خسارة السلة" -> Red
+            else -> Color(0xFFFF4FA3)
+        },
+        format = if (label == "الحد الأقصى" || label == "مسافة الشبكة") "%.0f" else "%.2f",
+        onValueChange = { onChange(it.toFloat()) }
+    )
+}
 
 @Composable private fun ActionButton(text: String, color: Color, onClick: () -> Unit) { Button(onClick = onClick, colors = ButtonDefaults.buttonColors(containerColor = color, contentColor = if (color == Gold) Color.Black else Color.White), modifier = Modifier.heightIn(min = 46.dp)) { Text(text, fontSize = 10.sp, fontWeight = FontWeight.Bold) } }
