@@ -5,6 +5,7 @@ import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarTimeframe
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import com.personal.gridbot.amaros.runtime.AmarGridPlanningEngine
+import com.personal.gridbot.amaros.ai.AmarStrategyValidationEngine
 
 /** Direct AI -> real application engines boundary. Read-only for broker/MT5 until final laptop/CMG/Bridge/MT5 phase. */
 object AmarAiEngineBinding {
