@@ -53,7 +53,7 @@ class AmarAiExternalResearch(
     }
 
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
-        val pattern = Regex("<a[^>]+class=\\\"result__a\\\"[^>]+href=\\\"([^\\\"]+)\\\"[^>]*>(.*?)</a>", RegexOption.IGNORE_CASE)
+        val pattern = Regex("""<a[^>]+class=[\"']result__a[\"'][^>]+href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE)
         val results = mutableListOf<SourceResult>()
         for (match in pattern.findAll(html).take(limit)) {
             val url = decodeHtml(match.groupValues[1])
