@@ -56,7 +56,7 @@ class AmarStageTwoEngine(
     ) : AmarAnalystRole {
         override suspend fun analyze(context: AmarAnalysisContext): AmarRoleReport {
             val evidenceText = context.evidence.take(40).joinToString("\n") {
-                "- ${it.title} | ${it.sourceUri} | ${it.evidence} | stance=${it.stance}"
+                "- ${it.sourceTitle} | ${it.sourceUri} | ${it.evidence} | stance=${it.stance}"
             }.ifBlank { "لا توجد أدلة خارجية متاحة." }
             val response = reasoningProvider.respond(
                 AmarAgentContext(
@@ -85,8 +85,8 @@ class AmarStageTwoEngine(
                 roleId = id,
                 conclusion = answer,
                 confidence = confidence.coerceIn(0.0, 1.0),
-                supportingEvidence = context.evidence.filter { it.stance == EvidenceStance.SUPPORTS }.map { it.id }.take(10),
-                opposingEvidence = context.evidence.filter { it.stance == EvidenceStance.OPPOSES }.map { it.id }.take(10),
+                supportingEvidence = context.evidence.filter { it.stance == EvidenceStance.SUPPORTS }.map { it.fingerprint }.take(10),
+                opposingEvidence = context.evidence.filter { it.stance == EvidenceStance.OPPOSES }.map { it.fingerprint }.take(10),
                 risks = buildList {
                     if (hasOpposition) add("opposing_evidence_present")
                     add("execution_disabled")
