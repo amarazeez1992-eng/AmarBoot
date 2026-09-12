@@ -19,9 +19,7 @@ class AmarAgentOrchestrator(
         val safeBudget = budget.normalized()
         val safeMaximumSources = request.maximumSourceCount.coerceIn(1, safeBudget.maxSources.coerceAtLeast(1))
         val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
-        val safeTools = availableTools
-            .filter { it.scope != AmarToolScope.EXECUTION_FUTURE }
-            .distinctBy { it.id }
+        val safeTools = availableTools.filter { it.scope != AmarToolScope.EXECUTION_FUTURE }.distinctBy { it.id }
         val session = AmarAgentSession(budget = safeBudget)
         session.record(AmarAgentStage.INTAKE, request.text)
         val mandates = hierarchy.defaultMandates()
@@ -85,8 +83,14 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
         val critique = critic.review(answer.answer, report?.findings.orEmpty(), requireEvidence = needsResearch)
         val answerDirection = directionEngine.detect(answer.answer)
-        val direction = stageTwo?.chosenDirection?.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
-        val councilReview = if (decisionRelevant && direction != AmarDecisionDirection.UNKNOWN) {
+        val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
+        val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
+        val directionMismatch = decisionRelevant &&
+            stageDirection != AmarDecisionDirection.UNKNOWN &&
+            answerDirection != AmarDecisionDirection.UNKNOWN &&
+            stageDirection != answerDirection
+
+        val councilReview = if (decisionRelevant && direction != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
             val confidence = minOf(
                 verification?.confidence ?: 0.0,
                 consensus?.consensusScore ?: 0.0,
@@ -98,9 +102,10 @@ class AmarAgentOrchestrator(
             AmarDecisionReview(
                 emptyList(),
                 0.0,
-                emptyList(),
-                !decisionRelevant,
-                if (decisionRelevant) "explicit_direction_required" else "hierarchy review not required for this response"
+                if (directionMismatch) listOf("final_answer_direction_mismatch") else emptyList(),
+                false,
+                if (directionMismatch) "final answer conflicts with Stage 2 consensus" else
+                    if (decisionRelevant) "explicit_direction_required" else "hierarchy review not required for this response"
             )
         }
 
@@ -110,7 +115,7 @@ class AmarAgentOrchestrator(
         )
         val decisionVerification = verifier.verify(answer.answer, consensus, critique, verification)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
-        val hierarchyApproved = stageTwoApproved && councilReview.approved && councilReview.conflicts.isEmpty()
+        val hierarchyApproved = stageTwoApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
         session.record(
             if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED,
@@ -120,6 +125,7 @@ class AmarAgentOrchestrator(
         val finalIssues = mutableListOf<String>()
         finalIssues += decisionVerification.issues
         finalIssues += councilReview.conflicts
+        if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
         val finalResponse = if (finalApproved) answer else answer.copy(
@@ -147,9 +153,10 @@ class AmarAgentOrchestrator(
         appendLine("chosenDirection=${result.chosenDirection}")
         appendLine("confidence=${result.confidence}")
         appendLine("approvedForSimulation=${result.approvedForSimulation}")
+        appendLine("consensusDirection=${result.deliberation.consensusDirection}")
         appendLine("conflicts=${result.deliberation.conflicts.joinToString(" | ")}")
         result.deliberation.reports.forEach {
-            appendLine("role=${it.roleId};confidence=${it.confidence};conclusion=${it.conclusion}")
+            appendLine("role=${it.roleId};direction=${it.direction};confidence=${it.confidence};conclusion=${it.conclusion}")
         }
         appendLine("executionAllowed=false")
         appendLine("brokerAccessAllowed=false")
