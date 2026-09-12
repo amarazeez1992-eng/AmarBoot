@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.ai
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +25,27 @@ fun AmarAiExperienceScreen() {
     var error by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(key.isNotBlank()) }
 
-    fun preset(text: String) { request = text; error = false }
+    fun runPrompt(raw: String) {
+        val prompt = raw.trim()
+        if (prompt.isBlank() || busy) return
+        if (key.isBlank() || model.isBlank()) {
+            request = prompt
+            error = false
+            return
+        }
+        AmarAiKeyStore.save(context, key.trim())
+        saved = true
+        busy = true
+        error = false
+        conversation.addUser(prompt)
+        request = ""
+        scope.launch {
+            runCatching { AmarAiAgentEngine().ask(key.trim(), model.trim(), prompt) }
+                .onSuccess { conversation.addAi(it.answer) }
+                .onFailure { conversation.addSystem(it.message ?: "حدث خطأ غير معروف"); error = true }
+            busy = false
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         AmarAiPremiumCoreVisual(Modifier.fillMaxWidth())
@@ -40,9 +59,9 @@ fun AmarAiExperienceScreen() {
                     TextButton(onClick = { conversation.clear() }, enabled = !busy) { Text("جلسة جديدة") }
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    AssistChip(onClick = { preset(AmarAiShortcutContract.MARKET_ANALYSIS) }, label = { Text("تحليل السوق") }, modifier = Modifier.weight(1f))
-                    AssistChip(onClick = { preset(AmarAiShortcutContract.STRATEGY_TEST) }, label = { Text("اختبار") }, modifier = Modifier.weight(1f))
-                    AssistChip(onClick = { preset(AmarAiShortcutContract.LIBRARY_SEARCH) }, label = { Text("المكتبة") }, modifier = Modifier.weight(1f))
+                    AssistChip(onClick = { runPrompt(AmarAiShortcutContract.MARKET_ANALYSIS) }, label = { Text("تحليل السوق") }, modifier = Modifier.weight(1f), enabled = !busy)
+                    AssistChip(onClick = { runPrompt(AmarAiShortcutContract.STRATEGY_TEST) }, label = { Text("اختبار") }, modifier = Modifier.weight(1f), enabled = !busy)
+                    AssistChip(onClick = { runPrompt(AmarAiShortcutContract.LIBRARY_SEARCH) }, label = { Text("المكتبة") }, modifier = Modifier.weight(1f), enabled = !busy)
                 }
                 OutlinedTextField(key, { key = it; saved = false }, Modifier.fillMaxWidth(), label = { Text("Gemini API Key") }, visualTransformation = PasswordVisualTransformation(), singleLine = true)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -51,18 +70,7 @@ fun AmarAiExperienceScreen() {
                 }
                 OutlinedTextField(model, { model = it }, Modifier.fillMaxWidth(), label = { Text("Model") }, singleLine = true)
                 OutlinedTextField(request, { request = it; error = false }, Modifier.fillMaxWidth().heightIn(min = 100.dp), label = { Text("اكتب رسالتك إلى AMAR AI") })
-                Button(onClick = {
-                    val prompt = request.trim()
-                    AmarAiKeyStore.save(context, key.trim()); saved = true; busy = true; error = false
-                    conversation.addUser(prompt)
-                    request = ""
-                    scope.launch {
-                        runCatching { AmarAiAgentEngine().ask(key.trim(), model.trim(), prompt) }
-                            .onSuccess { conversation.addAi(it.answer) }
-                            .onFailure { conversation.addSystem(it.message ?: "حدث خطأ غير معروف"); error = true }
-                        busy = false
-                    }
-                }, Modifier.fillMaxWidth(), enabled = key.isNotBlank() && model.isNotBlank() && request.isNotBlank() && !busy) {
+                Button(onClick = { runPrompt(request) }, Modifier.fillMaxWidth(), enabled = key.isNotBlank() && model.isNotBlank() && request.isNotBlank() && !busy) {
                     if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) else Text("إرسال إلى AMAR AI")
                 }
             }
