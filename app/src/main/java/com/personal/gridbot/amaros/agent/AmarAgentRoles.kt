@@ -1,7 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
-/** Specialized roles remain bounded contracts coordinated by the central policy engine. */
-enum class AmarAgentRole {
+/** Specialized role tasks coordinated by the main AmarAgentHierarchy. */
+enum class AmarSpecializedRole {
     PLANNER,
     RESEARCHER,
     QUANT_ANALYST,
@@ -12,7 +12,7 @@ enum class AmarAgentRole {
 }
 
 data class AmarRoleTask(
-    val role: AmarAgentRole,
+    val role: AmarSpecializedRole,
     val objective: String,
     val requiredEvidence: List<String> = emptyList(),
     val allowedScopes: Set<AmarToolScope> = setOf(AmarToolScope.READ_ONLY)
