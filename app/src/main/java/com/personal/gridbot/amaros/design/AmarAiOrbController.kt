@@ -6,13 +6,22 @@ package com.personal.gridbot.amaros.design
 object AmarAiOrbController {
     fun script(): String = """
         (function(){
-          var a=document.getElementById('amarAiOrb'); if(!a) return;
+          var a=document.getElementById('amarAiOrb');
+          if(!a){
+            a=document.createElement('button');
+            a.id='amarAiOrb';
+            a.type='button';
+            a.setAttribute('aria-label','AMAR AI');
+            a.onclick=function(){if(window.Android&&Android.openRoom)Android.openRoom('ANALYSIS')};
+            var scene=document.querySelector('.scene');
+            (scene||document.body).appendChild(a);
+          }
           a.innerHTML='<span class="ai-core">AI</span><span class="ai-ring r1"></span><span class="ai-ring r2"></span><span class="ai-ring r3"></span><span class="ai-orbit o1"></span><span class="ai-orbit o2"></span><span class="ai-orbit o3"></span><span class="ai-glass"></span><span class="ai-particle p1"></span><span class="ai-particle p2"></span><span class="ai-particle p3"></span><span class="ai-particle p4"></span><span class="ai-sheen"></span>';
           var s=document.getElementById('amarAiPremiumStyle');
           if(s) s.remove();
           s=document.createElement('style'); s.id='amarAiPremiumStyle';
           s.textContent=`
-          #amarAiOrb{width:86px!important;height:86px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at 30% 24%,#ffffff 0%,#baf8ff 9%,#39d9ff 25%,#6c4dff 52%,#bd35ff 73%,#16052f 100%)!important;box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 14px #39d9ff,0 0 38px rgba(108,77,255,.85),0 0 76px rgba(189,53,255,.42),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(10,0,40,.7)!important;perspective:400px;transform-style:preserve-3d;overflow:visible!important;isolation:isolate;transition:filter .25s ease}
+          #amarAiOrb{position:fixed;left:7vw;bottom:7vh;z-index:30;width:86px!important;height:86px!important;padding:0;border:0!important;border-radius:50%!important;background:radial-gradient(circle at 30% 24%,#ffffff 0%,#baf8ff 9%,#39d9ff 25%,#6c4dff 52%,#bd35ff 73%,#16052f 100%)!important;box-shadow:0 0 0 2px rgba(255,255,255,.55),0 0 14px #39d9ff,0 0 38px rgba(108,77,255,.85),0 0 76px rgba(189,53,255,.42),inset 8px 8px 18px rgba(255,255,255,.58),inset -10px -12px 22px rgba(10,0,40,.7)!important;perspective:400px;transform-style:preserve-3d;overflow:visible!important;isolation:isolate;cursor:pointer;transition:filter .25s ease,transform .2s ease}
           #amarAiOrb:before{content:'';position:absolute;inset:-9px;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 8%,#00eaff 13%,transparent 20% 37%,#ff4dff 44%,transparent 51% 70%,#7c5cff 78%,transparent 86%);filter:blur(2px);opacity:.9;z-index:-1;animation:aiHaloSpin 5s linear infinite}
           #amarAiOrb:after{content:'';position:absolute;inset:-17px;border-radius:50%;border:1px solid rgba(80,230,255,.28);box-shadow:0 0 24px rgba(80,230,255,.35);z-index:-2;animation:aiHaloPulse 2.4s ease-in-out infinite}
           #amarAiOrb .ai-core{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:900 20px/1 Arial,sans-serif;letter-spacing:1px;text-shadow:0 0 7px #fff,0 0 18px #00eaff,0 0 28px #c14cff;z-index:10;animation:aiCorePulse 1.8s ease-in-out infinite}
@@ -28,7 +37,7 @@ object AmarAiOrbController {
           #amarAiOrb .ai-particle{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 7px 2px #00eaff;z-index:9;animation:aiParticle 2.6s ease-in-out infinite}
           #amarAiOrb .p1{left:15%;top:30%}.p2{right:16%;top:38%;animation-delay:.5s!important}.p3{left:30%;bottom:17%;animation-delay:1s!important}.p4{right:27%;bottom:23%;animation-delay:1.5s!important}
           #amarAiOrb .ai-sheen{position:absolute;width:38px;height:16px;left:10px;top:10px;border-radius:50%;background:rgba(255,255,255,.75);filter:blur(6px);transform:rotate(-35deg);z-index:11;pointer-events:none;animation:aiSheen 2.8s ease-in-out infinite}
-          #amarAiOrb:hover{filter:brightness(1.25) saturate(1.3);transform:scale(1.12)!important}
+          #amarAiOrb:hover{filter:brightness(1.25) saturate(1.3);transform:scale(1.08)!important}
           #amarAiOrb:active{transform:scale(.94)!important}
           @keyframes aiHaloSpin{to{transform:rotate(360deg)}}
           @keyframes aiHaloPulse{50%{transform:scale(1.14);opacity:.45}}
@@ -40,6 +49,7 @@ object AmarAiOrbController {
           @keyframes aiOrbit3{from{transform:rotate(210deg) translateX(39px)}to{transform:rotate(-150deg) translateX(39px)}}
           @keyframes aiParticle{50%{transform:translate(7px,-9px) scale(1.8);opacity:.35}}
           @keyframes aiSheen{0%,100%{transform:translate(-5px,-5px) rotate(-35deg);opacity:.25}50%{transform:translate(40px,35px) rotate(-35deg);opacity:.9}}
+          @media (prefers-reduced-motion: reduce){#amarAiOrb:before,#amarAiOrb:after,#amarAiOrb .ai-core,#amarAiOrb .ai-ring,#amarAiOrb .ai-orbit,#amarAiOrb .ai-particle,#amarAiOrb .ai-sheen{animation-duration:.001ms!important;animation-iteration-count:1!important}}
           `;
           document.head.appendChild(s);
         })();
