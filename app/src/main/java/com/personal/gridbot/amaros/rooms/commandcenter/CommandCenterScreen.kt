@@ -18,8 +18,7 @@ import java.util.Locale
 
 @Composable
 fun CommandCenterScreen(
-    state: CommandCenterState = PreviewCommandCenterState,
-    onOpenBotLab: () -> Unit = {}
+    state: CommandCenterState = PreviewCommandCenterState
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
