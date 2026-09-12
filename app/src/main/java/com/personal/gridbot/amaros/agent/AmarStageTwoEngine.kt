@@ -1,9 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
-/**
- * Stage 2: structured multi-role deliberation over one shared evidence snapshot.
- * No role receives execution authority.
- */
+/** Stage 2: structured multi-role deliberation over one shared evidence snapshot. */
 class AmarStageTwoEngine(
     private val reasoningProvider: AmarReasoningProvider,
     private val directionEngine: AmarDecisionDirectionEngine = AmarDecisionDirectionEngine(),
@@ -18,14 +15,10 @@ class AmarStageTwoEngine(
 
         val sanitizedEvidence = evidence
             .filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
-            .distinctBy { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
-            .take(100)
+            .distinctBy { evidenceKey(it) }
+            .take(MAX_EVIDENCE)
 
-        val context = AmarAnalysisContext(
-            question = question.trim(),
-            marketSnapshot = marketSnapshot,
-            evidence = sanitizedEvidence
-        )
+        val context = AmarAnalysisContext(question.trim(), marketSnapshot, sanitizedEvidence)
         val roles = listOf(
             AmarReasoningAnalystRole("ANALYST", "حلّل المعطيات فنيًا ومنطقيًا وحدد الاتجاه الذي تدعمه الأدلة فقط."),
             AmarReasoningAnalystRole("ADVISOR", "راجع المعطيات بشكل مستقل، اختبر البدائل والافتراضات وحدد اتجاهًا واحدًا أو UNKNOWN."),
@@ -33,42 +26,25 @@ class AmarStageTwoEngine(
             AmarReasoningAnalystRole("DECISION_CONFIRMATION", "تحقق من الأدلة والتعارضات؛ لا تؤكد اتجاهًا إلا إذا كان قابلًا للدفاع عنه.")
         )
 
-        val baseDeliberation = coordinator.deliberate(context, roles)
-        val independentSourceCount = sanitizedEvidence
-            .mapNotNull { sourceHost(it.sourceUri) }
-            .distinct()
-            .size
+        val base = coordinator.deliberate(context, roles)
+        val independentSourceCount = sanitizedEvidence.mapNotNull(::sourceHost).distinct().size
         val evidenceGateConflict = if (independentSourceCount < MIN_INDEPENDENT_SOURCES) {
             "insufficient_independent_evidence"
         } else null
-        val conflicts = buildList {
-            addAll(baseDeliberation.conflicts)
-            evidenceGateConflict?.let(::add)
-        }.distinct()
-        val approved = baseDeliberation.approvedForSimulation &&
-            evidenceGateConflict == null
-        val deliberation = baseDeliberation.copy(
-            conflicts = conflicts,
-            approvedForSimulation = approved
-        )
-
+        val conflicts = (base.conflicts + listOfNotNull(evidenceGateConflict)).distinct()
+        val approved = base.approvedForSimulation && evidenceGateConflict == null
+        val deliberation = base.copy(conflicts = conflicts, approvedForSimulation = approved)
         val directionCounts = deliberation.reports
             .map { it.direction }
             .filter { it != AmarDecisionDirection.UNKNOWN }
             .groupingBy { it }
             .eachCount()
-        val chosenDirection = deliberation.consensusDirection
-        val safeConfidence = if (approved) {
-            deliberation.confidence.coerceIn(0.0, 1.0)
-        } else {
-            deliberation.confidence.coerceIn(0.0, 1.0)
-        }
 
         return AmarStageTwoResult(
             deliberation = deliberation,
-            chosenDirection = chosenDirection,
+            chosenDirection = deliberation.consensusDirection,
             directionCounts = directionCounts,
-            confidence = safeConfidence,
+            confidence = deliberation.confidence.coerceIn(0.0, 1.0),
             approvedForSimulation = approved,
             executionAllowed = false,
             brokerAccessAllowed = false
@@ -80,7 +56,7 @@ class AmarStageTwoEngine(
         private val mandate: String
     ) : AmarAnalystRole {
         override suspend fun analyze(context: AmarAnalysisContext): AmarRoleReport {
-            val evidenceText = context.evidence.take(40).joinToString("\n") {
+            val evidenceText = context.evidence.take(MAX_PROMPT_EVIDENCE).joinToString("\n") {
                 "- ${it.sourceTitle} | ${it.sourceUri} | ${it.evidence} | stance=${it.stance} | authority=${it.authority}"
             }.ifBlank { "لا توجد أدلة خارجية متاحة." }
             val marketText = context.marketSnapshot?.let {
@@ -109,19 +85,20 @@ class AmarStageTwoEngine(
             )
             val answer = response.answer.trim()
             val direction = directionEngine.detect(answer)
-            val confidence = when {
-                answer.isBlank() -> 0.0
-                direction == AmarDecisionDirection.UNKNOWN -> 0.0
-                else -> confidenceFromEvidence(context.evidence, direction)
+            val confidence = if (answer.isBlank() || direction == AmarDecisionDirection.UNKNOWN) {
+                0.0
+            } else {
+                confidenceFromEvidence(context.evidence, direction)
             }
             val support = context.evidence
                 .filter { stanceSupports(it.stance, direction) }
-                .map { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
-                .take(10)
+                .map(::evidenceKey)
+                .take(MAX_REPORTED_EVIDENCE)
             val opposition = context.evidence
                 .filter { stanceOpposes(it.stance, direction) }
-                .map { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
-                .take(10)
+                .map(::evidenceKey)
+                .take(MAX_REPORTED_EVIDENCE)
+
             return AmarRoleReport(
                 roleId = id,
                 conclusion = answer,
@@ -133,7 +110,7 @@ class AmarStageTwoEngine(
                     if (direction == AmarDecisionDirection.UNKNOWN) add("unresolved_direction")
                     if (opposition.isNotEmpty()) add("opposing_evidence_present")
                     if (context.evidence.isEmpty()) add("no_external_evidence")
-                    if (context.evidence.count { stanceSupports(it.stance, direction) } == 0) add("no_direct_supporting_evidence")
+                    if (support.isEmpty()) add("no_direct_supporting_evidence")
                     add("execution_disabled")
                 }
             )
@@ -146,30 +123,26 @@ class AmarStageTwoEngine(
             if (evidence.isEmpty()) return 0.0
             val relevant = evidence.filter { stanceSupports(it.stance, direction) || stanceOpposes(it.stance, direction) }
             if (relevant.isEmpty()) return 0.0
-            val weighted = relevant.sumOf { authorityWeight(it.authority) }
             val support = relevant.count { stanceSupports(it.stance, direction) }
             val oppose = relevant.count { stanceOpposes(it.stance, direction) }
             if (support == 0) return 0.0
+            val weightedQuality = relevant.map { authorityWeight(it.authority) }.average()
             val balance = support.toDouble() / (support + oppose).toDouble()
-            val quality = (weighted / relevant.size.toDouble()).coerceIn(0.0, 1.0)
-            return (0.55 * balance + 0.45 * quality).coerceIn(0.0, 1.0)
+            return (CONFIDENCE_SUPPORT_WEIGHT * balance + CONFIDENCE_QUALITY_WEIGHT * weightedQuality)
+                .coerceIn(0.0, 1.0)
         }
 
-        private fun stanceSupports(stance: EvidenceStance, direction: AmarDecisionDirection): Boolean =
-            when (direction) {
-                AmarDecisionDirection.HOLD -> stance == EvidenceStance.MIXED
-                AmarDecisionDirection.BUY,
-                AmarDecisionDirection.SELL -> stance == EvidenceStance.SUPPORTS
-                AmarDecisionDirection.UNKNOWN -> false
-            }
+        private fun stanceSupports(stance: EvidenceStance, direction: AmarDecisionDirection): Boolean = when (direction) {
+            AmarDecisionDirection.HOLD -> stance == EvidenceStance.MIXED
+            AmarDecisionDirection.BUY, AmarDecisionDirection.SELL -> stance == EvidenceStance.SUPPORTS
+            AmarDecisionDirection.UNKNOWN -> false
+        }
 
-        private fun stanceOpposes(stance: EvidenceStance, direction: AmarDecisionDirection): Boolean =
-            when (direction) {
-                AmarDecisionDirection.HOLD -> false
-                AmarDecisionDirection.BUY,
-                AmarDecisionDirection.SELL -> stance == EvidenceStance.OPPOSES
-                AmarDecisionDirection.UNKNOWN -> false
-            }
+        private fun stanceOpposes(stance: EvidenceStance, direction: AmarDecisionDirection): Boolean = when (direction) {
+            AmarDecisionDirection.HOLD -> false
+            AmarDecisionDirection.BUY, AmarDecisionDirection.SELL -> stance == EvidenceStance.OPPOSES
+            AmarDecisionDirection.UNKNOWN -> false
+        }
 
         private fun authorityWeight(authority: Authority): Double = when (authority) {
             Authority.PRIMARY -> 1.0
@@ -179,18 +152,22 @@ class AmarStageTwoEngine(
             Authority.COMMUNITY -> 0.40
             Authority.UNKNOWN -> 0.15
         }
-
-        private fun sourceHost(uri: String): String? = runCatching {
-            java.net.URI(uri).host?.lowercase()?.removePrefix("www.")
-        }.getOrNull()?.takeIf { it.isNotBlank() }
     }
+
+    private fun evidenceKey(finding: ResearchFinding): String =
+        finding.fingerprint.ifBlank { "${finding.sourceUri}|${finding.sourceTitle}|${finding.evidence}" }
 
     private fun sourceHost(uri: String): String? = runCatching {
         java.net.URI(uri).host?.lowercase()?.removePrefix("www.")
     }.getOrNull()?.takeIf { it.isNotBlank() }
 
     private companion object {
+        const val MAX_EVIDENCE = 100
+        const val MAX_PROMPT_EVIDENCE = 40
+        const val MAX_REPORTED_EVIDENCE = 10
         const val MIN_INDEPENDENT_SOURCES = 2
+        const val CONFIDENCE_SUPPORT_WEIGHT = 0.55
+        const val CONFIDENCE_QUALITY_WEIGHT = 0.45
     }
 }
 
