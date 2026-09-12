@@ -16,6 +16,8 @@ class AmarAgentOrchestrator(
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
+        val safeMaximumSources = request.maximumSourceCount.coerceIn(1, safeBudget.maxSources.coerceAtLeast(1))
+        val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
         val session = AmarAgentSession(budget = safeBudget)
         session.record(AmarAgentStage.INTAKE, request.text)
         val mandates = hierarchy.defaultMandates()
@@ -26,8 +28,14 @@ class AmarAgentOrchestrator(
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
-            val sourceLimit = minOf(request.requestedSourceCount.coerceAtLeast(1), request.maximumSourceCount.coerceAtLeast(1), safeBudget.maxSources)
-            researchEngine.research(ResearchRequest(request.text, sourceLimit, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, sourceLimit)))
+            researchEngine.research(
+                ResearchRequest(
+                    request.text,
+                    safeRequestedSources,
+                    request.requireCrossValidation,
+                    minOf(safeBudget.targetIndependentSources, safeRequestedSources)
+                )
+            )
         } else null
 
         val verification = report?.let {
@@ -55,8 +63,8 @@ class AmarAgentOrchestrator(
                 tools = availableTools,
                 executionAllowed = false,
                 brokerAccessAllowed = false,
-                requestedSourceCount = request.requestedSourceCount.coerceAtLeast(1),
-                maximumSourceCount = safeBudget.maxSources,
+                requestedSourceCount = safeRequestedSources,
+                maximumSourceCount = safeMaximumSources,
                 requireCrossValidation = request.requireCrossValidation,
                 requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
             )
