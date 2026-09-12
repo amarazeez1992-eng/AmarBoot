@@ -14,6 +14,7 @@ class AmarAgentOrchestrator(
     private val directionEngine: AmarDecisionDirectionEngine = AmarDecisionDirectionEngine(),
     private val roleOpinionEngine: AmarRoleOpinionEngine = AmarRoleOpinionEngine(),
     private val stageTwoEngine: AmarStageTwoEngine = AmarStageTwoEngine(reasoningProvider),
+    private val stageThreeEngine: AmarStageThreeEngine = AmarStageThreeEngine(),
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
@@ -44,15 +45,25 @@ class AmarAgentOrchestrator(
             )
         } else null
 
+        val stageThree = if (needsResearch) {
+            session.record(AmarAgentStage.RETRIEVE, "STAGE_3: memory + unified evidence + freshness")
+            stageThreeEngine.synchronize(request.text, report?.findings.orEmpty())
+        } else null
+        val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
+
         val verification = report?.let {
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
-            sourceVerifier.verify(it.findings)
+            sourceVerifier.verify(unifiedFindings)
         }
-        val consensus = report?.let { consensusEngine.summarize(it.findings) }
+        val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
         val evidenceText = buildString {
             appendLine("Evidence summary:")
             if (report == null) appendLine("No external research required.") else {
-                appendLine("sources=${report.findings.size}")
+                appendLine("newSources=${stageThree?.newEvidenceCount ?: report.findings.size}")
+                appendLine("unifiedEvidence=${unifiedFindings.size}")
+                appendLine("retrievedMemory=${stageThree?.retrievedMemoryCount ?: 0}")
+                appendLine("memorySize=${stageThree?.memorySize ?: 0}")
+                appendLine("independentSources=${stageThree?.independentSourceCount ?: 0}")
                 appendLine("verificationAccepted=${verification?.accepted ?: false}")
                 appendLine("confidence=${verification?.confidence ?: 0.0}")
                 appendLine("consensus=${consensus?.consensusScore ?: 0.0}")
@@ -66,7 +77,7 @@ class AmarAgentOrchestrator(
         val decisionRelevant = plan.intent == AgentIntent.TRADE_ANALYSIS
         val stageTwo = if (decisionRelevant) {
             session.record(AmarAgentStage.REASON, "STAGE_2: ANALYST -> ADVISOR -> RISK_GUARD -> DECISION_CONFIRMATION")
-            stageTwoEngine.deliberate(request.text, report?.findings.orEmpty())
+            stageTwoEngine.deliberate(request.text, unifiedFindings)
         } else null
 
         session.record(AmarAgentStage.REASON, "DIRECTOR: final synthesis with evidence and multi-role deliberation")
@@ -84,8 +95,8 @@ class AmarAgentOrchestrator(
         )
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
-        val critique = critic.review(answer.answer, report?.findings.orEmpty(), requireEvidence = needsResearch)
-        val hardening = buildHardeningReport(answer.answer, report?.findings.orEmpty(), verification, consensus, stageTwo)
+        val critique = critic.review(answer.answer, unifiedFindings, requireEvidence = needsResearch)
+        val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
         val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
@@ -100,7 +111,7 @@ class AmarAgentOrchestrator(
                 consensus?.consensusScore ?: 0.0,
                 stageTwo?.confidence ?: 0.0
             )
-            val opinions = roleOpinionEngine.buildOpinions(answer, direction, confidence, report?.findings.orEmpty())
+            val opinions = roleOpinionEngine.buildOpinions(answer, direction, confidence, unifiedFindings)
             decisionCouncil.review(opinions)
         } else {
             AmarDecisionReview(
@@ -148,6 +159,7 @@ class AmarAgentOrchestrator(
             critique = critique,
             finalVerification = decisionVerification,
             stageTwo = stageTwo,
+            stageThree = stageThree,
             hardening = hardening,
             sessionEvents = session.events()
         )
@@ -198,6 +210,7 @@ data class AmarAgentRunResult(
     val critique: AmarCritique,
     val finalVerification: AmarDecisionVerification,
     val stageTwo: AmarStageTwoResult? = null,
+    val stageThree: AmarStageThreeResult? = null,
     val hardening: AmarStageTwoHardeningReport? = null,
     val sessionEvents: List<AmarAgentEvent>
 )
