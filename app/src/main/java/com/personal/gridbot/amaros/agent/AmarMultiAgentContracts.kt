@@ -47,25 +47,38 @@ data class AmarDeliberationResult(
 )
 
 /**
- * Safety-first coordinator. Duplicate role IDs, unknown decisions, ties and directional
- * disagreement are explicit blockers; they are never silently normalized away.
+ * Safety-first coordinator. Invalid role IDs, duplicate roles, unknown decisions,
+ * ties and directional disagreement are explicit blockers.
  */
 class AmarDeliberationCoordinator(
     private val minimumConfidence: Double = 0.80,
     private val minimumRoles: Int = 2
 ) {
+    init {
+        require(minimumConfidence in 0.0..1.0)
+        require(minimumRoles >= 2)
+    }
+
     suspend fun deliberate(
         context: AmarAnalysisContext,
         roles: List<AmarAnalystRole>
     ): AmarDeliberationResult {
         val conflicts = mutableListOf<String>()
-        val normalizedRoles = roles.filter { it.id.isNotBlank() }
-        val duplicateIds = normalizedRoles.groupingBy { it.id }.eachCount().filterValues { it > 1 }.keys
+        val invalidRoleIds = roles.filter { it.id.isBlank() }.size
+        if (invalidRoleIds > 0) conflicts += "blank_role_id"
+
+        val duplicateIds = roles
+            .filter { it.id.isNotBlank() }
+            .groupingBy { it.id }
+            .eachCount()
+            .filterValues { it > 1 }
+            .keys
         if (duplicateIds.isNotEmpty()) conflicts += "duplicate_role_ids:${duplicateIds.joinToString(",")}"
 
-        val reports = normalizedRoles.map { it.analyze(context) }
+        val reports = roles.map { it.analyze(context) }
         if (reports.size < minimumRoles) conflicts += "insufficient_roles"
         if (reports.any { it.conclusion.isBlank() }) conflicts += "blank_role_conclusion"
+        if (reports.any { it.roleId.isBlank() }) conflicts += "blank_report_role_id"
 
         val confidence = reports.map { it.confidence }.averageOrNull() ?: 0.0
         val actionable = reports.filter { it.direction != AmarDecisionDirection.UNKNOWN }
@@ -73,8 +86,8 @@ class AmarDeliberationCoordinator(
 
         val directionCounts = actionable.groupingBy { it.direction }.eachCount()
         val strongest = directionCounts.values.maxOrNull() ?: 0
-        val tiedStrongest = directionCounts.values.count { it == strongest } > 1
-        if (tiedStrongest && strongest > 0) conflicts += "direction_tie"
+        val tiedStrongest = strongest > 0 && directionCounts.values.count { it == strongest } > 1
+        if (tiedStrongest) conflicts += "direction_tie"
         if (directionCounts.size > 1) conflicts += "direction_conflict"
 
         val consensusDirection = if (directionCounts.size == 1 && actionable.size == reports.size) {
@@ -93,6 +106,8 @@ class AmarDeliberationCoordinator(
 
         val finalConflicts = conflicts.distinct()
         val approved = reports.size >= minimumRoles &&
+            invalidRoleIds == 0 &&
+            duplicateIds.isEmpty() &&
             highConfidenceCount == reports.size &&
             consensusDirection != AmarDecisionDirection.UNKNOWN &&
             finalConflicts.isEmpty()

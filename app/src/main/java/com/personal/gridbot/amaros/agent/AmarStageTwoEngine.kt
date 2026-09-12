@@ -2,8 +2,7 @@ package com.personal.gridbot.amaros.agent
 
 /**
  * Stage 2: structured multi-role deliberation over one shared evidence snapshot.
- * The current provider may be shared, but every role has a separate mandate and
- * produces a structured direction. No role receives execution authority.
+ * No role receives execution authority.
  */
 class AmarStageTwoEngine(
     private val reasoningProvider: AmarReasoningProvider,
@@ -16,10 +15,16 @@ class AmarStageTwoEngine(
         marketSnapshot: AmarMarketSnapshot? = null
     ): AmarStageTwoResult {
         require(question.isNotBlank())
+
+        val sanitizedEvidence = evidence
+            .filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
+            .distinctBy { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
+            .take(100)
+
         val context = AmarAnalysisContext(
             question = question.trim(),
             marketSnapshot = marketSnapshot,
-            evidence = evidence.distinctBy { it.fingerprint }.take(100)
+            evidence = sanitizedEvidence
         )
         val roles = listOf(
             AmarReasoningAnalystRole("ANALYST", "حلّل المعطيات فنيًا ومنطقيًا وحدد الاتجاه الذي تدعمه الأدلة فقط."),
@@ -28,21 +33,43 @@ class AmarStageTwoEngine(
             AmarReasoningAnalystRole("DECISION_CONFIRMATION", "تحقق من الأدلة والتعارضات؛ لا تؤكد اتجاهًا إلا إذا كان قابلًا للدفاع عنه.")
         )
 
-        val deliberation = coordinator.deliberate(context, roles)
+        val baseDeliberation = coordinator.deliberate(context, roles)
+        val independentSourceCount = sanitizedEvidence
+            .mapNotNull { sourceHost(it.sourceUri) }
+            .distinct()
+            .size
+        val evidenceGateConflict = if (independentSourceCount < MIN_INDEPENDENT_SOURCES) {
+            "insufficient_independent_evidence"
+        } else null
+        val conflicts = buildList {
+            addAll(baseDeliberation.conflicts)
+            evidenceGateConflict?.let(::add)
+        }.distinct()
+        val approved = baseDeliberation.approvedForSimulation &&
+            evidenceGateConflict == null
+        val deliberation = baseDeliberation.copy(
+            conflicts = conflicts,
+            approvedForSimulation = approved
+        )
+
         val directionCounts = deliberation.reports
             .map { it.direction }
             .filter { it != AmarDecisionDirection.UNKNOWN }
             .groupingBy { it }
             .eachCount()
         val chosenDirection = deliberation.consensusDirection
-        val safeConfidence = deliberation.confidence.coerceIn(0.0, 1.0)
+        val safeConfidence = if (approved) {
+            deliberation.confidence.coerceIn(0.0, 1.0)
+        } else {
+            deliberation.confidence.coerceIn(0.0, 1.0)
+        }
 
         return AmarStageTwoResult(
             deliberation = deliberation,
             chosenDirection = chosenDirection,
             directionCounts = directionCounts,
             confidence = safeConfidence,
-            approvedForSimulation = deliberation.approvedForSimulation,
+            approvedForSimulation = approved,
             executionAllowed = false,
             brokerAccessAllowed = false
         )
@@ -89,11 +116,11 @@ class AmarStageTwoEngine(
             }
             val support = context.evidence
                 .filter { stanceSupports(it.stance, direction) }
-                .map { it.fingerprint }
+                .map { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
                 .take(10)
             val opposition = context.evidence
                 .filter { stanceOpposes(it.stance, direction) }
-                .map { it.fingerprint }
+                .map { it.fingerprint.ifBlank { "${it.sourceUri}|${it.sourceTitle}|${it.evidence}" } }
                 .take(10)
             return AmarRoleReport(
                 roleId = id,
@@ -106,6 +133,7 @@ class AmarStageTwoEngine(
                     if (direction == AmarDecisionDirection.UNKNOWN) add("unresolved_direction")
                     if (opposition.isNotEmpty()) add("opposing_evidence_present")
                     if (context.evidence.isEmpty()) add("no_external_evidence")
+                    if (context.evidence.count { stanceSupports(it.stance, direction) } == 0) add("no_direct_supporting_evidence")
                     add("execution_disabled")
                 }
             )
@@ -121,6 +149,7 @@ class AmarStageTwoEngine(
             val weighted = relevant.sumOf { authorityWeight(it.authority) }
             val support = relevant.count { stanceSupports(it.stance, direction) }
             val oppose = relevant.count { stanceOpposes(it.stance, direction) }
+            if (support == 0) return 0.0
             val balance = support.toDouble() / (support + oppose).toDouble()
             val quality = (weighted / relevant.size.toDouble()).coerceIn(0.0, 1.0)
             return (0.55 * balance + 0.45 * quality).coerceIn(0.0, 1.0)
@@ -128,7 +157,7 @@ class AmarStageTwoEngine(
 
         private fun stanceSupports(stance: EvidenceStance, direction: AmarDecisionDirection): Boolean =
             when (direction) {
-                AmarDecisionDirection.HOLD -> stance == EvidenceStance.MIXED || stance == EvidenceStance.UNKNOWN
+                AmarDecisionDirection.HOLD -> stance == EvidenceStance.MIXED
                 AmarDecisionDirection.BUY,
                 AmarDecisionDirection.SELL -> stance == EvidenceStance.SUPPORTS
                 AmarDecisionDirection.UNKNOWN -> false
@@ -150,6 +179,18 @@ class AmarStageTwoEngine(
             Authority.COMMUNITY -> 0.40
             Authority.UNKNOWN -> 0.15
         }
+
+        private fun sourceHost(uri: String): String? = runCatching {
+            java.net.URI(uri).host?.lowercase()?.removePrefix("www.")
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+    }
+
+    private fun sourceHost(uri: String): String? = runCatching {
+        java.net.URI(uri).host?.lowercase()?.removePrefix("www.")
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+
+    private companion object {
+        const val MIN_INDEPENDENT_SOURCES = 2
     }
 }
 

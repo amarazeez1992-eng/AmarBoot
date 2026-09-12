@@ -41,6 +41,24 @@ class AmarAgentStageTwoTest {
         assertFalse(result.approvedForSimulation)
     }
 
+    @Test fun blank_role_id_is_a_hard_block_and_is_not_filtered_out() = runBlocking {
+        val invalid = object : AmarAnalystRole {
+            override val id = ""
+            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("", "BUY", 0.90, AmarDecisionDirection.BUY)
+        }
+        val valid = object : AmarAnalystRole {
+            override val id = "B"
+            override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("B", "BUY", 0.90, AmarDecisionDirection.BUY)
+        }
+
+        val result = AmarDeliberationCoordinator().deliberate(AmarAnalysisContext("test"), listOf(invalid, valid))
+
+        assertEquals(2, result.reports.size)
+        assertTrue(result.conflicts.contains("blank_role_id"))
+        assertTrue(result.conflicts.contains("blank_report_role_id"))
+        assertFalse(result.approvedForSimulation)
+    }
+
     @Test fun roles_never_receive_execution_authority() = runBlocking {
         val calls = mutableListOf<String>()
         val provider = object : AmarReasoningProvider {
@@ -58,6 +76,7 @@ class AmarAgentStageTwoTest {
         assertEquals(4, result.deliberation.reports.size)
         assertEquals(AmarDecisionDirection.HOLD, result.chosenDirection)
         assertFalse(result.approvedForSimulation)
+        assertTrue(result.deliberation.conflicts.contains("insufficient_independent_evidence"))
         assertFalse(result.executionAllowed)
         assertFalse(result.brokerAccessAllowed)
     }
@@ -78,13 +97,30 @@ class AmarAgentStageTwoTest {
         assertFalse(result.approvedForSimulation)
     }
 
-    @Test fun same_direction_high_confidence_is_approved_for_simulation_only() = runBlocking {
+    @Test fun unknown_evidence_does_not_count_as_hold_support() = runBlocking {
+        val provider = object : AmarReasoningProvider {
+            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("HOLD")
+        }
+        val evidence = listOf(
+            ResearchFinding("unknown", "https://a.example", "unknown", authority = Authority.PRIMARY, stance = EvidenceStance.UNKNOWN),
+            ResearchFinding("unknown2", "https://b.example", "unknown2", authority = Authority.OFFICIAL, stance = EvidenceStance.UNKNOWN)
+        )
+
+        val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
+
+        assertEquals(AmarDecisionDirection.HOLD, result.chosenDirection)
+        assertEquals(0.0, result.confidence, 0.0)
+        assertTrue(result.deliberation.conflicts.contains("insufficient_role_confidence"))
+        assertFalse(result.approvedForSimulation)
+    }
+
+    @Test fun same_direction_high_confidence_requires_independent_mixed_evidence() = runBlocking {
         val provider = object : AmarReasoningProvider {
             override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("HOLD")
         }
         val evidence = listOf(
             ResearchFinding("mixed", "https://a.example", "mixed", authority = Authority.PRIMARY, stance = EvidenceStance.MIXED),
-            ResearchFinding("unknown", "https://b.example", "unknown", authority = Authority.OFFICIAL, stance = EvidenceStance.UNKNOWN)
+            ResearchFinding("mixed2", "https://b.example", "mixed2", authority = Authority.OFFICIAL, stance = EvidenceStance.MIXED)
         )
 
         val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
@@ -93,6 +129,21 @@ class AmarAgentStageTwoTest {
         assertTrue(result.approvedForSimulation)
         assertFalse(result.executionAllowed)
         assertFalse(result.brokerAccessAllowed)
+    }
+
+    @Test fun blank_fingerprints_do_not_collapse_distinct_evidence() = runBlocking {
+        val provider = object : AmarReasoningProvider {
+            override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("BUY")
+        }
+        val evidence = listOf(
+            ResearchFinding("one", "https://a.example", "one", fingerprint = "", authority = Authority.PRIMARY, stance = EvidenceStance.SUPPORTS),
+            ResearchFinding("two", "https://b.example", "two", fingerprint = "", authority = Authority.OFFICIAL, stance = EvidenceStance.SUPPORTS)
+        )
+
+        val result = AmarStageTwoEngine(provider).deliberate("تحليل", evidence)
+
+        assertEquals(2, result.deliberation.reports.first().supportingEvidence.size)
+        assertTrue(result.approvedForSimulation)
     }
 
     @Test fun unknown_direction_is_a_hard_block() = runBlocking {
