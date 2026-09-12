@@ -56,7 +56,13 @@ jobs:
           set -euo pipefail
           test -d "$ANDROID_HOME"
           test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          set +o pipefail
+          yes 2>/dev/null | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          license_status=$?
+          set -o pipefail
+          if [[ "$license_status" -ne 0 && "$license_status" -ne 141 ]]; then
+            exit "$license_status"
+          fi
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
             "platforms;android-34" \
