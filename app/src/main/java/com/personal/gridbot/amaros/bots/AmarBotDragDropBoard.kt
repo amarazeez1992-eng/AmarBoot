@@ -1,6 +1,9 @@
 package com.personal.gridbot.amaros.bots
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -13,6 +16,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,8 +41,8 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Shared Bot-Lab drag/drop surface.
- * Drop detection is target-based: the final pointer position is matched against
- * the actual rendered BOT card bounds, rather than estimating a row/column shift.
+ * Ten stable BOT identities are always rendered. Reordering changes only the
+ * visual order; bot numbers, saved strategies and runtime identity are untouched.
  */
 @Composable
 fun AmarBotDragDropBoard(
@@ -49,33 +54,45 @@ fun AmarBotDragDropBoard(
 ) {
     val context = LocalContext.current
     val orderStore = remember(context) { AmarBotOrderStore(context) }
-    val initialOrder = remember(botNumbers) { orderStore.load(botNumbers) }
+    val repository = remember(context) { AmarBotVaultRepository(context) }
+    val allowedBots = remember(botNumbers) { botNumbers.distinct().filter { it in 1..10 }.ifEmpty { (1..10).toList() } }
+    val initialOrder = remember(allowedBots) { orderStore.load(allowedBots) }
     var working by remember(initialOrder) { mutableStateOf(initialOrder) }
     var dragging by remember { mutableStateOf<Int?>(null) }
     var lastPointerRoot by remember { mutableStateOf<Offset?>(null) }
     val bounds = remember { mutableStateMapOf<Int, Rect>() }
+    val botsByNumber = remember(repository, allowedBots) { repository.load().associateBy { it.botNumber } }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            "اسحب BOT وأسقطه مباشرة فوق BOT آخر. سيُحفظ الترتيب ويُفتح البوت المسقَط للتحرير.",
+            "10 بوتات ثابتة • اسحب البطاقة نفسها وانقلها إلى مكان بوت آخر. السحب يغيّر الترتيب البصري فقط.",
             color = Color(0xFF8FEFFF),
             fontSize = 9.sp
         )
 
-        working.chunked(5).forEach { row ->
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        working.chunked(2).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 row.forEach { number ->
+                    val bot = botsByNumber[number]
+                    val strategy = bot?.strategies?.maxByOrNull { it.number }
                     val isDragging = dragging == number
                     val isSelected = selectedBot == number
                     val dropTarget = dragging != null && dragging != number && bounds[number]?.contains(lastPointerRoot ?: Offset.Unspecified) == true
-                    val scale by animateFloatAsState(
+                    val transition = rememberInfiniteTransition(label = "bot-card-$number")
+                    val glow by transition.animateFloat(
+                        initialValue = .55f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(tween(1500 + number * 45), RepeatMode.Reverse),
+                        label = "bot-glow-$number"
+                    )
+                    val scale by androidx.compose.animation.core.animateFloatAsState(
                         targetValue = when {
-                            isDragging -> 1.10f
-                            dropTarget -> 1.045f
+                            isDragging -> 1.055f
+                            dropTarget -> 1.035f
                             else -> 1f
                         },
                         animationSpec = tween(140),
-                        label = "bot-drag-scale"
+                        label = "bot-drag-scale-$number"
                     )
                     val borderColor = when {
                         isDragging -> Color(0xFFFFC84A)
@@ -83,23 +100,21 @@ fun AmarBotDragDropBoard(
                         isSelected -> Color(0xFF8DFAFF)
                         else -> Color(0xFF1A3E4D)
                     }
+                    val background = when {
+                        isDragging -> Color(0xFF17394A)
+                        dropTarget -> Color(0xFF123B35)
+                        isSelected -> Color(0xFF163B49)
+                        else -> Color(0xFF0E2230)
+                    }
 
                     Box(
                         Modifier
                             .weight(1f)
-                            .height(42.dp)
+                            .height(86.dp)
                             .scale(scale)
                             .onGloballyPositioned { coordinates -> bounds[number] = coordinates.boundsInRoot() }
-                            .background(
-                                when {
-                                    isDragging -> Color(0xFF17394A)
-                                    dropTarget -> Color(0xFF123B35)
-                                    isSelected -> Color(0xFF1DE5FF)
-                                    else -> Color(0xFF0E2230)
-                                },
-                                RoundedCornerShape(11.dp)
-                            )
-                            .border(1.5.dp, borderColor, RoundedCornerShape(11.dp))
+                            .background(background, RoundedCornerShape(14.dp))
+                            .border(1.5.dp, borderColor.copy(alpha = if (isSelected || isDragging || dropTarget) 1f else glow), RoundedCornerShape(14.dp))
                             .clickable { onSelectBot(number) }
                             .pointerInput(number, working) {
                                 detectDragGestures(
@@ -107,27 +122,24 @@ fun AmarBotDragDropBoard(
                                         dragging = number
                                         lastPointerRoot = bounds[number]?.let { it.topLeft + position }
                                     },
-                                    onDrag = { change, amount ->
+                                    onDrag = { change, _ ->
                                         change.consume()
-                                        val cardBounds = bounds[number]
-                                        lastPointerRoot = cardBounds?.let { it.topLeft + change.position }
+                                        lastPointerRoot = bounds[number]?.let { it.topLeft + change.position }
                                     },
                                     onDragEnd = {
                                         val dragged = dragging
                                         val pointer = lastPointerRoot
                                         if (dragged != null && pointer != null) {
-                                            val from = working.indexOf(dragged)
                                             val targetNumber = working.firstOrNull { candidate ->
                                                 candidate != dragged && bounds[candidate]?.contains(pointer) == true
                                             }
-                                            val target = targetNumber?.let { working.indexOf(it) }
-                                            if (from >= 0 && target != null && target >= 0 && target != from) {
-                                                val reordered = working.toMutableList().apply {
-                                                    add(target, removeAt(from))
-                                                }.toList()
-                                                working = reordered
-                                                orderStore.save(reordered)
-                                                onReorder(reordered)
+                                            if (targetNumber != null) {
+                                                val reordered = AmarBotDragDropOrder.move(working, dragged, targetNumber)
+                                                if (reordered != working) {
+                                                    working = reordered
+                                                    orderStore.save(reordered)
+                                                    onReorder(reordered)
+                                                }
                                             }
                                             onSelectBot(dragged)
                                         }
@@ -140,18 +152,34 @@ fun AmarBotDragDropBoard(
                                     }
                                 )
                             }
-                            .padding(horizontal = 3.dp),
+                            .padding(7.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "BOT $number",
-                            color = if (isSelected) Color.Black else Color(0xFFE9FBFF),
-                            fontSize = 9.sp
-                        )
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("BOT ${number.toString().padStart(2, '0')}", color = if (isSelected) Color(0xFF8DFAFF) else Color(0xFFE9FBFF), fontSize = 11.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Black)
+                                Box(Modifier.size(7.dp).background(if (strategy != null) Color(0xFF00E6A0) else Color(0xFFFFC84A), CircleShape))
+                            }
+                            Text(bot?.name ?: "بوت $number", color = Color(0xFF7896A5), fontSize = 8.sp, maxLines = 1)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                MiniStat("است", "${bot?.strategies?.size ?: 0}/10")
+                                MiniStat("صفقات", "—")
+                                MiniStat("أوامر", "${strategy?.profile?.maxOrders ?: 0}")
+                                MiniStat("لوت", String.format(java.util.Locale.US, "%.2f", strategy?.profile?.lot ?: 0.0))
+                            }
+                        }
                     }
                 }
-                repeat(5 - row.size) { Box(Modifier.weight(1f).height(42.dp)) }
+                if (row.size < 2) Box(Modifier.weight(1f).height(86.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun MiniStat(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = Color(0xFFE9FBFF), fontSize = 9.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Black)
+        Text(label, color = Color(0xFF7896A5), fontSize = 6.sp)
     }
 }
