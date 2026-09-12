@@ -65,15 +65,21 @@ class AmarAiAgentEngine(
             .put("mt5Office", AmarAiMt5Office.catalogText())
             .put("executionPolicy", "BROKER EXECUTION DISABLED")
             .put("approvalBoundary", "DRAFT/CHALLENGER only; explicit human approval required")
+            .put("deterministicTools", "inspect_app, engine_market, tracking, candle, analyze_market, multi_source_research, test_strategy, validate_results, precision_audit, uncertainty_audit")
     }
 
     private fun systemPrompt() = """
-You are AMAR AI Supervisor. Use real tools and measured evidence, never invented results.
+You are AMAR AI Supervisor, specialized only in trading research, analysis, strategy engineering, validation, risk and governed execution planning.
+Use real deterministic tools and measured evidence, never invented results.
+For important questions, gather multiple independent sources and distinguish source count from independent evidence.
 Classify evidence as SOURCE, VERIFIED, HYPOTHESIS or INFERENCE.
-Challenge leakage, repainting, overfit, unrealistic fills, missing costs, regime mismatch and drift.
+Challenge leakage, repainting, overfit, unrealistic fills, missing costs, slippage, spread, regime mismatch and drift.
+If runtime data is unavailable, explicitly say DATA_UNAVAILABLE / fail-closed; never fill gaps from imagination.
+For market/candle/position questions, prefer deterministic tools: engine_market, candle, tracking and inspect_app.
+For research questions, use multi_source_research and inspect conflicts, provenance, freshness and license/reuse status.
 Lifecycle: Idea -> Draft -> Discuss -> Evaluate -> Test -> OOS -> Stress -> Compare -> Risk Gate -> User Approval -> Adopt.
 Never auto-adopt. strategy_save is always DRAFT. approval_proposal only records human review.
-Broker execution is disabled; never claim an order was executed.
+Broker execution is disabled; never claim an order was executed. Android queue acceptance is not broker execution.
 Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"approvalRequired":true}
 """.trimIndent()
 
@@ -88,10 +94,7 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
                 val hits = AmarTradingIntelligenceRegistry.intelligenceEngines.filter { q.isBlank() || it.lowercase().contains(q) }
                 "INTELLIGENCE_LIBRARY|$args|${hits.joinToString(" | ")}"
             }
-            "analyze_market" -> {
-                val s = AmarMarketStateStore.snapshot
-                "MARKET|symbol=${s.symbol}|tf=${s.timeframe}|bid=${s.bid}|ask=${s.ask}|spread=${s.spread}|direction=${s.direction}|strength=${s.strength}|quality=${s.quality}"
-            }
+            "analyze_market" -> AmarAiEngineBinding.market()
             "research_external" -> {
                 val plan = AmarTradingIntelligenceRegistry.recommendedResearchPlan(args)
                 val results = runCatching { research.search(args, 8) }.getOrElse { return "EXTERNAL_RESEARCH|FAILED=${it.message ?: "unknown"}\n$plan" }
@@ -100,7 +103,8 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
             "multi_source_research" -> {
                 val report = runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }
                     .getOrElse { return "MULTI_SOURCE|FAILED=${it.message ?: "unknown"}" }
-                "MULTI_SOURCE|query=${report.query}|channels=${report.searchedChannels}|evidence=${report.evidence.size}|supporting=${report.supportingChannels}|conflicts=${report.conflictChannels}|authority=${report.authorityGrade}|confidence=${"%.1f".format(report.authorityConfidencePct)}"
+                val sample = report.evidence.take(20).joinToString("\n") { "EVIDENCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }
+                "MULTI_SOURCE|query=${report.query}|channels=${report.searchedChannels}|evidence=${report.evidence.size}|supporting=${report.supportingChannels}|conflicts=${report.conflictChannels}|independent=${report.independentChannels}|authority=${report.authorityGrade}|confidence=${"%.1f".format(report.authorityConfidencePct)}|consensus=${"%.1f".format(report.consensusPct)}\n$sample\nCAVEAT|${report.caveat}"
             }
             "bot_discovery" -> {
                 val q = args.lowercase()
@@ -152,7 +156,7 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
                 val note = AmarAiStrategyNotesRepository(c).find(args)
                 "STRATEGY_LOAD|name=$args|status=${note?.status ?: "NOT_FOUND"}|content=${note?.content ?: ""}"
             }
-            else -> null
+            else -> AmarAiDeterministicToolGateway.execute(tool, args)
         }
     }
 
