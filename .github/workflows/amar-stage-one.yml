@@ -26,4 +26,4 @@ jobs:
           gradle-version: '8.7'
 
       - name: Run AMAR AI agent unit tests
-        run: gradle test --tests 'com.personal.gridbot.amaros.agent.*'
+        run: gradle :app:testDebugUnitTest
