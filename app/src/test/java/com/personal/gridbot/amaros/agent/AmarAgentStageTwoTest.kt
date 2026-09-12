@@ -1,12 +1,13 @@
 package com.personal.gridbot.amaros.agent
 
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AmarAgentStageTwoTest {
-    @Test fun coordinator_deduplicates_roles_and_exposes_conflict() = kotlinx.coroutines.test.runTest {
+    @Test fun coordinator_deduplicates_roles_and_exposes_conflict() = runBlocking {
         val roleA = object : AmarAnalystRole {
             override val id = "A"
             override suspend fun analyze(context: AmarAnalysisContext) = AmarRoleReport("A", "BUY", 0.90)
@@ -30,7 +31,7 @@ class AmarAgentStageTwoTest {
         assertFalse(result.approvedForSimulation)
     }
 
-    @Test fun reasoning_roles_are_isolated_and_never_receive_execution_authority() = kotlinx.coroutines.test.runTest {
+    @Test fun reasoning_roles_are_isolated_and_never_receive_execution_authority() = runBlocking {
         val calls = mutableListOf<String>()
         val provider = object : AmarReasoningProvider {
             override suspend fun respond(context: AmarAgentContext): AmarAgentResponse {
@@ -50,7 +51,7 @@ class AmarAgentStageTwoTest {
         assertFalse(result.brokerAccessAllowed)
     }
 
-    @Test fun opposing_evidence_reduces_role_confidence() = kotlinx.coroutines.test.runTest {
+    @Test fun opposing_evidence_reduces_role_confidence() = runBlocking {
         val provider = object : AmarReasoningProvider {
             override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("BUY مع تحفظ")
         }
@@ -66,7 +67,7 @@ class AmarAgentStageTwoTest {
         assertFalse(result.approvedForSimulation)
     }
 
-    @Test fun same_direction_high_confidence_can_be_approved_for_simulation_only() = kotlinx.coroutines.test.runTest {
+    @Test fun same_direction_high_confidence_can_be_approved_for_simulation_only() = runBlocking {
         val provider = object : AmarReasoningProvider {
             override suspend fun respond(context: AmarAgentContext) = AmarAgentResponse("HOLD")
         }
