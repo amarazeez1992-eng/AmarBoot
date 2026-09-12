@@ -25,11 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.roundToInt
 
-/** Shared Bot-Lab drag/drop surface: all ten bots can be selected and reordered. */
+/** Shared Bot-Lab drag/drop surface: all ten bots can be selected, reordered and opened for editing. */
 @Composable
 fun AmarBotDragDropBoard(
     botNumbers: List<Int>,
@@ -38,13 +39,16 @@ fun AmarBotDragDropBoard(
     onReorder: (List<Int>) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val orderStore = remember(context) { AmarBotOrderStore(context) }
+    val initialOrder = remember(botNumbers) { orderStore.load(botNumbers) }
     var dragging by remember { mutableStateOf<Int?>(null) }
     var dragDistanceX by remember { mutableStateOf(0f) }
     var dragDistanceY by remember { mutableStateOf(0f) }
-    var working by remember(botNumbers) { mutableStateOf(botNumbers.distinct()) }
+    var working by remember(initialOrder) { mutableStateOf(initialOrder) }
 
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("اسحب أي بوت وأسقطه فوق بوت آخر — سيُحفظ الترتيب ويُفتح البوت لتعديل معلوماته", color = Color(0xFF78A9B8), fontSize = 9.sp)
+        Text("اسحب أي BOT وأسقطه فوق BOT آخر لترتيبه. عند الإسقاط يُحدد البوت فورًا وتظهر معلوماته في محرر التعديل.", color = Color(0xFF78A9B8), fontSize = 9.sp)
         working.chunked(5).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                 row.forEach { number ->
@@ -79,6 +83,7 @@ fun AmarBotDragDropBoard(
                                             if (target != from) {
                                                 val reordered = working.toMutableList().apply { add(target, removeAt(from)) }.toList()
                                                 working = reordered
+                                                orderStore.save(reordered)
                                                 onReorder(reordered)
                                             }
                                             onSelectBot(number)
