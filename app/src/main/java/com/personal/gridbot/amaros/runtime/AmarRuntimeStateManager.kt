@@ -32,17 +32,21 @@ class AmarRuntimeStateManager {
     @Synchronized
     fun setCommandState(commandId: Long, state: String) {
         require(commandId > 0) { "Invalid command id" }
-        require(state.isNotBlank()) { "Command state is blank" }
-        commandStates[commandId] = state.trim()
+        val normalized = state.trim()
+        require(normalized.isNotEmpty()) { "Command state is blank" }
+        require(isKnownCommandState(normalized)) { "Unknown command state" }
+        commandStates[commandId] = normalized
     }
 
     @Synchronized
     fun canTransitionCommand(commandId: Long, nextState: String): Boolean {
         require(commandId > 0) { "Invalid command id" }
-        require(nextState.isNotBlank()) { "Command state is blank" }
-        val current = commandStates[commandId] ?: return true
+        val normalized = nextState.trim()
+        require(normalized.isNotEmpty()) { "Command state is blank" }
+        require(isKnownCommandState(normalized)) { "Unknown command state" }
+        val current = commandStates[commandId] ?: return normalized == AmarBridgeContract.PENDING_MT5
         if (AmarBridgeContract.isTerminal(current)) return false
-        return !AmarBridgeContract.isTerminal(nextState) || current == AmarBridgeContract.PENDING_MT5
+        return normalized != current
     }
 
     @Synchronized
@@ -51,4 +55,11 @@ class AmarRuntimeStateManager {
         commandStates[commandId] = nextState.trim()
         return true
     }
+
+    private fun isKnownCommandState(state: String): Boolean = state == AmarBridgeContract.PENDING_MT5 ||
+        state == AmarBridgeContract.EXECUTED ||
+        state == AmarBridgeContract.REJECTED ||
+        state == AmarBridgeContract.VERIFIED ||
+        state == AmarBridgeContract.FAILED ||
+        state == AmarBridgeContract.STALE
 }
