@@ -23,8 +23,14 @@ object AmarTradingJournalPolicy {
 
     fun validate(trades: List<TradeRecord>): List<String> {
         val errors = mutableListOf<String>()
+        val seenIds = mutableSetOf<String>()
         trades.forEachIndexed { index, trade ->
-            if (trade.id.isBlank()) errors += "TRADE_${index}_ID_INVALID"
+            val normalizedId = trade.id.trim()
+            if (normalizedId.isEmpty()) {
+                errors += "TRADE_${index}_ID_INVALID"
+            } else if (!seenIds.add(normalizedId)) {
+                errors += "TRADE_${index}_ID_DUPLICATE"
+            }
             if (trade.strategy.isBlank()) errors += "TRADE_${index}_STRATEGY_INVALID"
             if (!trade.profitLoss.isFinite()) errors += "TRADE_${index}_PNL_INVALID"
             if (!trade.riskReward.isFinite() || trade.riskReward < 0.0) errors += "TRADE_${index}_RR_INVALID"
