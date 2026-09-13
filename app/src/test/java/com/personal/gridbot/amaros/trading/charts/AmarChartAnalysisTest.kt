@@ -39,4 +39,26 @@ class AmarChartAnalysisTest {
             )
         )
     }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun trustedSeriesCannotUseUnavailableSource() {
+        AmarChartSeries(
+            symbol = "XAUUSD",
+            timeframe = "M1",
+            source = AmarChartContract.UNAVAILABLE_SOURCE,
+            isTrusted = true,
+            candles = listOf(AmarCandle(1L, 100.0, 105.0, 99.0, 103.0))
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun trustedSeriesCannotBeEmpty() {
+        AmarChartSeries(
+            symbol = "XAUUSD",
+            timeframe = "M1",
+            source = "TEST",
+            isTrusted = true,
+            candles = emptyList()
+        )
+    }
 }
