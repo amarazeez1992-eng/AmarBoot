@@ -3,7 +3,6 @@ package com.personal.gridbot.amaros.navigation
 /**
  * تعريف قابل للتوسعة لمحتوى الغرفة.
  * هذا الملف يصف الهيكل فقط؛ لا يحتوي على منطق تداول.
- * NEWS_SESSIONS جزء مستقل من كتالوج الغرف حتى تبقى إضافة الأخبار معزولة.
  */
 data class AmarRoomSection(
     val id: String,
@@ -81,6 +80,12 @@ object AmarRoomCatalog {
             AmarRoomSection("structure", "الهيكل", "⌁", "بنية السوق والسيولة"),
             AmarRoomSection("regime", "نظام السوق", "◎", "Market Regime"),
             AmarRoomSection("score", "AMAR Score", "✦", "النتيجة التجميعية")
+        ))
+        AmarRoom.DECISION -> AmarRoomDefinition(room, "تجميع القراءات وتأكيد القرار", listOf(
+            AmarRoomSection("confluence", "التوافق", "✦", "جمع القراءات المتوافقة من المحركات"),
+            AmarRoomSection("decision", "القرار", "🎯", "شراء / بيع / محايد مع درجة التوافق"),
+            AmarRoomSection("evidence", "الأدلة", "◈", "الأسباب والمصادر والقراءات المؤثرة"),
+            AmarRoomSection("memory", "ذاكرة القرار", "▤", "حفظ القرار وتغيره وأسباب التغير")
         ))
         AmarRoom.TESTING -> AmarRoomDefinition(room, "الاختبار والمحاكاة", listOf(
             AmarRoomSection("backtest", "اختبار خلفي", "◀", "Backtest"),
