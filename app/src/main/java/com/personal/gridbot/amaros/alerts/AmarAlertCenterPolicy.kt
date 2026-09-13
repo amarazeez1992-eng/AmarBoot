@@ -23,7 +23,7 @@ object AmarAlertCenterPolicy {
 
     fun validate(snapshot: Snapshot, thresholds: Thresholds): List<String> {
         val errors = mutableListOf<String>()
-        if (!snapshot.price.isFinite() || snapshot.price < 0.0) errors += "PRICE_INVALID"
+        if (!snapshot.price.isFinite() || snapshot.price <= 0.0) errors += "PRICE_INVALID"
         if (!snapshot.profit.isFinite()) errors += "PROFIT_INVALID"
         if (!snapshot.drawdownPct.isFinite() || snapshot.drawdownPct < 0.0) errors += "DRAWDOWN_INVALID"
         if (!snapshot.spread.isFinite() || snapshot.spread < 0.0) errors += "SPREAD_INVALID"
