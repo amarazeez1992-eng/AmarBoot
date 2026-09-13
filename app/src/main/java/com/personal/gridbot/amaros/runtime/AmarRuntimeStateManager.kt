@@ -4,7 +4,10 @@ import com.personal.gridbot.bridge.AmarBridgeContract
 
 /**
  * In-memory runtime state coordinator for the Android layer.
- * It validates the same command lifecycle used by the durable command service.
+ *
+ * This coordinator mirrors the durable command lifecycle and cannot be used to bypass it.
+ * A command may be initialized only as PENDING_MT5; every later state change must use the
+ * governed transition graph.
  */
 class AmarRuntimeStateManager {
     private val botStates = mutableMapOf<Int, String>()
@@ -29,13 +32,21 @@ class AmarRuntimeStateManager {
         return commandStates[commandId]
     }
 
+    /**
+     * Initialization boundary only. Existing commands cannot be overwritten through this API,
+     * and a new command can enter the lifecycle only at PENDING_MT5.
+     */
     @Synchronized
     fun setCommandState(commandId: Long, state: String) {
         require(commandId > 0) { "Invalid command id" }
         val normalized = state.trim()
         require(normalized.isNotEmpty()) { "Command state is blank" }
-        require(isKnownCommandState(normalized)) { "Unknown command state" }
-        commandStates[commandId] = normalized
+        require(normalized == AmarBridgeContract.PENDING_MT5) {
+            "Command initialization must start at PENDING_MT5"
+        }
+        require(commandStates.putIfAbsent(commandId, normalized) == null) {
+            "Command already initialized; use transitionCommand"
+        }
     }
 
     @Synchronized
@@ -43,7 +54,7 @@ class AmarRuntimeStateManager {
         require(commandId > 0) { "Invalid command id" }
         val normalized = nextState.trim()
         require(normalized.isNotEmpty()) { "Command state is blank" }
-        require(isKnownCommandState(normalized)) { "Unknown command state" }
+        require(AmarBridgeContract.isKnown(normalized)) { "Unknown command state" }
         val current = commandStates[commandId] ?: return normalized == AmarBridgeContract.PENDING_MT5
         if (AmarBridgeContract.isTerminal(current)) return false
         return allowedNextStates(current).contains(normalized)
@@ -76,12 +87,4 @@ class AmarRuntimeStateManager {
         )
         else -> emptySet()
     }
-
-    private fun isKnownCommandState(state: String): Boolean = state == AmarBridgeContract.PENDING_MT5 ||
-        state == AmarBridgeContract.ACKNOWLEDGED ||
-        state == AmarBridgeContract.EXECUTED ||
-        state == AmarBridgeContract.REJECTED ||
-        state == AmarBridgeContract.VERIFIED ||
-        state == AmarBridgeContract.FAILED ||
-        state == AmarBridgeContract.STALE
 }
