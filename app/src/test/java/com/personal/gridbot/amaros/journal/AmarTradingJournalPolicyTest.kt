@@ -40,4 +40,14 @@ class AmarTradingJournalPolicyTest {
         val errors = AmarTradingJournalPolicy.validate(listOf(trade))
         assertTrue(errors.isNotEmpty())
     }
+
+    @Test
+    fun duplicateTradeIdsAreRejected() {
+        val trades = listOf(
+            AmarTradingJournalPolicy.TradeRecord("1", "Grid", 10.0, 1.0, 5),
+            AmarTradingJournalPolicy.TradeRecord("1", "Manual", -5.0, 1.0, 3),
+        )
+        val errors = AmarTradingJournalPolicy.validate(trades)
+        assertTrue("TRADE_1_ID_DUPLICATE" in errors)
+    }
 }
