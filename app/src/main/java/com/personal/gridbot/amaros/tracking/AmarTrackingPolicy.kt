@@ -10,6 +10,8 @@ object AmarTrackingPolicy {
         val priceCurrent: Double,
         val profit: Double,
         val magic: Long,
+        /** Broker contract size used to convert volume × price into notional exposure. */
+        val contractSize: Double = 1.0,
     )
 
     fun validate(snapshot: PositionSnapshot): List<String> {
@@ -21,6 +23,11 @@ object AmarTrackingPolicy {
         if (!snapshot.priceCurrent.isFinite() || snapshot.priceCurrent <= 0.0) errors += "CURRENT_PRICE_INVALID"
         if (!snapshot.profit.isFinite()) errors += "PROFIT_INVALID"
         if (snapshot.magic < 0L) errors += "MAGIC_INVALID"
+        if (!snapshot.contractSize.isFinite() || snapshot.contractSize <= 0.0) errors += "CONTRACT_SIZE_INVALID"
+        if (errors.isEmpty()) {
+            val notional = snapshot.volume * snapshot.priceCurrent * snapshot.contractSize
+            if (!notional.isFinite()) errors += "EXPOSURE_OVERFLOW"
+        }
         return errors
     }
 
@@ -31,11 +38,15 @@ object AmarTrackingPolicy {
 
     fun totalProfit(snapshots: List<PositionSnapshot>): Double {
         require(validateAll(snapshots).isEmpty())
-        return snapshots.sumOf { it.profit }
+        val total = snapshots.sumOf { it.profit }
+        require(total.isFinite()) { "PROFIT_TOTAL_OVERFLOW" }
+        return total
     }
 
     fun exposure(snapshots: List<PositionSnapshot>): Double {
         require(validateAll(snapshots).isEmpty())
-        return snapshots.sumOf { it.volume * it.priceCurrent }
+        val total = snapshots.sumOf { it.volume * it.priceCurrent * it.contractSize }
+        require(total.isFinite()) { "EXPOSURE_OVERFLOW" }
+        return total
     }
 }
