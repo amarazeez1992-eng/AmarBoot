@@ -24,6 +24,20 @@ class AmarPortfolioContractTest {
     }
 
     @Test
+    fun unavailableTrustedSourceIsNotUsable() {
+        val snapshot = AmarPortfolioSnapshot(
+            balance = 1000.0,
+            equity = 1000.0,
+            margin = 0.0,
+            freeMargin = 1000.0,
+            source = AmarPortfolioContract.UNAVAILABLE_SOURCE,
+            isTrusted = true
+        )
+        assertTrue("SOURCE_UNAVAILABLE" in snapshot.validate())
+        assertFalse(snapshot.hasTrustedAccountEvidence)
+    }
+
+    @Test
     fun invalidTrustedSnapshotIsNotUsable() {
         val snapshot = AmarPortfolioSnapshot(
             equity = Double.NaN,
