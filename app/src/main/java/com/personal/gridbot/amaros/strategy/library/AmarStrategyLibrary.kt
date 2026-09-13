@@ -54,6 +54,9 @@ class AmarStrategyLibrary {
         return true
     }
 
+    /** Marks a draft as tested after an external, measured test has actually completed. */
+    fun markTested(id: String, version: Int): Boolean = transition(id, version, Status.TESTED)
+
     fun approve(id: String, version: Int): Boolean = transition(id, version, Status.APPROVED)
 
     fun archive(id: String, version: Int): Boolean = transition(id, version, Status.ARCHIVED)
@@ -64,6 +67,7 @@ class AmarStrategyLibrary {
 
     private fun transition(id: String, version: Int, target: Status): Boolean {
         val current = get(id, version) ?: return false
+        if (target == Status.TESTED && current.status != Status.DRAFT) return false
         if (target == Status.APPROVED && current.status != Status.TESTED) return false
         if (current.status == Status.ARCHIVED) return false
         entries[key(id, version)] = current.copy(status = target)
