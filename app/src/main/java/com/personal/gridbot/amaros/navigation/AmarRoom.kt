@@ -14,6 +14,7 @@ enum class AmarRoom(
     PERFORMANCE("الأداء", "💎"),
     INDICATORS("المؤشرات", "📐"),
     ANALYSIS("التحليل", "🧠"),
+    DECISION("القرار", "🎯"),
     TESTING("الاختبار والمحاكاة", "🧪"),
     TOOLS("الأدوات", "🧰"),
     ALERTS("التنبيهات", "🔔"),
