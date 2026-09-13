@@ -34,6 +34,7 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
     }
 
     suspend fun get(commandId: Long): AmarRuntimeCommandRecord? = withContext(Dispatchers.IO) {
+        require(commandId > 0) { "Invalid command id" }
         dao.commandById(commandId)
     }
 
@@ -42,14 +43,16 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         status: String,
         error: String?
     ): Boolean = withContext(Dispatchers.IO) {
+        require(commandId > 0) { "Invalid command id" }
         val current = dao.commandById(commandId) ?: return@withContext false
         if (AmarBridgeContract.isTerminal(current.status)) return@withContext false
-        dao.updateCommandStatus(
+
+        dao.updateCommandStatusIfCurrent(
             commandId = commandId,
+            expectedStatus = current.status,
             status = status,
             acknowledgedAt = System.currentTimeMillis(),
             error = error
-        )
-        true
+        ) == 1
     }
 }
