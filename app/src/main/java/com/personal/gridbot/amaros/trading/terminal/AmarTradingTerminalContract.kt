@@ -11,12 +11,19 @@ data class AmarTradingTerminalSnapshot(
     val isTrusted: Boolean = false
 ) {
     val hasUsablePrice: Boolean
-        get() = isTrusted && symbol.isNotBlank() && source.isNotBlank() && bid != null && ask != null &&
-            bid > 0.0 && ask > 0.0 && bid <= ask && (spread == null || spread >= 0.0)
+        get() = isTrusted &&
+            symbol.isNotBlank() &&
+            source.isNotBlank() && source != AmarTradingTerminalContract.UNAVAILABLE_SOURCE &&
+            timestampMs != null && timestampMs >= 0L &&
+            bid != null && ask != null &&
+            bid.isFinite() && ask.isFinite() &&
+            bid > 0.0 && ask > 0.0 && bid <= ask &&
+            (spread == null || (spread.isFinite() && spread >= 0.0))
 
     fun validate(): List<String> = buildList {
         if (isTrusted && symbol.isBlank()) add("SYMBOL_REQUIRED")
-        if (isTrusted && source.isBlank()) add("SOURCE_REQUIRED")
+        if (isTrusted && (source.isBlank() || source == AmarTradingTerminalContract.UNAVAILABLE_SOURCE)) add("SOURCE_UNAVAILABLE")
+        if (isTrusted && timestampMs == null) add("TIMESTAMP_REQUIRED")
         if (bid != null && (!bid.isFinite() || bid <= 0.0)) add("BID_INVALID")
         if (ask != null && (!ask.isFinite() || ask <= 0.0)) add("ASK_INVALID")
         if (bid != null && ask != null && bid.isFinite() && ask.isFinite() && bid > ask) add("QUOTE_INVERTED")
@@ -42,6 +49,6 @@ data class AmarWatchlistInstrument(
 }
 
 object AmarTradingTerminalContract {
-    const val VERSION = "1.1"
+    const val VERSION = "1.2"
     const val UNAVAILABLE_SOURCE = "UNAVAILABLE"
 }
