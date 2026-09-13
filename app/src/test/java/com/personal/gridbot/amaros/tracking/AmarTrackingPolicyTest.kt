@@ -8,8 +8,8 @@ class AmarTrackingPolicyTest {
     @Test
     fun validPositionsProduceDeterministicTotals() {
         val positions = listOf(
-            AmarTrackingPolicy.PositionSnapshot(1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L),
-            AmarTrackingPolicy.PositionSnapshot(2L, "XAUUSD", 0.02, 2500.0, 2495.0, -3.0, 100L),
+            AmarTrackingPolicy.PositionSnapshot(1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L, isTrusted = true),
+            AmarTrackingPolicy.PositionSnapshot(2L, "XAUUSD", 0.02, 2500.0, 2495.0, -3.0, 100L, isTrusted = true),
         )
 
         assertTrue(AmarTrackingPolicy.validateAll(positions).isEmpty())
@@ -20,9 +20,17 @@ class AmarTrackingPolicyTest {
     @Test
     fun contractSizeIsAppliedToNotionalExposure() {
         val position = AmarTrackingPolicy.PositionSnapshot(
-            1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L, contractSize = 100.0
+            1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L, contractSize = 100.0, isTrusted = true
         )
         assertEquals(2505.0, AmarTrackingPolicy.exposure(listOf(position)), 0.0)
+    }
+
+    @Test
+    fun untrustedRuntimeDataIsRejected() {
+        val position = AmarTrackingPolicy.PositionSnapshot(
+            1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L
+        )
+        assertEquals(listOf("POSITION_0_UNTRUSTED_RUNTIME_DATA"), AmarTrackingPolicy.validateAll(listOf(position)))
     }
 
     @Test
@@ -35,6 +43,7 @@ class AmarTrackingPolicyTest {
             priceCurrent = Double.NaN,
             profit = Double.POSITIVE_INFINITY,
             magic = -1L,
+            isTrusted = true,
         )
 
         assertEquals(
