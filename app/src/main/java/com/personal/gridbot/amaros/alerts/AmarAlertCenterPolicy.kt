@@ -49,4 +49,7 @@ object AmarAlertCenterPolicy {
         if (thresholds.marginLevelAtMostPct > 0.0 && snapshot.marginLevelPct <= thresholds.marginLevelAtMostPct) alerts += "MARGIN_LEVEL"
         return alerts
     }
+
+    fun canTriggerSafely(snapshot: Snapshot, thresholds: Thresholds): Boolean =
+        validate(snapshot, thresholds).isEmpty()
 }
