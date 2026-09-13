@@ -38,6 +38,20 @@ class AmarPortfolioContractTest {
     }
 
     @Test
+    fun blankTrustedSourceIsNotUsable() {
+        val snapshot = AmarPortfolioSnapshot(
+            balance = 1000.0,
+            equity = 1000.0,
+            margin = 0.0,
+            freeMargin = 1000.0,
+            source = "   ",
+            isTrusted = true
+        )
+        assertTrue("SOURCE_UNAVAILABLE" in snapshot.validate())
+        assertFalse(snapshot.hasTrustedAccountEvidence)
+    }
+
+    @Test
     fun invalidTrustedSnapshotIsNotUsable() {
         val snapshot = AmarPortfolioSnapshot(
             equity = Double.NaN,
@@ -45,6 +59,33 @@ class AmarPortfolioContractTest {
             isTrusted = true
         )
         assertTrue("EQUITY_INVALID" in snapshot.validate())
+        assertFalse(snapshot.hasTrustedAccountEvidence)
+    }
+
+    @Test
+    fun allNumericBoundariesAreRejected() {
+        val snapshot = AmarPortfolioSnapshot(
+            balance = Double.POSITIVE_INFINITY,
+            equity = Double.NEGATIVE_INFINITY,
+            margin = Double.NaN,
+            freeMargin = Double.POSITIVE_INFINITY,
+            floatingPnl = Double.NaN,
+            exposure = -1.0,
+            openPositions = -1,
+            pendingOrders = -1,
+            source = "TEST",
+            isTrusted = true
+        )
+
+        val errors = snapshot.validate()
+        assertTrue("BALANCE_INVALID" in errors)
+        assertTrue("EQUITY_INVALID" in errors)
+        assertTrue("MARGIN_INVALID" in errors)
+        assertTrue("FREE_MARGIN_INVALID" in errors)
+        assertTrue("FLOATING_PNL_INVALID" in errors)
+        assertTrue("EXPOSURE_INVALID" in errors)
+        assertTrue("OPEN_POSITIONS_INVALID" in errors)
+        assertTrue("PENDING_ORDERS_INVALID" in errors)
         assertFalse(snapshot.hasTrustedAccountEvidence)
     }
 
