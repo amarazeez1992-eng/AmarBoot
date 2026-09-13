@@ -12,10 +12,12 @@ object AmarTrackingPolicy {
         val magic: Long,
         /** Broker contract size used to convert volume × price into notional exposure. */
         val contractSize: Double = 1.0,
+        val isTrusted: Boolean = false,
     )
 
     fun validate(snapshot: PositionSnapshot): List<String> {
         val errors = mutableListOf<String>()
+        if (!snapshot.isTrusted) errors += "UNTRUSTED_RUNTIME_DATA"
         if (snapshot.ticket <= 0L) errors += "TICKET_INVALID"
         if (snapshot.symbol.isBlank()) errors += "SYMBOL_REQUIRED"
         if (!snapshot.volume.isFinite() || snapshot.volume <= 0.0) errors += "VOLUME_INVALID"
