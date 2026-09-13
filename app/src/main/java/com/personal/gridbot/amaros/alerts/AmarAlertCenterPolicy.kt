@@ -14,7 +14,8 @@ object AmarAlertCenterPolicy {
         val priceAbove: Double = 0.0,
         val priceBelow: Double = 0.0,
         val profitAtLeast: Double = 0.0,
-        val lossAtMost: Double = 0.0,
+        /** Positive currency amount representing the maximum tolerated loss. */
+        val lossLimit: Double = 0.0,
         val drawdownAtLeastPct: Double = 0.0,
         val spreadAtLeast: Double = 0.0,
         val marginLevelAtMostPct: Double = 0.0,
@@ -32,7 +33,7 @@ object AmarAlertCenterPolicy {
         if (!thresholds.priceAbove.isFinite() || thresholds.priceAbove < 0.0) errors += "PRICE_ABOVE_INVALID"
         if (!thresholds.priceBelow.isFinite() || thresholds.priceBelow < 0.0) errors += "PRICE_BELOW_INVALID"
         if (!thresholds.profitAtLeast.isFinite()) errors += "PROFIT_THRESHOLD_INVALID"
-        if (!thresholds.lossAtMost.isFinite() || thresholds.lossAtMost > 0.0) errors += "LOSS_THRESHOLD_INVALID"
+        if (!thresholds.lossLimit.isFinite() || thresholds.lossLimit < 0.0) errors += "LOSS_THRESHOLD_INVALID"
         if (!thresholds.drawdownAtLeastPct.isFinite() || thresholds.drawdownAtLeastPct < 0.0) errors += "DRAWDOWN_THRESHOLD_INVALID"
         if (!thresholds.spreadAtLeast.isFinite() || thresholds.spreadAtLeast < 0.0) errors += "SPREAD_THRESHOLD_INVALID"
         if (!thresholds.marginLevelAtMostPct.isFinite() || thresholds.marginLevelAtMostPct < 0.0) errors += "MARGIN_THRESHOLD_INVALID"
@@ -45,7 +46,7 @@ object AmarAlertCenterPolicy {
         if (thresholds.priceAbove > 0.0 && snapshot.price >= thresholds.priceAbove) alerts += "PRICE_ABOVE"
         if (thresholds.priceBelow > 0.0 && snapshot.price <= thresholds.priceBelow) alerts += "PRICE_BELOW"
         if (thresholds.profitAtLeast > 0.0 && snapshot.profit >= thresholds.profitAtLeast) alerts += "PROFIT_TARGET"
-        if (thresholds.lossAtMost < 0.0 && snapshot.profit <= thresholds.lossAtMost) alerts += "LOSS_LIMIT"
+        if (thresholds.lossLimit > 0.0 && snapshot.profit <= -thresholds.lossLimit) alerts += "LOSS_LIMIT"
         if (thresholds.drawdownAtLeastPct > 0.0 && snapshot.drawdownPct >= thresholds.drawdownAtLeastPct) alerts += "DRAWDOWN"
         if (thresholds.spreadAtLeast > 0.0 && snapshot.spread >= thresholds.spreadAtLeast) alerts += "SPREAD"
         if (thresholds.marginLevelAtMostPct > 0.0 && snapshot.marginLevelPct <= thresholds.marginLevelAtMostPct) alerts += "MARGIN_LEVEL"
