@@ -20,6 +20,33 @@ class AmarTradingTerminalStateTest {
         assertEquals(AmarTradingTerminalState.DataStatus.LIVE, state.dataStatus)
     }
 
+    @Test
+    fun unavailableTrustedSourceCannotBecomeLive() {
+        val snapshot = AmarTradingTerminalSnapshot(
+            symbol = "XAUUSD",
+            bid = 2504.0,
+            ask = 2505.0,
+            spread = 1.0,
+            timestampMs = 1L,
+            source = AmarTradingTerminalContract.UNAVAILABLE_SOURCE,
+            isTrusted = true
+        )
+        assertTrue("SOURCE_UNAVAILABLE" in snapshot.validate())
+        assertEquals(AmarTradingTerminalState.DataStatus.UNAVAILABLE, AmarTradingTerminalState(snapshot = snapshot).dataStatus)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun trustedSnapshotRequiresTimestamp() {
+        AmarTradingTerminalSnapshot(
+            symbol = "XAUUSD",
+            bid = 2504.0,
+            ask = 2505.0,
+            spread = 1.0,
+            source = "TEST",
+            isTrusted = true
+        ).also { AmarTradingTerminalState(snapshot = it) }
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun mismatchedSelectedSymbolIsRejected() {
         AmarTradingTerminalState(
