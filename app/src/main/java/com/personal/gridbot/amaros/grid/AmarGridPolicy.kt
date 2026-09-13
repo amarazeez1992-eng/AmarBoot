@@ -53,8 +53,12 @@ object AmarGridPolicy {
         if (!config.basketTakeProfit.isFinite() || config.basketTakeProfit < 0.0) errors += "BASKET_TP_INVALID"
         if (!config.basketStopLoss.isFinite() || config.basketStopLoss < 0.0) errors += "BASKET_SL_INVALID"
         if (config.levelsPerSide > 0 && config.distance.isFinite() && config.distance > 0.0 && config.anchorPrice.isFinite()) {
-            val farthest = config.anchorPrice + config.distance * config.levelsPerSide.toDouble()
-            if (!farthest.isFinite()) errors += "GRID_RANGE_OVERFLOW"
+            val span = config.distance * config.levelsPerSide.toDouble()
+            val lowest = config.anchorPrice - span
+            val highest = config.anchorPrice + span
+            if (!span.isFinite() || !lowest.isFinite() || !highest.isFinite() || lowest <= 0.0) {
+                errors += "GRID_RANGE_INVALID"
+            }
         }
         return errors
     }
