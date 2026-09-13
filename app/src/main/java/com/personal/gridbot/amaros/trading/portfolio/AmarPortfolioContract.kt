@@ -10,11 +10,11 @@ data class AmarPortfolioSnapshot(
     val exposure: Double? = null,
     val openPositions: Int? = null,
     val pendingOrders: Int? = null,
-    val source: String = "UNAVAILABLE",
+    val source: String = AmarPortfolioContract.UNAVAILABLE_SOURCE,
     val isTrusted: Boolean = false
 ) {
     fun validate(): List<String> = buildList {
-        if (isTrusted && source.isBlank()) add("SOURCE_REQUIRED")
+        if (isTrusted && (source.isBlank() || source == AmarPortfolioContract.UNAVAILABLE_SOURCE)) add("SOURCE_UNAVAILABLE")
         if (balance != null && (!balance.isFinite() || balance < 0.0)) add("BALANCE_INVALID")
         if (equity != null && (!equity.isFinite() || equity < 0.0)) add("EQUITY_INVALID")
         if (margin != null && (!margin.isFinite() || margin < 0.0)) add("MARGIN_INVALID")
@@ -31,5 +31,6 @@ data class AmarPortfolioSnapshot(
 }
 
 object AmarPortfolioContract {
-    const val VERSION = "1.1"
+    const val VERSION = "1.2"
+    const val UNAVAILABLE_SOURCE = "UNAVAILABLE"
 }
