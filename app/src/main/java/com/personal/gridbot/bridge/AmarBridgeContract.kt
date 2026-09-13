@@ -5,8 +5,9 @@ package com.personal.gridbot.bridge
  * This module is transport-agnostic and never executes trading operations itself.
  */
 object AmarBridgeContract {
-    const val VERSION = "1.0"
+    const val VERSION = "1.1"
     const val PENDING_MT5 = "PENDING_MT5"
+    const val ACKNOWLEDGED = "ACKNOWLEDGED"
     const val EXECUTED = "EXECUTED"
     const val REJECTED = "REJECTED"
     const val VERIFIED = "VERIFIED"
