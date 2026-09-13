@@ -7,6 +7,12 @@ data class AmarTradingTerminalState(
     val watchlist: List<AmarWatchlistInstrument> = emptyList(),
     val selectedTimeframe: String = "M1"
 ) {
+    init {
+        require(selectedTimeframe.isNotBlank())
+        require(watchlist.distinctBy { it.symbol }.size == watchlist.size)
+        require(snapshot.validate().isEmpty())
+    }
+
     val dataStatus: DataStatus
         get() = if (snapshot.hasUsablePrice) DataStatus.LIVE else DataStatus.UNAVAILABLE
 
