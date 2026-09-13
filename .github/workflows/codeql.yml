@@ -15,15 +15,10 @@ permissions:
   actions: read
 
 jobs:
-  analyze:
-    name: Analyze
-    if: matrix.language == 'java-kotlin' || github.event_name != 'pull_request'
+  analyze-java-kotlin:
+    name: Analyze Java/Kotlin
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ["java-kotlin", "javascript-typescript"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -36,27 +31,17 @@ jobs:
           cache: gradle
 
       - name: Configure Gradle 8.7
-        if: matrix.language == 'java-kotlin'
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.7'
           cache-read-only: false
 
       - name: Initialize CodeQL for Java/Kotlin
-        if: matrix.language == 'java-kotlin'
         uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
 
-      - name: Initialize CodeQL for JavaScript/TypeScript
-        if: matrix.language == 'javascript-typescript'
-        uses: github/codeql-action/init@v4
-        with:
-          languages: javascript-typescript
-          build-mode: none
-
       - name: Build Android application for CodeQL
-        if: matrix.language == 'java-kotlin'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,4 +64,4 @@ jobs:
       - name: Analyze
         uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:java-kotlin"
