@@ -57,6 +57,7 @@ class AmarRuntimeStateManager {
     }
 
     private fun isKnownCommandState(state: String): Boolean = state == AmarBridgeContract.PENDING_MT5 ||
+        state == AmarBridgeContract.ACKNOWLEDGED ||
         state == AmarBridgeContract.EXECUTED ||
         state == AmarBridgeContract.REJECTED ||
         state == AmarBridgeContract.VERIFIED ||
