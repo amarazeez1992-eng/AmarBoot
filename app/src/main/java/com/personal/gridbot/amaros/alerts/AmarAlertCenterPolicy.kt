@@ -26,7 +26,9 @@ object AmarAlertCenterPolicy {
         if (!snapshot.profit.isFinite()) errors += "PROFIT_INVALID"
         if (!snapshot.drawdownPct.isFinite() || snapshot.drawdownPct < 0.0) errors += "DRAWDOWN_INVALID"
         if (!snapshot.spread.isFinite() || snapshot.spread < 0.0) errors += "SPREAD_INVALID"
-        if (!snapshot.marginLevelPct.isFinite() || snapshot.marginLevelPct < 0.0) errors += "MARGIN_LEVEL_INVALID"
+        if ((!snapshot.marginLevelPct.isFinite() && snapshot.marginLevelPct != Double.POSITIVE_INFINITY) || snapshot.marginLevelPct < 0.0) {
+            errors += "MARGIN_LEVEL_INVALID"
+        }
         if (!thresholds.priceAbove.isFinite() || thresholds.priceAbove < 0.0) errors += "PRICE_ABOVE_INVALID"
         if (!thresholds.priceBelow.isFinite() || thresholds.priceBelow < 0.0) errors += "PRICE_BELOW_INVALID"
         if (!thresholds.profitAtLeast.isFinite()) errors += "PROFIT_THRESHOLD_INVALID"
