@@ -11,10 +11,15 @@ data class AmarTradingTerminalState(
         require(selectedTimeframe.isNotBlank())
         require(watchlist.distinctBy { it.symbol }.size == watchlist.size)
         require(snapshot.validate().isEmpty())
+        require(selectedSymbol.isBlank() || snapshot.symbol.isBlank() || selectedSymbol == snapshot.symbol)
     }
 
     val dataStatus: DataStatus
-        get() = if (snapshot.hasUsablePrice) DataStatus.LIVE else DataStatus.UNAVAILABLE
+        get() = if (snapshot.hasUsablePrice && (selectedSymbol.isBlank() || selectedSymbol == snapshot.symbol)) {
+            DataStatus.LIVE
+        } else {
+            DataStatus.UNAVAILABLE
+        }
 
     enum class DataStatus { LIVE, UNAVAILABLE }
 }
