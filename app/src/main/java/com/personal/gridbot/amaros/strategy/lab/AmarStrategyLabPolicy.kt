@@ -3,6 +3,10 @@ package com.personal.gridbot.amaros.strategy.lab
 /**
  * Deterministic strategy-research boundary. It validates definitions and compares
  * measured results; it never fabricates backtest or broker performance.
+ *
+ * Comparison is deliberately not an optimization score: it orders measured results
+ * by net P/L, then lower maximum drawdown, then higher win rate. Profit factor is
+ * validated and retained as a measured metric but is not silently weighted.
  */
 object AmarStrategyLabPolicy {
     data class StrategyDefinition(
@@ -33,8 +37,7 @@ object AmarStrategyLabPolicy {
         if (!result.netProfitLoss.isFinite()) add("RESULT_PNL_INVALID")
         if (!result.winRate.isFinite() || result.winRate !in 0.0..1.0) add("RESULT_WIN_RATE_INVALID")
         if (!result.maxDrawdownPct.isFinite() || result.maxDrawdownPct < 0.0) add("RESULT_DRAWDOWN_INVALID")
-        if (!result.profitFactor.isFinite() && !result.profitFactor.isInfinite()) add("RESULT_PROFIT_FACTOR_INVALID")
-        if (result.profitFactor < 0.0) add("RESULT_PROFIT_FACTOR_INVALID")
+        if (result.profitFactor.isNaN() || result.profitFactor < 0.0) add("RESULT_PROFIT_FACTOR_INVALID")
     }
 
     fun compare(first: MeasuredResult, second: MeasuredResult): Int {
