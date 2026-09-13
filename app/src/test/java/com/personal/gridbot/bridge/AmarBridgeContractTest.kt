@@ -6,8 +6,9 @@ import org.junit.Test
 
 class AmarBridgeContractTest {
     @Test
-    fun pendingIsNotTerminal() {
+    fun pendingAndAcknowledgedAreNotTerminal() {
         assertFalse(AmarBridgeContract.isTerminal(AmarBridgeContract.PENDING_MT5))
+        assertFalse(AmarBridgeContract.isTerminal(AmarBridgeContract.ACKNOWLEDGED))
     }
 
     @Test
