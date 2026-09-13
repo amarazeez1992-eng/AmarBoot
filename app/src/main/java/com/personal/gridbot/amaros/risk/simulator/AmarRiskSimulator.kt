@@ -10,6 +10,7 @@ object AmarRiskSimulator {
         val margin: Double,
         val exposure: Double,
         val drawdownPct: Double,
+        val isTrusted: Boolean = false,
     )
 
     data class Scenario(
@@ -28,6 +29,7 @@ object AmarRiskSimulator {
     )
 
     fun validate(account: AccountState, scenario: Scenario): List<String> = buildList {
+        if (!account.isTrusted) add("UNTRUSTED_ACCOUNT_DATA")
         if (!account.equity.isFinite() || account.equity < 0.0) add("EQUITY_INVALID")
         if (!account.margin.isFinite() || account.margin < 0.0) add("MARGIN_INVALID")
         if (!account.exposure.isFinite() || account.exposure < 0.0) add("EXPOSURE_INVALID")
