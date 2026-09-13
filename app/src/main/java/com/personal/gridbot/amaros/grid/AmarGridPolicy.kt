@@ -56,9 +56,8 @@ object AmarGridPolicy {
             val span = config.distance * config.levelsPerSide.toDouble()
             val lowest = config.anchorPrice - span
             val highest = config.anchorPrice + span
-            if (!span.isFinite() || !lowest.isFinite() || !highest.isFinite() || lowest <= 0.0) {
-                errors += "GRID_RANGE_INVALID"
-            }
+            if (!span.isFinite() || !highest.isFinite()) errors += "GRID_RANGE_OVERFLOW"
+            if (span.isFinite() && (!lowest.isFinite() || lowest <= 0.0)) errors += "GRID_PRICE_RANGE_INVALID"
         }
         return errors
     }
