@@ -10,13 +10,26 @@ import org.junit.Test
 
 class AmarCommandLifecycleServiceTest {
     @Test
-    fun acknowledgeMovesPendingCommandToVerified() = runBlocking {
+    fun acknowledgeMovesPendingCommandToAcknowledged() = runBlocking {
         val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.PENDING_MT5))
         val service = AmarCommandLifecycleService(dao)
 
         assertTrue(service.acknowledge(7))
-        assertEquals(AmarBridgeContract.VERIFIED, dao.current?.status)
+        assertEquals(AmarBridgeContract.ACKNOWLEDGED, dao.current?.status)
         assertTrue(dao.current?.acknowledgedAt != null)
+    }
+
+    @Test
+    fun verifyRequiresAcknowledgementOrExecution() = runBlocking {
+        val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.PENDING_MT5))
+        val service = AmarCommandLifecycleService(dao)
+
+        assertFalse(service.verify(7))
+        assertEquals(AmarBridgeContract.PENDING_MT5, dao.current?.status)
+
+        assertTrue(service.acknowledge(7))
+        assertTrue(service.verify(7))
+        assertEquals(AmarBridgeContract.VERIFIED, dao.current?.status)
     }
 
     @Test
