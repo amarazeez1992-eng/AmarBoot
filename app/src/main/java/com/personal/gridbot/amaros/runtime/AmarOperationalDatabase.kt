@@ -92,6 +92,18 @@ interface AmarOperationalDao {
     @Insert
     suspend fun insertCommand(command: AmarRuntimeCommandRecord): Long
 
+    @Query("UPDATE amar_runtime_commands SET status = :status, acknowledgedAt = :acknowledgedAt, error = :error WHERE id = :commandId AND status = :expectedStatus")
+    suspend fun updateCommandStatusIfCurrent(
+        commandId: Long,
+        expectedStatus: String,
+        status: String,
+        acknowledgedAt: Long?,
+        error: String?
+    ): Int
+
+    @Query("SELECT * FROM amar_runtime_commands WHERE id = :commandId LIMIT 1")
+    suspend fun commandById(commandId: Long): AmarRuntimeCommandRecord?
+
     @Query("SELECT * FROM amar_runtime_orders WHERE botNumber = :botNumber ORDER BY updatedAt DESC")
     suspend fun ordersForBot(botNumber: Int): List<AmarRuntimeOrderRecord>
 

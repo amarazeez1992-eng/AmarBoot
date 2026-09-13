@@ -35,6 +35,7 @@ class AmarStageThreeTest {
         val first = engine.synchronize("gold trend", listOf(finding), nowEpochMs = 1_000L)
         val second = engine.synchronize("gold trend", emptyList(), nowEpochMs = 1_500L)
 
+        assertEquals(0, first.retrievedMemoryCount)
         assertEquals(1, first.unifiedEvidence.size)
         assertEquals(1, second.retrievedMemoryCount)
         assertEquals(1, second.unifiedEvidence.size)

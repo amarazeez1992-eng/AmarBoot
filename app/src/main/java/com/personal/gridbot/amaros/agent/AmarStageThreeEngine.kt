@@ -19,6 +19,10 @@ class AmarStageThreeEngine(
             .distinctBy { evidenceKey(it) }
             .take(100)
 
+        // Retrieve only evidence that was already in memory before this synchronization.
+        // Newly supplied findings must not be counted as retrieved memory in the same pass.
+        val retrieved = memory.search(safeQuestion, nowEpochMs).take(maxRetrievedMemories)
+
         valid.forEach { finding ->
             memory.remember(
                 AmarMemoryRecord(
@@ -34,12 +38,11 @@ class AmarStageThreeEngine(
             )
         }
 
-        val retrieved = memory.search(safeQuestion, nowEpochMs).take(maxRetrievedMemories)
         val evidence = (valid.map { it } + retrieved.map { it.toFinding() })
             .distinctBy { evidenceKey(it) }
             .take(maxRetrievedEvidence)
         val independentSources = evidence.mapNotNull { hostOf(it.sourceUri) }.distinct().size
-        val staleCount = evidence.count { nowEpochMs - it.retrievedAtEpochMs > MEMORY_TTL_MS }
+        val staleCount = evidence.count { nowEpochMs - it.retrievedAtEpochMs >= MEMORY_TTL_MS }
 
         return AmarStageThreeResult(
             query = safeQuestion,
