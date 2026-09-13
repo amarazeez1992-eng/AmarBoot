@@ -25,19 +25,31 @@ class AmarStrategyLibrary {
         return true
     }
 
+    fun saveNextVersion(id: String, name: String, rules: List<String>): StrategyVersion {
+        require(id.isNotBlank()) { "STRATEGY_ID_REQUIRED" }
+        require(name.isNotBlank()) { "STRATEGY_NAME_REQUIRED" }
+        require(rules.isNotEmpty() && rules.none { it.isBlank() }) { "STRATEGY_RULES_INVALID" }
+        val nextVersion = entries.values.filter { it.id == id.trim() }.maxOfOrNull { it.version }?.plus(1) ?: 1
+        return StrategyVersion(id.trim(), nextVersion, name.trim(), rules.map { it.trim() }, Status.DRAFT).also {
+            check(save(it)) { "STRATEGY_ALREADY_EXISTS" }
+        }
+    }
+
     fun copy(id: String, version: Int, newId: String, newName: String): StrategyVersion {
         val source = get(id, version) ?: error("STRATEGY_NOT_FOUND")
         require(newId.isNotBlank()) { "STRATEGY_ID_REQUIRED" }
         require(newName.isNotBlank()) { "STRATEGY_NAME_REQUIRED" }
-        val next = StrategyVersion(newId.trim(), 1, newName.trim(), source.rules, Status.DRAFT)
+        val next = StrategyVersion(newId.trim(), 1, newName.trim(), source.rules.map { it.trim() }, Status.DRAFT)
         check(save(next)) { "STRATEGY_ALREADY_EXISTS" }
         return next
     }
 
+    /** Existing versions may only be edited while still a draft. Tested/approved versions are immutable. */
     fun update(strategy: StrategyVersion): Boolean {
         requireValid(strategy)
         val key = key(strategy.id, strategy.version)
-        if (!entries.containsKey(key)) return false
+        val current = entries[key] ?: return false
+        if (current.status != Status.DRAFT || strategy.status != Status.DRAFT) return false
         entries[key] = strategy
         return true
     }
