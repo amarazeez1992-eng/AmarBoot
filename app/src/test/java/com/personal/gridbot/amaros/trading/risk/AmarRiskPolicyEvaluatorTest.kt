@@ -14,6 +14,24 @@ class AmarRiskPolicyEvaluatorTest {
     }
 
     @Test
+    fun missingRequiredEvidenceFailsClosed() {
+        val result = AmarRiskPolicyEvaluator.evaluate(
+            AmarRiskPolicy(maximumExposure = 100.0),
+            AmarRiskSnapshot(dataTrusted = true)
+        )
+        assertEquals(listOf("RISK_EVIDENCE_INCOMPLETE"), result)
+    }
+
+    @Test
+    fun invalidPolicyFailsClosed() {
+        val result = AmarRiskPolicyEvaluator.evaluate(
+            AmarRiskPolicy(dailyLossLimit = 0.0),
+            AmarRiskSnapshot(dailyPnl = -100.0, dataTrusted = true)
+        )
+        assertEquals(listOf("DAILY_LOSS_POLICY_INVALID"), result)
+    }
+
+    @Test
     fun dailyLossLimitIsDetected() {
         val result = AmarRiskPolicyEvaluator.evaluate(
             AmarRiskPolicy(dailyLossLimit = 100.0),
