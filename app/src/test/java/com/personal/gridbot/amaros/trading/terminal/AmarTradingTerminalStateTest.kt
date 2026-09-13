@@ -21,7 +21,7 @@ class AmarTradingTerminalStateTest {
     }
 
     @Test
-    fun unavailableTrustedSourceCannotBecomeLive() {
+    fun unavailableSourceRemainsUnavailableWithoutPretendingToBeTrusted() {
         val snapshot = AmarTradingTerminalSnapshot(
             symbol = "XAUUSD",
             bid = 2504.0,
@@ -29,9 +29,9 @@ class AmarTradingTerminalStateTest {
             spread = 1.0,
             timestampMs = 1L,
             source = AmarTradingTerminalContract.UNAVAILABLE_SOURCE,
-            isTrusted = true
+            isTrusted = false
         )
-        assertTrue("SOURCE_UNAVAILABLE" in snapshot.validate())
+        assertTrue(snapshot.validate().isEmpty())
         assertEquals(AmarTradingTerminalState.DataStatus.UNAVAILABLE, AmarTradingTerminalState(snapshot = snapshot).dataStatus)
     }
 
