@@ -6,6 +6,7 @@ data class AmarManualTradeIntent(
     val side: Side,
     val orderType: OrderType,
     val volume: Double,
+    val entryPrice: Double? = null,
     val stopLoss: Double? = null,
     val takeProfit: Double? = null
 ) {
@@ -23,6 +24,12 @@ object AmarManualTradeValidator {
         val errors = buildList {
             if (intent.symbol.isBlank()) add("SYMBOL_REQUIRED")
             if (!intent.volume.isFinite() || intent.volume <= 0.0) add("VOLUME_INVALID")
+            if (intent.orderType == AmarManualTradeIntent.OrderType.PENDING &&
+                (intent.entryPrice == null || !intent.entryPrice.isFinite() || intent.entryPrice <= 0.0)
+            ) add("ENTRY_PRICE_REQUIRED")
+            if (intent.entryPrice != null && (!intent.entryPrice.isFinite() || intent.entryPrice <= 0.0)) {
+                add("ENTRY_PRICE_INVALID")
+            }
             if (intent.stopLoss != null && (!intent.stopLoss.isFinite() || intent.stopLoss <= 0.0)) {
                 add("STOP_LOSS_INVALID")
             }
