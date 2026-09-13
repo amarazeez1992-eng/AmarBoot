@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.runtime
 
 import android.content.Context
+import com.personal.gridbot.bridge.AmarBridgeContract
 import com.personal.gridbot.bridge.AmarBridgeGateway
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,10 +22,12 @@ class AmarBotCommandEngine(context: Context) {
             AmarRuntimeCommandRecord(
                 botNumber = botNumber,
                 command = command.trim(),
-                status = "PENDING_MT5"
+                status = AmarBridgeContract.PENDING_MT5
             )
         )
-        bridge.submitForMt5(commandId.toString())
+        check(bridge.submitForMt5(commandId.toString()) == AmarBridgeContract.PENDING_MT5) {
+            "Bridge rejected pending hand-off"
+        }
         commandId
     }
 }
