@@ -37,7 +37,7 @@ class AmarCommandRepositoryTest {
     }
 }
 
-private class FakeDao(
+internal class FakeDao(
     private val latest: kotlinx.coroutines.flow.Flow<AmarRuntimeCommandRecord?> = flowOf(null),
     private val command: AmarRuntimeCommandRecord? = null
 ) : AmarOperationalDao {
@@ -48,7 +48,13 @@ private class FakeDao(
     override suspend fun upsertOrders(rows: List<AmarRuntimeOrderRecord>) = Unit
     override suspend fun upsertPositions(rows: List<AmarRuntimePositionRecord>) = Unit
     override suspend fun insertCommand(command: AmarRuntimeCommandRecord) = 1L
-    override suspend fun updateCommandStatus(commandId: Long, status: String, acknowledgedAt: Long?, error: String?) = Unit
+    override suspend fun updateCommandStatusIfCurrent(
+        commandId: Long,
+        expectedStatus: String,
+        status: String,
+        acknowledgedAt: Long?,
+        error: String?
+    ) = 1
     override suspend fun commandById(commandId: Long) = command
     override suspend fun ordersForBot(botNumber: Int) = emptyList<AmarRuntimeOrderRecord>()
     override suspend fun positionsForBot(botNumber: Int) = emptyList<AmarRuntimePositionRecord>()
