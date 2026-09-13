@@ -22,19 +22,38 @@ class AmarStrategyLibraryTest {
         val library = AmarStrategyLibrary()
         library.save(strategy())
         assertFalse(library.approve("gold-grid", 1))
+        assertTrue(library.update(strategy().copy(status = AmarStrategyLibrary.Status.DRAFT)))
         assertTrue(library.update(strategy(AmarStrategyLibrary.Status.TESTED)))
         assertTrue(library.approve("gold-grid", 1))
         assertEquals(AmarStrategyLibrary.Status.APPROVED, library.get("gold-grid", 1)?.status)
     }
 
     @Test
+    fun approvedVersionCannotBeEdited() {
+        val library = AmarStrategyLibrary()
+        library.save(strategy(AmarStrategyLibrary.Status.TESTED))
+        assertTrue(library.approve("gold-grid", 1))
+        assertFalse(library.update(strategy()))
+    }
+
+    @Test
+    fun nextVersionIsCreatedAsDraft() {
+        val library = AmarStrategyLibrary()
+        library.save(strategy())
+        val next = library.saveNextVersion("gold-grid", "Gold Grid v2", listOf("BUY_GRID", "TRAILING"))
+        assertEquals(2, next.version)
+        assertEquals(AmarStrategyLibrary.Status.DRAFT, next.status)
+        assertEquals(2, library.list().size)
+    }
+
+    @Test
     fun copyCreatesIndependentDraft() {
         val library = AmarStrategyLibrary()
         library.save(strategy())
-        val copy = library.copy("gold-grid", 1, "gold-grid-v2", "Gold Grid Copy")
+        val copy = library.copy("gold-grid", 1, "gold-grid-copy", "Gold Grid Copy")
         assertEquals(AmarStrategyLibrary.Status.DRAFT, copy.status)
         assertEquals(1, copy.version)
-        assertEquals("Gold Grid Copy", library.get("gold-grid-v2", 1)?.name)
+        assertEquals("Gold Grid Copy", library.get("gold-grid-copy", 1)?.name)
     }
 
     @Test
