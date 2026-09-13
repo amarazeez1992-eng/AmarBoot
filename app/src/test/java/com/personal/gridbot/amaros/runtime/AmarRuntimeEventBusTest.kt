@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.runtime
 
 import com.personal.gridbot.bridge.AmarBridgeContract
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -19,7 +20,7 @@ class AmarRuntimeEventBusTest {
             reason = "acknowledged",
         )
 
-        val collector = kotlinx.coroutines.async { bus.events.first() }
+        val collector = async { bus.events.first() }
         bus.emit(event)
 
         assertEquals(event, collector.await())
