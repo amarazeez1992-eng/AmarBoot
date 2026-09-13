@@ -17,6 +17,7 @@ class AmarRiskManagerPolicyTest {
             dailyProfit = 5.0,
             dailyLoss = 0.0,
             drawdownPct = 0.0,
+            isTrusted = true,
         )
         val limits = AmarRiskManagerPolicy.Limits(
             maxExposure = 500.0,
@@ -32,6 +33,24 @@ class AmarRiskManagerPolicyTest {
     }
 
     @Test
+    fun untrustedSnapshotFailsClosed() {
+        val snapshot = AmarRiskManagerPolicy.Snapshot(
+            equity = 1000.0,
+            balance = 1000.0,
+            floatingProfit = 0.0,
+            exposure = 0.0,
+            openPositions = 0,
+            totalLots = 0.0,
+            dailyProfit = 0.0,
+            dailyLoss = 0.0,
+            drawdownPct = 0.0,
+        )
+        val limits = AmarRiskManagerPolicy.Limits()
+        assertTrue("UNTRUSTED_RUNTIME_DATA" in AmarRiskManagerPolicy.validate(snapshot, limits))
+        assertFalse(AmarRiskManagerPolicy.canTrade(snapshot, limits))
+    }
+
+    @Test
     fun breachedLimitsFailClosed() {
         val snapshot = AmarRiskManagerPolicy.Snapshot(
             equity = 900.0,
@@ -43,6 +62,7 @@ class AmarRiskManagerPolicyTest {
             dailyProfit = -100.0,
             dailyLoss = 100.0,
             drawdownPct = 10.0,
+            isTrusted = true,
         )
         val limits = AmarRiskManagerPolicy.Limits(500.0, 10, 1.0, 100.0, 10.0)
 
