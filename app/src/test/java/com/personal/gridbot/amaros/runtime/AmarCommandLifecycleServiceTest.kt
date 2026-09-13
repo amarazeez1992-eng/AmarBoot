@@ -47,6 +47,17 @@ class AmarCommandLifecycleServiceTest {
     }
 
     @Test
+    fun staleCanTerminateAnyNonTerminalCommand() = runBlocking {
+        val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.ACKNOWLEDGED))
+        val service = AmarCommandLifecycleService(dao)
+
+        assertTrue(service.markStale(7, "  timeout  "))
+        assertEquals(AmarBridgeContract.STALE, dao.current?.status)
+        assertEquals("timeout", dao.current?.error)
+        assertFalse(service.verify(7))
+    }
+
+    @Test
     fun terminalCommandCannotBeAcknowledgedAgain() = runBlocking {
         val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.VERIFIED))
         val service = AmarCommandLifecycleService(dao)
