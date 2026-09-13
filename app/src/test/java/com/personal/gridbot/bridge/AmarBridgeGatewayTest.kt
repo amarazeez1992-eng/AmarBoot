@@ -1,8 +1,8 @@
 package com.personal.gridbot.bridge
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Test
 
 class AmarBridgeGatewayTest {
     private val gateway = AmarBridgeGateway()
@@ -14,6 +14,6 @@ class AmarBridgeGatewayTest {
 
     @Test
     fun blankCommandIsRejected() {
-        assertFailsWith<IllegalArgumentException> { gateway.submitForMt5(" ") }
+        assertThrows(IllegalArgumentException::class.java) { gateway.submitForMt5(" ") }
     }
 }
