@@ -55,6 +55,12 @@ class AmarAlertCenterPolicyTest {
     }
 
     @Test
+    fun zeroPriceIsRejected() {
+        val invalid = snapshot.copy(price = 0.0)
+        assertTrue("PRICE_INVALID" in AmarAlertCenterPolicy.validate(invalid, AmarAlertCenterPolicy.Thresholds()))
+    }
+
+    @Test
     fun zeroMarginInfinityIsValidEvidence() {
         val zeroMargin = snapshot.copy(marginLevelPct = Double.POSITIVE_INFINITY)
         assertTrue(AmarAlertCenterPolicy.validate(zeroMargin, AmarAlertCenterPolicy.Thresholds()).isEmpty())
