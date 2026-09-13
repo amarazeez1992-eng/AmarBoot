@@ -31,9 +31,9 @@ class AmarAlertCenterPolicyTest {
     }
 
     @Test
-    fun lossThresholdTriggersOnNegativeProfit() {
+    fun lossLimitTriggersOnNegativeProfit() {
         val losing = snapshot.copy(profit = -15.0)
-        val thresholds = AmarAlertCenterPolicy.Thresholds(lossAtMost = -10.0)
+        val thresholds = AmarAlertCenterPolicy.Thresholds(lossLimit = 10.0)
         assertEquals(listOf("LOSS_LIMIT"), AmarAlertCenterPolicy.triggered(losing, thresholds))
     }
 
@@ -46,11 +46,17 @@ class AmarAlertCenterPolicyTest {
     @Test
     fun invalidSnapshotAndThresholdsAreRejected() {
         val invalidSnapshot = snapshot.copy(price = Double.NaN, spread = -1.0)
-        val invalidThresholds = AmarAlertCenterPolicy.Thresholds(lossAtMost = 1.0)
+        val invalidThresholds = AmarAlertCenterPolicy.Thresholds(lossLimit = -1.0)
         val errors = AmarAlertCenterPolicy.validate(invalidSnapshot, invalidThresholds)
         assertTrue("PRICE_INVALID" in errors)
         assertTrue("SPREAD_INVALID" in errors)
         assertTrue("LOSS_THRESHOLD_INVALID" in errors)
         assertFalse(AmarAlertCenterPolicy.canTriggerSafely(invalidSnapshot, invalidThresholds))
+    }
+
+    @Test
+    fun zeroMarginInfinityIsValidEvidence() {
+        val zeroMargin = snapshot.copy(marginLevelPct = Double.POSITIVE_INFINITY)
+        assertTrue(AmarAlertCenterPolicy.validate(zeroMargin, AmarAlertCenterPolicy.Thresholds()).isEmpty())
     }
 }
