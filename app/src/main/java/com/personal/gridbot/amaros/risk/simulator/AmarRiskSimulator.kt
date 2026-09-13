@@ -37,9 +37,15 @@ object AmarRiskSimulator {
         if (!scenario.additionalExposure.isFinite() || scenario.additionalExposure < 0.0) add("ADDITIONAL_EXPOSURE_INVALID")
 
         if (isFiniteInputSet(account, scenario)) {
+            val equityAfterLoss = account.equity - scenario.estimatedLoss
             val marginAfter = account.margin + scenario.additionalMargin
             val exposureAfter = account.exposure + scenario.additionalExposure
-            if (!marginAfter.isFinite() || !exposureAfter.isFinite()) add("SIMULATION_OVERFLOW")
+            val freeMarginAfter = equityAfterLoss - marginAfter
+            if (!equityAfterLoss.isFinite() || !marginAfter.isFinite() ||
+                !exposureAfter.isFinite() || !freeMarginAfter.isFinite()
+            ) {
+                add("SIMULATION_OVERFLOW")
+            }
         }
     }
 
