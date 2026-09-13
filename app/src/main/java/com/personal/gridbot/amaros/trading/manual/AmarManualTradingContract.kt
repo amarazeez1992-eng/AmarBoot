@@ -27,6 +27,8 @@ object AmarManualTradeValidator {
             when {
                 intent.orderType == AmarManualTradeIntent.OrderType.PENDING && intent.entryPrice == null ->
                     add("ENTRY_PRICE_REQUIRED")
+                intent.orderType == AmarManualTradeIntent.OrderType.MARKET && intent.entryPrice != null ->
+                    add("ENTRY_PRICE_NOT_ALLOWED_FOR_MARKET")
                 intent.entryPrice != null && (!intent.entryPrice.isFinite() || intent.entryPrice <= 0.0) ->
                     add("ENTRY_PRICE_INVALID")
             }
