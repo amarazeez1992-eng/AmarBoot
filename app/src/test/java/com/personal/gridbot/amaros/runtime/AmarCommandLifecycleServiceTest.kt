@@ -20,7 +20,7 @@ class AmarCommandLifecycleServiceTest {
     }
 
     @Test
-    fun verifyRequiresAcknowledgementOrExecution() = runBlocking {
+    fun executionMustPrecedeVerification() = runBlocking {
         val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.PENDING_MT5))
         val service = AmarCommandLifecycleService(dao)
 
@@ -28,6 +28,20 @@ class AmarCommandLifecycleServiceTest {
         assertEquals(AmarBridgeContract.PENDING_MT5, dao.current?.status)
 
         assertTrue(service.acknowledge(7))
+        assertFalse(service.verify(7))
+        assertEquals(AmarBridgeContract.ACKNOWLEDGED, dao.current?.status)
+
+        assertTrue(service.markExecuted(7))
+        assertTrue(service.verify(7))
+        assertEquals(AmarBridgeContract.VERIFIED, dao.current?.status)
+    }
+
+    @Test
+    fun executedCommandCannotBeRejectedAfterExecution() = runBlocking {
+        val dao = MutableFakeDao(AmarRuntimeCommandRecord(id = 7, botNumber = 1, command = "PING", status = AmarBridgeContract.EXECUTED))
+        val service = AmarCommandLifecycleService(dao)
+
+        assertFalse(service.reject(7, "too late"))
         assertTrue(service.verify(7))
         assertEquals(AmarBridgeContract.VERIFIED, dao.current?.status)
     }
