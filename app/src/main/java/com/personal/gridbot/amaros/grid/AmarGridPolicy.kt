@@ -48,7 +48,7 @@ object AmarGridPolicy {
         )
     }
 
-    fun quantities(config: Config): List<Double> = plan(config).map { it.volume }.distinct()
+    fun quantities(config: Config): List<Double> = plan(config).take(config.levelsPerSide).map { it.volume }
 
     private fun validateBasic(config: Config): List<String> = buildList {
         if (config.symbol.isBlank()) add("SYMBOL_REQUIRED")
