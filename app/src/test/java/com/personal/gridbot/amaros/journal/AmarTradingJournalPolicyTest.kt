@@ -52,10 +52,30 @@ class AmarTradingJournalPolicyTest {
     }
 
     @Test
-    fun summaryRejectsArithmeticOverflow() {
+    fun summaryRejectsProfitAggregationOverflow() {
         val trades = listOf(
             AmarTradingJournalPolicy.TradeRecord("1", "Grid", Double.MAX_VALUE, 1.0, 1),
             AmarTradingJournalPolicy.TradeRecord("2", "Grid", Double.MAX_VALUE, 1.0, 1),
+        )
+        assertTrue(AmarTradingJournalPolicy.validate(trades).isEmpty())
+        assertTrue(runCatching { AmarTradingJournalPolicy.summarize(trades) }.isFailure)
+    }
+
+    @Test
+    fun summaryRejectsLossAggregationOverflow() {
+        val trades = listOf(
+            AmarTradingJournalPolicy.TradeRecord("1", "Grid", -Double.MAX_VALUE, 1.0, 1),
+            AmarTradingJournalPolicy.TradeRecord("2", "Grid", -Double.MAX_VALUE, 1.0, 1),
+        )
+        assertTrue(AmarTradingJournalPolicy.validate(trades).isEmpty())
+        assertTrue(runCatching { AmarTradingJournalPolicy.summarize(trades) }.isFailure)
+    }
+
+    @Test
+    fun summaryRejectsRiskRewardAggregationOverflow() {
+        val trades = listOf(
+            AmarTradingJournalPolicy.TradeRecord("1", "Grid", 1.0, Double.MAX_VALUE, 1),
+            AmarTradingJournalPolicy.TradeRecord("2", "Grid", 1.0, Double.MAX_VALUE, 1),
         )
         assertTrue(AmarTradingJournalPolicy.validate(trades).isEmpty())
         assertTrue(runCatching { AmarTradingJournalPolicy.summarize(trades) }.isFailure)
