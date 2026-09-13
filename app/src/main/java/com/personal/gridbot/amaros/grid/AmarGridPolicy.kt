@@ -48,7 +48,25 @@ object AmarGridPolicy {
         )
     }
 
-    fun quantities(config: Config): List<Double> = plan(config).take(config.levelsPerSide).map { it.volume }
+    /** Returns the lot progression itself, independent of BUY/SELL interleaving in the plan. */
+    fun quantities(config: Config): List<Double> {
+        require(validateBasic(config).isEmpty())
+        return try {
+            (1..config.levelsPerSide).map { index -> quantityAt(config, index) }
+        } catch (_: IllegalArgumentException) {
+            throw IllegalArgumentException("GRID_PLAN_INVALID")
+        }
+    }
+
+    private fun quantityAt(config: Config, index: Int): Double {
+        val quantity = if (config.quantityStep > 0.0) {
+            config.baseQuantity + config.quantityStep * (index - 1).toDouble()
+        } else {
+            config.baseQuantity * Math.pow(config.quantityMultiplier, (index - 1).toDouble())
+        }
+        require(quantity.isFinite() && quantity > 0.0)
+        return quantity
+    }
 
     private fun validateBasic(config: Config): List<String> = buildList {
         if (config.symbol.isBlank()) add("SYMBOL_REQUIRED")
