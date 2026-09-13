@@ -35,6 +35,11 @@ object AmarReplayEngine {
 
         fun progressPct(): Double =
             if (bars.size <= 1) 100.0 else index.toDouble() / (bars.size - 1).toDouble() * 100.0
+
+        companion object {
+            internal fun create(bars: List<ReplayBar>): ReplaySession =
+                ReplaySession(bars = bars, index = 0)
+        }
     }
 
     fun validate(bars: List<ReplayBar>): List<String> {
@@ -64,7 +69,7 @@ object AmarReplayEngine {
     fun start(bars: List<ReplayBar>): Result<ReplaySession> {
         val errors = validate(bars)
         return if (errors.isEmpty()) {
-            Result.success(ReplaySession(bars = bars.toList(), index = 0))
+            Result.success(ReplaySession.create(bars.toList()))
         } else {
             Result.failure(IllegalArgumentException(errors.joinToString(",")))
         }
