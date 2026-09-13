@@ -35,6 +35,12 @@ object AmarRiskSimulator {
         if (!scenario.estimatedLoss.isFinite() || scenario.estimatedLoss < 0.0) add("LOSS_INVALID")
         if (!scenario.additionalMargin.isFinite() || scenario.additionalMargin < 0.0) add("ADDITIONAL_MARGIN_INVALID")
         if (!scenario.additionalExposure.isFinite() || scenario.additionalExposure < 0.0) add("ADDITIONAL_EXPOSURE_INVALID")
+
+        if (isFiniteInputSet(account, scenario)) {
+            val marginAfter = account.margin + scenario.additionalMargin
+            val exposureAfter = account.exposure + scenario.additionalExposure
+            if (!marginAfter.isFinite() || !exposureAfter.isFinite()) add("SIMULATION_OVERFLOW")
+        }
     }
 
     fun simulate(account: AccountState, scenario: Scenario): Result {
@@ -43,7 +49,11 @@ object AmarRiskSimulator {
         val marginAfter = account.margin + scenario.additionalMargin
         val freeMarginAfter = equityAfterLoss - marginAfter
         val exposureAfter = account.exposure + scenario.additionalExposure
-        val impactPct = if (account.equity == 0.0) 0.0 else scenario.estimatedLoss / account.equity * 100.0
+        val impactPct = when {
+            account.equity > 0.0 -> scenario.estimatedLoss / account.equity * 100.0
+            scenario.estimatedLoss == 0.0 -> 0.0
+            else -> Double.POSITIVE_INFINITY
+        }
         return Result(
             equityAfterLoss = equityAfterLoss,
             marginAfter = marginAfter,
@@ -52,4 +62,12 @@ object AmarRiskSimulator {
             estimatedEquityImpactPct = impactPct,
         )
     }
+
+    private fun isFiniteInputSet(account: AccountState, scenario: Scenario): Boolean =
+        account.equity.isFinite() &&
+            account.margin.isFinite() &&
+            account.exposure.isFinite() &&
+            scenario.estimatedLoss.isFinite() &&
+            scenario.additionalMargin.isFinite() &&
+            scenario.additionalExposure.isFinite()
 }
