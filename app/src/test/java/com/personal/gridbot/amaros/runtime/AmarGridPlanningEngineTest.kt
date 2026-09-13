@@ -20,4 +20,45 @@ class AmarGridPlanningEngineTest {
         assertTrue(levels.all { it.side == AmarGridPlanningEngine.Side.BUY })
         assertEquals(2, levels.size)
     }
+
+    @Test
+    fun rejectsPriceOverflowInsteadOfReturningInvalidLevel() {
+        val failed = runCatching {
+            AmarGridPlanningEngine.build(
+                referencePrice = Double.MAX_VALUE,
+                step = Double.MAX_VALUE,
+                maxOrders = 1,
+                baseLot = 0.01,
+                multiplier = 1.0,
+                buyEnabled = true,
+                sellEnabled = true,
+            )
+        }
+        assertTrue(failed.isFailure)
+    }
+
+    @Test
+    fun rejectsVolumeOverflowInsteadOfReturningInvalidQuantity() {
+        val failed = runCatching {
+            AmarGridPlanningEngine.quantities(
+                count = 2,
+                baseLot = Double.MAX_VALUE,
+                multiplier = 2.0,
+            )
+        }
+        assertTrue(failed.isFailure)
+    }
+
+    @Test
+    fun linearQuantityProgressionIsDeterministic() {
+        assertEquals(
+            listOf(0.01, 0.02, 0.03, 0.04),
+            AmarGridPlanningEngine.quantities(
+                count = 4,
+                baseLot = 0.01,
+                multiplier = 1.0,
+                quantityStep = 0.01,
+            ),
+        )
+    }
 }
