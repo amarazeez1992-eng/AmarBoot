@@ -50,4 +50,14 @@ class AmarTradingJournalPolicyTest {
         val errors = AmarTradingJournalPolicy.validate(trades)
         assertTrue("TRADE_1_ID_DUPLICATE" in errors)
     }
+
+    @Test
+    fun summaryRejectsArithmeticOverflow() {
+        val trades = listOf(
+            AmarTradingJournalPolicy.TradeRecord("1", "Grid", Double.MAX_VALUE, 1.0, 1),
+            AmarTradingJournalPolicy.TradeRecord("2", "Grid", Double.MAX_VALUE, 1.0, 1),
+        )
+        assertTrue(AmarTradingJournalPolicy.validate(trades).isEmpty())
+        assertTrue(runCatching { AmarTradingJournalPolicy.summarize(trades) }.isFailure)
+    }
 }
