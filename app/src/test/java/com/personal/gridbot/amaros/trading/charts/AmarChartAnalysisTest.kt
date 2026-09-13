@@ -1,7 +1,6 @@
 package com.personal.gridbot.amaros.trading.charts
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFailsWith
 import org.junit.Test
 
 class AmarChartAnalysisTest {
@@ -22,26 +21,22 @@ class AmarChartAnalysisTest {
         assertEquals(107.0, requireNotNull(AmarChartAnalysis.lastClose(series)), 0.0)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun rejectsNonPositiveCandlePrices() {
-        assertFailsWith<IllegalArgumentException> {
-            AmarCandle(1L, 0.0, 105.0, 99.0, 103.0)
-        }
+        AmarCandle(1L, 0.0, 105.0, 99.0, 103.0)
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException::class)
     fun rejectsNonAscendingSeriesTimestamps() {
-        assertFailsWith<IllegalArgumentException> {
-            AmarChartSeries(
-                symbol = "XAUUSD",
-                timeframe = "M1",
-                source = "TEST",
-                isTrusted = true,
-                candles = listOf(
-                    AmarCandle(2L, 100.0, 105.0, 99.0, 103.0),
-                    AmarCandle(1L, 103.0, 108.0, 101.0, 107.0)
-                )
+        AmarChartSeries(
+            symbol = "XAUUSD",
+            timeframe = "M1",
+            source = "TEST",
+            isTrusted = true,
+            candles = listOf(
+                AmarCandle(2L, 100.0, 105.0, 99.0, 103.0),
+                AmarCandle(1L, 103.0, 108.0, 101.0, 107.0)
             )
-        }
+        )
     }
 }
