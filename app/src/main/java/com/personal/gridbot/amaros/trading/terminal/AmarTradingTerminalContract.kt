@@ -15,22 +15,25 @@ data class AmarTradingTerminalSnapshot(
             symbol.isNotBlank() &&
             source.isNotBlank() && source != AmarTradingTerminalContract.UNAVAILABLE_SOURCE &&
             timestampMs != null && timestampMs >= 0L &&
-            bid != null && ask != null &&
-            bid.isFinite() && ask.isFinite() &&
-            bid > 0.0 && ask > 0.0 && bid <= ask &&
-            (spread == null || (spread.isFinite() && spread >= 0.0))
+            bid != null && ask != null && spread != null &&
+            bid.isFinite() && ask.isFinite() && spread.isFinite() &&
+            bid > 0.0 && ask > 0.0 && bid <= ask && spread >= 0.0
 
     fun validate(): List<String> = buildList {
         if (isTrusted && symbol.isBlank()) add("SYMBOL_REQUIRED")
         if (isTrusted && (source.isBlank() || source == AmarTradingTerminalContract.UNAVAILABLE_SOURCE)) add("SOURCE_UNAVAILABLE")
         if (isTrusted && timestampMs == null) add("TIMESTAMP_REQUIRED")
+        if (isTrusted && bid == null) add("BID_REQUIRED")
+        if (isTrusted && ask == null) add("ASK_REQUIRED")
+        if (isTrusted && spread == null) add("SPREAD_REQUIRED")
         if (bid != null && (!bid.isFinite() || bid <= 0.0)) add("BID_INVALID")
         if (ask != null && (!ask.isFinite() || ask <= 0.0)) add("ASK_INVALID")
         if (bid != null && ask != null && bid.isFinite() && ask.isFinite() && bid > ask) add("QUOTE_INVERTED")
         if (spread != null && (!spread.isFinite() || spread < 0.0)) add("SPREAD_INVALID")
         if (bid != null && ask != null && spread != null && bid.isFinite() && ask.isFinite() && spread.isFinite()) {
             val expected = ask - bid
-            if (kotlin.math.abs(expected - spread) > 1e-9) add("SPREAD_INCONSISTENT")
+            val tolerance = maxOf(1e-9, kotlin.math.abs(expected) * 1e-9)
+            if (kotlin.math.abs(expected - spread) > tolerance) add("SPREAD_INCONSISTENT")
         }
         if (timestampMs != null && timestampMs < 0L) add("TIMESTAMP_INVALID")
     }
@@ -49,6 +52,6 @@ data class AmarWatchlistInstrument(
 }
 
 object AmarTradingTerminalContract {
-    const val VERSION = "1.2"
+    const val VERSION = "1.3"
     const val UNAVAILABLE_SOURCE = "UNAVAILABLE"
 }

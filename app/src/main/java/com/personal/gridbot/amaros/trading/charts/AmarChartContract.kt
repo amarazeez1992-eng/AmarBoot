@@ -30,10 +30,13 @@ data class AmarChartSeries(
         require(symbol.isNotBlank())
         require(timeframe.isNotBlank())
         require(source.isNotBlank())
+        require(!isTrusted || source != AmarChartContract.UNAVAILABLE_SOURCE)
+        require(!isTrusted || candles.isNotEmpty())
         require(candles.zipWithNext().all { (left, right) -> right.timestampMs > left.timestampMs })
     }
 }
 
 object AmarChartContract {
-    const val VERSION = "1.1"
+    const val VERSION = "1.2"
+    const val UNAVAILABLE_SOURCE = "UNAVAILABLE"
 }
