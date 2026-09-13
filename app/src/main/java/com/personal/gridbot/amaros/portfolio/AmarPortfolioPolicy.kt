@@ -32,6 +32,11 @@ object AmarPortfolioPolicy {
                     errors += "FREE_MARGIN_INCONSISTENT"
                 }
             }
+
+            if (snapshot.margin > 0.0) {
+                val marginLevelPct = snapshot.equity / snapshot.margin * 100.0
+                if (!marginLevelPct.isFinite()) errors += "MARGIN_LEVEL_OVERFLOW"
+            }
         }
         return errors
     }
@@ -40,7 +45,7 @@ object AmarPortfolioPolicy {
         require(validate(snapshot).isEmpty())
         if (snapshot.margin == 0.0) return Double.POSITIVE_INFINITY
         val result = snapshot.equity / snapshot.margin * 100.0
-        require(!result.isNaN()) { "MARGIN_LEVEL_INVALID" }
+        require(result.isFinite()) { "MARGIN_LEVEL_OVERFLOW" }
         return result
     }
 
