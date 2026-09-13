@@ -54,4 +54,36 @@ class AmarPortfolioPolicyTest {
 
         assertTrue(AmarPortfolioPolicy.validate(snapshot).isNotEmpty())
     }
+
+    @Test
+    fun inconsistentFreeMarginIsRejected() {
+        val snapshot = AmarPortfolioPolicy.Snapshot(
+            balance = 1000.0,
+            equity = 1100.0,
+            margin = 200.0,
+            freeMargin = 901.0,
+            floatingProfit = 100.0,
+            exposure = 500.0,
+            openPositions = 2,
+            pendingOrders = 1,
+        )
+
+        assertTrue("FREE_MARGIN_INCONSISTENT" in AmarPortfolioPolicy.validate(snapshot))
+    }
+
+    @Test
+    fun marginLevelOverflowIsRejected() {
+        val snapshot = AmarPortfolioPolicy.Snapshot(
+            balance = Double.MAX_VALUE,
+            equity = Double.MAX_VALUE,
+            margin = Double.MIN_VALUE,
+            freeMargin = Double.MAX_VALUE,
+            floatingProfit = 0.0,
+            exposure = 0.0,
+            openPositions = 0,
+            pendingOrders = 0,
+        )
+
+        assertTrue("MARGIN_LEVEL_OVERFLOW" in AmarPortfolioPolicy.validate(snapshot))
+    }
 }
