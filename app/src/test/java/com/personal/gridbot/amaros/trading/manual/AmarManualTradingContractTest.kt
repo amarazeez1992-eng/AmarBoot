@@ -44,4 +44,19 @@ class AmarManualTradingContractTest {
         assertFalse(result.accepted)
         assertTrue("ENTRY_PRICE_REQUIRED" in result.errors)
     }
+
+    @Test
+    fun marketOrderRejectsEntryPrice() {
+        val result = AmarManualTradeValidator.validate(
+            AmarManualTradeIntent(
+                symbol = "XAUUSD",
+                side = AmarManualTradeIntent.Side.BUY,
+                orderType = AmarManualTradeIntent.OrderType.MARKET,
+                volume = 0.01,
+                entryPrice = 2500.0
+            )
+        )
+        assertFalse(result.accepted)
+        assertTrue("ENTRY_PRICE_NOT_ALLOWED_FOR_MARKET" in result.errors)
+    }
 }
