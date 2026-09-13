@@ -38,6 +38,13 @@ object AmarStrategyLabPolicy {
         if (!result.winRate.isFinite() || result.winRate !in 0.0..1.0) add("RESULT_WIN_RATE_INVALID")
         if (!result.maxDrawdownPct.isFinite() || result.maxDrawdownPct < 0.0) add("RESULT_DRAWDOWN_INVALID")
         if (result.profitFactor.isNaN() || result.profitFactor < 0.0) add("RESULT_PROFIT_FACTOR_INVALID")
+
+        if (result.trades == 0) {
+            if (result.netProfitLoss != 0.0) add("RESULT_EMPTY_PNL_INVALID")
+            if (result.winRate != 0.0) add("RESULT_EMPTY_WIN_RATE_INVALID")
+            if (result.maxDrawdownPct != 0.0) add("RESULT_EMPTY_DRAWDOWN_INVALID")
+            if (result.profitFactor != 0.0) add("RESULT_EMPTY_PROFIT_FACTOR_INVALID")
+        }
     }
 
     fun compare(first: MeasuredResult, second: MeasuredResult): Int {
