@@ -18,39 +18,44 @@ class AmarStrategyLibrary {
     private val entries = linkedMapOf<String, StrategyVersion>()
 
     fun save(strategy: StrategyVersion): Boolean {
-        requireValid(strategy)
-        val key = key(strategy.id, strategy.version)
+        val normalized = normalize(strategy)
+        val key = key(normalized.id, normalized.version)
         if (entries.containsKey(key)) return false
-        entries[key] = strategy
+        entries[key] = normalized
         return true
     }
 
     fun saveNextVersion(id: String, name: String, rules: List<String>): StrategyVersion {
-        require(id.isNotBlank()) { "STRATEGY_ID_REQUIRED" }
-        require(name.isNotBlank()) { "STRATEGY_NAME_REQUIRED" }
-        require(rules.isNotEmpty() && rules.none { it.isBlank() }) { "STRATEGY_RULES_INVALID" }
-        val nextVersion = entries.values.filter { it.id == id.trim() }.maxOfOrNull { it.version }?.plus(1) ?: 1
-        return StrategyVersion(id.trim(), nextVersion, name.trim(), rules.map { it.trim() }, Status.DRAFT).also {
+        val normalizedId = id.trim()
+        val normalizedName = name.trim()
+        val normalizedRules = rules.map { it.trim() }
+        require(normalizedId.isNotEmpty()) { "STRATEGY_ID_REQUIRED" }
+        require(normalizedName.isNotEmpty()) { "STRATEGY_NAME_REQUIRED" }
+        require(normalizedRules.isNotEmpty() && normalizedRules.none { it.isEmpty() }) { "STRATEGY_RULES_INVALID" }
+        val nextVersion = entries.values.filter { it.id == normalizedId }.maxOfOrNull { it.version }?.plus(1) ?: 1
+        return StrategyVersion(normalizedId, nextVersion, normalizedName, normalizedRules, Status.DRAFT).also {
             check(save(it)) { "STRATEGY_ALREADY_EXISTS" }
         }
     }
 
     fun copy(id: String, version: Int, newId: String, newName: String): StrategyVersion {
         val source = get(id, version) ?: error("STRATEGY_NOT_FOUND")
-        require(newId.isNotBlank()) { "STRATEGY_ID_REQUIRED" }
-        require(newName.isNotBlank()) { "STRATEGY_NAME_REQUIRED" }
-        val next = StrategyVersion(newId.trim(), 1, newName.trim(), source.rules.map { it.trim() }, Status.DRAFT)
+        val normalizedId = newId.trim()
+        val normalizedName = newName.trim()
+        require(normalizedId.isNotEmpty()) { "STRATEGY_ID_REQUIRED" }
+        require(normalizedName.isNotEmpty()) { "STRATEGY_NAME_REQUIRED" }
+        val next = StrategyVersion(normalizedId, 1, normalizedName, source.rules.map { it.trim() }, Status.DRAFT)
         check(save(next)) { "STRATEGY_ALREADY_EXISTS" }
         return next
     }
 
     /** Existing versions may only be edited while still a draft. Tested/approved versions are immutable. */
     fun update(strategy: StrategyVersion): Boolean {
-        requireValid(strategy)
-        val key = key(strategy.id, strategy.version)
+        val normalized = normalize(strategy)
+        val key = key(normalized.id, normalized.version)
         val current = entries[key] ?: return false
-        if (current.status != Status.DRAFT || strategy.status != Status.DRAFT) return false
-        entries[key] = strategy
+        if (current.status != Status.DRAFT || normalized.status != Status.DRAFT) return false
+        entries[key] = normalized
         return true
     }
 
@@ -67,18 +72,27 @@ class AmarStrategyLibrary {
 
     private fun transition(id: String, version: Int, target: Status): Boolean {
         val current = get(id, version) ?: return false
-        if (target == Status.TESTED && current.status != Status.DRAFT) return false
-        if (target == Status.APPROVED && current.status != Status.TESTED) return false
-        if (current.status == Status.ARCHIVED) return false
-        entries[key(id, version)] = current.copy(status = target)
+        val allowed = when (target) {
+            Status.TESTED -> current.status == Status.DRAFT
+            Status.APPROVED -> current.status == Status.TESTED
+            Status.ARCHIVED -> current.status != Status.ARCHIVED
+            Status.DRAFT -> false
+        }
+        if (!allowed) return false
+        entries[key(current.id, current.version)] = current.copy(status = target)
         return true
     }
 
-    private fun requireValid(strategy: StrategyVersion) {
+    private fun normalize(strategy: StrategyVersion): StrategyVersion {
         require(strategy.id.isNotBlank()) { "STRATEGY_ID_REQUIRED" }
         require(strategy.name.isNotBlank()) { "STRATEGY_NAME_REQUIRED" }
         require(strategy.version > 0) { "STRATEGY_VERSION_INVALID" }
         require(strategy.rules.isNotEmpty() && strategy.rules.none { it.isBlank() }) { "STRATEGY_RULES_INVALID" }
+        return strategy.copy(
+            id = strategy.id.trim(),
+            name = strategy.name.trim(),
+            rules = strategy.rules.map { it.trim() }
+        )
     }
 
     private fun key(id: String, version: Int): String = "${id.trim()}::$version"
