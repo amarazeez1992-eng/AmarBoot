@@ -5,8 +5,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Application-side command lifecycle. It records bridge acknowledgements and
- * verification results without performing or claiming broker execution.
+ * Durable application-side command lifecycle.
+ *
+ * The service is the command-state authority for persisted records. It never performs or
+ * claims broker execution. ACK and execution are deliberately separate from verification.
  */
 class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
     suspend fun acknowledge(commandId: Long): Boolean = transition(
@@ -17,9 +19,19 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         stampAcknowledgement = true,
     )
 
+    /** Records that the governed bridge has actually executed the command. */
+    suspend fun markExecuted(commandId: Long): Boolean = transition(
+        commandId = commandId,
+        allowedCurrent = setOf(AmarBridgeContract.ACKNOWLEDGED),
+        nextStatus = AmarBridgeContract.EXECUTED,
+        error = null,
+        stampAcknowledgement = false,
+    )
+
+    /** Verification is valid only after an explicit EXECUTED state. */
     suspend fun verify(commandId: Long): Boolean = transition(
         commandId = commandId,
-        allowedCurrent = setOf(AmarBridgeContract.ACKNOWLEDGED, AmarBridgeContract.EXECUTED),
+        allowedCurrent = setOf(AmarBridgeContract.EXECUTED),
         nextStatus = AmarBridgeContract.VERIFIED,
         error = null,
         stampAcknowledgement = false,
@@ -29,7 +41,10 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         require(reason.isNotBlank()) { "reason must not be blank" }
         return transition(
             commandId = commandId,
-            allowedCurrent = NON_TERMINAL_STATES,
+            allowedCurrent = setOf(
+                AmarBridgeContract.PENDING_MT5,
+                AmarBridgeContract.ACKNOWLEDGED,
+            ),
             nextStatus = AmarBridgeContract.REJECTED,
             error = reason.trim(),
             stampAcknowledgement = false,
@@ -60,6 +75,7 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         stampAcknowledgement: Boolean,
     ): Boolean = withContext(Dispatchers.IO) {
         require(commandId > 0) { "Invalid command id" }
+        require(AmarBridgeContract.isKnown(nextStatus)) { "Unknown next command state" }
         val current = dao.commandById(commandId) ?: return@withContext false
         if (current.status !in allowedCurrent || AmarBridgeContract.isTerminal(current.status)) return@withContext false
 
