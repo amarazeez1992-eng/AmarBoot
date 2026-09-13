@@ -1,6 +1,11 @@
 package com.personal.gridbot.amaros.grid
 
-/** Independent grid hardening boundary. It validates planning inputs without executing trades. */
+import com.personal.gridbot.amaros.runtime.AmarGridPlanningEngine
+
+/**
+ * Governed grid configuration boundary. Actual level generation is delegated to the
+ * existing shared grid planner so Android and AI cannot maintain two different grid algorithms.
+ */
 object AmarGridPolicy {
     enum class DirectionMode { BUY, SELL, BOTH }
 
@@ -19,52 +24,42 @@ object AmarGridPolicy {
 
     fun validate(config: Config): List<String> {
         val errors = validateBasic(config)
-        if (errors.isEmpty()) {
-            val generated = quantityValues(config)
-            if (generated.any { !it.isFinite() || it <= 0.0 }) errors += "QUANTITY_OVERFLOW"
+        if (errors.isNotEmpty()) return errors
+
+        return try {
+            plan(config)
+            emptyList()
+        } catch (_: IllegalArgumentException) {
+            listOf("GRID_PLAN_INVALID")
         }
-        return errors
     }
 
-    fun quantities(config: Config): List<Double> {
-        require(validate(config).isEmpty())
-        return quantityValues(config)
+    fun plan(config: Config): List<AmarGridPlanningEngine.Level> {
+        require(validateBasic(config).isEmpty())
+        return AmarGridPlanningEngine.build(
+            referencePrice = config.anchorPrice,
+            step = config.distance,
+            maxOrders = config.levelsPerSide,
+            baseLot = config.baseQuantity,
+            multiplier = config.quantityMultiplier,
+            buyEnabled = config.direction != DirectionMode.SELL,
+            sellEnabled = config.direction != DirectionMode.BUY,
+            quantityStep = config.quantityStep,
+        )
     }
 
-    private fun quantityValues(config: Config): List<Double> =
-        (0 until config.levelsPerSide).map { index ->
-            if (config.quantityStep > 0.0) {
-                config.baseQuantity + config.quantityStep * index
-            } else {
-                config.baseQuantity * config.quantityMultiplier.pow(index)
-            }
-        }
+    fun quantities(config: Config): List<Double> = plan(config).map { it.volume }.distinct()
 
-    private fun validateBasic(config: Config): MutableList<String> {
-        val errors = mutableListOf<String>()
-        if (config.symbol.isBlank()) errors += "SYMBOL_REQUIRED"
-        if (!config.anchorPrice.isFinite() || config.anchorPrice <= 0.0) errors += "ANCHOR_PRICE_INVALID"
-        if (config.levelsPerSide <= 0) errors += "LEVEL_COUNT_INVALID"
-        if (!config.distance.isFinite() || config.distance <= 0.0) errors += "GRID_DISTANCE_INVALID"
-        if (!config.baseQuantity.isFinite() || config.baseQuantity <= 0.0) errors += "BASE_QUANTITY_INVALID"
-        if (!config.quantityStep.isFinite() || config.quantityStep < 0.0) errors += "QUANTITY_STEP_INVALID"
-        if (!config.quantityMultiplier.isFinite() || config.quantityMultiplier < 1.0) errors += "QUANTITY_MULTIPLIER_INVALID"
-        if (config.quantityStep > 0.0 && config.quantityMultiplier != 1.0) errors += "QUANTITY_RULE_CONFLICT"
-        if (!config.basketTakeProfit.isFinite() || config.basketTakeProfit < 0.0) errors += "BASKET_TP_INVALID"
-        if (!config.basketStopLoss.isFinite() || config.basketStopLoss < 0.0) errors += "BASKET_SL_INVALID"
-        if (config.levelsPerSide > 0 && config.distance.isFinite() && config.distance > 0.0 && config.anchorPrice.isFinite()) {
-            val span = config.distance * config.levelsPerSide.toDouble()
-            val lowest = config.anchorPrice - span
-            val highest = config.anchorPrice + span
-            if (!span.isFinite() || !highest.isFinite()) errors += "GRID_RANGE_OVERFLOW"
-            if (span.isFinite() && (!lowest.isFinite() || lowest <= 0.0)) errors += "GRID_PRICE_RANGE_INVALID"
-        }
-        return errors
-    }
-
-    private fun Double.pow(exponent: Int): Double {
-        var result = 1.0
-        repeat(exponent) { result *= this }
-        return result
+    private fun validateBasic(config: Config): List<String> = buildList {
+        if (config.symbol.isBlank()) add("SYMBOL_REQUIRED")
+        if (!config.anchorPrice.isFinite() || config.anchorPrice <= 0.0) add("ANCHOR_PRICE_INVALID")
+        if (config.levelsPerSide <= 0) add("LEVEL_COUNT_INVALID")
+        if (!config.distance.isFinite() || config.distance <= 0.0) add("GRID_DISTANCE_INVALID")
+        if (!config.baseQuantity.isFinite() || config.baseQuantity <= 0.0) add("BASE_QUANTITY_INVALID")
+        if (!config.quantityStep.isFinite() || config.quantityStep < 0.0) add("QUANTITY_STEP_INVALID")
+        if (!config.quantityMultiplier.isFinite() || config.quantityMultiplier < 1.0) add("QUANTITY_MULTIPLIER_INVALID")
+        if (config.quantityStep > 0.0 && config.quantityMultiplier != 1.0) add("QUANTITY_RULE_CONFLICT")
+        if (!config.basketTakeProfit.isFinite() || config.basketTakeProfit < 0.0) add("BASKET_TP_INVALID")
+        if (!config.basketStopLoss.isFinite() || config.basketStopLoss < 0.0) add("BASKET_SL_INVALID")
     }
 }
