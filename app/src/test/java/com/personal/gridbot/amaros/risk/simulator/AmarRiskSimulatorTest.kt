@@ -27,4 +27,22 @@ class AmarRiskSimulatorTest {
         )
         assertTrue("LOSS_INVALID" in errors)
     }
+
+    @Test
+    fun zeroEquityWithPositiveLossHasUndefinedInfiniteImpact() {
+        val result = AmarRiskSimulator.simulate(
+            AmarRiskSimulator.AccountState(0.0, 0.0, 0.0, 0.0),
+            AmarRiskSimulator.Scenario(estimatedLoss = 1.0)
+        )
+        assertTrue(result.estimatedEquityImpactPct.isInfinite())
+    }
+
+    @Test
+    fun arithmeticOverflowIsRejected() {
+        val errors = AmarRiskSimulator.validate(
+            AmarRiskSimulator.AccountState(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, 0.0),
+            AmarRiskSimulator.Scenario(additionalMargin = Double.MAX_VALUE, additionalExposure = Double.MAX_VALUE)
+        )
+        assertTrue("SIMULATION_OVERFLOW" in errors)
+    }
 }
