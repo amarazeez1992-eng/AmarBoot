@@ -1,10 +1,10 @@
 package com.personal.gridbot.amaros.runtime
 
-import com.personal.gridbot.bridge.AmarBridgeContract
+import com.personal.gridbot.amaros.bridge.AmarBridgeContract
 
 /**
  * In-memory runtime state coordinator for the Android layer.
- * It validates state transitions without executing broker operations.
+ * It validates the same command lifecycle used by the durable command service.
  */
 class AmarRuntimeStateManager {
     private val botStates = mutableMapOf<Int, String>()
@@ -46,7 +46,7 @@ class AmarRuntimeStateManager {
         require(isKnownCommandState(normalized)) { "Unknown command state" }
         val current = commandStates[commandId] ?: return normalized == AmarBridgeContract.PENDING_MT5
         if (AmarBridgeContract.isTerminal(current)) return false
-        return normalized != current
+        return allowedNextStates(current).contains(normalized)
     }
 
     @Synchronized
@@ -54,6 +54,27 @@ class AmarRuntimeStateManager {
         if (!canTransitionCommand(commandId, nextState)) return false
         commandStates[commandId] = nextState.trim()
         return true
+    }
+
+    private fun allowedNextStates(current: String): Set<String> = when (current) {
+        AmarBridgeContract.PENDING_MT5 -> setOf(
+            AmarBridgeContract.ACKNOWLEDGED,
+            AmarBridgeContract.REJECTED,
+            AmarBridgeContract.FAILED,
+            AmarBridgeContract.STALE,
+        )
+        AmarBridgeContract.ACKNOWLEDGED -> setOf(
+            AmarBridgeContract.EXECUTED,
+            AmarBridgeContract.REJECTED,
+            AmarBridgeContract.FAILED,
+            AmarBridgeContract.STALE,
+        )
+        AmarBridgeContract.EXECUTED -> setOf(
+            AmarBridgeContract.VERIFIED,
+            AmarBridgeContract.FAILED,
+            AmarBridgeContract.STALE,
+        )
+        else -> emptySet()
     }
 
     private fun isKnownCommandState(state: String): Boolean = state == AmarBridgeContract.PENDING_MT5 ||
