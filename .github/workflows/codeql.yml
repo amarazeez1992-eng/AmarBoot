@@ -15,10 +15,14 @@ permissions:
   actions: read
 
 jobs:
-  analyze-java-kotlin:
-    name: Analyze Java/Kotlin
+  analyze:
+    name: Analyze
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["java-kotlin", "javascript-typescript"]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -31,17 +35,19 @@ jobs:
           cache: gradle
 
       - name: Configure Gradle 8.7
+        if: matrix.language == 'java-kotlin'
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.7'
           cache-read-only: false
 
-      - name: Initialize CodeQL for Java/Kotlin
+      - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: java-kotlin
+          languages: ${{ matrix.language }}
 
       - name: Build Android application for CodeQL
+        if: matrix.language == 'java-kotlin'
         shell: bash
         run: |
           set -euo pipefail
@@ -61,7 +67,29 @@ jobs:
             sleep "$sleep_seconds"
           done
 
+      - name: Build JavaScript/TypeScript application for CodeQL
+        if: matrix.language == 'javascript-typescript'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f frontend/package.json ]; then
+            cd frontend
+            if [ -f package-lock.json ]; then
+              npm ci
+            elif [ -f yarn.lock ]; then
+              corepack enable
+              yarn install --frozen-lockfile
+            elif [ -f pnpm-lock.yaml ]; then
+              corepack enable
+              pnpm install --frozen-lockfile
+            else
+              npm install
+            fi
+          else
+            echo "No frontend package manifest found; CodeQL JavaScript analysis will use source extraction."
+          fi
+
       - name: Analyze
         uses: github/codeql-action/analyze@v4
         with:
-          category: "/language:java-kotlin"
+          category: "/language:${{ matrix.language }}"
