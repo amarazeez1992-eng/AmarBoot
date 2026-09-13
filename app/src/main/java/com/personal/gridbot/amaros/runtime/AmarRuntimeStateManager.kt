@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.runtime
 
-import com.personal.gridbot.amaros.bridge.AmarBridgeContract
+import com.personal.gridbot.bridge.AmarBridgeContract
 
 /**
  * In-memory runtime state coordinator for the Android layer.
