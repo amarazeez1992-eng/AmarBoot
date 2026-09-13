@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.risk
 
-/** Independent risk hardening boundary. It evaluates account/position risk without executing trades. */
+/** Independent risk hardening boundary. It evaluates trusted account/position risk without executing trades. */
 object AmarRiskManagerPolicy {
     data class Snapshot(
         val equity: Double,
@@ -12,6 +12,7 @@ object AmarRiskManagerPolicy {
         val dailyProfit: Double,
         val dailyLoss: Double,
         val drawdownPct: Double,
+        val isTrusted: Boolean = false,
     )
 
     data class Limits(
@@ -24,6 +25,7 @@ object AmarRiskManagerPolicy {
 
     fun validate(snapshot: Snapshot, limits: Limits): List<String> {
         val errors = mutableListOf<String>()
+        if (!snapshot.isTrusted) errors += "UNTRUSTED_RUNTIME_DATA"
         if (!snapshot.equity.isFinite() || snapshot.equity < 0.0) errors += "EQUITY_INVALID"
         if (!snapshot.balance.isFinite() || snapshot.balance < 0.0) errors += "BALANCE_INVALID"
         if (!snapshot.floatingProfit.isFinite()) errors += "FLOATING_PROFIT_INVALID"
