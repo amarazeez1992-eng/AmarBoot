@@ -23,13 +23,25 @@ object AmarPortfolioPolicy {
         if (!snapshot.exposure.isFinite() || snapshot.exposure < 0.0) errors += "EXPOSURE_INVALID"
         if (snapshot.openPositions < 0) errors += "OPEN_POSITIONS_INVALID"
         if (snapshot.pendingOrders < 0) errors += "PENDING_ORDERS_INVALID"
+        if (errors.isEmpty()) {
+            val expectedFreeMargin = snapshot.equity - snapshot.margin
+            if (!expectedFreeMargin.isFinite()) errors += "FREE_MARGIN_OVERFLOW"
+            else {
+                val tolerance = maxOf(1e-9, kotlin.math.abs(expectedFreeMargin) * 1e-9)
+                if (kotlin.math.abs(snapshot.freeMargin - expectedFreeMargin) > tolerance) {
+                    errors += "FREE_MARGIN_INCONSISTENT"
+                }
+            }
+        }
         return errors
     }
 
     fun marginLevelPct(snapshot: Snapshot): Double {
         require(validate(snapshot).isEmpty())
         if (snapshot.margin == 0.0) return Double.POSITIVE_INFINITY
-        return snapshot.equity / snapshot.margin * 100.0
+        val result = snapshot.equity / snapshot.margin * 100.0
+        require(result.isFinite()) { "MARGIN_LEVEL_OVERFLOW" }
+        return result
     }
 
     fun netAccountDelta(snapshot: Snapshot): Double {
