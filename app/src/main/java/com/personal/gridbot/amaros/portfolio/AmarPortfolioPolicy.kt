@@ -40,7 +40,7 @@ object AmarPortfolioPolicy {
         require(validate(snapshot).isEmpty())
         if (snapshot.margin == 0.0) return Double.POSITIVE_INFINITY
         val result = snapshot.equity / snapshot.margin * 100.0
-        require(result.isFinite()) { "MARGIN_LEVEL_OVERFLOW" }
+        require(!result.isNaN()) { "MARGIN_LEVEL_INVALID" }
         return result
     }
 
