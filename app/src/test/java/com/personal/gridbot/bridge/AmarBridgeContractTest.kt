@@ -6,19 +6,33 @@ import org.junit.Test
 
 class AmarBridgeContractTest {
     @Test
-    fun pendingAndAcknowledgedAreNotTerminal() {
+    fun pendingAcknowledgedAndExecutedAreNotTerminal() {
         assertFalse(AmarBridgeContract.isTerminal(AmarBridgeContract.PENDING_MT5))
         assertFalse(AmarBridgeContract.isTerminal(AmarBridgeContract.ACKNOWLEDGED))
+        assertFalse(AmarBridgeContract.isTerminal(AmarBridgeContract.EXECUTED))
     }
 
     @Test
-    fun terminalStatusesAreTerminal() {
+    fun onlyFinalStatusesAreTerminal() {
         listOf(
-            AmarBridgeContract.EXECUTED,
             AmarBridgeContract.REJECTED,
             AmarBridgeContract.VERIFIED,
             AmarBridgeContract.FAILED,
             AmarBridgeContract.STALE
         ).forEach { assertTrue(AmarBridgeContract.isTerminal(it)) }
+    }
+
+    @Test
+    fun allLifecycleStatusesAreKnown() {
+        listOf(
+            AmarBridgeContract.PENDING_MT5,
+            AmarBridgeContract.ACKNOWLEDGED,
+            AmarBridgeContract.EXECUTED,
+            AmarBridgeContract.REJECTED,
+            AmarBridgeContract.VERIFIED,
+            AmarBridgeContract.FAILED,
+            AmarBridgeContract.STALE
+        ).forEach { assertTrue(AmarBridgeContract.isKnown(it)) }
+        assertFalse(AmarBridgeContract.isKnown("UNKNOWN"))
     }
 }
