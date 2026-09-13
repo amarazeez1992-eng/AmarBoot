@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.runtime
 
+import com.personal.gridbot.bridge.AmarBridgeContract
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -13,8 +14,8 @@ class AmarRuntimeEventBusTest {
         val event = AmarRuntimeStatusEvent(
             commandId = 42L,
             botNumber = 1,
-            previousState = AmarBridgeContract.Status.PENDING_MT5,
-            state = AmarBridgeContract.Status.VERIFIED,
+            previousState = AmarBridgeContract.PENDING_MT5,
+            state = AmarBridgeContract.VERIFIED,
             reason = "acknowledged",
         )
 
