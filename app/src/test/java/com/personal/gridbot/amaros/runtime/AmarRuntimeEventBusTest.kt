@@ -4,6 +4,8 @@ import com.personal.gridbot.bridge.AmarBridgeContract
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,7 +22,8 @@ class AmarRuntimeEventBusTest {
             reason = "acknowledged",
         )
 
-        val collector = async { bus.events.first() }
+        val collector = async { withTimeout(5_000) { bus.events.first() } }
+        yield()
         bus.emit(event)
 
         assertEquals(event, collector.await())
