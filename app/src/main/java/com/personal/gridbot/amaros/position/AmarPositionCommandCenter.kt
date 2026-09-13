@@ -18,6 +18,7 @@ object AmarPositionCommandCenter {
         val action: Action,
         val tickets: List<Long>,
         val price: Double? = null,
+        val trailingDistance: Double? = null,
         val closeVolume: Double? = null,
     )
 
@@ -28,8 +29,10 @@ object AmarPositionCommandCenter {
     )
 
     fun validatePositions(positions: List<Position>): List<String> = buildList {
+        val tickets = mutableSetOf<Long>()
         positions.forEachIndexed { index, position ->
             if (position.ticket <= 0L) add("POSITION_${index}_TICKET_INVALID")
+            else if (!tickets.add(position.ticket)) add("POSITION_${index}_TICKET_DUPLICATE")
             if (position.symbol.isBlank()) add("POSITION_${index}_SYMBOL_REQUIRED")
             if (!position.volume.isFinite() || position.volume <= 0.0) add("POSITION_${index}_VOLUME_INVALID")
             if (!position.openPrice.isFinite() || position.openPrice <= 0.0) add("POSITION_${index}_OPEN_PRICE_INVALID")
@@ -46,9 +49,15 @@ object AmarPositionCommandCenter {
         if (selected.size != command.tickets.distinct().size) errors += "POSITION_NOT_FOUND"
 
         when (command.action) {
-            Action.SET_STOP_LOSS, Action.SET_TAKE_PROFIT, Action.BREAK_EVEN, Action.TRAILING -> {
-                if (command.price != null && (!command.price.isFinite() || command.price <= 0.0)) errors += "PRICE_INVALID"
-                if (command.action == Action.TRAILING && command.price == null) errors += "TRAILING_VALUE_REQUIRED"
+            Action.SET_STOP_LOSS, Action.SET_TAKE_PROFIT, Action.BREAK_EVEN -> {
+                if (command.price == null) errors += "PRICE_REQUIRED"
+                else if (!command.price.isFinite() || command.price <= 0.0) errors += "PRICE_INVALID"
+                if (command.trailingDistance != null) errors += "TRAILING_PARAMETER_NOT_ALLOWED"
+            }
+            Action.TRAILING -> {
+                if (command.trailingDistance == null) errors += "TRAILING_DISTANCE_REQUIRED"
+                else if (!command.trailingDistance.isFinite() || command.trailingDistance <= 0.0) errors += "TRAILING_DISTANCE_INVALID"
+                if (command.price != null) errors += "PRICE_NOT_ALLOWED_FOR_TRAILING"
             }
             Action.PARTIAL_CLOSE -> {
                 if (command.closeVolume == null || !command.closeVolume.isFinite() || command.closeVolume <= 0.0) {
@@ -56,8 +65,11 @@ object AmarPositionCommandCenter {
                 } else if (selected.any { command.closeVolume >= it.volume }) {
                     errors += "PARTIAL_VOLUME_MUST_BE_LESS_THAN_POSITION"
                 }
+                if (command.price != null || command.trailingDistance != null) errors += "CLOSE_PARAMETERS_NOT_ALLOWED"
             }
-            Action.CLOSE -> if (command.price != null || command.closeVolume != null) errors += "CLOSE_PARAMETERS_NOT_ALLOWED"
+            Action.CLOSE -> if (command.price != null || command.trailingDistance != null || command.closeVolume != null) {
+                errors += "CLOSE_PARAMETERS_NOT_ALLOWED"
+            }
         }
         return Preview(errors.isEmpty(), errors, selected.map { it.ticket })
     }
