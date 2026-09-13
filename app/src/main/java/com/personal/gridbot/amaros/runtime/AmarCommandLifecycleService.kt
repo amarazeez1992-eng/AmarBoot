@@ -62,6 +62,17 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         )
     }
 
+    suspend fun markStale(commandId: Long, reason: String = "Command became stale"): Boolean {
+        require(reason.isNotBlank()) { "reason must not be blank" }
+        return transition(
+            commandId = commandId,
+            allowedCurrent = NON_TERMINAL_STATES,
+            nextStatus = AmarBridgeContract.STALE,
+            error = reason.trim(),
+            stampAcknowledgement = false,
+        )
+    }
+
     suspend fun get(commandId: Long): AmarRuntimeCommandRecord? = withContext(Dispatchers.IO) {
         require(commandId > 0) { "Invalid command id" }
         dao.commandById(commandId)
