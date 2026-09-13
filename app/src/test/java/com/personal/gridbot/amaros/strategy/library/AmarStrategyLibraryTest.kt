@@ -18,12 +18,13 @@ class AmarStrategyLibraryTest {
     }
 
     @Test
-    fun approvalRequiresTestedState() {
+    fun approvalRequiresTestedStateAndCannotRepeat() {
         val library = AmarStrategyLibrary()
         library.save(strategy())
         assertFalse(library.approve("gold-grid", 1))
         assertTrue(library.markTested("gold-grid", 1))
         assertTrue(library.approve("gold-grid", 1))
+        assertFalse(library.approve("gold-grid", 1))
         assertEquals(AmarStrategyLibrary.Status.APPROVED, library.get("gold-grid", 1)?.status)
     }
 
@@ -63,5 +64,21 @@ class AmarStrategyLibraryTest {
         assertTrue(library.markTested("gold-grid", 1))
         assertTrue(library.archive("gold-grid", 1))
         assertFalse(library.approve("gold-grid", 1))
+    }
+
+    @Test
+    fun savedStrategyIsNormalized() {
+        val library = AmarStrategyLibrary()
+        val saved = library.save(
+            AmarStrategyLibrary.StrategyVersion(
+                id = "  gold-grid  ",
+                version = 1,
+                name = "  Gold Grid  ",
+                rules = listOf("  BUY_GRID  ")
+            )
+        )
+        assertTrue(saved)
+        assertEquals("Gold Grid", library.get("gold-grid", 1)?.name)
+        assertEquals(listOf("BUY_GRID"), library.get("gold-grid", 1)?.rules)
     }
 }
