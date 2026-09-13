@@ -26,6 +26,19 @@ class AmarPositionCommandCenterTest {
     }
 
     @Test
+    fun trailingUsesExplicitDistance() {
+        val preview = AmarPositionCommandCenter.preview(
+            AmarPositionCommandCenter.Command(
+                AmarPositionCommandCenter.Action.TRAILING,
+                listOf(1L),
+                trailingDistance = 5.0
+            ),
+            positions
+        )
+        assertTrue(preview.accepted)
+    }
+
+    @Test
     fun partialCloseCannotConsumeWholePosition() {
         val preview = AmarPositionCommandCenter.preview(
             AmarPositionCommandCenter.Command(
