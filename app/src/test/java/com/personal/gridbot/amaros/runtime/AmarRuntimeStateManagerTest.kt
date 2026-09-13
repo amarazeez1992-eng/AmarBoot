@@ -27,9 +27,43 @@ class AmarRuntimeStateManagerTest {
     }
 
     @Test
+    fun executedIsNotTerminalUntilVerified() {
+        val manager = AmarRuntimeStateManager()
+        manager.setCommandState(7, AmarBridgeContract.PENDING_MT5)
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.ACKNOWLEDGED))
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.EXECUTED))
+        assertFalse(AmarBridgeContract.isTerminal(manager.commandState(7)!!))
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.VERIFIED))
+    }
+
+    @Test
+    fun initializationCannotBypassLifecycle() {
+        val manager = AmarRuntimeStateManager()
+        try {
+            manager.setCommandState(7, AmarBridgeContract.VERIFIED)
+            throw AssertionError("terminal state must not be accepted as initialization")
+        } catch (_: IllegalArgumentException) {
+            // expected
+        }
+
+        manager.setCommandState(7, AmarBridgeContract.PENDING_MT5)
+        assertEquals(AmarBridgeContract.PENDING_MT5, manager.commandState(7))
+
+        try {
+            manager.setCommandState(7, AmarBridgeContract.PENDING_MT5)
+            throw AssertionError("existing command must not be overwritten")
+        } catch (_: IllegalArgumentException) {
+            // expected
+        }
+    }
+
+    @Test
     fun terminalCommandCannotTransitionAgain() {
         val manager = AmarRuntimeStateManager()
-        manager.setCommandState(7, AmarBridgeContract.VERIFIED)
+        manager.setCommandState(7, AmarBridgeContract.PENDING_MT5)
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.ACKNOWLEDGED))
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.EXECUTED))
+        assertTrue(manager.transitionCommand(7, AmarBridgeContract.VERIFIED))
         assertFalse(manager.transitionCommand(7, AmarBridgeContract.EXECUTED))
         assertEquals(AmarBridgeContract.VERIFIED, manager.commandState(7))
     }
