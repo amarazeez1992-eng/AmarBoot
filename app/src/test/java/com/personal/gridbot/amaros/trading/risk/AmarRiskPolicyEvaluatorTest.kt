@@ -1,7 +1,7 @@
 package com.personal.gridbot.amaros.trading.risk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 class AmarRiskPolicyEvaluatorTest {
     @Test
