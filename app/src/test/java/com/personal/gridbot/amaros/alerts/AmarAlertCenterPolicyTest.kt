@@ -65,4 +65,55 @@ class AmarAlertCenterPolicyTest {
         val zeroMargin = snapshot.copy(marginLevelPct = Double.POSITIVE_INFINITY)
         assertTrue(AmarAlertCenterPolicy.validate(zeroMargin, AmarAlertCenterPolicy.Thresholds()).isEmpty())
     }
+
+    @Test
+    fun negativeInfinityMarginLevelIsRejected() {
+        val invalid = snapshot.copy(marginLevelPct = Double.NEGATIVE_INFINITY)
+        assertTrue("MARGIN_LEVEL_INVALID" in AmarAlertCenterPolicy.validate(invalid, AmarAlertCenterPolicy.Thresholds()))
+    }
+
+    @Test
+    fun nonFiniteThresholdsAreRejectedFailClosed() {
+        val invalid = AmarAlertCenterPolicy.Thresholds(
+            priceAbove = Double.POSITIVE_INFINITY,
+            priceBelow = Double.NaN,
+            profitAtLeast = Double.NEGATIVE_INFINITY,
+            lossLimit = Double.POSITIVE_INFINITY,
+            drawdownAtLeastPct = Double.NaN,
+            spreadAtLeast = Double.POSITIVE_INFINITY,
+            marginLevelAtMostPct = Double.NaN,
+        )
+        val errors = AmarAlertCenterPolicy.validate(snapshot, invalid)
+        assertTrue("PRICE_ABOVE_INVALID" in errors)
+        assertTrue("PRICE_BELOW_INVALID" in errors)
+        assertTrue("PROFIT_THRESHOLD_INVALID" in errors)
+        assertTrue("LOSS_THRESHOLD_INVALID" in errors)
+        assertTrue("DRAWDOWN_THRESHOLD_INVALID" in errors)
+        assertTrue("SPREAD_THRESHOLD_INVALID" in errors)
+        assertTrue("MARGIN_THRESHOLD_INVALID" in errors)
+        assertFalse(AmarAlertCenterPolicy.canTriggerSafely(snapshot, invalid))
+    }
+
+    @Test
+    fun thresholdBoundariesTriggerInclusively() {
+        val thresholds = AmarAlertCenterPolicy.Thresholds(
+            priceAbove = snapshot.price,
+            priceBelow = snapshot.price,
+            profitAtLeast = snapshot.profit,
+            drawdownAtLeastPct = snapshot.drawdownPct,
+            spreadAtLeast = snapshot.spread,
+            marginLevelAtMostPct = snapshot.marginLevelPct,
+        )
+        assertEquals(
+            listOf("PRICE_ABOVE", "PRICE_BELOW", "PROFIT_TARGET", "DRAWDOWN", "SPREAD", "MARGIN_LEVEL"),
+            AmarAlertCenterPolicy.triggered(snapshot, thresholds)
+        )
+    }
+
+    @Test
+    fun negativeProfitDoesNotTriggerLossLimitAtExactDisabledBoundary() {
+        val losing = snapshot.copy(profit = -10.0)
+        val disabled = AmarAlertCenterPolicy.Thresholds(lossLimit = 0.0)
+        assertTrue(AmarAlertCenterPolicy.triggered(losing, disabled).isEmpty())
+    }
 }
