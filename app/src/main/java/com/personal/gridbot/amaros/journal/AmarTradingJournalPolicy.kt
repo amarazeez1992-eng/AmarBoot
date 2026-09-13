@@ -45,15 +45,18 @@ object AmarTradingJournalPolicy {
         val losses = trades.count { it.profitLoss < 0.0 }
         val grossProfit = trades.filter { it.profitLoss > 0.0 }.sumOf { it.profitLoss }
         val grossLoss = trades.filter { it.profitLoss < 0.0 }.sumOf { -it.profitLoss }
+        val netProfitLoss = trades.sumOf { it.profitLoss }
+        val totalRiskReward = trades.sumOf { it.riskReward }
+        require(grossProfit.isFinite() && grossLoss.isFinite() && netProfitLoss.isFinite() && totalRiskReward.isFinite())
         return Summary(
             trades = trades.size,
             wins = wins,
             losses = losses,
             winRate = if (trades.isEmpty()) 0.0 else wins.toDouble() / trades.size,
-            netProfitLoss = trades.sumOf { it.profitLoss },
-            averageProfitLoss = if (trades.isEmpty()) 0.0 else trades.sumOf { it.profitLoss } / trades.size,
+            netProfitLoss = netProfitLoss,
+            averageProfitLoss = if (trades.isEmpty()) 0.0 else netProfitLoss / trades.size,
             profitFactor = if (grossLoss == 0.0) Double.POSITIVE_INFINITY else grossProfit / grossLoss,
-            averageRiskReward = if (trades.isEmpty()) 0.0 else trades.sumOf { it.riskReward } / trades.size,
+            averageRiskReward = if (trades.isEmpty()) 0.0 else totalRiskReward / trades.size,
         )
     }
 }
