@@ -13,6 +13,7 @@ import com.personal.gridbot.amaros.bots.AmarBotLabInterfaceHost
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
+import com.personal.gridbot.amaros.decision.AmarDecisionScreen
 import com.personal.gridbot.amaros.design.AmarAppearanceScreen
 import com.personal.gridbot.amaros.rooms.alerts.AmarAlertsModernScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
@@ -68,6 +69,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
                 AmarRoom.ANALYSIS -> AmarAiExperienceScreenV2()
+                AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
