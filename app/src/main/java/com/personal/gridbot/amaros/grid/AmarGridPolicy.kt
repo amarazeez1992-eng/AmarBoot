@@ -3,8 +3,8 @@ package com.personal.gridbot.amaros.grid
 import com.personal.gridbot.amaros.runtime.AmarGridPlanningEngine
 
 /**
- * Governed grid configuration boundary. Actual level generation is delegated to the
- * existing shared grid planner so Android and AI cannot maintain two different grid algorithms.
+ * Governed grid configuration boundary. Actual level generation and quantity progression are
+ * delegated to the existing shared grid planner so Android and AI cannot maintain two algorithms.
  */
 object AmarGridPolicy {
     enum class DirectionMode { BUY, SELL, BOTH }
@@ -48,24 +48,18 @@ object AmarGridPolicy {
         )
     }
 
-    /** Returns the lot progression itself, independent of BUY/SELL interleaving in the plan. */
     fun quantities(config: Config): List<Double> {
         require(validateBasic(config).isEmpty())
         return try {
-            (1..config.levelsPerSide).map { index -> quantityAt(config, index) }
+            AmarGridPlanningEngine.quantities(
+                count = config.levelsPerSide,
+                baseLot = config.baseQuantity,
+                multiplier = config.quantityMultiplier,
+                quantityStep = config.quantityStep,
+            )
         } catch (_: IllegalArgumentException) {
             throw IllegalArgumentException("GRID_PLAN_INVALID")
         }
-    }
-
-    private fun quantityAt(config: Config, index: Int): Double {
-        val quantity = if (config.quantityStep > 0.0) {
-            config.baseQuantity + config.quantityStep * (index - 1).toDouble()
-        } else {
-            config.baseQuantity * Math.pow(config.quantityMultiplier, (index - 1).toDouble())
-        }
-        require(quantity.isFinite() && quantity > 0.0)
-        return quantity
     }
 
     private fun validateBasic(config: Config): List<String> = buildList {
