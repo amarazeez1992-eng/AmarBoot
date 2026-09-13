@@ -16,8 +16,8 @@ class AmarChartAnalysisTest {
                 AmarCandle(2L, 103.0, 108.0, 101.0, 107.0)
             )
         )
-        assertEquals(99.0, AmarChartAnalysis.support(series), 0.0)
-        assertEquals(108.0, AmarChartAnalysis.resistance(series), 0.0)
-        assertEquals(107.0, AmarChartAnalysis.lastClose(series), 0.0)
+        assertEquals(99.0, requireNotNull(AmarChartAnalysis.support(series)), 0.0)
+        assertEquals(108.0, requireNotNull(AmarChartAnalysis.resistance(series)), 0.0)
+        assertEquals(107.0, requireNotNull(AmarChartAnalysis.lastClose(series)), 0.0)
     }
 }
