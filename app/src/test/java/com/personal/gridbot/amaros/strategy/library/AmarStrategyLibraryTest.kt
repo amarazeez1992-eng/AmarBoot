@@ -22,8 +22,7 @@ class AmarStrategyLibraryTest {
         val library = AmarStrategyLibrary()
         library.save(strategy())
         assertFalse(library.approve("gold-grid", 1))
-        assertTrue(library.update(strategy().copy(status = AmarStrategyLibrary.Status.DRAFT)))
-        assertTrue(library.update(strategy(AmarStrategyLibrary.Status.TESTED)))
+        assertTrue(library.markTested("gold-grid", 1))
         assertTrue(library.approve("gold-grid", 1))
         assertEquals(AmarStrategyLibrary.Status.APPROVED, library.get("gold-grid", 1)?.status)
     }
@@ -31,8 +30,9 @@ class AmarStrategyLibraryTest {
     @Test
     fun approvedVersionCannotBeEdited() {
         val library = AmarStrategyLibrary()
-        library.save(strategy(AmarStrategyLibrary.Status.TESTED))
-        assertTrue(library.approve("gold-grid", 1))
+        library.save(strategy())
+        library.markTested("gold-grid", 1)
+        library.approve("gold-grid", 1)
         assertFalse(library.update(strategy()))
     }
 
@@ -59,7 +59,8 @@ class AmarStrategyLibraryTest {
     @Test
     fun archivedVersionCannotBeApproved() {
         val library = AmarStrategyLibrary()
-        library.save(strategy(AmarStrategyLibrary.Status.TESTED))
+        library.save(strategy())
+        assertTrue(library.markTested("gold-grid", 1))
         assertTrue(library.archive("gold-grid", 1))
         assertFalse(library.approve("gold-grid", 1))
     }
