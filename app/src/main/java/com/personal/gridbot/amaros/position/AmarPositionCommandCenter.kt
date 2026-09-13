@@ -49,15 +49,22 @@ object AmarPositionCommandCenter {
         if (selected.size != command.tickets.distinct().size) errors += "POSITION_NOT_FOUND"
 
         when (command.action) {
-            Action.SET_STOP_LOSS, Action.SET_TAKE_PROFIT, Action.BREAK_EVEN -> {
+            Action.SET_STOP_LOSS, Action.SET_TAKE_PROFIT -> {
                 if (command.price == null) errors += "PRICE_REQUIRED"
                 else if (!command.price.isFinite() || command.price <= 0.0) errors += "PRICE_INVALID"
                 if (command.trailingDistance != null) errors += "TRAILING_PARAMETER_NOT_ALLOWED"
+                if (command.closeVolume != null) errors += "CLOSE_PARAMETERS_NOT_ALLOWED"
+            }
+            Action.BREAK_EVEN -> {
+                if (command.price != null || command.trailingDistance != null || command.closeVolume != null) {
+                    errors += "BREAK_EVEN_PARAMETERS_NOT_ALLOWED"
+                }
             }
             Action.TRAILING -> {
                 if (command.trailingDistance == null) errors += "TRAILING_DISTANCE_REQUIRED"
                 else if (!command.trailingDistance.isFinite() || command.trailingDistance <= 0.0) errors += "TRAILING_DISTANCE_INVALID"
                 if (command.price != null) errors += "PRICE_NOT_ALLOWED_FOR_TRAILING"
+                if (command.closeVolume != null) errors += "CLOSE_PARAMETERS_NOT_ALLOWED"
             }
             Action.PARTIAL_CLOSE -> {
                 if (command.closeVolume == null || !command.closeVolume.isFinite() || command.closeVolume <= 0.0) {
