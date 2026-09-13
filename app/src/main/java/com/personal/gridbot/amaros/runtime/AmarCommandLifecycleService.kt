@@ -6,10 +6,16 @@ import kotlinx.coroutines.withContext
 
 /**
  * Application-side command lifecycle. It records bridge acknowledgements and
- * failures without performing or claiming broker execution.
+ * verification results without performing or claiming broker execution.
  */
 class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
-    suspend fun acknowledge(commandId: Long): Boolean = updateTerminalStatus(
+    suspend fun acknowledge(commandId: Long): Boolean = updateNonTerminalStatus(
+        commandId = commandId,
+        status = AmarBridgeContract.ACKNOWLEDGED,
+        error = null
+    )
+
+    suspend fun verify(commandId: Long): Boolean = updateTerminalStatus(
         commandId = commandId,
         status = AmarBridgeContract.VERIFIED,
         error = null
@@ -38,7 +44,19 @@ class AmarCommandLifecycleService(private val dao: AmarOperationalDao) {
         dao.commandById(commandId)
     }
 
+    private suspend fun updateNonTerminalStatus(
+        commandId: Long,
+        status: String,
+        error: String?
+    ): Boolean = updateStatus(commandId, status, error)
+
     private suspend fun updateTerminalStatus(
+        commandId: Long,
+        status: String,
+        error: String?
+    ): Boolean = updateStatus(commandId, status, error)
+
+    private suspend fun updateStatus(
         commandId: Long,
         status: String,
         error: String?
