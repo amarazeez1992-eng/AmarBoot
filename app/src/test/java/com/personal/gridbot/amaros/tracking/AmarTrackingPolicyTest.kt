@@ -18,6 +18,14 @@ class AmarTrackingPolicyTest {
     }
 
     @Test
+    fun contractSizeIsAppliedToNotionalExposure() {
+        val position = AmarTrackingPolicy.PositionSnapshot(
+            1L, "XAUUSD", 0.01, 2500.0, 2505.0, 5.0, 100L, contractSize = 100.0
+        )
+        assertEquals(2505.0, AmarTrackingPolicy.exposure(listOf(position)), 0.0)
+    }
+
+    @Test
     fun invalidPositionIsRejectedWithoutGuessing() {
         val position = AmarTrackingPolicy.PositionSnapshot(
             ticket = 0L,
