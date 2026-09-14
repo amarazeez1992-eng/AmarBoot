@@ -78,6 +78,23 @@ class AmarStageSixTest {
     }
 
     @Test
+    fun parallel_analysis_matches_sequential_analysis_for_same_inputs() {
+        val data = bars(2_000)
+        val requests = listOf(
+            AmarIndicatorRequest(AmarIndicatorKind.SMA, 20),
+            AmarIndicatorRequest(AmarIndicatorKind.EMA, 20),
+            AmarIndicatorRequest(AmarIndicatorKind.RSI, 14),
+            AmarIndicatorRequest(AmarIndicatorKind.ATR, 14)
+        )
+        val sequential = AmarStageSixAggregationEngine().analyze(data, requests, 20)
+        val parallel = AmarParallelMarketAnalysisEngine().analyze(data, requests, 20, 4)
+        assertEquals(sequential.indicators, parallel.indicators)
+        assertEquals(sequential.statistics, parallel.statistics)
+        assertEquals(sequential.structure, parallel.structure)
+        assertEquals(sequential.score, parallel.score, 0.0)
+    }
+
+    @Test
     fun malformed_or_unsorted_market_data_fails_closed() {
         val data = bars(30)
         try {
