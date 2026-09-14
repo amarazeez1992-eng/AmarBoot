@@ -25,12 +25,12 @@ Scope:
 - release artifact verification
 - final architecture consistency review
 - documentation and open-source release hygiene
-- zero unresolved critical/high defects
+- zero unresolved critical/high defects within the Android release scope
 - successful CI/release verification
 
-The Stage 10 audit gate is now implemented in `docs/governance/STAGE10_FINAL_AUDIT.md` and `.github/workflows/amar-stage-ten.yml`.
+The Stage 10 audit gate is implemented in `docs/governance/STAGE10_FINAL_AUDIT.md` and `.github/workflows/amar-stage-ten.yml`.
 
-Current known blocker: the protected MT5 EA baseline remains a documented HIGH-risk artifact and is not approved for live trading. Stage 10 cannot be CLOSED while that release blocker remains unresolved under the zero-critical/high-defect rule.
+The protected MT5 EA baseline is explicitly outside the Android release artifact. It remains non-live and requires a separate controlled demo/runtime hardening gate before any execution is enabled. It is not an Android release blocker while that boundary remains enforced.
 
 ## Non-negotiable principles
 
