@@ -78,7 +78,7 @@ class AmarDeepResearchOrchestratorTest {
     }
 
     @Test
-    fun conflicting_stances_are_preserved_and_reduce_confidence() = runBlocking {
+    fun conflicting_stances_are_preserved_and_conflict_is_not_duplicated() = runBlocking {
         val engine = object : AmarResearchEngine {
             override suspend fun research(request: ResearchRequest) = ResearchReport(
                 findings = listOf(
@@ -92,7 +92,7 @@ class AmarDeepResearchOrchestratorTest {
             policy = AmarDeepResearchPolicy(maxQuestions = 1, maxParallel = 1, retries = 0, targetIndependentSources = 2)
         ).research(listOf("conflict"), nowEpochMs = 10_000L)
 
-        assertTrue(report.conflicts.isNotEmpty())
+        assertEquals(1, report.conflicts.size)
         assertTrue(report.verification.conflicts.isNotEmpty())
         assertTrue(report.confidence < 0.8)
     }
