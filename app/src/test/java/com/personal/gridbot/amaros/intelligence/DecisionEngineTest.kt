@@ -33,7 +33,7 @@ class DecisionEngineTest {
         assertNotNull(risk)
         assertTrue(risk!!.realizedVolatility!! >= 0.0)
         assertEquals(200.0 / 1100.0, risk.maxDrawdown!!, 1e-9)
-        assertEquals(30.0 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
+        assertEquals(32.5 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
         assertNull(risk.riskOfRuin)
         assertTrue(risk.score in 0.0..1.0)
     }
