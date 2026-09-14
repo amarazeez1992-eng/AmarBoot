@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.governance
 
-/** Stage 7: fail-closed execution governance. This module proposes and authorizes commands; it never talks to a broker. */
+/** Stage 7: fail-closed execution governance. This module authorizes commands; it never talks to a broker. */
 object AmarExecutionGovernance {
     enum class Capability { PROPOSE_EXECUTION, SUBMIT_EXECUTION, CANCEL_EXECUTION, EMERGENCY_LOCK, RECONCILE }
     enum class Decision { APPROVED, REJECTED, LOCKED, DATA_INSUFFICIENT }
@@ -77,6 +77,14 @@ object AmarExecutionGovernance {
         @Synchronized
         fun setEmergencyLock(locked: Boolean) {
             emergencyLocked = locked
+            if (locked) {
+                receipts.keys.toList().forEach { key ->
+                    val current = receipts[key] ?: return@forEach
+                    if (current.status == CommandStatus.APPROVED || current.status == CommandStatus.ACKNOWLEDGED) {
+                        receipts[key] = current.copy(status = CommandStatus.REJECTED, decision = Decision.LOCKED, message = "Emergency lock active", sequence = ++sequence)
+                    }
+                }
+            }
         }
 
         @Synchronized
@@ -99,7 +107,16 @@ object AmarExecutionGovernance {
         }
 
         @Synchronized
-        fun acknowledge(idempotencyKey: String): Receipt? = transition(idempotencyKey, CommandStatus.ACKNOWLEDGED)
+        fun acknowledge(idempotencyKey: String): Receipt? = transition(idempotencyKey, CommandStatus.ACKNOWLEDGED, setOf(CommandStatus.APPROVED))
+
+        @Synchronized
+        fun markExecuted(idempotencyKey: String): Receipt? = transition(idempotencyKey, CommandStatus.EXECUTED, setOf(CommandStatus.ACKNOWLEDGED))
+
+        @Synchronized
+        fun verify(idempotencyKey: String): Receipt? = transition(idempotencyKey, CommandStatus.VERIFIED, setOf(CommandStatus.EXECUTED))
+
+        @Synchronized
+        fun cancel(idempotencyKey: String): Receipt? = transition(idempotencyKey, CommandStatus.CANCELLED, setOf(CommandStatus.APPROVED, CommandStatus.ACKNOWLEDGED))
 
         @Synchronized
         fun reconcile(idempotencyKey: String, observed: CommandStatus): Reconciliation {
@@ -107,9 +124,9 @@ object AmarExecutionGovernance {
             return Reconciliation(idempotencyKey, expected, observed, expected == observed)
         }
 
-        private fun transition(key: String, next: CommandStatus): Receipt? {
+        private fun transition(key: String, next: CommandStatus, allowed: Set<CommandStatus>): Receipt? {
             val current = receipts[key] ?: return null
-            if (current.status != CommandStatus.APPROVED) return current
+            if (emergencyLocked || current.status !in allowed) return current
             val updated = current.copy(status = next, sequence = ++sequence, message = "State updated to $next")
             receipts[key] = updated
             return updated
