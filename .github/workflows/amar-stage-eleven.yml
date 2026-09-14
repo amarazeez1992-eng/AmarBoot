@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
       - '.github/workflows/amar-stage-eleven.yml'
   pull_request:
     paths:
       - 'app/**'
+      - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
 
@@ -53,6 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
