@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.personal.gridbot.amaros.bots.AmarBotVaultRepository
 import com.personal.gridbot.amaros.security.AmarSecureTokenStore
+import com.personal.gridbot.amaros.security.AmarSecurityContracts
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -108,8 +109,7 @@ data class AmarSyncConfig(
         private const val BASE = "baseSnapshot"
 
         fun configure(context: Context, endpoint: String, token: String) {
-            require(endpoint.startsWith("https://") || endpoint.startsWith("http://10.") || endpoint.startsWith("http://192.168."))
-            require(token.isNotBlank())
+            AmarSecurityContracts.requireSyncConfiguration(endpoint, token)
             val appContext = context.applicationContext
             val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val device = prefs.getString(DEVICE, null) ?: UUID.randomUUID().toString()
