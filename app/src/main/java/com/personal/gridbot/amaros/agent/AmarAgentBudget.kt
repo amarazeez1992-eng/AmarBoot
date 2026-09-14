@@ -3,9 +3,8 @@ package com.personal.gridbot.amaros.agent
 /**
  * Immutable safety budget for the AMAR AI agent.
  *
- * Normalization is deliberately performed in dependency order: values that
- * depend on another limit are clamped against the already-normalized limit,
- * never against the caller's unsafe raw value.
+ * Budgets are resource controls, not intelligence ceilings: the Agent can use
+ * any admitted indicator/source capability while each run remains bounded.
  */
 data class AmarAgentBudget(
     val maxSteps: Int = DEFAULT_MAX_STEPS,
@@ -38,26 +37,26 @@ data class AmarAgentBudget(
 
     companion object {
         private const val MIN_STEPS = 1
-        private const val MAX_STEPS = 100
-        private const val DEFAULT_MAX_STEPS = 24
+        private const val MAX_STEPS = 200
+        private const val DEFAULT_MAX_STEPS = 48
 
         private const val MIN_TOOL_CALLS = 1
-        private const val MAX_TOOL_CALLS = 500
-        private const val DEFAULT_MAX_TOOL_CALLS = 80
+        private const val MAX_TOOL_CALLS = 2_000
+        private const val DEFAULT_MAX_TOOL_CALLS = 160
 
         private const val MIN_SOURCES = 1
-        private const val MAX_SOURCES = 100
-        private const val DEFAULT_MAX_SOURCES = 100
+        private const val MAX_SOURCES = 1_000
+        private const val DEFAULT_MAX_SOURCES = 200
 
         private const val MIN_TARGET_INDEPENDENT_SOURCES = 1
-        private const val DEFAULT_TARGET_INDEPENDENT_SOURCES = 40
+        private const val DEFAULT_TARGET_INDEPENDENT_SOURCES = 80
 
         private const val MIN_CONTEXT_TOKENS = 1_024
-        private const val MAX_CONTEXT_TOKENS = 131_072
-        private const val DEFAULT_MAX_CONTEXT_TOKENS = 32_768
+        private const val MAX_CONTEXT_TOKENS = 262_144
+        private const val DEFAULT_MAX_CONTEXT_TOKENS = 65_536
 
         private const val MIN_TIMEOUT_MS = 1_000L
-        private const val MAX_TIMEOUT_MS = 120_000L
-        private const val DEFAULT_TIMEOUT_MS = 30_000L
+        private const val MAX_TIMEOUT_MS = 300_000L
+        private const val DEFAULT_TIMEOUT_MS = 60_000L
     }
 }
