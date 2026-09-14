@@ -54,12 +54,26 @@ class AmarDecisionEngine2Test {
         assertTrue(result.riskScore >= 0.75)
     }
 
+    @Test fun quantitativeAssessmentRaisesRiskAndRemainsProposalOnly() {
+        val quantitative = AmarQuantitativeAssessment(
+            realizedVolatility = 0.8,
+            maxDrawdown = 0.7,
+            historicalVar = 0.6,
+            riskOfRuin = 0.5
+        )
+        val baseline = engine.decide(AmarDecisionInput("case-5", strongContext, verification = verifiedReport()))
+        val quantified = engine.decide(AmarDecisionInput("case-5", strongContext, verification = verifiedReport(), quantitative = quantitative))
+        assertTrue(quantified.riskScore > baseline.riskScore)
+        assertTrue(quantified.rationale.contains("quantRisk="))
+        assertFalse(quantified.executable)
+    }
+
     @Test fun neutralAndLowConfidenceStatesAreExplicit() {
-        val neutral = engine.decide(AmarDecisionInput("case-5", strongContext.copy(directionalScore = 0.0), verification = verifiedReport()))
+        val neutral = engine.decide(AmarDecisionInput("case-6", strongContext.copy(directionalScore = 0.0), verification = verifiedReport()))
         assertEquals(AmarDecisionStatus.HOLD, neutral.status)
         assertEquals(AmarDecisionDirection.NEUTRAL, neutral.direction)
 
-        val low = engine.decide(AmarDecisionInput("case-6", strongContext.copy(confidence = 0.05), verification = verifiedReport()))
+        val low = engine.decide(AmarDecisionInput("case-7", strongContext.copy(confidence = 0.05), verification = verifiedReport()))
         assertEquals(AmarDecisionStatus.LOW_CONFIDENCE, low.status)
     }
 
@@ -70,7 +84,7 @@ class AmarDecisionEngine2Test {
         )
         val verification = AmarVerificationLayer().verify("price trend", findings, 1000L)
         assertTrue(verification.conflicts.isNotEmpty())
-        val result = engine.decide(AmarDecisionInput("case-7", strongContext, verification = verification))
+        val result = engine.decide(AmarDecisionInput("case-8", strongContext, verification = verification))
         assertTrue(result.confidence < 0.70)
         assertEquals(AmarDecisionStatus.BLOCKED, result.status)
     }
@@ -78,7 +92,7 @@ class AmarDecisionEngine2Test {
     @Test fun policyWeightsAreNormalizedInsteadOfSilentlyOverweightingConfidence() {
         val normalized = AmarDecisionEngine2(AmarDecisionPolicy(contextWeight = 1.0, evidenceWeight = 1.0))
         val default = AmarDecisionEngine2(AmarDecisionPolicy(contextWeight = 0.5, evidenceWeight = 0.5))
-        val input = AmarDecisionInput("case-8", strongContext, verification = verifiedReport())
+        val input = AmarDecisionInput("case-9", strongContext, verification = verifiedReport())
         assertEquals(default.decide(input), normalized.decide(input))
     }
 
