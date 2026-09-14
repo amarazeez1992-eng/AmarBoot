@@ -22,7 +22,7 @@ import kotlinx.coroutines.sync.withPermit
  */
 class AmarParallelWorkforce<K : Any, V : Any>(
     private val config: Config = Config(),
-    private val cache: AmarBoundedWorkCache<K, V> = AmarBoundedWorkCache(config.cacheCapacity)
+    private val cache: AmarBoundedWorkCache<String, V> = AmarBoundedWorkCache(config.cacheCapacity)
 ) {
     data class Config(
         val maxWorkers: Int = 4,
