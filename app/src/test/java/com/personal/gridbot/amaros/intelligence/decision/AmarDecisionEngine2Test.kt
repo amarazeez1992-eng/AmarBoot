@@ -75,6 +75,13 @@ class AmarDecisionEngine2Test {
         assertEquals(AmarDecisionStatus.BLOCKED, result.status)
     }
 
+    @Test fun policyWeightsAreNormalizedInsteadOfSilentlyOverweightingConfidence() {
+        val normalized = AmarDecisionEngine2(AmarDecisionPolicy(contextWeight = 1.0, evidenceWeight = 1.0))
+        val default = AmarDecisionEngine2(AmarDecisionPolicy(contextWeight = 0.5, evidenceWeight = 0.5))
+        val input = AmarDecisionInput("case-8", strongContext, verification = verifiedReport())
+        assertEquals(default.decide(input), normalized.decide(input))
+    }
+
     @Test fun scoreAndConfidenceAlwaysBounded() {
         repeat(20) { index ->
             val result = engine.decide(
