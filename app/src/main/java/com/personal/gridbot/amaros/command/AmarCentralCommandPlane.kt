@@ -10,12 +10,7 @@ import com.personal.gridbot.amaros.governance.AmarExecutionGovernance
  * This class deliberately does not execute broker/device operations.
  */
 object AmarCentralCommandPlane {
-    enum class Route {
-        CONTROL_ROOM,
-        EXECUTION_GATEWAY,
-        DEVICE_GATEWAY,
-        AUDIT
-    }
+    enum class Route { CONTROL_ROOM, EXECUTION_GATEWAY, DEVICE_GATEWAY, AUDIT }
 
     enum class DeviceCapability {
         READ_STATUS,
@@ -24,30 +19,28 @@ object AmarCentralCommandPlane {
         NOTIFY_USER
     }
 
-    enum class Decision {
-        ROUTED,
-        REJECTED,
-        REVOKED,
-        EMERGENCY_LOCKED,
-        STALE
-    }
+    enum class Decision { ROUTED, REJECTED, REVOKED, EMERGENCY_LOCKED, STALE }
 
     data class Permission(
         val principal: String,
-        val capabilities: Set<DeviceCapability>,
+        val executionCapabilities: Set<AmarExecutionGovernance.Capability> = emptySet(),
+        val deviceCapabilities: Set<DeviceCapability> = emptySet(),
         val expiresAtEpochMs: Long,
         val version: Long = 1L,
         val active: Boolean = true,
     ) {
         init {
             require(principal.isNotBlank())
-            require(capabilities.isNotEmpty())
+            require(executionCapabilities.isNotEmpty() || deviceCapabilities.isNotEmpty())
             require(expiresAtEpochMs > 0L)
             require(version > 0L)
         }
 
+        fun permits(capability: AmarExecutionGovernance.Capability, nowEpochMs: Long): Boolean =
+            active && expiresAtEpochMs > nowEpochMs && capability in executionCapabilities
+
         fun permits(capability: DeviceCapability, nowEpochMs: Long): Boolean =
-            active && expiresAtEpochMs > nowEpochMs && capability in capabilities
+            active && expiresAtEpochMs > nowEpochMs && capability in deviceCapabilities
     }
 
     data class AgentDecision(
@@ -102,72 +95,46 @@ object AmarCentralCommandPlane {
 
     fun isEmergencyLocked(): Boolean = synchronized(lock) { emergencyLock }
 
-    /**
-     * Routes an Agent decision. Repeated decision IDs are idempotent.
-     * A stale, unapproved, revoked or emergency-locked decision is never routed.
-     */
+    /** Routes an Agent decision. Repeated decision IDs are idempotent. */
     fun route(decision: AgentDecision, nowEpochMs: Long): Receipt = synchronized(lock) {
         receipts[decision.decisionId]?.let { return@synchronized it }
 
+        val permission = permissions[decision.principal]
         val result = when {
             emergencyLock -> Decision.EMERGENCY_LOCKED to "central emergency lock active"
             !decision.policyApproved -> Decision.REJECTED to "Agent policy decision not approved"
             nowEpochMs < decision.issuedAtEpochMs || nowEpochMs >= decision.expiresAtEpochMs ->
                 Decision.STALE to "Agent decision outside validity window"
-            !permissions[decision.principal].orFalse(decision.capability, nowEpochMs) ->
+            permission?.permits(decision.capability, nowEpochMs) != true ->
                 Decision.REVOKED to "principal lacks active delegated capability"
             decision.route == Route.DEVICE_GATEWAY && decision.capability == AmarExecutionGovernance.Capability.SUBMIT_EXECUTION ->
                 Decision.REJECTED to "execution cannot bypass the execution governance boundary"
             else -> Decision.ROUTED to "Agent decision routed to subordinate gateway"
         }
-        val receipt = Receipt(decision.decisionId, result.first, decision.route.takeIf { result.first == Decision.ROUTED }, result.second, ++sequence)
+        val receipt = Receipt(
+            decisionId = decision.decisionId,
+            decision = result.first,
+            route = decision.route.takeIf { result.first == Decision.ROUTED },
+            message = result.second,
+            sequence = ++sequence,
+        )
         receipts[decision.decisionId] = receipt
         receipt
     }
 
     /** Device access is separately bounded and cannot be inferred from an Agent route. */
-    fun authorizeDevice(
-        principal: String,
-        capability: DeviceCapability,
-        nowEpochMs: Long,
-    ): Boolean = synchronized(lock) {
-        !emergencyLock && permissions[principal]?.permits(capability, nowEpochMs) == true
-    }
+    fun authorizeDevice(principal: String, capability: DeviceCapability, nowEpochMs: Long): Boolean =
+        synchronized(lock) {
+            !emergencyLock && permissions[principal]?.permits(capability, nowEpochMs) == true
+        }
 
     fun receipt(decisionId: String): Receipt? = synchronized(lock) { receipts[decisionId] }
 
+    /** Test-only state reset; production callers should use explicit revocation/lock. */
     fun clearForTests() = synchronized(lock) {
         permissions.clear()
         receipts.clear()
         emergencyLock = false
         sequence = 0L
-    }
-
-    private fun Permission?.orFalse(
-        capability: AmarExecutionGovernance.Capability,
-        nowEpochMs: Long,
-    ): Boolean = this?.let {
-        it.active && it.expiresAtEpochMs > nowEpochMs && capabilityAllowed(it.principal, capability)
-    } ?: false
-
-    /* Capability membership is delegated to the Stage 7 governance authority. */
-    private fun capabilityAllowed(
-        principal: String,
-        capability: AmarExecutionGovernance.Capability,
-    ): Boolean = delegatedCapabilities[principal]?.contains(capability) == true
-
-    private val delegatedCapabilities = mutableMapOf<String, Set<AmarExecutionGovernance.Capability>>()
-
-    fun bindDelegatedCapabilities(
-        principal: String,
-        capabilities: Set<AmarExecutionGovernance.Capability>,
-    ): Boolean = synchronized(lock) {
-        if (principal.isBlank() || capabilities.isEmpty()) return@synchronized false
-        delegatedCapabilities[principal] = capabilities.toSet()
-        true
-    }
-
-    fun clearDelegatedCapabilities(principal: String): Boolean = synchronized(lock) {
-        delegatedCapabilities.remove(principal) != null
     }
 }
