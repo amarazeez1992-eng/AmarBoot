@@ -74,7 +74,7 @@ class AmarStageSixTest {
         val source = AmarBuiltInIndicatorAdapter().provenance
         registry.register(source)
         try {
-            registry.register(source.copy(version = "2.0"))
+            registry.register(source.copy(version = "2.1"))
             throw AssertionError("conflicting provenance must fail closed")
         } catch (_: IllegalArgumentException) {
             // expected
