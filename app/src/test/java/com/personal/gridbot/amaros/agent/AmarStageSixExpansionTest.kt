@@ -25,7 +25,7 @@ class AmarStageSixExpansionTest {
     }
 
     @Test
-    fun open_source_gateway_fails_closed_without_license_and_repository_evidence() = kotlinx.coroutines.runBlocking {
+    fun open_source_gateway_fails_closed_without_license_and_repository_evidence() {
         val gateway = AmarOpenSourceResearchGateway()
         val candidate = AmarOpenSourceCandidate(
             sourceId = "candidate",
