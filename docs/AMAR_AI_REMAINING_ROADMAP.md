@@ -93,6 +93,20 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
    - Provenance/license audit
    - Zero unresolved critical/high defects
 
+10. Multimodal Agent Interface & Workspace
+   - Microphone input and speech-to-text
+   - Natural two-way voice conversation with interruption/turn-taking support
+   - Text and voice conversation share the same agent context and memory policy
+   - External URL intake with safe fetch, parsing, analysis, source/evidence tracking, and failure handling
+   - Source-code intake for common programming languages with language detection, parsing where supported, static analysis, explanation, defect detection, and report generation
+   - File intake pipeline with type detection, archive inspection, safe extraction, text/document/image analysis, metadata inspection, and format-specific analyzers
+   - APK analysis in a sandboxed/read-only inspection path; no implicit installation or execution of untrusted binaries
+   - Persistent artifact workspace with explicit names, versions, provenance, and retrieval metadata
+   - GitHub save workflow: when explicitly instructed, create/update a named file or artifact in the authorized repository; never silently overwrite or execute
+   - Execution is a separate governed action: save does not imply run, deploy, merge, publish, or trade execution
+   - Exportable analysis reports and reproducible references back to the analyzed source/file
+   - Permission, size, timeout, content-type, malware-risk, and resource limits with fail-closed behavior
+
 ### Stage 11 architecture target
 
 ```text
@@ -110,6 +124,13 @@ AMAR AI
         -> Risk
         -> Simulation
         -> Self-Critique
+     -> Multimodal Interface
+        -> Voice
+        -> URLs
+        -> Code
+        -> Files
+        -> Artifact Workspace
+        -> GitHub Workspace
      -> Governance Gate
      -> Action / Audit
 ```
@@ -117,6 +138,12 @@ AMAR AI
 ### Non-negotiable Stage 11 rule
 
 The 99% score is not a claim made by design. It must be earned through measurable benchmarks, evidence quality, regression results, security verification, architecture review, and CI evidence. No Stage 11 sub-stage is closed from design alone.
+
+For every numbered item, the mandatory completion loop is:
+
+**investigate → implement → inspect → test → confirm → prove → audit → ready → close**
+
+No item may advance until that loop has produced evidence.
 
 ## Non-negotiable principles
 
