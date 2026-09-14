@@ -34,6 +34,9 @@ jobs:
       - name: Focused Intelligence Core tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest' --stacktrace
 
+      - name: Focused Verification Layer tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -46,7 +49,9 @@ jobs:
           set -euo pipefail
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
-          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayerTest.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification
 
       - name: Upload test evidence
         if: always()
