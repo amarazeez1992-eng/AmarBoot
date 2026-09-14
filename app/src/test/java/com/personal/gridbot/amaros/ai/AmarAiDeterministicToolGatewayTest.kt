@@ -17,4 +17,16 @@ class AmarAiDeterministicToolGatewayTest {
         val result = AmarAiDeterministicToolGateway.execute("engine_market", "")
         assertTrue(result?.startsWith("ENGINE_MARKET|") == true)
     }
+
+    @Test
+    fun unknownToolFailsClosed() = runBlocking {
+        val result = AmarAiDeterministicToolGateway.execute("place_market_order", "XAUUSD")
+        assertTrue(result == "TOOL_REJECTED|unknown_tool=place_market_order")
+    }
+
+    @Test
+    fun draftOnlyToolCannotExecuteThroughDeterministicGateway() = runBlocking {
+        val result = AmarAiDeterministicToolGateway.execute("strategy_save", "name::content")
+        assertTrue(result?.startsWith("TOOL_REJECTED|authority=DRAFT_ONLY") == true)
+    }
 }
