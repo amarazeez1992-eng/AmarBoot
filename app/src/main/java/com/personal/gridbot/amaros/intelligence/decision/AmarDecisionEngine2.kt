@@ -62,8 +62,9 @@ class AmarDecisionEngine2(
         val uncertainty = 1.0 - input.context.confidence.coerceIn(0.0, 1.0)
         val disagreementValues = input.context.evidence.map { abs(it.score - directional) * it.confidence }
         val directionalDisagreement = if (disagreementValues.isEmpty()) 0.0 else disagreementValues.average()
-        return (volatilityRisk * 0.35 + spreadRisk * 0.25 + uncertainty * 0.25 + directionalDisagreement.coerceIn(0.0, 1.0) * 0.15)
-            .coerceIn(0.0, 1.0)
+        val baseRisk = volatilityRisk * 0.30 + spreadRisk * 0.20 + uncertainty * 0.20 + directionalDisagreement.coerceIn(0.0, 1.0) * 0.10
+        val quantitativeRisk = input.quantitative?.riskScore ?: 0.0
+        return (baseRisk + quantitativeRisk * 0.20).coerceIn(0.0, 1.0)
     }
 
     private fun buildRationale(input: AmarDecisionInput, direction: AmarDecisionDirection, confidence: Double, risk: Double, verified: Boolean): String =
@@ -73,6 +74,7 @@ class AmarDecisionEngine2(
             append("; risk=").append("%.4f".format(java.util.Locale.US, risk))
             append("; evidenceVerified=").append(verified)
             append("; regime=").append(input.context.regime)
+            input.quantitative?.let { append("; quantRisk=").append("%.4f".format(java.util.Locale.US, it.riskScore)) }
             if (input.emergencyLock) append("; emergencyLock=true")
         }
 
@@ -106,12 +108,30 @@ data class AmarDecisionPolicy(
     }
 }
 
+data class AmarQuantitativeAssessment(
+    val realizedVolatility: Double,
+    val maxDrawdown: Double,
+    val historicalVar: Double,
+    val riskOfRuin: Double
+) {
+    val riskScore: Double
+        get() = (realizedVolatility * 0.30 + maxDrawdown * 0.25 + historicalVar * 0.20 + riskOfRuin * 0.25).coerceIn(0.0, 1.0)
+
+    init {
+        require(realizedVolatility in 0.0..1.0)
+        require(maxDrawdown in 0.0..1.0)
+        require(historicalVar in 0.0..1.0)
+        require(riskOfRuin in 0.0..1.0)
+    }
+}
+
 data class AmarDecisionInput(
     val decisionKey: String,
     val context: MarketContext,
     val volatility: Double = 0.0,
     val spreadRatio: Double = 0.0,
     val verification: AmarVerificationReport? = null,
+    val quantitative: AmarQuantitativeAssessment? = null,
     val emergencyLock: Boolean = false,
     val nowEpochMs: Long = 0L
 ) {
