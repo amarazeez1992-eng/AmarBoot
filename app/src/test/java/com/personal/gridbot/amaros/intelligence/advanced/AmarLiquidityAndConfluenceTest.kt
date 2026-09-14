@@ -13,6 +13,26 @@ class AmarLiquidityAndConfluenceTest {
         assertEquals(AmarLiquiditySweep.Direction.BEARISH_REVERSAL, sweeps.single().direction)
     }
 
+    @Test fun repeatedBarsBelowLevelDoNotDuplicateSameSweep() {
+        val level = AmarLiquidityLevel(100.0, AmarLiquidityLevel.Kind.SWING_HIGH)
+        val candles = listOf(
+            AmarOhlc(1L, 99.0, 101.0, 98.5, 99.5),
+            AmarOhlc(2L, 99.5, 100.5, 98.0, 99.0),
+            AmarOhlc(3L, 99.0, 100.4, 98.2, 99.2)
+        )
+        assertEquals(1, AmarLiquidityEngine().detectSweeps(candles, listOf(level)).size)
+    }
+
+    @Test fun recrossArmsLevelForANewSweep() {
+        val level = AmarLiquidityLevel(100.0, AmarLiquidityLevel.Kind.SWING_HIGH)
+        val candles = listOf(
+            AmarOhlc(1L, 99.0, 101.0, 98.5, 99.5),
+            AmarOhlc(2L, 100.0, 101.0, 99.5, 100.5),
+            AmarOhlc(3L, 100.0, 101.2, 99.0, 99.4)
+        )
+        assertEquals(2, AmarLiquidityEngine().detectSweeps(candles, listOf(level)).size)
+    }
+
     @Test fun swingLowSweepProducesBullishReversal() {
         val level = AmarLiquidityLevel(100.0, AmarLiquidityLevel.Kind.SWING_LOW)
         val candle = AmarOhlc(1L, 101.0, 101.5, 99.0, 100.5)
@@ -21,7 +41,7 @@ class AmarLiquidityAndConfluenceTest {
         assertEquals(AmarLiquiditySweep.Direction.BULLISH_REVERSAL, sweeps.single().direction)
     }
 
-    @Test fun confluenceCountsIndependentSourceGroupsAndDiscountsDuplicates() {
+    @Test fun confluenceCountsIndependentSourceGroupsAndUsesStrongestPerGroup() {
         val signals = listOf(
             AmarConfluenceSignal("trend-1", AmarConfluenceSignal.Direction.BULLISH, 0.9, "trend", "H1"),
             AmarConfluenceSignal("trend-2", AmarConfluenceSignal.Direction.BULLISH, 0.8, "trend", "M15"),
