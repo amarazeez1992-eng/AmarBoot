@@ -24,6 +24,36 @@ class AmarStageFourTest {
     }
 
     @Test
+    fun simulation_fails_closed_on_duplicate_or_malformed_input() {
+        val config = AmarSimulationConfig(100.0, 1.0)
+        val duplicate = AmarStageFourSimulationEngine().run(listOf(candle(1, 100.0), candle(1, 101.0)), emptyList(), config)
+        val malformed = AmarStageFourSimulationEngine().run(listOf(AmarMarketCandle(1, 100.0, 90.0, 95.0, 100.0)), emptyList(), config)
+        assertFalse(duplicate.completed)
+        assertTrue("duplicate_candle_timestamp" in duplicate.issues)
+        assertFalse(malformed.completed)
+        assertTrue("invalid_candle" in malformed.issues)
+    }
+
+    @Test
+    fun simulation_rejects_duplicate_and_orphan_signals() {
+        val config = AmarSimulationConfig(100.0, 1.0)
+        val duplicate = AmarStageFourSimulationEngine().run(
+            listOf(candle(1, 100.0), candle(2, 101.0)),
+            listOf(AmarStrategySignal(1, AmarSignalDirection.LONG), AmarStrategySignal(1, AmarSignalDirection.FLAT)),
+            config
+        )
+        val orphan = AmarStageFourSimulationEngine().run(
+            listOf(candle(1, 100.0), candle(2, 101.0)),
+            listOf(AmarStrategySignal(3, AmarSignalDirection.LONG)),
+            config
+        )
+        assertFalse(duplicate.completed)
+        assertTrue("duplicate_signal_timestamp" in duplicate.issues)
+        assertFalse(orphan.completed)
+        assertTrue("signal_without_candle" in orphan.issues)
+    }
+
+    @Test
     fun risk_gate_blocks_daily_loss_and_open_position_limits() {
         val engine = AmarStageFourRiskEngine(AmarRiskLimits(maxDailyLossFraction = 0.05, maxOpenPositions = 1))
         val decision = engine.evaluate(AmarRiskSnapshot(930.0, 1000.0, 1, -60.0, 1000.0), 10.0)
@@ -41,6 +71,15 @@ class AmarStageFourTest {
     }
 
     @Test
+    fun risk_gate_fails_closed_on_invalid_numbers() {
+        val engine = AmarStageFourRiskEngine()
+        val decision = engine.evaluate(AmarRiskSnapshot(Double.NaN, 1000.0, 0, 0.0, 1000.0), -1.0)
+        assertFalse(decision.approved)
+        assertTrue("invalid_risk_snapshot" in decision.reasons)
+        assertTrue("invalid_proposed_loss" in decision.reasons)
+    }
+
+    @Test
     fun crisis_engine_detects_spread_gap_range_and_stale_data() {
         val previous = candle(1, 100.0)
         val current = AmarMarketCandle(2_000L, 110.0, 115.0, 100.0, 105.0)
@@ -51,6 +90,16 @@ class AmarStageFourTest {
         assertTrue("bar_range_abnormal" in state.reasons)
         assertTrue("price_gap_abnormal" in state.reasons)
         assertTrue("market_data_stale" in state.reasons)
+    }
+
+    @Test
+    fun crisis_engine_fails_closed_on_invalid_quote_and_future_data() {
+        val current = candle(2_000L, 100.0)
+        val invalidQuote = AmarMarketQuote("XAUUSD", 101.0, 100.0, 2_000L)
+        val state = AmarStageFourCrisisEngine(AmarCrisisLimits(maxDataAgeMs = 100L)).inspect(null, current, invalidQuote, 1_000L)
+        assertTrue(state.active)
+        assertTrue("invalid_quote" in state.reasons)
+        assertTrue("market_data_from_future" in state.reasons)
     }
 
     @Test
