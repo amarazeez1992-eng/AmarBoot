@@ -14,7 +14,20 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - Stage 8 — Central Command Plane: CLOSED
 - Stage 9 — Parallel Workforce / Performance / Reliability: CLOSED
 - Stage 10 — Final 100% Audit and Release Gate: OPEN / IN PROGRESS
-- Stage 11 — AMAR INTELLIGENCE 99: PLANNED / NEXT
+- Stage 11 — AMAR INTELLIGENCE 99: IN PROGRESS
+
+### Stage 11 item status
+
+- 1. Intelligence Core: CLOSED
+- 2. Verification Layer: CLOSED
+- 3. Advanced Memory: CLOSED
+- 4. Research Engine: CLOSED
+- 5. Decision Intelligence: PENDING
+- 6. Self-Critique: PENDING
+- 7. Benchmark & Quality: PENDING
+- 8. Observability: PENDING
+- 9. Final 99% Gate: PENDING
+- 10. Multimodal Agent Interface & Workspace: PENDING — highest-priority interface package
 
 ## Stage 10 — Final 100% Audit and Release Gate
 
@@ -35,57 +48,57 @@ The protected MT5 EA baseline is explicitly outside the Android release artifact
 
 ## Stage 11 — AMAR INTELLIGENCE 99
 
-Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence-driven, self-checking intelligence platform. Stage 11 is planned as the next major expansion and must preserve the existing governance, safety, provenance, and regression contracts.
+Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence-driven, self-checking intelligence platform. Stage 11 is active and must preserve the existing governance, safety, provenance, and regression contracts.
 
 ### Ordered execution sequence
 
-1. Intelligence Core
+1. Intelligence Core — CLOSED
    - Perception Engine
    - Reasoning Engine
    - Confidence Engine
 
-2. Verification Layer
+2. Verification Layer — CLOSED
    - Evidence Engine
    - Source Registry
    - Conflict Detection
    - Provenance Chain
 
-3. Advanced Memory
+3. Advanced Memory — CLOSED
    - Short/working/long-term memory
    - Evidence memory
    - Decision memory
    - Decision Replay
 
-4. Research Engine
+4. Research Engine — CLOSED
    - Deep Research Orchestrator
    - Parallel research
    - Source ranking and verification
 
-5. Decision Intelligence
+5. Decision Intelligence — PENDING
    - Scenario Engine
    - Simulation Lab
    - Risk intelligence
    - Explainability Engine
 
-6. Self-Critique
+6. Self-Critique — PENDING
    - Self-review
    - Error Intelligence
    - Root-cause correction
    - Permanent regression tests
 
-7. Benchmark & Quality
+7. Benchmark & Quality — PENDING
    - Benchmark Lab
    - Accuracy and consistency metrics
    - Confidence calibration
    - Regression intelligence
 
-8. Observability
+8. Observability — PENDING
    - AI health monitoring
    - Performance diagnostics
    - Capability/worker telemetry
    - Recovery visibility
 
-9. Final 99% Gate
+9. Final 99% Gate — PENDING
    - Full security audit
    - Full regression suite
    - Architecture audit
@@ -93,7 +106,7 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
    - Provenance/license audit
    - Zero unresolved critical/high defects
 
-10. Multimodal Agent Interface & Workspace — highest-priority interface package
+10. Multimodal Agent Interface & Workspace — PENDING — highest-priority interface package
    - Unified multimodal session orchestrator: text, voice, URL, code, files, and artifacts enter one consistent agent context without duplicating state
    - Microphone input with explicit permission, speech-to-text, streaming partial transcripts, interruption/barge-in, turn detection, and recovery from recognition failures
    - Natural two-way voice conversation with interruption/turn-taking support, cancellation, latency budgets, and graceful text fallback
