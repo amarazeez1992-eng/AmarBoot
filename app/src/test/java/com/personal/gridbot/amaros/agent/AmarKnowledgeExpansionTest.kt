@@ -8,7 +8,17 @@ class AmarKnowledgeExpansionTest {
     @Test fun rejected_capability_is_stored_without_trust_promotion() {
         val mcb = AmarMCB()
         val status = mcb.discover(
-            AmarCapabilityCandidate("x", "Unverified", "engine", "src", 0.95, false, false, false, false)
+            AmarMCBCapabilityCandidate(
+                "x", "Unverified", "engine", "src", 0.95,
+                provenanceVerified = false,
+                licenseVerified = false,
+                securityReviewed = false,
+                deterministicTestsPassed = false,
+                domainValidated = false,
+                benchmarked = false,
+                regressionPassed = false,
+                adversarialReviewed = false
+            )
         )
         assertEquals(AmarAdmissionStatus.DISCOVERED, status)
         assertTrue(mcb.knowledge().all().single().status == AmarAdmissionStatus.DISCOVERED)
@@ -17,8 +27,36 @@ class AmarKnowledgeExpansionTest {
     @Test fun fully_validated_capability_can_be_admitted() {
         val mcb = AmarMCB()
         val status = mcb.discover(
-            AmarCapabilityCandidate("y", "Validated", "indicator", "src", 0.95, true, true, true, true)
+            AmarMCBCapabilityCandidate(
+                "y", "Validated", "indicator", "src", 0.95,
+                provenanceVerified = true,
+                licenseVerified = true,
+                securityReviewed = true,
+                deterministicTestsPassed = true,
+                domainValidated = true,
+                benchmarked = true,
+                regressionPassed = true,
+                adversarialReviewed = true
+            )
         )
         assertEquals(AmarAdmissionStatus.ADMITTED, status)
+    }
+
+    @Test fun incomplete_admission_gate_must_fail_closed() {
+        val mcb = AmarMCB()
+        val status = mcb.discover(
+            AmarMCBCapabilityCandidate(
+                "z", "Almost Valid", "engine", "src", 0.99,
+                provenanceVerified = true,
+                licenseVerified = true,
+                securityReviewed = true,
+                deterministicTestsPassed = true,
+                domainValidated = true,
+                benchmarked = true,
+                regressionPassed = true,
+                adversarialReviewed = false
+            )
+        )
+        assertEquals(AmarAdmissionStatus.DISCOVERED, status)
     }
 }
