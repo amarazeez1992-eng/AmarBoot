@@ -1,7 +1,21 @@
 package com.personal.gridbot.amaros.agent
 
 /** Stage 6: provider-neutral market intelligence, indicator provenance and deterministic analysis. */
-enum class AmarSourceType { MARKET_DATA, INDICATOR_ENGINE, STATISTICAL_ENGINE, MARKET_STRUCTURE, KNOWLEDGE }
+enum class AmarSourceType {
+    OFFICIAL_API,
+    MARKET_DATA,
+    NEWS,
+    SOCIAL,
+    COMMUNITY,
+    RESEARCH,
+    DOCUMENT,
+    WEB,
+    INDICATOR_ENGINE,
+    STATISTICAL_ENGINE,
+    MARKET_STRUCTURE,
+    KNOWLEDGE,
+    UNKNOWN
+}
 
 data class AmarSourceLicense(
     val spdxId: String,
