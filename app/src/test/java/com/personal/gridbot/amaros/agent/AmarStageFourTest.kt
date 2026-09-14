@@ -3,6 +3,7 @@ package com.personal.gridbot.amaros.agent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class AmarStageFourTest {
@@ -24,14 +25,14 @@ class AmarStageFourTest {
     }
 
     @Test
-    fun simulation_fails_closed_on_duplicate_or_malformed_input() {
+    fun simulation_rejects_duplicate_timestamps_and_domain_contract_rejects_malformed_candle() {
         val config = AmarSimulationConfig(100.0, 1.0)
         val duplicate = AmarStageFourSimulationEngine().run(listOf(candle(1, 100.0), candle(1, 101.0)), emptyList(), config)
-        val malformed = AmarStageFourSimulationEngine().run(listOf(AmarMarketCandle(1, 100.0, 90.0, 95.0, 100.0)), emptyList(), config)
         assertFalse(duplicate.completed)
         assertTrue("duplicate_candle_timestamp" in duplicate.issues)
-        assertFalse(malformed.completed)
-        assertTrue("invalid_candle" in malformed.issues)
+        assertThrows(IllegalArgumentException::class.java) {
+            AmarMarketCandle(1L, 100.0, 90.0, 95.0, 100.0)
+        }
     }
 
     @Test
@@ -93,12 +94,14 @@ class AmarStageFourTest {
     }
 
     @Test
-    fun crisis_engine_fails_closed_on_invalid_quote_and_future_data() {
+    fun crisis_engine_rejects_invalid_quote_at_contract_boundary_and_detects_future_data() {
         val current = candle(2_000L, 100.0)
-        val invalidQuote = AmarMarketQuote("XAUUSD", 101.0, 100.0, 2_000L)
-        val state = AmarStageFourCrisisEngine(AmarCrisisLimits(maxDataAgeMs = 100L)).inspect(null, current, invalidQuote, 1_000L)
+        assertThrows(IllegalArgumentException::class.java) {
+            AmarMarketQuote("XAUUSD", 101.0, 100.0, 2_000L)
+        }
+        val validQuote = AmarMarketQuote("XAUUSD", 99.0, 100.0, 2_000L)
+        val state = AmarStageFourCrisisEngine(AmarCrisisLimits(maxDataAgeMs = 100L)).inspect(null, current, validQuote, 1_000L)
         assertTrue(state.active)
-        assertTrue("invalid_quote" in state.reasons)
         assertTrue("market_data_from_future" in state.reasons)
     }
 
