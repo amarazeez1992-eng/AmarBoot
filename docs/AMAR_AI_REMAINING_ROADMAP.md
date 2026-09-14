@@ -93,19 +93,34 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
    - Provenance/license audit
    - Zero unresolved critical/high defects
 
-10. Multimodal Agent Interface & Workspace
-   - Microphone input and speech-to-text
-   - Natural two-way voice conversation with interruption/turn-taking support
-   - Text and voice conversation share the same agent context and memory policy
-   - External URL intake with safe fetch, parsing, analysis, source/evidence tracking, and failure handling
-   - Source-code intake for common programming languages with language detection, parsing where supported, static analysis, explanation, defect detection, and report generation
-   - File intake pipeline with type detection, archive inspection, safe extraction, text/document/image analysis, metadata inspection, and format-specific analyzers
-   - APK analysis in a sandboxed/read-only inspection path; no implicit installation or execution of untrusted binaries
-   - Persistent artifact workspace with explicit names, versions, provenance, and retrieval metadata
-   - GitHub save workflow: when explicitly instructed, create/update a named file or artifact in the authorized repository; never silently overwrite or execute
-   - Execution is a separate governed action: save does not imply run, deploy, merge, publish, or trade execution
-   - Exportable analysis reports and reproducible references back to the analyzed source/file
-   - Permission, size, timeout, content-type, malware-risk, and resource limits with fail-closed behavior
+10. Multimodal Agent Interface & Workspace — highest-priority interface package
+   - Unified multimodal session orchestrator: text, voice, URL, code, files, and artifacts enter one consistent agent context without duplicating state
+   - Microphone input with explicit permission, speech-to-text, streaming partial transcripts, interruption/barge-in, turn detection, and recovery from recognition failures
+   - Natural two-way voice conversation with interruption/turn-taking support, cancellation, latency budgets, and graceful text fallback
+   - Text and voice conversation share the same agent context and memory policy; modality changes must not silently lose context
+   - External URL intake with safe fetch, redirect/timeout/size limits, content-type validation, parsing, analysis, source/evidence tracking, snapshot/provenance identity, and clear failure reasons
+   - Source-code intake for common programming languages with language detection, encoding detection, parser/static-analyzer adapters where supported, generic-text fallback, explanation, defect detection, dependency/context inspection, and report generation
+   - File intake pipeline with content-based type detection, archive inspection, safe extraction limits, text/document/image analysis, metadata inspection, and format-specific analyzers
+   - APK analysis through a sandboxed/read-only inspection path with manifest/resource/code/signature/package metadata analysis; never implicitly install or execute untrusted binaries
+   - Persistent artifact workspace with stable artifact IDs, content hashes, explicit names, versions, timestamps, provenance, source references, analysis status, and retrieval metadata
+   - Artifact lineage: every generated report or derived artifact records exactly which source/version produced it and which analysis configuration was used
+   - Reproducible analysis: same immutable artifact + same analyzer/version/configuration must produce a traceable, comparable result
+   - Safe workspace lifecycle: quarantine, active-analysis, verified, archived, and deleted states with explicit transitions
+   - GitHub save workflow: when explicitly instructed, create/update a named file or artifact in the authorized repository; verify repository/branch/path/overwrite intent; preserve commit identity and provenance; never silently overwrite or execute
+   - Execution is a separate governed action: save does not imply run, install, deploy, merge, publish, or trade execution
+   - Explicit action confirmation for destructive, external, privileged, or execution-capable operations
+   - Capability firewall between analysis and execution so reading/analyzing code, APKs, ZIPs, or scripts cannot itself trigger execution
+   - Resource governance for CPU, memory, storage, network, archive expansion, file count, input size, analysis time, and concurrency with fail-closed limits
+   - Security isolation for untrusted inputs, including path-traversal prevention, decompression-bomb protection, dangerous-file handling, network restrictions, and malware-risk quarantine signals
+   - Privacy protection: minimize retained sensitive content, support redaction where applicable, and keep provenance without unnecessarily duplicating raw private data
+   - Exportable analysis reports with stable references, findings, evidence, analyzer versions, limitations, and reproducibility metadata
+   - Workspace search and retrieval by name, ID, hash, source, version, language/type, date, and analysis status
+   - Offline-first degradation: core inspection and workspace operations remain useful without network access; network-dependent capabilities fail clearly rather than silently pretending success
+   - Adapter architecture so new languages, file formats, URL parsers, speech engines, and analyzers can be added without changing the central agent contract
+   - Contract-level regression tests for every modality and every boundary: voice→context, URL→evidence, file→artifact, code→analysis, APK→sandbox, artifact→GitHub, and save→execute separation
+   - Performance targets measured for first response, voice latency, file ingestion, analysis throughput, workspace retrieval, and cancellation responsiveness
+   - Security and reliability telemetry for rejected inputs, quarantines, timeouts, cancellations, parser failures, analyzer failures, and resource-limit events
+   - No hidden network calls, hidden execution, hidden persistence, or hidden external writes
 
 ### Stage 11 architecture target
 
@@ -124,15 +139,18 @@ AMAR AI
         -> Risk
         -> Simulation
         -> Self-Critique
-     -> Multimodal Interface
-        -> Voice
-        -> URLs
-        -> Code
-        -> Files
+     -> MULTIMODAL INTERFACE
+        -> Session Orchestrator
+        -> Voice / STT / TTS
+        -> URLs / Safe Fetch
+        -> Code / Static Analysis
+        -> Files / Archives / APK
         -> Artifact Workspace
+        -> Provenance / Lineage
         -> GitHub Workspace
-     -> Governance Gate
-     -> Action / Audit
+     -> SECURITY / RESOURCE FIREWALL
+     -> GOVERNANCE GATE
+     -> ACTION / AUDIT
 ```
 
 ### Non-negotiable Stage 11 rule
