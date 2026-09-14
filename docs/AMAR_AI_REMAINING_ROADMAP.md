@@ -4,24 +4,9 @@ This roadmap governs the remaining Agent work. A stage is CLOSED only after impl
 
 ## Current baseline
 
-Stages 1–3 of the Agent foundation are treated as the established baseline: budget/policy safety, multi-role deliberation, evidence hardening, memory, unified evidence and freshness.
+Stages 1–5 of the Agent foundation are now CLOSED: budget/policy safety, multi-role deliberation, evidence hardening, memory, unified evidence/freshness, deterministic simulation/risk/crisis/audit, and the first deterministic strategy compiler/research workforce.
 
-## Remaining 40% — seven gated stages
-
-### Stage 4 — Simulation, Risk, Crisis, Audit (60–65%)
-- deterministic simulation engine
-- risk limits and hard blocks
-- market/data anomaly and crisis detection
-- tamper-evident audit ledger
-- regression and adversarial tests
-- CLOSE GATE: all Stage 4 tests + full CI pass
-
-### Stage 5 — Strategy Compiler and Research Workforce (65–70%)
-- convert natural-language bot ideas into explicit strategy specifications
-- independent roles: strategy analyst, market analyst, quantitative reviewer, risk reviewer, adversarial reviewer, decision confirmer
-- strategy versioning, provenance and reproducibility
-- no execution authority inside the compiler
-- CLOSE GATE: specification determinism + conflict tests + full CI
+## Remaining 30% — six gated stages
 
 ### Stage 6 — Open-Source Market Intelligence and Indicator Engines (70–75%)
 - provider-neutral source registry
