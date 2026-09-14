@@ -8,7 +8,7 @@ class AmarSourceRegistry(
 
     fun register(source: AmarSourceProvenance) {
         require(source.license.spdxId in allowedSpdxLicenses) { "Unsupported source license: ${source.license.spdxId}" }
-        require(source.repository != null || source.sourceType == AmarSourceType.KNOWLEDGE || source.sourceId.startsWith("amar-"))
+        require(source.sourceId.startsWith("amar-") || source.repository != null) { "External source requires repository provenance" }
         val existing = sources[source.sourceId]
         require(existing == null || existing == source) { "Conflicting provenance for ${source.sourceId}" }
         sources[source.sourceId] = source
