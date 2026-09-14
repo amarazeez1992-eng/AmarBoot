@@ -30,9 +30,15 @@ class AmarStageFourTest {
         val duplicate = AmarStageFourSimulationEngine().run(listOf(candle(1, 100.0), candle(1, 101.0)), emptyList(), config)
         assertFalse(duplicate.completed)
         assertTrue("duplicate_candle_timestamp" in duplicate.issues)
-        assertThrows(IllegalArgumentException::class.java) {
-            AmarMarketCandle(1L, 100.0, 90.0, 95.0, 100.0)
-        }
+        assertThrows(IllegalArgumentException::class.java) { AmarMarketCandle(1L, 100.0, 90.0, 95.0, 100.0) }
+    }
+
+    @Test
+    fun contracts_reject_non_finite_simulation_inputs() {
+        assertThrows(IllegalArgumentException::class.java) { AmarStrategySignal(1L, AmarSignalDirection.LONG, Double.NaN) }
+        assertThrows(IllegalArgumentException::class.java) { AmarSimulationConfig(Double.POSITIVE_INFINITY, 1.0) }
+        assertThrows(IllegalArgumentException::class.java) { AmarRiskLimits(maxRiskPerTradeFraction = Double.NaN) }
+        assertThrows(IllegalArgumentException::class.java) { AmarCrisisLimits(maxGapFraction = Double.POSITIVE_INFINITY) }
     }
 
     @Test
@@ -96,9 +102,7 @@ class AmarStageFourTest {
     @Test
     fun crisis_engine_rejects_invalid_quote_at_contract_boundary_and_detects_future_data() {
         val current = candle(2_000L, 100.0)
-        assertThrows(IllegalArgumentException::class.java) {
-            AmarMarketQuote("XAUUSD", 101.0, 100.0, 2_000L)
-        }
+        assertThrows(IllegalArgumentException::class.java) { AmarMarketQuote("XAUUSD", 101.0, 100.0, 2_000L) }
         val validQuote = AmarMarketQuote("XAUUSD", 99.0, 100.0, 2_000L)
         val state = AmarStageFourCrisisEngine(AmarCrisisLimits(maxDataAgeMs = 100L)).inspect(null, current, validQuote, 1_000L)
         assertTrue(state.active)
@@ -111,6 +115,7 @@ class AmarStageFourTest {
         ledger.append(1L, "DIRECTOR", "SIMULATE", "APPROVED", "validated")
         ledger.append(2L, "RISK_GUARD", "RISK_CHECK", "BLOCKED", "drawdown")
         assertTrue(ledger.verifyIntegrity())
+        assertThrows(IllegalArgumentException::class.java) { ledger.append(-1L, "DIRECTOR", "AUDIT", "BLOCKED", "invalid_time") }
         val event = ledger.snapshot().last()
         val tampered = event.copy(reason = "changed")
         assertFalse(verifyEventAgainstChain(tampered, ledger.snapshot().dropLast(1).last().hash))
