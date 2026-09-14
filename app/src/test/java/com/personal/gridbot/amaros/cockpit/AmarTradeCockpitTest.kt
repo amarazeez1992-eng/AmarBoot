@@ -24,8 +24,8 @@ class AmarTradeCockpitTest {
         )
         assertFalse(preview.executable)
         assertEquals(2, preview.selectedCount)
-        assertEquals(0.30, preview.selectedVolume, 0.0)
-        assertEquals(3.0, preview.selectedProfit, 0.0)
+        assertEquals(0.30, preview.selectedVolume, 1e-9)
+        assertEquals(3.0, preview.selectedProfit, 1e-9)
         assertEquals("PREVIEW_ONLY", preview.reason)
     }
 
