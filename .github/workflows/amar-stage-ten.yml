@@ -1,0 +1,111 @@
+name: Amar Stage 10 — Final 100% Audit and Release Gate
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+      - 'mt5/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'LICENSE'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - '.github/workflows/**'
+      - 'gradle/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'mt5/**'
+      - 'docs/**'
+      - 'README.md'
+      - 'LICENSE'
+      - 'SECURITY.md'
+      - 'CONTRIBUTING.md'
+      - '.github/workflows/**'
+      - 'gradle/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+  workflow_dispatch:
+
+jobs:
+  stage-ten-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Regression and full unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Debug build verification
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Release build verification
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Release artifact verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/release/app-release-unsigned.apk"
+          test -s "$apk"
+          sha256sum "$apk"
+          stat -c '%n %s bytes' "$apk"
+
+      - name: Dependency graph audit
+        run: gradle :app:dependencies --configuration releaseRuntimeClasspath --stacktrace > stage10-release-dependencies.txt
+
+      - name: Repository secret-pattern audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- ':!stage10-release-dependencies.txt'; then
+            echo 'Potential credential pattern detected.'
+            exit 1
+          fi
+
+      - name: Protected execution safety audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIn --exclude-dir=.git 'liveTrading=false' . >/dev/null
+          grep -RIn --exclude-dir=.git 'brokerAccessAllowed=false' app/src/main >/dev/null
+
+      - name: Release hygiene checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s LICENSE
+          test -s SECURITY.md
+          test -s docs/OPEN_SOURCE_POLICY.md
+          test -s docs/governance/ENGINEERING_REGRESSION_EXCLUSIONS.md
+          test -s docs/governance/STAGE10_FINAL_AUDIT.md
+
+      - name: Upload Stage 10 evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: amar-stage-ten-audit-evidence
+          path: |
+            stage10-release-dependencies.txt
+            app/build/reports/tests/**
+            app/build/outputs/apk/release/**
+          if-no-files-found: ignore
