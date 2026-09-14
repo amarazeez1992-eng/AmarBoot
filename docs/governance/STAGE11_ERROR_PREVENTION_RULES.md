@@ -16,3 +16,5 @@ These are mandatory regression-prevention rules for every future Stage 11 item.
 10. **Every discovered defect becomes a regression guard.** A fixed defect must be represented by a test or architecture check that prevents recurrence.
 11. **Do not repeat a previously discovered failure mode.** Before each implementation/repair, review this file, the Constitution, and the prior CI evidence for the current item.
 12. **No advancement before proof.** A Stage 11 item remains **قيد التحقق النهائي** whenever any required closure evidence is missing; it cannot advance or be marked CLOSED by assumption.
+
+<!-- Final verification trigger: current Stage 11 implementation must pass fresh CI before closure. -->
