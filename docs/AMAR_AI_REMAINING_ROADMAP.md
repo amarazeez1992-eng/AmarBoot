@@ -31,12 +31,14 @@ Stages 1–5 of the Agent foundation are now CLOSED: budget/policy safety, multi
 - laptop remains secondary; mobile app remains the primary operating surface
 - CLOSE GATE: demo-only execution verification, failure injection and full CI
 
-### Stage 8 — Central Command Plane and Application Authority (85–90%)
+### Stage 8 — Central Command Plane and Application Authority (85–90%) — CLOSED
 - Amar AI becomes the application command authority
 - subordinate control-room modules consume Agent decisions rather than owning policy
 - capability routing, audit visibility and emergency controls
 - bounded device permissions; no unrestricted device authority
 - CLOSE GATE: permission matrix, revocation tests, lifecycle tests and full CI
+
+**Closure evidence:** Stage 8 implementation, focused tests, full unit-test suite, debug build, CI workflow, regression guard, and architecture audit were verified successfully. The verified CI run is `34862221490` (job `104037088671`) on commit `db55367b2bdf735eb42b2eeffd584433a5288039`. The Stage 8 governance record is `docs/governance/STAGE8_CENTRAL_COMMAND_PLANE.md`.
 
 ### Stage 9 — Performance, Parallel Workforce and Reliability (90–95%)
 - parallel independent research/analysis workers
