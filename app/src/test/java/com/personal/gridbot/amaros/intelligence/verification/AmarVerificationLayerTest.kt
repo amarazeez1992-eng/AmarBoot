@@ -43,6 +43,18 @@ class AmarVerificationLayerTest {
     }
 
     @Test
+    fun evidence_only_verification_does_not_fabricate_a_claim_and_can_verify_clean_sources() {
+        val findings = listOf(
+            finding("Official", "https://official.example/a", "Evidence supports the release gate.", EvidenceStance.SUPPORTS),
+            finding("Independent", "https://independent.example/b", "Evidence supports the release gate.", EvidenceStance.SUPPORTS)
+        )
+        val report = AmarVerificationLayer().verifyEvidenceOnly(findings, nowEpochMs = 2_000L)
+        assertEquals(AmarVerificationStatus.VERIFIED, report.status)
+        assertTrue(report.claimVerification.claims.isEmpty())
+        assertEquals(2, report.usableEvidenceCount)
+    }
+
+    @Test
     fun opposing_evidence_is_detected_and_prevents_verified_status() {
         val findings = listOf(
             finding("Support", "https://a.example/support", "The change is safe and approved for release.", EvidenceStance.SUPPORTS),
