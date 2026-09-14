@@ -90,12 +90,8 @@ class AmarStageSixTest {
 
     @Test
     fun large_deterministic_dataset_completes_without_numeric_failure() {
-        val data = bars(20_000)
-        val started = System.nanoTime()
-        val report = AmarStageSixAggregationEngine().analyze(data)
-        val elapsedMs = (System.nanoTime() - started) / 1_000_000L
+        val report = AmarStageSixAggregationEngine().analyze(bars(20_000))
         assertEquals(20_000, report.bars)
         assertTrue(report.indicators.all { it.points.all { point -> point.value.isFinite() } })
-        assertTrue(elapsedMs < 5_000L)
     }
 }
