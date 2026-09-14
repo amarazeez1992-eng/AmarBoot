@@ -63,10 +63,6 @@ data class AmarRagChunk(
 
 data class AmarRagResult(val chunk: AmarRagChunk, val score: Double)
 
-enum class AmarSourceType {
-    OFFICIAL_API, MARKET_DATA, NEWS, SOCIAL, COMMUNITY, RESEARCH, DOCUMENT, WEB, UNKNOWN
-}
-
 interface AmarEmbeddingProvider { suspend fun embed(text: String): FloatArray }
 interface AmarReranker {
     suspend fun rerank(query: String, candidates: List<AmarRagResult>): List<AmarRagResult>
