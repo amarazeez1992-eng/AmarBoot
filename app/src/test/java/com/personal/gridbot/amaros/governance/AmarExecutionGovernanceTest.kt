@@ -33,13 +33,15 @@ class AmarExecutionGovernanceTest {
         assertEquals(AmarExecutionGovernance.Decision.REJECTED, a.authorize(proposal("k2")).decision)
     }
 
-    @Test fun emergencyLockOverridesValidDelegation() {
+    @Test fun emergencyLockOverridesValidDelegationAndInterruptsPendingExecution() {
         val a = authority()
         a.delegate(delegation())
+        assertEquals(AmarExecutionGovernance.Decision.APPROVED, a.authorize(proposal()).decision)
+        a.acknowledge("k1")
         a.setEmergencyLock(true)
-        assertEquals(AmarExecutionGovernance.Decision.LOCKED, a.authorize(proposal()).decision)
-        a.setEmergencyLock(false)
-        assertEquals(AmarExecutionGovernance.Decision.APPROVED, a.authorize(proposal("k2")).decision)
+        assertTrue(a.isEmergencyLocked())
+        assertEquals(AmarExecutionGovernance.CommandStatus.REJECTED, a.reconcile("k1", AmarExecutionGovernance.CommandStatus.REJECTED).expected)
+        assertEquals(AmarExecutionGovernance.Decision.LOCKED, a.authorize(proposal("k2")).decision)
     }
 
     @Test fun riskEvidenceAndSecurityAreIndependentGates() {
@@ -58,13 +60,21 @@ class AmarExecutionGovernanceTest {
         assertEquals(first, second)
     }
 
-    @Test fun acknowledgementAndReconciliationAreExplicit() {
+    @Test fun executionLifecycleRequiresAckThenExecutionThenVerification() {
         val a = authority()
         a.delegate(delegation())
-        val approved = a.authorize(proposal())
-        assertEquals(AmarExecutionGovernance.CommandStatus.APPROVED, approved.status)
-        val ack = a.acknowledge("k1")!!
-        assertEquals(AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED, ack.status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.APPROVED, a.authorize(proposal()).status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED, a.acknowledge("k1")!!.status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.EXECUTED, a.markExecuted("k1")!!.status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.VERIFIED, a.verify("k1")!!.status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.VERIFIED, a.acknowledge("k1")!!.status)
+    }
+
+    @Test fun reconciliationDetectsReadBackMismatch() {
+        val a = authority()
+        a.delegate(delegation())
+        a.authorize(proposal())
+        a.acknowledge("k1")
         assertTrue(a.reconcile("k1", AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED).consistent)
         assertFalse(a.reconcile("k1", AmarExecutionGovernance.CommandStatus.EXECUTED).consistent)
     }
