@@ -31,20 +31,40 @@ class AmarStageSixTest {
     }
 
     @Test
-    fun provenance_registry_accepts_approved_license_and_rejects_unapproved() {
+    fun provenance_registry_accepts_verified_bsd_source_and_rejects_unapproved_or_incomplete_sources() {
         val registry = AmarSourceRegistry()
         val source = AmarBuiltInIndicatorAdapter().provenance
         registry.register(source)
         assertEquals(source, registry.get(source.sourceId))
-        val external = source.copy(
+
+        val taLibCandidate = source.copy(
+            sourceId = "ta-lib",
+            name = "TA-Lib",
+            version = "candidate",
+            homepage = "https://ta-lib.org",
+            repository = "https://github.com/TA-Lib/ta-lib",
+            license = AmarSourceLicense("BSD-3-Clause", "https://opensource.org/license/bsd-3-clause/")
+        )
+        registry.register(taLibCandidate)
+        assertEquals(taLibCandidate, registry.get("ta-lib"))
+
+        val unlicensedExternal = taLibCandidate.copy(
+            sourceId = "missing-repository",
+            repository = null
+        )
+        try {
+            registry.register(unlicensedExternal)
+            throw AssertionError("external source without repository provenance must fail closed")
+        } catch (_: IllegalArgumentException) {
+            // expected
+        }
+
+        val incompatible = taLibCandidate.copy(
             sourceId = "bad-source",
-            name = "Bad Source",
-            sourceType = AmarSourceType.INDICATOR_ENGINE,
-            repository = "https://example.com/repo",
             license = AmarSourceLicense("GPL-3.0-only", "https://www.gnu.org/licenses/gpl-3.0.html")
         )
         try {
-            registry.register(external)
+            registry.register(incompatible)
             throw AssertionError("GPL source must be rejected by the default policy")
         } catch (_: IllegalArgumentException) {
             // expected
@@ -62,6 +82,15 @@ class AmarStageSixTest {
         } catch (_: IllegalArgumentException) {
             // expected
         }
+    }
+
+    @Test
+    fun licensed_adapter_cannot_return_a_different_provenance() {
+        val source = AmarBuiltInIndicatorAdapter().provenance
+        val adapter = AmarLicensedIndicatorAdapter(source) { bars, request ->
+            AmarBuiltInIndicatorAdapter().calculate(bars, request)
+        }
+        assertTrue(adapter.calculate(bars(40), AmarIndicatorRequest(AmarIndicatorKind.SMA, 10)).points.isNotEmpty())
     }
 
     @Test
