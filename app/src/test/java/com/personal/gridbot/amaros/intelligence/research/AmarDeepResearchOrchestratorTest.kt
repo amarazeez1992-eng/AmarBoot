@@ -7,6 +7,7 @@ import com.personal.gridbot.amaros.agent.EvidenceStance
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -28,7 +29,7 @@ class AmarDeepResearchOrchestratorTest {
     }
 
     @Test
-    fun parallel_research_is_bounded_ranked_and_deduplicated() = runBlocking {
+    fun parallel_research_is_bounded_ranked_deduplicated_and_evidence_verified() = runBlocking {
         val orchestrator = AmarDeepResearchOrchestrator(
             FakeResearchEngine(),
             policy = AmarDeepResearchPolicy(
@@ -48,7 +49,9 @@ class AmarDeepResearchOrchestratorTest {
         assertEquals(4, report.rankedFindings.size)
         assertEquals(2, report.independentSources.size)
         assertEquals(2, report.rankedFindings.count { it.authority == Authority.OFFICIAL })
-        assertTrue(report.confidence in 0.0..1.0)
+        assertEquals(AmarVerificationStatus.VERIFIED, report.verification.status)
+        assertTrue(report.tasks.all { it.verification.status == AmarVerificationStatus.VERIFIED })
+        assertTrue(report.confidence > 0.0)
     }
 
     @Test
@@ -76,6 +79,7 @@ class AmarDeepResearchOrchestratorTest {
         assertEquals("valid evidence", report.rankedFindings.single().evidence)
         assertEquals(1, report.verification.usableEvidenceCount)
         assertTrue(report.verification.sourceRegistry.independentHosts.contains("valid.example"))
+        assertTrue(report.verification.status != AmarVerificationStatus.UNVERIFIABLE)
     }
 
     @Test
@@ -95,6 +99,7 @@ class AmarDeepResearchOrchestratorTest {
 
         assertEquals(1, report.conflicts.size)
         assertTrue(report.verification.conflicts.isNotEmpty())
+        assertTrue(report.verification.status != AmarVerificationStatus.VERIFIED)
         assertTrue(report.confidence < 0.8)
     }
 }
