@@ -13,7 +13,7 @@ class AmarQuantTradingMathTest {
 
     @Test fun atrUsesWilderSmoothingInsteadOfSimpleRollingAverage() {
         assertEquals(2.25, AmarQuantTradingMath.atr(listOf(1.0, 2.0, 3.0), 2)!!, 0.0)
-        assertEquals(2.0, AmarQuantTradingMath.atr(listOf(1.0, 2.0, 3.0, 2.0), 2)!!, 0.0)
+        assertEquals(2.125, AmarQuantTradingMath.atr(listOf(1.0, 2.0, 3.0, 2.0), 2)!!, 0.0)
         assertNull(AmarQuantTradingMath.atr(listOf(1.0, Double.NaN), 2))
     }
 
@@ -27,7 +27,7 @@ class AmarQuantTradingMathTest {
 
     @Test fun sizingAndKellyRejectUnsafeInputs() {
         assertEquals(100.0, AmarQuantTradingMath.riskPositionSize(10000.0, 0.01, 1.0, 1.0)!!, 0.0)
-        assertEquals(0.2, AmarQuantTradingMath.kellyFraction(0.6, 2.0)!!, 0.0)
+        assertEquals(0.4, AmarQuantTradingMath.kellyFraction(0.6, 2.0)!!, 0.0)
         assertNull(AmarQuantTradingMath.kellyFraction(0.5, 0.0))
         assertNull(AmarQuantTradingMath.riskPositionSize(10000.0, 0.0, 1.0, 1.0))
     }
