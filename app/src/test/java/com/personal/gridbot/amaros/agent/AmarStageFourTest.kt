@@ -122,8 +122,9 @@ class AmarStageFourTest {
     }
 
     private fun verifyEventAgainstChain(event: AmarAuditEvent, previous: String): Boolean {
-        val material = listOf(event.sequence, event.timestampEpochMs, event.actor, event.action, event.decision, event.reason, previous).joinToString("|")
-        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(material.toByteArray()).joinToString("") { "%02x".format(it) }
+        val fields = listOf(event.sequence, event.timestampEpochMs, event.actor, event.action, event.decision, event.reason, previous)
+        val material = fields.joinToString(separator = "") { value -> "${value.toString().length}:$value;" }
+        val digest = java.security.MessageDigest.getInstance("SHA-256").digest(material.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         return event.hash == digest
     }
 
