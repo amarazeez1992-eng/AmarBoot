@@ -8,6 +8,12 @@ on:
       - 'app/src/test/java/com/personal/gridbot/amaros/workforce/**'
       - 'docs/governance/STAGE9_PARALLEL_WORKFORCE_RELIABILITY.md'
       - '.github/workflows/amar-stage-nine.yml'
+  pull_request:
+    paths:
+      - 'app/src/main/java/com/personal/gridbot/amaros/workforce/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/workforce/**'
+      - 'docs/governance/STAGE9_PARALLEL_WORKFORCE_RELIABILITY.md'
+      - '.github/workflows/amar-stage-nine.yml'
   workflow_dispatch:
 
 jobs:
