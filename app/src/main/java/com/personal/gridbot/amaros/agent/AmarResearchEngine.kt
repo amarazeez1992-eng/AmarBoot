@@ -7,13 +7,13 @@ interface AmarResearchEngine {
 
 data class ResearchRequest(
     val question: String,
-    val maxSources: Int = 40,
+    val maxSources: Int = 80,
     val requireIndependentSources: Boolean = true,
-    val targetIndependentSources: Int = 40
+    val targetIndependentSources: Int = 80
 ) {
     init {
         require(question.isNotBlank())
-        require(maxSources in 1..100)
+        require(maxSources in 1..1_000)
         require(targetIndependentSources in 1..maxSources)
     }
 }
@@ -31,7 +31,7 @@ data class ResearchFinding(
     val authority: Authority = Authority.UNKNOWN,
     val stance: EvidenceStance = EvidenceStance.UNKNOWN,
     val publisher: String = "",
-    val sourceType: AmarSourceType = AmarSourceType.UNKNOWN,
+    val sourceType: AmarSourceType = AmarSourceType.KNOWLEDGE,
     val retrievedAtEpochMs: Long = System.currentTimeMillis(),
     val fingerprint: String = AmarEvidence.fingerprintOf("$sourceUri|$evidence")
 )
