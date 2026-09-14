@@ -1,6 +1,8 @@
 package com.personal.gridbot.amaros.trading.quant
 
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
@@ -8,8 +10,10 @@ import kotlin.math.sqrt
 
 /**
  * Deterministic, execution-free quantitative primitives for the trading layer.
- * All functions are fail-closed: invalid/non-finite inputs return null or a
- * conservative bounded result rather than manufacturing a trading signal.
+ *
+ * All methods validate finite inputs and fail closed. Statistical methods make
+ * their assumptions explicit so outputs cannot be mistaken for execution or
+ * profitability guarantees.
  */
 object AmarQuantTradingMath {
     fun trueRange(high: Double, low: Double, previousClose: Double): Double? {
@@ -17,9 +21,19 @@ object AmarQuantTradingMath {
         return max(high - low, max(abs(high - previousClose), abs(low - previousClose)))
     }
 
+    /**
+     * Wilder ATR (RMA): seed with the mean of the first [period] true ranges,
+     * then recursively smooth all subsequent observations.
+     */
     fun atr(trueRanges: List<Double>, period: Int): Double? {
-        if (period <= 0 || trueRanges.size < period || trueRanges.any { !it.isFinite() || it < 0.0 }) return null
-        return trueRanges.takeLast(period).average()
+        if (period <= 0 || trueRanges.size < period) return null
+        if (trueRanges.any { !it.isFinite() || it < 0.0 }) return null
+
+        var value = trueRanges.take(period).average()
+        for (index in period until trueRanges.size) {
+            value = ((value * (period - 1)) + trueRanges[index]) / period
+        }
+        return value
     }
 
     fun realizedVolatility(closes: List<Double>, annualization: Double = 1.0): Double? {
@@ -42,37 +56,78 @@ object AmarQuantTradingMath {
         return maxDrawdown
     }
 
-    /** Historical Value-at-Risk at the supplied percentile (e.g. 0.95). */
+    /**
+     * Historical VaR as an empirical loss quantile.
+     * [losses] are non-negative loss magnitudes. [confidence] is the
+     * non-exceedance probability, e.g. 0.95. Linear interpolation is used.
+     */
     fun historicalVar(losses: List<Double>, confidence: Double): Double? {
-        if (losses.isEmpty() || losses.any { !it.isFinite() } || confidence !in 0.0..1.0) return null
+        if (losses.isEmpty() || losses.any { !it.isFinite() || it < 0.0 }) return null
+        if (!confidence.isFinite() || confidence !in 0.0..1.0) return null
+
         val sorted = losses.sorted()
-        val index = min(sorted.lastIndex, max(0, ((sorted.size - 1) * confidence).toInt()))
-        return sorted[index]
+        if (sorted.size == 1) return sorted.first()
+
+        val position = confidence * sorted.lastIndex.toDouble()
+        val lowerIndex = floor(position).toInt()
+        val upperIndex = ceil(position).toInt().coerceAtMost(sorted.lastIndex)
+        if (lowerIndex == upperIndex) return sorted[lowerIndex]
+
+        val weight = position - lowerIndex
+        return sorted[lowerIndex] + weight * (sorted[upperIndex] - sorted[lowerIndex])
     }
 
     /** Kelly fraction from win probability and win/loss payoff ratio. */
     fun kellyFraction(winProbability: Double, payoffRatio: Double): Double? {
-        if (!winProbability.isFinite() || !payoffRatio.isFinite() || winProbability !in 0.0..1.0 || payoffRatio <= 0.0) return null
+        if (!winProbability.isFinite() || !payoffRatio.isFinite()) return null
+        if (winProbability !in 0.0..1.0 || payoffRatio <= 0.0) return null
         val q = 1.0 - winProbability
         return winProbability - q / payoffRatio
     }
 
     /** Position sizing from fixed fractional risk. */
-    fun riskPositionSize(equity: Double, riskFraction: Double, stopDistance: Double, valuePerUnit: Double): Double? {
+    fun riskPositionSize(
+        equity: Double,
+        riskFraction: Double,
+        stopDistance: Double,
+        valuePerUnit: Double
+    ): Double? {
         if (!equity.isFinite() || !riskFraction.isFinite() || !stopDistance.isFinite() || !valuePerUnit.isFinite()) return null
         if (equity <= 0.0 || riskFraction <= 0.0 || stopDistance <= 0.0 || valuePerUnit <= 0.0) return null
         return equity * riskFraction / (stopDistance * valuePerUnit)
     }
 
-    /** Bounded risk-of-ruin proxy from win probability and payoff ratio. */
-    fun riskOfRuin(winProbability: Double, payoffRatio: Double, riskFraction: Double): Double? {
-        if (!winProbability.isFinite() || !payoffRatio.isFinite() || !riskFraction.isFinite()) return null
-        if (winProbability <= 0.0 || winProbability >= 1.0 || payoffRatio <= 0.0 || riskFraction <= 0.0 || riskFraction >= 1.0) return null
-        val lossProbability = 1.0 - winProbability
-        val edgeRatio = lossProbability / (winProbability * payoffRatio)
-        if (edgeRatio >= 1.0) return 1.0
-        return edgeRatio.pow(1.0 / riskFraction).coerceIn(0.0, 1.0)
-    }
+    /**
+     * First-passage diffusion approximation for reaching [ruinFraction]
+     * equity drawdown under an IID fixed-fraction binary-outcome model.
+     *
+     * Assumptions: fixed fractional sizing, independent outcomes, constant
+     * win probability/payoff, no costs, no regime shifts. This is explicitly
+     * an approximation rather than a universal exact risk-of-ruin formula.
+     */
+    fun riskOfRuin(
+        winProbability: Double,
+        payoffRatio: Double,
+        riskFraction: Double,
+        ruinFraction: Double
+    ): Double? {
+        if (!winProbability.isFinite() || !payoffRatio.isFinite() || !riskFraction.isFinite() || !ruinFraction.isFinite()) return null
+        if (winProbability <= 0.0 || winProbability >= 1.0) return null
+        if (payoffRatio <= 0.0 || riskFraction <= 0.0 || riskFraction >= 1.0) return null
+        if (ruinFraction <= 0.0 || ruinFraction >= 1.0) return null
 
-    private fun Double.pow(exponent: Double): Double = kotlin.math.exp(exponent * ln(this))
+        val winLogReturn = ln(1.0 + riskFraction * payoffRatio)
+        val lossLogReturn = ln(1.0 - riskFraction)
+        val meanLogReturn = winProbability * winLogReturn + (1.0 - winProbability) * lossLogReturn
+        val variance =
+            winProbability * (winLogReturn - meanLogReturn) * (winLogReturn - meanLogReturn) +
+                (1.0 - winProbability) * (lossLogReturn - meanLogReturn) * (lossLogReturn - meanLogReturn)
+
+        if (variance <= 0.0 || !variance.isFinite()) return if (meanLogReturn <= 0.0) 1.0 else 0.0
+        if (meanLogReturn <= 0.0) return 1.0
+
+        val barrier = -ln(1.0 - ruinFraction)
+        val exponent = -2.0 * meanLogReturn * barrier / variance
+        return kotlin.math.exp(exponent).coerceIn(0.0, 1.0)
+    }
 }
