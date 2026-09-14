@@ -19,7 +19,10 @@ class AmarDecisionEngine2(
         val hasConflict = input.verification?.conflicts?.isNotEmpty() == true
         val conflictPenalty = if (hasConflict) policy.conflictMultiplier else 1.0
         val evidenceFactor = if (input.verification == null) policy.unverifiedMultiplier else verificationScore
-        val confidence = ((contextConfidence * policy.contextWeight + evidenceFactor * policy.evidenceWeight) * conflictPenalty)
+        val weightTotal = policy.contextWeight + policy.evidenceWeight
+        val contextWeight = policy.contextWeight / weightTotal
+        val evidenceWeight = policy.evidenceWeight / weightTotal
+        val confidence = ((contextConfidence * contextWeight + evidenceFactor * evidenceWeight) * conflictPenalty)
             .coerceIn(0.0, 1.0)
         val risk = riskScore(input, directional)
         val adjustedScore = directional * confidence * (1.0 - risk)
