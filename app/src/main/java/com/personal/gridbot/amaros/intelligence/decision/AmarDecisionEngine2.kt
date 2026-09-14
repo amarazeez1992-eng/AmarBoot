@@ -2,6 +2,7 @@ package com.personal.gridbot.amaros.intelligence.decision
 
 import com.personal.gridbot.amaros.intelligence.MarketContext
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus
 import java.security.MessageDigest
 import kotlin.math.abs
 
@@ -14,10 +15,12 @@ class AmarDecisionEngine2(
         val directional = input.context.directionalScore.coerceIn(-1.0, 1.0)
         val contextConfidence = input.context.confidence.coerceIn(0.0, 1.0)
         val verificationScore = input.verification?.score?.coerceIn(0.0, 1.0) ?: 0.0
-        val verificationReady = input.verification?.status == com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus.VERIFIED
-        val conflictPenalty = if (input.verification?.conflicts?.isNullOrEmpty() != false) 1.0 else policy.conflictMultiplier
+        val verificationReady = input.verification?.status == AmarVerificationStatus.VERIFIED
+        val hasConflict = input.verification?.conflicts?.isNotEmpty() == true
+        val conflictPenalty = if (hasConflict) policy.conflictMultiplier else 1.0
         val evidenceFactor = if (input.verification == null) policy.unverifiedMultiplier else verificationScore
-        val confidence = (contextConfidence * policy.contextWeight + evidenceFactor * policy.evidenceWeight) * conflictPenalty
+        val confidence = ((contextConfidence * policy.contextWeight + evidenceFactor * policy.evidenceWeight) * conflictPenalty)
+            .coerceIn(0.0, 1.0)
         val risk = riskScore(input, directional)
         val adjustedScore = directional * confidence * (1.0 - risk)
         val direction = when {
@@ -25,7 +28,7 @@ class AmarDecisionEngine2(
             adjustedScore <= -policy.shortThreshold -> AmarDecisionDirection.SHORT_BIAS
             else -> AmarDecisionDirection.NEUTRAL
         }
-        val blocked = input.emergencyLock || risk >= policy.maxRiskScore || !verificationReady && policy.requireVerifiedEvidence
+        val blocked = input.emergencyLock || risk >= policy.maxRiskScore || (!verificationReady && policy.requireVerifiedEvidence)
         val status = when {
             blocked -> AmarDecisionStatus.BLOCKED
             direction == AmarDecisionDirection.NEUTRAL -> AmarDecisionStatus.HOLD
@@ -41,7 +44,7 @@ class AmarDecisionEngine2(
             direction = finalDirection,
             status = status,
             score = adjustedScore.coerceIn(-1.0, 1.0),
-            confidence = confidence.coerceIn(0.0, 1.0),
+            confidence = confidence,
             riskScore = risk,
             rationale = rationale,
             alternatives = alternatives,
@@ -53,10 +56,9 @@ class AmarDecisionEngine2(
     private fun riskScore(input: AmarDecisionInput, directional: Double): Double {
         val volatilityRisk = input.volatility.coerceIn(0.0, 1.0)
         val spreadRisk = input.spreadRatio.coerceIn(0.0, 1.0)
-        val uncertainty = (1.0 - input.context.confidence.coerceIn(0.0, 1.0))
-        val directionalDisagreement = input.context.evidence
-            .map { abs(it.score - directional) * it.confidence }
-            .averageOrNull() ?: 0.0
+        val uncertainty = 1.0 - input.context.confidence.coerceIn(0.0, 1.0)
+        val disagreementValues = input.context.evidence.map { abs(it.score - directional) * it.confidence }
+        val directionalDisagreement = if (disagreementValues.isEmpty()) 0.0 else disagreementValues.average()
         return (volatilityRisk * 0.35 + spreadRisk * 0.25 + uncertainty * 0.25 + directionalDisagreement.coerceIn(0.0, 1.0) * 0.15)
             .coerceIn(0.0, 1.0)
     }
@@ -73,11 +75,9 @@ class AmarDecisionEngine2(
 
     private fun stableId(input: AmarDecisionInput, direction: AmarDecisionDirection, status: AmarDecisionStatus, confidence: Double, risk: Double): String {
         val raw = listOf(input.decisionKey, direction.name, status.name, "%.8f".format(java.util.Locale.US, confidence), "%.8f".format(java.util.Locale.US, risk)).joinToString("|")
-        return sha256(raw).take(24)
+        return MessageDigest.getInstance("SHA-256")
+            .digest(raw.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }.take(24)
     }
-
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 }
 
 data class AmarDecisionPolicy(
@@ -116,7 +116,7 @@ data class AmarDecisionInput(
 }
 
 enum class AmarDecisionDirection { LONG_BIAS, SHORT_BIAS, NEUTRAL }
-en
+
 enum class AmarDecisionStatus { PROPOSED, HOLD, LOW_CONFIDENCE, BLOCKED }
 
 data class AmarDecisionResult(
@@ -138,5 +138,3 @@ data class AmarDecisionResult(
         require(!executable)
     }
 }
-
-private fun <T> List<T>.averageOrNull(): Double? = if (isEmpty()) null else map { it as Double }.average()
