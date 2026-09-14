@@ -40,4 +40,6 @@ Required before closure:
 
 The Stage 9 CI workflow is also enabled for pull requests so the gate can be independently observed before closure.
 
+Verification branch is intentionally documentation-only; production Stage 9 code is unchanged.
+
 Do not mark Stage 9 CLOSED before all gates above are verified.
