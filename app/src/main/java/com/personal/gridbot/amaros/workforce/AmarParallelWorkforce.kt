@@ -107,11 +107,11 @@ class AmarParallelWorkforce<K : Any, V : Any>(
             val jobs = items.mapIndexed { index, item ->
                 async(Dispatchers.IO) {
                     if (item.requiresNetwork && connectivity == Connectivity.OFFLINE) {
-                        return@async Outcome.Skipped(item.key, index, "network unavailable") as Outcome<K, V>
+                        return@async Outcome.Skipped(item.key, index, "network unavailable")
                     }
 
                     cache.get(item.cacheKey)?.let { cached ->
-                        return@async Outcome.Success(item.key, index, cached, cached = true, attempts = 0) as Outcome<K, V>
+                        return@async Outcome.Success(item.key, index, cached, cached = true, attempts = 0)
                     }
 
                     semaphore.withPermit {
