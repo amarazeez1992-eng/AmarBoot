@@ -40,6 +40,9 @@ jobs:
       - name: Focused Advanced Memory tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest' --stacktrace
 
+      - name: Focused Deep Research tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -56,7 +59,9 @@ jobs:
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayerTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemory.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemoryTest.kt
-          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestrator.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestratorTest.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research
 
       - name: Upload test evidence
         if: always()
