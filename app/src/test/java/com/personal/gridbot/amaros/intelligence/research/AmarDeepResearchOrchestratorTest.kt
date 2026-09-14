@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.intelligence.research
 
 import com.personal.gridbot.amaros.agent.AmarResearchEngine
+import com.personal.gridbot.amaros.agent.AmarSourceType
 import com.personal.gridbot.amaros.agent.Authority
 import com.personal.gridbot.amaros.agent.EvidenceStance
 import com.personal.gridbot.amaros.agent.ResearchFinding
@@ -18,9 +19,9 @@ class AmarDeepResearchOrchestratorTest {
             delay(2L)
             return ResearchReport(
                 findings = listOf(
-                    finding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL),
-                    finding("https://paper.example/${request.question}", "Peer reviewed evidence for ${request.question}", Authority.PEER_REVIEWED),
-                    finding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL)
+                    researchFinding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL),
+                    researchFinding("https://paper.example/${request.question}", "Peer reviewed evidence for ${request.question}", Authority.PEER_REVIEWED),
+                    researchFinding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL)
                 )
             )
         }
@@ -55,8 +56,8 @@ class AmarDeepResearchOrchestratorTest {
         val engine = object : AmarResearchEngine {
             override suspend fun research(request: ResearchRequest) = ResearchReport(
                 findings = listOf(
-                    finding("", "invalid", Authority.UNKNOWN),
-                    finding("https://valid.example/${request.question}", "valid evidence", Authority.REPUTABLE)
+                    researchFinding("", "invalid", Authority.UNKNOWN),
+                    researchFinding("https://valid.example/${request.question}", "valid evidence", Authority.REPUTABLE)
                 )
             )
         }
@@ -82,8 +83,8 @@ class AmarDeepResearchOrchestratorTest {
         val engine = object : AmarResearchEngine {
             override suspend fun research(request: ResearchRequest) = ResearchReport(
                 findings = listOf(
-                    finding("https://a.example/${request.question}", "supporting evidence", Authority.PRIMARY, EvidenceStance.SUPPORTS),
-                    finding("https://b.example/${request.question}", "opposing evidence", Authority.PRIMARY, EvidenceStance.OPPOSES)
+                    researchFinding("https://a.example/${request.question}", "supporting evidence", Authority.PRIMARY, EvidenceStance.SUPPORTS),
+                    researchFinding("https://b.example/${request.question}", "opposing evidence", Authority.PRIMARY, EvidenceStance.OPPOSES)
                 )
             )
         }
@@ -96,18 +97,19 @@ class AmarDeepResearchOrchestratorTest {
         assertTrue(report.verification.conflicts.isNotEmpty())
         assertTrue(report.confidence < 0.8)
     }
-
-    private fun finding(
-        uri: String,
-        evidence: String,
-        authority: Authority,
-        stance: EvidenceStance = EvidenceStance.SUPPORTS
-    ) = ResearchFinding(
-        sourceTitle = uri,
-        sourceUri = uri,
-        evidence = evidence,
-        authority = authority,
-        stance = stance,
-        retrievedAtEpochMs = 9_000L
-    )
 }
+
+private fun researchFinding(
+    uri: String,
+    evidence: String,
+    authority: Authority,
+    stance: EvidenceStance = EvidenceStance.SUPPORTS
+): ResearchFinding = ResearchFinding(
+    sourceTitle = uri,
+    sourceUri = uri,
+    evidence = evidence,
+    authority = authority,
+    stance = stance,
+    sourceType = AmarSourceType.RESEARCH,
+    retrievedAtEpochMs = 9_000L
+)
