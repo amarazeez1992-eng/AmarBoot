@@ -97,14 +97,16 @@ data class AmarDecisionPolicy(
     val requireVerifiedEvidence: Boolean = true
 ) {
     init {
+        require(contextWeight.isFinite() && evidenceWeight.isFinite())
         require(contextWeight >= 0.0 && evidenceWeight >= 0.0)
+        require((contextWeight + evidenceWeight).isFinite())
         require(contextWeight + evidenceWeight > 0.0)
-        require(unverifiedMultiplier in 0.0..1.0)
-        require(conflictMultiplier in 0.0..1.0)
-        require(minConfidence in 0.0..1.0)
-        require(maxRiskScore in 0.0..1.0)
-        require(longThreshold in 0.0..1.0)
-        require(shortThreshold in 0.0..1.0)
+        require(unverifiedMultiplier.isFinite() && unverifiedMultiplier in 0.0..1.0)
+        require(conflictMultiplier.isFinite() && conflictMultiplier in 0.0..1.0)
+        require(minConfidence.isFinite() && minConfidence in 0.0..1.0)
+        require(maxRiskScore.isFinite() && maxRiskScore in 0.0..1.0)
+        require(longThreshold.isFinite() && longThreshold in 0.0..1.0)
+        require(shortThreshold.isFinite() && shortThreshold in 0.0..1.0)
     }
 }
 
