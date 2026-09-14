@@ -1,25 +1,19 @@
 package com.personal.gridbot.amaros.agent
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarStageFourTest {
     @Test
     fun simulation_closes_on_reversal_and_calculates_pnl() {
-        val candles = listOf(
-            candle(1, 100.0), candle(2, 105.0), candle(3, 103.0)
-        )
-        val signals = listOf(
-            AmarStrategySignal(1, AmarSignalDirection.LONG),
-            AmarStrategySignal(2, AmarSignalDirection.LONG),
-            AmarStrategySignal(3, AmarSignalDirection.SHORT)
-        )
+        val candles = listOf(candle(1, 100.0), candle(2, 105.0), candle(3, 103.0))
+        val signals = listOf(AmarStrategySignal(1, AmarSignalDirection.LONG), AmarStrategySignal(2, AmarSignalDirection.LONG), AmarStrategySignal(3, AmarSignalDirection.SHORT))
         val result = AmarStageFourSimulationEngine().run(candles, signals, AmarSimulationConfig(1000.0, 1.0))
         assertEquals(1, result.trades.size)
-        assertEquals(3.0, result.trades.single().netPnl)
-        assertEquals(1003.0, result.finalEquity)
+        assertEquals(3.0, result.trades.single().netPnl, 0.000001)
+        assertEquals(1003.0, result.finalEquity, 0.000001)
     }
 
     @Test
