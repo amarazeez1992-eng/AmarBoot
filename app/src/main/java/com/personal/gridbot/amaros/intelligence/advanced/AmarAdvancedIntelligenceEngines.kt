@@ -55,8 +55,7 @@ class AmarEvidenceEngine {
         return AmarEvidenceScore(e.id, (tier * e.quality.coerceIn(0.0, 1.0)).coerceIn(0.0, 1.0), listOf("tier=${e.tier}", "quality=${e.quality}"))
     }
     fun conflicts(evidence: List<AmarEvidence>): List<AmarEvidenceConflict> = evidence.groupBy { normalize(it.claim) }.values.filter { it.size > 1 }.map { group ->
-        val claims = group.map { it.claim.lowercase().trim() }.distinct()
-        AmarEvidenceConflict(normalize(group.first().claim), group.map { it.id }, if (claims.size > 1) 1.0 else 0.0, if (claims.size > 1) "sources disagree" else "duplicate supporting evidence")
+        AmarEvidenceConflict(normalize(group.first().claim), group.map { it.id }, 0.0, "duplicate supporting evidence")
     }
     private fun normalize(s: String) = s.lowercase().replace(Regex("[^a-z0-9\\s]"), " ").replace(Regex("\\s+"), " ").trim()
 }
