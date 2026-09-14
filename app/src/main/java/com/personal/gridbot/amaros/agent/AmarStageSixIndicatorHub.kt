@@ -33,7 +33,11 @@ class AmarIndicatorEngineHub(
         val failures = mutableListOf<Throwable>()
         for (adapter in candidates) {
             try {
-                return adapter.calculate(bars, request)
+                return adapter.calculate(bars, request).also { result ->
+                    require(result.source == adapter.provenance) {
+                        "Indicator engine returned untrusted provenance for ${request.kind}"
+                    }
+                }
             } catch (failure: Throwable) {
                 failures += failure
             }
