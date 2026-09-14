@@ -15,6 +15,7 @@ Before writing or modifying code:
 5. Check tests for semantic validity: tests must actually test the intended distinction, not accidentally use identical values or equivalent fixtures.
 6. Check registry/catalog logic against its stated contract, including required channels, sources, and minimum coverage.
 7. Check idempotency boundaries in tests and implementation: an idempotency key/decision ID represents one immutable decision outcome. Never reuse the same key in a test to simulate a new authorization attempt after revocation, expiry, or another state change; use a new key and separately verify that the original receipt remains stable.
+8. Check generic type contracts end-to-end: constructor defaults, explicitly typed fields, method parameters, and call sites must agree on the same key/value types; never rely on accidental inference when a generic boundary is safety-relevant.
 
 ## Mandatory post-write checks
 
@@ -36,6 +37,7 @@ After every implementation change:
 - Tests whose supposedly different cases accidentally use the same value.
 - Reusing an idempotency key/decision ID for a new logical authorization attempt after the original decision has already produced a receipt.
 - Catalog/discovery implementations that silently omit required channels or contract dimensions.
+- Generic cache/worker contracts where a key/value generic is inferred differently from the field or method call site, causing compile-time type mismatches.
 - Pushing code before compile/test/CI verification.
 - Reusing a previous failing implementation pattern merely by renaming files or symbols.
 
