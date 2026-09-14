@@ -2,7 +2,7 @@ name: Amar Stage Eleven
 
 # Stage 11 verification gate: every intelligence layer requires focused regression tests,
 # the full unit suite, build verification, architecture checks, and CI evidence before closure.
-# Research uses the dedicated evidence-only verification path; no synthetic answer claims are used.
+# Decision Intelligence is integrated into the existing DecisionEngine; no parallel engine is permitted.
 
 on:
   push:
@@ -49,6 +49,9 @@ jobs:
       - name: Focused Deep Research tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest' --stacktrace
 
+      - name: Focused Decision Intelligence tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.DecisionEngineStage11Test' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -68,7 +71,13 @@ jobs:
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemoryTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestrator.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestratorTest.kt
-          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/DecisionEngineStage11Test.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
+          test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "class AmarDecisionEngine2" app/src/main/java app/src/test
 
       - name: Upload test evidence
         if: always()
