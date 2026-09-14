@@ -20,12 +20,13 @@ class AmarStageFiveTest {
         )
         val first = compiler.compile(request)
         val second = compiler.compile(request)
+        val spec = first.specification
         assertTrue(first.approved)
         assertTrue(first.conflicts.isEmpty())
-        assertNotNull(first.specification)
+        assertNotNull(spec)
         assertEquals(first, second)
-        assertEquals(64, first.specification!!.fingerprint.length)
-        assertEquals(listOf("source:a", "source:b"), first.specification.provenance)
+        assertEquals(64, spec!!.fingerprint.length)
+        assertEquals(listOf("source:a", "source:b"), spec.provenance)
         assertEquals(6, first.opinions.size)
     }
 
