@@ -4,6 +4,7 @@ name: Amar Stage Eleven
 # the full unit suite, build verification, architecture checks, and CI evidence before closure.
 # Research uses the dedicated evidence-only verification path; no synthetic answer claims are used.
 # Decision Intelligence is proposal-only and is explicitly forbidden from execution authority.
+# Fresh verification trigger: Stage 11 item 5 must be verified on the current main commit.
 
 on:
   push:
