@@ -18,3 +18,4 @@ These are mandatory regression-prevention rules for every future Stage 11 item.
 12. **No advancement before proof.** A Stage 11 item remains **قيد التحقق النهائي** whenever any required closure evidence is missing; it cannot advance or be marked CLOSED by assumption.
 
 <!-- Final verification trigger: current Stage 11 implementation must pass fresh CI before closure. -->
+<!-- Verification retry: current head must receive fresh CI evidence. -->
