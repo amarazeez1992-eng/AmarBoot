@@ -22,6 +22,7 @@ class AmarCentralCommandPlaneTest {
 
     private fun decision(
         id: String = "d1",
+        issued: Long = 1_000L,
         expires: Long = 5_000L,
         approved: Boolean = true,
         route: AmarCentralCommandPlane.Route = AmarCentralCommandPlane.Route.EXECUTION_GATEWAY,
@@ -31,7 +32,7 @@ class AmarCentralCommandPlaneTest {
         capability = AmarExecutionGovernance.Capability.SUBMIT_EXECUTION,
         route = route,
         command = "OPEN_MARKET",
-        issuedAtEpochMs = now,
+        issuedAtEpochMs = issued,
         expiresAtEpochMs = expires,
         policyVersion = 1L,
         policyApproved = approved,
