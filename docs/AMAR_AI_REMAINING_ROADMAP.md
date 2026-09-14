@@ -6,7 +6,7 @@ This roadmap governs the remaining Agent work. A stage is CLOSED only after impl
 
 Stages 1–3 of the Agent foundation are treated as the established baseline: budget/policy safety, multi-role deliberation, evidence hardening, memory, unified evidence and freshness.
 
-## Remaining 40% — eight gated stages
+## Remaining 40% — seven gated stages
 
 ### Stage 4 — Simulation, Risk, Crisis, Audit (60–65%)
 - deterministic simulation engine
@@ -37,7 +37,7 @@ Stages 1–3 of the Agent foundation are treated as the established baseline: bu
 - execution proposal -> validation -> risk -> security -> approval -> gateway
 - idempotency, ACK, read-back, reconciliation and emergency lock
 - live execution remains opt-in and fail-closed
-- laptop remains secondary; mobile app remains the primary control surface
+- laptop remains secondary; mobile app remains the primary operating surface
 - CLOSE GATE: demo-only execution verification, failure injection and full CI
 
 ### Stage 8 — Central Command Plane and Application Authority (85–90%)
