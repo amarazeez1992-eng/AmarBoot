@@ -1,0 +1,1 @@
+Exact-commit verification gate: PR CI must pass before quantitative hardening is closed.
