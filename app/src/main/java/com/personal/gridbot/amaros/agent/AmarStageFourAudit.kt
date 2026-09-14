@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 /** Thread-safe append-only hash-chained audit ledger for Stage 4 decisions. */
@@ -15,7 +16,7 @@ class AmarStageFourAuditLedger {
         require(action.isNotBlank())
         require(decision.isNotBlank())
         require(reason.isNotBlank())
-        val material = listOf(nextSequence, timestampEpochMs, actor, action, decision, reason, lastHash).joinToString("|")
+        val material = canonicalMaterial(nextSequence, timestampEpochMs, actor, action, decision, reason, lastHash)
         val hash = sha256(material)
         val event = AmarAuditEvent(nextSequence, timestampEpochMs, actor, action, decision, reason, lastHash, hash)
         events += event
@@ -31,7 +32,15 @@ class AmarStageFourAuditLedger {
         var expectedSequence = 1L
         for (event in events) {
             if (event.sequence != expectedSequence || event.timestampEpochMs < 0L) return@synchronized false
-            val material = listOf(event.sequence, event.timestampEpochMs, event.actor, event.action, event.decision, event.reason, previous).joinToString("|")
+            val material = canonicalMaterial(
+                event.sequence,
+                event.timestampEpochMs,
+                event.actor,
+                event.action,
+                event.decision,
+                event.reason,
+                previous
+            )
             if (event.previousHash != previous || event.hash != sha256(material)) return@synchronized false
             previous = event.hash
             expectedSequence++
@@ -39,5 +48,14 @@ class AmarStageFourAuditLedger {
         previous == lastHash && expectedSequence == nextSequence
     }
 
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
+    private fun canonicalMaterial(vararg fields: Any): String =
+        fields.joinToString(separator = "") { field ->
+            val value = field.toString()
+            "${value.length}:$value;"
+        }
+
+    private fun sha256(value: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest(value.toByteArray(StandardCharsets.UTF_8))
+            .joinToString("") { "%02x".format(it) }
 }
