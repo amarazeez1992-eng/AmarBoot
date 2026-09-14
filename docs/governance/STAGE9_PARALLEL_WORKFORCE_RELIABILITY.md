@@ -1,6 +1,6 @@
 # Stage 9 — Performance, Parallel Workforce and Reliability
 
-STATUS: OPEN — implementation landed; verification gate pending
+STATUS: CLOSED — verified 2026-09-14
 
 ## Scope
 
@@ -18,6 +18,7 @@ Implemented boundary:
 - explicit ONLINE/PARTIAL/OFFLINE connectivity state
 - network-required work is fail-closed when offline
 - partial results remain observable rather than silently discarded
+- explicit cache generic boundary prevents key/value type drift
 
 ## Safety and architecture
 
@@ -27,17 +28,24 @@ Implemented boundary:
 - Timeout is classified separately from caller cancellation.
 - Cache keys must be unique within one batch to prevent ambiguous aggregation.
 - Result order is deterministic regardless of completion order.
+- Execution authority remains outside this workforce and behind the existing governance boundary.
 
-## Verification gate
+## Verification evidence
 
-Required before closure:
-1. focused Stage 9 unit tests
-2. full unit-test suite
-3. debug build verification
-4. CI success
-5. re-inspection of changed files
-6. architecture/regression audit
+All closure gates were verified:
+1. focused Stage 9 unit tests — SUCCESS
+2. full unit-test suite — SUCCESS
+3. debug build verification — SUCCESS
+4. Stage 9 CI — SUCCESS
+5. changed production file re-inspected — COMPLETE
+6. architecture/regression audit — COMPLETE
 
-The Stage 9 CI workflow is also enabled for pull requests so the gate can be independently observed before closure.
+Verified CI run: `34866641241`
+Verified job: `104052015157`
+Verified production correction commit: `397a25ae9f24d242cd314d312328439e000965cb`
 
-Do not mark Stage 9 CLOSED before all gates above are verified.
+The permanent engineering regression guard includes the Stage 9 generic-type contract failure pattern and requires the inspect → implement → re-inspect → focused test → full test → CI → audit gate for Stages 7–10.
+
+## Closure
+
+Stage 9 is officially CLOSED after successful focused tests, full unit tests, debug build verification, CI verification, re-inspection, and architecture/regression audit.
