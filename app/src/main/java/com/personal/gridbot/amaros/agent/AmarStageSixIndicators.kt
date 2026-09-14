@@ -6,11 +6,16 @@ interface AmarIndicatorAdapter {
     fun calculate(bars: List<AmarMarketBar>, request: AmarIndicatorRequest): AmarIndicatorResult
 }
 
+/**
+ * Reference local engine for the foundational calculations.
+ * The broad AmarIndicatorKind namespace is deliberately larger than this engine;
+ * advanced calculations are supplied by independently admitted adapters.
+ */
 class AmarBuiltInIndicatorAdapter : AmarIndicatorAdapter {
     override val provenance = AmarSourceProvenance(
         sourceId = "amar-built-in-indicators",
         name = "AMAR AI Built-in Indicator Engine",
-        version = "1.0",
+        version = "2.0",
         homepage = "https://github.com/amarazeez1992-eng/AmarBoot",
         sourceType = AmarSourceType.INDICATOR_ENGINE,
         license = AmarSourceLicense("Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0")
@@ -23,6 +28,7 @@ class AmarBuiltInIndicatorAdapter : AmarIndicatorAdapter {
             AmarIndicatorKind.EMA -> ema(bars, request.period)
             AmarIndicatorKind.RSI -> rsi(bars, request.period)
             AmarIndicatorKind.ATR -> atr(bars, request.period)
+            else -> throw UnsupportedOperationException("No local implementation registered for ${request.kind}")
         }
         return AmarIndicatorResult(request.kind, request.period, values, provenance)
     }
