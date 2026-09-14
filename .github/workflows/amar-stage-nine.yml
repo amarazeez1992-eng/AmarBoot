@@ -1,8 +1,8 @@
-name: Amar Stage Nine
+name: Amar Stage 9 — Performance, Parallel Workforce and Reliability
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
       - 'app/src/main/java/com/personal/gridbot/amaros/workforce/**'
       - 'app/src/test/java/com/personal/gridbot/amaros/workforce/**'
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify-stage-nine:
+  stage-nine-verification:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,7 +23,7 @@ jobs:
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
 
@@ -38,10 +38,10 @@ jobs:
 
       - name: Upload diagnostics
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: amar-stage-nine-diagnostics
           path: |
             app/build/reports/tests/**
-            app/build/test-results/**
+            app/build/outputs/apk/**
           if-no-files-found: ignore
