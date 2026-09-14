@@ -8,7 +8,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.util.LinkedHashMap
 import kotlinx.coroutines.sync.Semaphore
@@ -104,10 +103,9 @@ class AmarParallelWorkforce<K : Any, V : Any>(
         if (!currentCoroutineContext().isActive) throw CancellationException("workforce cancelled before start")
 
         val semaphore = Semaphore(config.maxWorkers)
-        val dispatcher = Dispatchers.IO
         return coroutineScope {
             val jobs = items.mapIndexed { index, item ->
-                async(dispatcher) {
+                async(Dispatchers.IO) {
                     if (item.requiresNetwork && connectivity == Connectivity.OFFLINE) {
                         return@async Outcome.Skipped(item.key, index, "network unavailable") as Outcome<K, V>
                     }
@@ -150,11 +148,10 @@ class AmarParallelWorkforce<K : Any, V : Any>(
                 }
                 cache.put(item.cacheKey, value)
                 return Outcome.Success(item.key, index, value, cached = false, attempts = attempt)
-            } catch (cancel: CancellationException) {
-                if (!currentCoroutineContext().isActive) throw cancel
-                lastFailure = "cancelled"
             } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
                 lastFailure = "timeout"
+            } catch (cancel: CancellationException) {
+                throw cancel
             } catch (failure: Throwable) {
                 lastFailure = failure.message ?: failure::class.simpleName.orEmpty().ifBlank { "worker failed" }
             }
