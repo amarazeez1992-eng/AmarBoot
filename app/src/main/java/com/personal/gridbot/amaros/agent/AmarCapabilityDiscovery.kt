@@ -74,15 +74,18 @@ class AmarCapabilityRefreshPlanner(
     ): AmarCapabilityRefreshReport {
         require(queries.isNotEmpty())
         require(limitPerAdapter in 1..500)
-        val candidates = queries.asSequence()
-            .filter { it.isNotBlank() }
-            .flatMap { query ->
-                discoveryRegistry.all().asSequence().flatMap { adapter ->
-                    adapter.discover(query, limitPerAdapter).asSequence()
+
+        // Keep suspension points in the coroutine body; do not hide suspend calls
+        // inside Sequence lambdas, which are not suspend-aware.
+        val candidates = buildList {
+            for (query in queries) {
+                if (query.isBlank()) continue
+                for (adapter in discoveryRegistry.all()) {
+                    addAll(adapter.discover(query, limitPerAdapter))
                 }
             }
-            .distinctBy { it.fingerprint }
-            .toList()
+        }.distinctBy { it.fingerprint }
+
         val admissible = candidates.filter { candidate ->
             candidate.licenseSpdxId in setOf("MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD", "MPL-2.0") &&
                 candidate.licenseUri != null
