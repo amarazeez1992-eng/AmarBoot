@@ -8,7 +8,10 @@ data class AmarStrategySignal(
     val direction: AmarSignalDirection,
     val confidence: Double = 1.0
 ) {
-    init { require(confidence in 0.0..1.0) }
+    init {
+        require(timestampEpochMs >= 0L)
+        require(confidence.isFinite() && confidence in 0.0..1.0)
+    }
 }
 
 data class AmarSimulationConfig(
@@ -19,10 +22,10 @@ data class AmarSimulationConfig(
     val maxBars: Int = 100_000
 ) {
     init {
-        require(initialEquity > 0.0)
-        require(quantity > 0.0)
-        require(feePerTrade >= 0.0)
-        require(slippagePerUnit >= 0.0)
+        require(initialEquity.isFinite() && initialEquity > 0.0)
+        require(quantity.isFinite() && quantity > 0.0)
+        require(feePerTrade.isFinite() && feePerTrade >= 0.0)
+        require(slippagePerUnit.isFinite() && slippagePerUnit >= 0.0)
         require(maxBars in 1..100_000)
     }
 }
@@ -37,7 +40,16 @@ data class AmarSimulationTrade(
     val grossPnl: Double,
     val fees: Double,
     val netPnl: Double
-)
+) {
+    init {
+        require(entryTimestampEpochMs >= 0L)
+        require(exitTimestampEpochMs >= entryTimestampEpochMs)
+        require(entryPrice.isFinite() && entryPrice > 0.0)
+        require(exitPrice.isFinite() && exitPrice > 0.0)
+        require(quantity.isFinite() && quantity > 0.0)
+        require(grossPnl.isFinite() && fees.isFinite() && fees >= 0.0 && netPnl.isFinite())
+    }
+}
 
 data class AmarSimulationResult(
     val initialEquity: Double,
@@ -48,7 +60,15 @@ data class AmarSimulationResult(
     val profitFactor: Double,
     val completed: Boolean,
     val issues: List<String> = emptyList()
-)
+) {
+    init {
+        require(initialEquity.isFinite() && initialEquity > 0.0)
+        require(finalEquity.isFinite())
+        require(maxDrawdown.isFinite() && maxDrawdown >= 0.0)
+        require(winRate.isFinite() && winRate in 0.0..1.0)
+        require(profitFactor.isFinite() || profitFactor == Double.POSITIVE_INFINITY)
+    }
+}
 
 data class AmarRiskLimits(
     val maxRiskPerTradeFraction: Double = 0.02,
@@ -58,11 +78,11 @@ data class AmarRiskLimits(
     val minimumEquity: Double = 0.0
 ) {
     init {
-        require(maxRiskPerTradeFraction in 0.0..1.0)
-        require(maxDailyLossFraction in 0.0..1.0)
-        require(maxDrawdownFraction in 0.0..1.0)
+        require(maxRiskPerTradeFraction.isFinite() && maxRiskPerTradeFraction in 0.0..1.0)
+        require(maxDailyLossFraction.isFinite() && maxDailyLossFraction in 0.0..1.0)
+        require(maxDrawdownFraction.isFinite() && maxDrawdownFraction in 0.0..1.0)
         require(maxOpenPositions >= 0)
-        require(minimumEquity >= 0.0)
+        require(minimumEquity.isFinite() && minimumEquity >= 0.0)
     }
 }
 
@@ -86,9 +106,9 @@ data class AmarCrisisLimits(
     val maxDataAgeMs: Long = 120_000L
 ) {
     init {
-        require(maxSpreadFraction >= 0.0)
-        require(maxBarRangeFraction >= 0.0)
-        require(maxGapFraction >= 0.0)
+        require(maxSpreadFraction.isFinite() && maxSpreadFraction >= 0.0)
+        require(maxBarRangeFraction.isFinite() && maxBarRangeFraction >= 0.0)
+        require(maxGapFraction.isFinite() && maxGapFraction >= 0.0)
         require(maxDataAgeMs >= 0L)
     }
 }
