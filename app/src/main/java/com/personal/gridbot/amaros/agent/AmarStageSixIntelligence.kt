@@ -2,7 +2,9 @@ package com.personal.gridbot.amaros.agent
 
 /** Registry that rejects missing/unsupported licensing before a source becomes usable. */
 class AmarSourceRegistry(
-    private val allowedSpdxLicenses: Set<String> = setOf("MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause")
+    private val allowedSpdxLicenses: Set<String> = setOf(
+        "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "0BSD", "MPL-2.0"
+    )
 ) {
     private val sources = linkedMapOf<String, AmarSourceProvenance>()
 
@@ -58,10 +60,14 @@ class AmarMarketStructureEngine {
 }
 
 class AmarStageSixAggregationEngine(
-    private val indicatorAdapter: AmarIndicatorAdapter = AmarBuiltInIndicatorAdapter(),
+    private val indicatorHub: AmarIndicatorEngineHub = AmarIndicatorEngineHub(),
     private val statisticsEngine: AmarStatisticalEngine = AmarStatisticalEngine(),
     private val structureEngine: AmarMarketStructureEngine = AmarMarketStructureEngine()
 ) {
+    init {
+        if (indicatorHub.allAdapters().isEmpty()) indicatorHub.register(AmarBuiltInIndicatorAdapter())
+    }
+
     fun analyze(
         bars: List<AmarMarketBar>,
         indicatorRequests: List<AmarIndicatorRequest> = listOf(
@@ -74,7 +80,7 @@ class AmarStageSixAggregationEngine(
     ): AmarMarketIntelligenceReport {
         require(bars.isNotEmpty())
         require(bars.zipWithNext().all { it.first.timestampEpochMs < it.second.timestampEpochMs })
-        val indicators = indicatorRequests.distinct().map { indicatorAdapter.calculate(bars, it) }
+        val indicators = indicatorRequests.distinct().map { indicatorHub.calculate(bars, it) }
         val stats = statisticsEngine.summarize(bars)
         val structure = if (bars.size > structureLookback) structureEngine.inspect(bars, structureLookback)
         else AmarMarketStructureSnapshot(AmarStructureSignal.RANGE, bars.minOf { it.low }, bars.maxOf { it.high }, structureLookback)
@@ -87,7 +93,7 @@ class AmarStageSixAggregationEngine(
             structure = structure,
             score = score,
             confidence = confidence,
-            reasons = listOf("deterministic-indicator-analysis", "statistical-return-analysis", "market-structure-analysis")
+            reasons = listOf("provider-neutral-indicator-hub", "statistical-return-analysis", "market-structure-analysis")
         )
     }
 
