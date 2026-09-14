@@ -9,7 +9,6 @@ import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
 import com.personal.gridbot.amaros.workforce.AmarParallelWorkforce
-import kotlinx.coroutines.CancellationException
 
 /**
  * Stage 11 / 4 — Deep Research Orchestrator.
@@ -81,7 +80,8 @@ class AmarDeepResearchOrchestrator(
 
         val ranked = rankAndDeduplicate(taskReports.flatMap { it.findings })
         val globalVerification = verificationLayer.verify("", ranked, nowEpochMs)
-        val conflicts = taskReports.flatMap { it.verification.conflicts }.distinctBy { it.supportingFingerprints to it.opposingFingerprints } + globalVerification.conflicts
+        val conflicts = (taskReports.flatMap { it.verification.conflicts } + globalVerification.conflicts)
+            .distinctBy { it.supportingFingerprints.sorted() to it.opposingFingerprints.sorted() }
         val independentSources = ranked.mapNotNull { hostOf(it.sourceUri) }.distinct()
         val taskConfidence = if (taskReports.isEmpty()) 0.0 else taskReports.map { it.verification.score }.average()
         val diversityScore = (independentSources.size.toDouble() / policy.targetIndependentSources.coerceAtLeast(1)).coerceIn(0.0, 1.0)
