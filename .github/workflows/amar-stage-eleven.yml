@@ -5,6 +5,7 @@ name: Amar Stage Eleven
 # Research uses the dedicated evidence-only verification path; no synthetic answer claims are used.
 # Decision Intelligence is proposal-only and is explicitly forbidden from execution authority.
 # Fresh verification trigger: Stage 11 item 5 must be verified on the current main commit.
+# Verification trigger revision: item 5 CI must execute from the current main push.
 
 on:
   push:
