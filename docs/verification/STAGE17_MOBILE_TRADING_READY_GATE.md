@@ -1,6 +1,6 @@
 # AMARBOOT — Stage 17 Mobile Trading Ready Gate
 
-**Status:** GATE CANDIDATE — awaiting exact-commit CI verification and main verification.
+**Status:** CLOSED — Mobile Trading Ready gate passed.
 
 ## Scope
 
@@ -10,7 +10,19 @@ The next integration phase is explicitly deferred until after this gate:
 
 `Laptop → CMG → Bridge → MT5`
 
-## Required gate conditions
+## Gate result
+
+All required Stage 17 gate checks passed on the exact gate commit:
+
+- AMAR AI Stage One Verification — success
+- AMAR AI Stage Two Verification — success
+- CodeQL — success
+- PR #36 merged to `main`
+- merge commit: `405c40e64d39c8c3fbc031ee8788a2e20aa7dd3c`
+- post-merge main commit verified
+- protected MT5 implementation remains outside the Stage 17 change set
+
+## Readiness conditions verified
 
 1. Stages 1–16 are present on `main`.
 2. Application-wide unit/regression coverage and security hardening are green.
@@ -33,26 +45,18 @@ The exact Stage 16 head was:
 
 `2398d4afc79272c46831a5ed4fdcd1bcae86147f`
 
-Its required verification workflows completed successfully:
-
-- AMAR AI Stage One Verification
-- AMAR AI Stage Two Verification
-- CodeQL
+Its required verification workflows completed successfully.
 
 ## Execution boundary evidence
 
-`AmarExecutionBoundary` explicitly remains non-broker-writing. DEMO mode is fail-closed, and the boundary reports that no Broker Adapter is connected.
+`AmarExecutionBoundary` remains non-broker-writing. DEMO mode is fail-closed, and the boundary reports that no Broker Adapter is connected.
 
 ## MT5 boundary
 
 The protected MT5 EA remains out of scope for Stage 17. MT5 integration is intentionally postponed until the dedicated final integration phase.
 
-## Closure rule
+## Closure
 
-Stage 17 may be marked **CLOSED** only after:
+**Stage 17 CLOSED.**
 
-- this gate commit passes Stage One, Stage Two, and CodeQL;
-- the resulting commit is merged to `main`;
-- post-merge `main` is verified;
-- the protected MT5 file is verified unchanged;
-- no conflicting or duplicate readiness gate is found.
+The Android/mobile preparation sequence is complete under the approved architecture. The next workstream is the separately governed Laptop → CMG → Bridge → MT5 integration, where the MT5 components can be revisited and integrated as planned.
