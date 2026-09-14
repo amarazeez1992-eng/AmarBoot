@@ -16,6 +16,8 @@ Stages 1–5 of the Agent foundation are now CLOSED: budget/policy safety, multi
 - parallel analysis with deterministic aggregation
 - CLOSE GATE: source provenance, indicator correctness, performance and full CI
 
+**Implementation baseline started:** provider-neutral source registry, deterministic built-in SMA/EMA/RSI/ATR adapter, statistical return analysis, market-structure analysis, bounded deterministic aggregation, provenance/license documentation, and focused/full-test workflow are now present. Stage 6 remains **OPEN** until CI, build, performance evidence and final audit are verified.
+
 ### Stage 7 — Execution Governance and User Delegation (75–85%)
 - central capability/permission model
 - explicit user delegation and revocation
