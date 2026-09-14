@@ -14,8 +14,8 @@ import com.personal.gridbot.amaros.workforce.AmarParallelWorkforce
  * Stage 11 / 4 — Deep Research Orchestrator.
  *
  * Coordinates bounded parallel research, deterministic source ranking, deduplication and
- * verification. Retrieval remains provider-owned; this layer never browses directly and never
- * grants execution authority.
+ * evidence-only verification. Retrieval remains provider-owned; this layer never browses
+ * directly and never grants execution authority.
  */
 class AmarDeepResearchOrchestrator(
     private val researchEngine: AmarResearchEngine,
@@ -58,28 +58,16 @@ class AmarDeepResearchOrchestrator(
             )
         }
 
-        val taskReports = execution.outcomes.mapNotNull { outcome ->
+        val taskReports = execution.outcomes.map { outcome ->
             when (outcome) {
                 is AmarParallelWorkforce.Outcome.Success -> buildTaskReport(outcome.key, outcome.value, nowEpochMs)
-                is AmarParallelWorkforce.Outcome.Failed -> AmarResearchTaskReport(
-                    question = outcome.key,
-                    findings = emptyList(),
-                    verification = verificationLayer.verify("", emptyList(), nowEpochMs),
-                    independentSourceCount = 0,
-                    error = outcome.reason
-                )
-                is AmarParallelWorkforce.Outcome.Skipped -> AmarResearchTaskReport(
-                    question = outcome.key,
-                    findings = emptyList(),
-                    verification = verificationLayer.verify("", emptyList(), nowEpochMs),
-                    independentSourceCount = 0,
-                    error = outcome.reason
-                )
+                is AmarParallelWorkforce.Outcome.Failed -> failedTaskReport(outcome.key, outcome.reason, nowEpochMs)
+                is AmarParallelWorkforce.Outcome.Skipped -> failedTaskReport(outcome.key, outcome.reason, nowEpochMs)
             }
         }
 
         val ranked = rankAndDeduplicate(taskReports.flatMap { it.findings })
-        val globalVerification = verificationLayer.verify("", ranked, nowEpochMs)
+        val globalVerification = verificationLayer.verifyEvidenceOnly(ranked, nowEpochMs)
         val conflicts = (taskReports.flatMap { it.verification.conflicts } + globalVerification.conflicts)
             .distinctBy { it.supportingFingerprints.sorted() to it.opposingFingerprints.sorted() }
         val independentSources = ranked.mapNotNull { hostOf(it.sourceUri) }.distinct()
@@ -101,7 +89,7 @@ class AmarDeepResearchOrchestrator(
 
     private fun buildTaskReport(question: String, report: ResearchReport, nowEpochMs: Long): AmarResearchTaskReport {
         val ranked = rankAndDeduplicate(report.findings).take(policy.maxSourcesPerQuestion)
-        val verification = verificationLayer.verify("", ranked, nowEpochMs)
+        val verification = verificationLayer.verifyEvidenceOnly(ranked, nowEpochMs)
         return AmarResearchTaskReport(
             question = question,
             findings = ranked,
@@ -110,6 +98,15 @@ class AmarDeepResearchOrchestrator(
             error = null
         )
     }
+
+    private fun failedTaskReport(question: String, reason: String, nowEpochMs: Long): AmarResearchTaskReport =
+        AmarResearchTaskReport(
+            question = question,
+            findings = emptyList(),
+            verification = verificationLayer.verifyEvidenceOnly(emptyList(), nowEpochMs),
+            independentSourceCount = 0,
+            error = reason
+        )
 
     private fun rankAndDeduplicate(findings: List<ResearchFinding>): List<ResearchFinding> =
         findings
