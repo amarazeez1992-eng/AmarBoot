@@ -83,6 +83,7 @@ class AmarAdvancedMemory(
         val tagTokens = entry.tags.flatMap(::tokenize).toSet()
         val textOverlap = overlap(queryTokens, textTokens)
         val tagOverlap = overlap(queryTokens, tagTokens)
+        if (textOverlap == 0.0 && tagOverlap == 0.0) return AmarMemoryMatch(entry, 0.0, emptyList())
         val age = (nowEpochMs - entry.updatedAtEpochMs).coerceAtLeast(0L)
         val recency = exp(-age.toDouble() / policy.recencyHalfLifeMs.toDouble()).coerceIn(0.0, 1.0)
         val permanentBoost = if (entry.permanent) 0.10 else 0.0
