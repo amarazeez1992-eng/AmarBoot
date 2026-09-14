@@ -7,11 +7,7 @@ import com.personal.gridbot.amaros.agent.memory.AmarMemoryType
 import java.security.MessageDigest
 import kotlin.math.exp
 
-/**
- * Stage 11 item 3: deterministic intelligence over the existing memory contract.
- * It adds relevance ranking, recency decay, explicit consolidation and reproducible snapshots
- * without replacing the established repository or granting execution authority.
- */
+/** Stage 11 item 3: deterministic intelligence over the existing memory contract. */
 class AmarAdvancedMemory(
     private val repository: AmarMemoryRepository,
     private val policy: AmarAdvancedMemoryPolicy = AmarAdvancedMemoryPolicy()
@@ -26,43 +22,35 @@ class AmarAdvancedMemory(
         require(nowEpochMs >= 0)
         val normalizedQuery = normalize(query)
         if (normalizedQuery.isEmpty()) return emptyList()
-
         return repository.search(query, policy.candidateLimit)
             .asSequence()
             .filter { type == null || it.type == type }
-            .map { entry -> score(entry, normalizedQuery, nowEpochMs) }
+            .map { score(it, normalizedQuery, nowEpochMs) }
             .filter { it.score >= policy.minimumRelevance }
             .sortedWith(compareByDescending<AmarMemoryMatch> { it.score }.thenByDescending { it.entry.updatedAtEpochMs }.thenBy { it.entry.id })
             .take(policy.resultLimit)
             .toList()
     }
 
-    /** Explicit consolidation only: exact normalized duplicates collapse to the newest record. */
+    /** Exact normalized duplicate consolidation is scoped by memory type; different semantic types are preserved. */
     fun consolidate(limit: Int = policy.consolidationLimit): AmarMemoryConsolidationReport {
         require(limit > 0)
         val records = repository.recent(limit.coerceAtLeast(1))
-        val groups = records.groupBy { normalize(it.text) }
+        val groups = records.groupBy { it.type to normalize(it.text) }
         var removed = 0
         val keptIds = mutableListOf<String>()
-
         groups.values.forEach { group ->
             val keep = group.maxWithOrNull(compareBy<AmarMemoryEntry> { it.updatedAtEpochMs }.thenBy { it.id }) ?: return@forEach
             keptIds += keep.id
-            group.filter { it.id != keep.id }.forEach {
-                if (repository.delete(it.id)) removed++
-            }
+            group.filter { it.id != keep.id }.forEach { if (repository.delete(it.id)) removed++ }
         }
-        return AmarMemoryConsolidationReport(
-            inspected = records.size,
-            groups = groups.size,
-            removedDuplicates = removed,
-            keptIds = keptIds.sorted()
-        )
+        return AmarMemoryConsolidationReport(records.size, groups.size, removed, keptIds.sorted())
     }
 
-    /** Records an explicit supersession relation without destroying historical memory. */
+    /** Records explicit supersession without destroying history or allowing self-overwrite. */
     fun supersede(oldId: String, replacement: AmarMemoryEntry): AmarMemoryEntry {
         require(repository.get(oldId) != null) { "Unknown memory id: $oldId" }
+        require(replacement.id != oldId) { "Replacement must use a new memory id" }
         val tagged = replacement.copy(tags = (replacement.tags + "supersedes:$oldId").distinct())
         repository.save(tagged)
         return tagged
@@ -102,17 +90,10 @@ class AmarAdvancedMemory(
         return AmarMemoryMatch(entry, score, reasons)
     }
 
-    private fun overlap(a: Set<String>, b: Set<String>): Double {
-        if (a.isEmpty() || b.isEmpty()) return 0.0
-        return a.intersect(b).size.toDouble() / a.size.toDouble()
-    }
-
+    private fun overlap(a: Set<String>, b: Set<String>): Double = if (a.isEmpty() || b.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
     private fun tokenize(value: String): Set<String> = normalize(value).split(' ').filter { it.length >= 2 }.toSet()
-
     private fun normalize(value: String): String = value.trim().lowercase().replace(Regex("\\s+"), " ")
-
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
 }
 
 data class AmarAdvancedMemoryPolicy(
@@ -133,21 +114,6 @@ data class AmarAdvancedMemoryPolicy(
     }
 }
 
-data class AmarMemoryMatch(
-    val entry: AmarMemoryEntry,
-    val score: Double,
-    val reasons: List<String>
-)
-
-data class AmarMemoryConsolidationReport(
-    val inspected: Int,
-    val groups: Int,
-    val removedDuplicates: Int,
-    val keptIds: List<String>
-)
-
-data class AmarMemorySnapshot(
-    val entryCount: Int,
-    val digest: String,
-    val entryIds: List<String>
-)
+data class AmarMemoryMatch(val entry: AmarMemoryEntry, val score: Double, val reasons: List<String>)
+data class AmarMemoryConsolidationReport(val inspected: Int, val groups: Int, val removedDuplicates: Int, val keptIds: List<String>)
+data class AmarMemorySnapshot(val entryCount: Int, val digest: String, val entryIds: List<String>)
