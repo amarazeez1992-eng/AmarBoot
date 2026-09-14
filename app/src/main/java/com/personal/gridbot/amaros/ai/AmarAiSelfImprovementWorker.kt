@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.personal.gridbot.R
+import com.personal.gridbot.amaros.ai.knowledge.AmarAiKnowledgeSyncScheduler
 import java.util.concurrent.TimeUnit
 
 /** Periodically audits the trading-only AI/bot-lab stack and alerts on governed improvement proposals. */
@@ -66,6 +67,7 @@ object AmarAiSelfImprovementScheduler {
                 androidx.work.ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
+            AmarAiKnowledgeSyncScheduler.start(app)
         }
     }
 }
