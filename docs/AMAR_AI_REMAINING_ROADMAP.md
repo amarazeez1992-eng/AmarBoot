@@ -2,6 +2,8 @@
 
 This roadmap is the authoritative stage tracker. A stage is CLOSED only after implementation, focused tests, full unit tests, build verification, CI, and explicit architecture/regression audit evidence.
 
+**Binding project law:** `docs/governance/AMAR_PROJECT_CONSTITUTION.md` governs all closure decisions. No roadmap status may override missing evidence.
+
 ## Current status
 
 - Stage 1 — Agent Foundation: CLOSED
@@ -18,10 +20,10 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 
 ### Stage 11 item status
 
-- 1. Intelligence Core: CLOSED
-- 2. Verification Layer: CLOSED
-- 3. Advanced Memory: CLOSED
-- 4. Research Engine: CLOSED
+- 1. Intelligence Core: IN PROGRESS — final verification pending
+- 2. Verification Layer: IN PROGRESS — final verification pending
+- 3. Advanced Memory: IN PROGRESS — final verification pending
+- 4. Research Engine: IN PROGRESS — final verification pending
 - 5. Decision Intelligence: PENDING
 - 6. Self-Critique: PENDING
 - 7. Benchmark & Quality: PENDING
@@ -52,119 +54,16 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
 
 ### Ordered execution sequence
 
-1. Intelligence Core — CLOSED
-   - Perception Engine
-   - Reasoning Engine
-   - Confidence Engine
-
-2. Verification Layer — CLOSED
-   - Evidence Engine
-   - Source Registry
-   - Conflict Detection
-   - Provenance Chain
-
-3. Advanced Memory — CLOSED
-   - Short/working/long-term memory
-   - Evidence memory
-   - Decision memory
-   - Decision Replay
-
-4. Research Engine — CLOSED
-   - Deep Research Orchestrator
-   - Parallel research
-   - Source ranking and verification
-
+1. Intelligence Core — IN PROGRESS / final verification pending
+2. Verification Layer — IN PROGRESS / final verification pending
+3. Advanced Memory — IN PROGRESS / final verification pending
+4. Research Engine — IN PROGRESS / final verification pending
 5. Decision Intelligence — PENDING
-   - Scenario Engine
-   - Simulation Lab
-   - Risk intelligence
-   - Explainability Engine
-
 6. Self-Critique — PENDING
-   - Self-review
-   - Error Intelligence
-   - Root-cause correction
-   - Permanent regression tests
-
 7. Benchmark & Quality — PENDING
-   - Benchmark Lab
-   - Accuracy and consistency metrics
-   - Confidence calibration
-   - Regression intelligence
-
 8. Observability — PENDING
-   - AI health monitoring
-   - Performance diagnostics
-   - Capability/worker telemetry
-   - Recovery visibility
-
 9. Final 99% Gate — PENDING
-   - Full security audit
-   - Full regression suite
-   - Architecture audit
-   - Performance/benchmark audit
-   - Provenance/license audit
-   - Zero unresolved critical/high defects
-
 10. Multimodal Agent Interface & Workspace — PENDING — highest-priority interface package
-   - Unified multimodal session orchestrator: text, voice, URL, code, files, and artifacts enter one consistent agent context without duplicating state
-   - Microphone input with explicit permission, speech-to-text, streaming partial transcripts, interruption/barge-in, turn detection, and recovery from recognition failures
-   - Natural two-way voice conversation with interruption/turn-taking support, cancellation, latency budgets, and graceful text fallback
-   - Text and voice conversation share the same agent context and memory policy; modality changes must not silently lose context
-   - External URL intake with safe fetch, redirect/timeout/size limits, content-type validation, parsing, analysis, source/evidence tracking, snapshot/provenance identity, and clear failure reasons
-   - Source-code intake for common programming languages with language detection, encoding detection, parser/static-analyzer adapters where supported, generic-text fallback, explanation, defect detection, dependency/context inspection, and report generation
-   - File intake pipeline with content-based type detection, archive inspection, safe extraction limits, text/document/image analysis, metadata inspection, and format-specific analyzers
-   - APK analysis through a sandboxed/read-only inspection path with manifest/resource/code/signature/package metadata analysis; never implicitly install or execute untrusted binaries
-   - Persistent artifact workspace with stable artifact IDs, content hashes, explicit names, versions, timestamps, provenance, source references, analysis status, and retrieval metadata
-   - Artifact lineage: every generated report or derived artifact records exactly which source/version produced it and which analysis configuration was used
-   - Reproducible analysis: same immutable artifact + same analyzer/version/configuration must produce a traceable, comparable result
-   - Safe workspace lifecycle: quarantine, active-analysis, verified, archived, and deleted states with explicit transitions
-   - GitHub save workflow: when explicitly instructed, create/update a named file or artifact in the authorized repository; verify repository/branch/path/overwrite intent; preserve commit identity and provenance; never silently overwrite or execute
-   - Execution is a separate governed action: save does not imply run, install, deploy, merge, publish, or trade execution
-   - Explicit action confirmation for destructive, external, privileged, or execution-capable operations
-   - Capability firewall between analysis and execution so reading/analyzing code, APKs, ZIPs, or scripts cannot itself trigger execution
-   - Resource governance for CPU, memory, storage, network, archive expansion, file count, input size, analysis time, and concurrency with fail-closed limits
-   - Security isolation for untrusted inputs, including path-traversal prevention, decompression-bomb protection, dangerous-file handling, network restrictions, and malware-risk quarantine signals
-   - Privacy protection: minimize retained sensitive content, support redaction where applicable, and keep provenance without unnecessarily duplicating raw private data
-   - Exportable analysis reports with stable references, findings, evidence, analyzer versions, limitations, and reproducibility metadata
-   - Workspace search and retrieval by name, ID, hash, source, version, language/type, date, and analysis status
-   - Offline-first degradation: core inspection and workspace operations remain useful without network access; network-dependent capabilities fail clearly rather than silently pretending success
-   - Adapter architecture so new languages, file formats, URL parsers, speech engines, and analyzers can be added without changing the central agent contract
-   - Contract-level regression tests for every modality and every boundary: voice→context, URL→evidence, file→artifact, code→analysis, APK→sandbox, artifact→GitHub, and save→execute separation
-   - Performance targets measured for first response, voice latency, file ingestion, analysis throughput, workspace retrieval, and cancellation responsiveness
-   - Security and reliability telemetry for rejected inputs, quarantines, timeouts, cancellations, parser failures, analyzer failures, and resource-limit events
-   - No hidden network calls, hidden execution, hidden persistence, or hidden external writes
-
-### Stage 11 architecture target
-
-```text
-AMAR AI
-  -> CENTRAL BRAIN
-     -> Perception
-     -> Reasoning
-     -> Memory
-     -> Intelligence Core
-        -> Research
-        -> Verification
-        -> Conflict
-        -> Confidence
-        -> Decision
-        -> Risk
-        -> Simulation
-        -> Self-Critique
-     -> MULTIMODAL INTERFACE
-        -> Session Orchestrator
-        -> Voice / STT / TTS
-        -> URLs / Safe Fetch
-        -> Code / Static Analysis
-        -> Files / Archives / APK
-        -> Artifact Workspace
-        -> Provenance / Lineage
-        -> GitHub Workspace
-     -> SECURITY / RESOURCE FIREWALL
-     -> GOVERNANCE GATE
-     -> ACTION / AUDIT
-```
 
 ### Non-negotiable Stage 11 rule
 
@@ -172,9 +71,9 @@ The 99% score is not a claim made by design. It must be earned through measurabl
 
 For every numbered item, the mandatory completion loop is:
 
-**investigate → implement → inspect → test → confirm → prove → audit → ready → close**
+**تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-No item may advance until that loop has produced evidence.
+No item may advance until that loop has produced current evidence. Previous CI success does not close a later-modified implementation.
 
 ## Non-negotiable principles
 
@@ -185,4 +84,4 @@ No item may advance until that loop has produced evidence.
 - Open-source components require provenance and license evidence before reuse.
 - Financial execution remains behind explicit user delegation, risk controls, security controls, ACK, read-back, reconciliation, and audit.
 - The Android application remains the primary operating surface.
-- Stage 11 must follow: inspect → design → implement → re-inspect → focused test → full test → CI → audit → close.
+- The project closure law is defined in `docs/governance/AMAR_PROJECT_CONSTITUTION.md` and must be obeyed for every future stage and item.
