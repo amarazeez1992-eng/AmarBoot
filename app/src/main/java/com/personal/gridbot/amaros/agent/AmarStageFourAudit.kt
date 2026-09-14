@@ -2,13 +2,15 @@ package com.personal.gridbot.amaros.agent
 
 import java.security.MessageDigest
 
-/** Append-only hash-chained audit ledger for Stage 4 decisions. */
+/** Thread-safe append-only hash-chained audit ledger for Stage 4 decisions. */
 class AmarStageFourAuditLedger {
+    private val lock = Any()
     private val events = mutableListOf<AmarAuditEvent>()
     private var nextSequence = 1L
     private var lastHash = "GENESIS"
 
-    fun append(timestampEpochMs: Long, actor: String, action: String, decision: String, reason: String): AmarAuditEvent {
+    fun append(timestampEpochMs: Long, actor: String, action: String, decision: String, reason: String): AmarAuditEvent = synchronized(lock) {
+        require(timestampEpochMs >= 0L)
         require(actor.isNotBlank())
         require(action.isNotBlank())
         require(decision.isNotBlank())
@@ -19,19 +21,22 @@ class AmarStageFourAuditLedger {
         events += event
         nextSequence++
         lastHash = hash
-        return event
+        event
     }
 
-    fun snapshot(): List<AmarAuditEvent> = events.toList()
+    fun snapshot(): List<AmarAuditEvent> = synchronized(lock) { events.toList() }
 
-    fun verifyIntegrity(): Boolean {
+    fun verifyIntegrity(): Boolean = synchronized(lock) {
         var previous = "GENESIS"
+        var expectedSequence = 1L
         for (event in events) {
+            if (event.sequence != expectedSequence || event.timestampEpochMs < 0L) return@synchronized false
             val material = listOf(event.sequence, event.timestampEpochMs, event.actor, event.action, event.decision, event.reason, previous).joinToString("|")
-            if (event.previousHash != previous || event.hash != sha256(material)) return false
+            if (event.previousHash != previous || event.hash != sha256(material)) return@synchronized false
             previous = event.hash
+            expectedSequence++
         }
-        return true
+        previous == lastHash && expectedSequence == nextSequence
     }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }
