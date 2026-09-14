@@ -9,19 +9,19 @@ class AmarAgentStageOneTest {
     @Test fun budget_normalization_keeps_limits_safe() {
         val budget = AmarAgentBudget(
             maxSteps = 0,
-            maxToolCalls = 999,
-            maxSources = 500,
-            targetIndependentSources = 900,
+            maxToolCalls = 9_999,
+            maxSources = 5_000,
+            targetIndependentSources = 9_000,
             maxContextTokens = 1,
             timeoutMs = 999_999L
         ).normalized()
 
         assertEquals(1, budget.maxSteps)
-        assertEquals(500, budget.maxToolCalls)
-        assertEquals(100, budget.maxSources)
-        assertEquals(100, budget.targetIndependentSources)
+        assertEquals(2_000, budget.maxToolCalls)
+        assertEquals(1_000, budget.maxSources)
+        assertEquals(1_000, budget.targetIndependentSources)
         assertEquals(1024, budget.maxContextTokens)
-        assertEquals(120_000L, budget.timeoutMs)
+        assertEquals(300_000L, budget.timeoutMs)
     }
 
     @Test fun direction_engine_rejects_negated_buy() {
@@ -82,7 +82,7 @@ class AmarAgentStageOneTest {
         assertTrue(noResearch.none { it.id == "simulation" })
         assertTrue(noResearch.none { it.id == "strategy_draft" })
 
-        val full = tools.availableTools(AmarAgentPolicy())
+        val full = AmarTradingTools().availableTools(AmarAgentPolicy())
         assertEquals(AmarToolScope.RESEARCH, full.first { it.id == "market_research" }.scope)
         assertEquals(AmarToolScope.SIMULATION, full.first { it.id == "simulation" }.scope)
         assertEquals(AmarToolScope.STRATEGY_WRITE, full.first { it.id == "strategy_draft" }.scope)
