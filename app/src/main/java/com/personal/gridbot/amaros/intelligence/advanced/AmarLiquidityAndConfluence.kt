@@ -56,29 +56,40 @@ data class AmarConfluenceResult(
 class AmarLiquidityEngine {
     fun detectSweeps(candles: List<AmarOhlc>, levels: List<AmarLiquidityLevel>): List<AmarLiquiditySweep> {
         if (candles.isEmpty() || levels.isEmpty()) return emptyList()
-        return candles.flatMap { candle ->
+        val armed = levels.associateWith { true }.toMutableMap()
+        return candles.sortedBy { it.timestamp }.flatMap { candle ->
             levels.mapNotNull { level ->
                 when (level.kind) {
-                    AmarLiquidityLevel.Kind.SWING_HIGH -> if (candle.high > level.price && candle.close < level.price) AmarLiquiditySweep(level, candle.timestamp, AmarLiquiditySweep.Direction.BEARISH_REVERSAL, candle.high - level.price) else null
-                    AmarLiquidityLevel.Kind.SWING_LOW -> if (candle.low < level.price && candle.close > level.price) AmarLiquiditySweep(level, candle.timestamp, AmarLiquiditySweep.Direction.BULLISH_REVERSAL, level.price - candle.low) else null
+                    AmarLiquidityLevel.Kind.SWING_HIGH -> when {
+                        candle.close > level.price -> { armed[level] = true; null }
+                        armed[level] == true && candle.high > level.price && candle.close < level.price -> {
+                            armed[level] = false
+                            AmarLiquiditySweep(level, candle.timestamp, AmarLiquiditySweep.Direction.BEARISH_REVERSAL, candle.high - level.price)
+                        }
+                        else -> null
+                    }
+                    AmarLiquidityLevel.Kind.SWING_LOW -> when {
+                        candle.close < level.price -> { armed[level] = true; null }
+                        armed[level] == true && candle.low < level.price && candle.close > level.price -> {
+                            armed[level] = false
+                            AmarLiquiditySweep(level, candle.timestamp, AmarLiquiditySweep.Direction.BULLISH_REVERSAL, level.price - candle.low)
+                        }
+                        else -> null
+                    }
                 }
             }
         }
     }
 }
 
-/** Combines independent source families while discounting repeated signals from the same family. */
+/** Combines evidence by taking one strongest signal from each independent source family. */
 class AmarConfluenceEngine {
     fun combine(signals: List<AmarConfluenceSignal>): AmarConfluenceResult {
         if (signals.isEmpty()) return AmarConfluenceResult(AmarConfluenceSignal.Direction.NEUTRAL, 0.0, 0.0, 0, 0)
         val grouped = signals.groupBy { it.sourceGroup }
-        val groupScores = grouped.values.map { group ->
-            group.sortedByDescending { it.score }.mapIndexed { index, signal ->
-                signal to signal.score / (1.0 + 0.5 * index)
-            }.maxByOrNull { it.second }!!
-        }
-        val bullish = groupScores.filter { it.first.direction == AmarConfluenceSignal.Direction.BULLISH }.sumOf { it.second }
-        val bearish = groupScores.filter { it.first.direction == AmarConfluenceSignal.Direction.BEARISH }.sumOf { it.second }
+        val groupScores = grouped.values.mapNotNull { group -> group.filter { it.direction != AmarConfluenceSignal.Direction.NEUTRAL }.maxByOrNull { it.score } }
+        val bullish = groupScores.filter { it.direction == AmarConfluenceSignal.Direction.BULLISH }.sumOf { it.score }
+        val bearish = groupScores.filter { it.direction == AmarConfluenceSignal.Direction.BEARISH }.sumOf { it.score }
         val total = max(1e-12, bullish + bearish)
         val edge = (bullish - bearish) / total
         val direction = when {
@@ -87,7 +98,7 @@ class AmarConfluenceEngine {
             else -> AmarConfluenceSignal.Direction.NEUTRAL
         }
         val score = abs(edge).coerceIn(0.0, 1.0)
-        val confidence = (score * (groupScores.size.toDouble() / max(1, signals.size))).coerceIn(0.0, 1.0)
+        val confidence = (score * (groupScores.size.toDouble() / max(1, grouped.size))).coerceIn(0.0, 1.0)
         return AmarConfluenceResult(direction, score, confidence, signals.size, grouped.size)
     }
 }
