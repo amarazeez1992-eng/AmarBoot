@@ -1,13 +1,13 @@
 package com.personal.gridbot.amaros.intelligence.decision
 
+import com.personal.gridbot.amaros.agent.AmarEvidence
+import com.personal.gridbot.amaros.agent.Authority
+import com.personal.gridbot.amaros.agent.EvidenceStance
+import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.intelligence.Evidence
 import com.personal.gridbot.amaros.intelligence.EvidenceType
 import com.personal.gridbot.amaros.intelligence.MarketContext
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
-import com.personal.gridbot.amaros.agent.AmarEvidence
-import com.personal.gridbot.amaros.agent.AmarEvidenceAuthority
-import com.personal.gridbot.amaros.agent.EvidenceStance
-import com.personal.gridbot.amaros.agent.ResearchFinding
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -97,11 +97,12 @@ class AmarDecisionEngine2Test {
     )
 
     private fun finding(id: String, evidence: String, stance: EvidenceStance) = ResearchFinding(
-        fingerprint = AmarEvidence.fingerprintOf(id),
+        sourceTitle = id,
         sourceUri = "https://example.com/$id",
         evidence = evidence,
-        authority = AmarEvidenceAuthority.REPUTABLE,
+        authority = Authority.REPUTABLE,
         stance = stance,
-        retrievedAtEpochMs = 1000L
+        retrievedAtEpochMs = 1000L,
+        fingerprint = AmarEvidence.fingerprintOf(id)
     )
 }
