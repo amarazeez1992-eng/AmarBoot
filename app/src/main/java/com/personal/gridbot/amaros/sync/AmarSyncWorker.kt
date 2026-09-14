@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.personal.gridbot.amaros.bots.AmarBotVaultRepository
+import com.personal.gridbot.amaros.security.AmarSecureTokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -101,7 +102,7 @@ data class AmarSyncConfig(
     companion object {
         private const val PREFS = "amar_sync_config_v1"
         private const val ENDPOINT = "endpoint"
-        private const val TOKEN = "token"
+        private const val LEGACY_TOKEN = "token"
         private const val DEVICE = "device"
         private const val REVISION = "revision"
         private const val BASE = "baseSnapshot"
@@ -109,19 +110,36 @@ data class AmarSyncConfig(
         fun configure(context: Context, endpoint: String, token: String) {
             require(endpoint.startsWith("https://") || endpoint.startsWith("http://10.") || endpoint.startsWith("http://192.168."))
             require(token.isNotBlank())
-            val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val appContext = context.applicationContext
+            val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val device = prefs.getString(DEVICE, null) ?: UUID.randomUUID().toString()
-            prefs.edit().putString(ENDPOINT, endpoint.trim()).putString(TOKEN, token).putString(DEVICE, device).apply()
+            AmarSecureTokenStore.save(appContext, token)
+            prefs.edit()
+                .putString(ENDPOINT, endpoint.trim())
+                .remove(LEGACY_TOKEN)
+                .putString(DEVICE, device)
+                .apply()
             AmarSyncManager.schedule(context)
             AmarSyncManager.requestNow(context)
         }
 
         fun load(context: Context): AmarSyncConfig? {
-            val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val appContext = context.applicationContext
+            val p = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val endpoint = p.getString(ENDPOINT, null)?.trim().orEmpty()
-            val token = p.getString(TOKEN, null).orEmpty()
             val device = p.getString(DEVICE, null).orEmpty()
-            if (endpoint.isBlank() || token.isBlank() || device.isBlank()) return null
+            if (endpoint.isBlank() || device.isBlank()) return null
+
+            var token = AmarSecureTokenStore.load(appContext)
+            if (token.isNullOrBlank()) {
+                val legacy = p.getString(LEGACY_TOKEN, null).orEmpty()
+                if (legacy.isNotBlank()) {
+                    AmarSecureTokenStore.save(appContext, legacy)
+                    p.edit().remove(LEGACY_TOKEN).apply()
+                    token = legacy
+                }
+            }
+            if (token.isNullOrBlank()) return null
             return AmarSyncConfig(endpoint, token, device, p.getLong(REVISION, 0L), p.getString(BASE, "[]") ?: "[]")
         }
 
