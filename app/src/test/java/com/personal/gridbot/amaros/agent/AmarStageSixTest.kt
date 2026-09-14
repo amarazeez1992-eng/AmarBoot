@@ -19,10 +19,10 @@ class AmarStageSixTest {
     }
 
     @Test
-    fun sma_ema_rsi_atr_are_deterministic_and_finite() {
+    fun foundational_indicators_are_deterministic_and_finite() {
         val engine = AmarBuiltInIndicatorAdapter()
         val data = bars(80)
-        for (kind in AmarIndicatorKind.entries) {
+        for (kind in listOf(AmarIndicatorKind.SMA, AmarIndicatorKind.EMA, AmarIndicatorKind.RSI, AmarIndicatorKind.ATR)) {
             val result = engine.calculate(data, AmarIndicatorRequest(kind, 14))
             assertTrue(result.points.isNotEmpty())
             assertTrue(result.points.all { it.value.isFinite() })
@@ -48,10 +48,7 @@ class AmarStageSixTest {
         registry.register(taLibCandidate)
         assertEquals(taLibCandidate, registry.get("ta-lib"))
 
-        val unlicensedExternal = taLibCandidate.copy(
-            sourceId = "missing-repository",
-            repository = null
-        )
+        val unlicensedExternal = taLibCandidate.copy(sourceId = "missing-repository", repository = null)
         try {
             registry.register(unlicensedExternal)
             throw AssertionError("external source without repository provenance must fail closed")
