@@ -75,7 +75,10 @@ object AmarInstitutionalSourceCatalog {
         AmarResearchSourceDescriptor("npm", "npm", AmarResearchChannel.PACKAGE_REGISTRY, "https://www.npmjs.com", false, true, true, true),
         AmarResearchSourceDescriptor("huggingface", "Hugging Face", AmarResearchChannel.OPEN_SOURCE_CODE, "https://huggingface.co", false, true, true, true),
         AmarResearchSourceDescriptor("ta-lib", "TA-Lib", AmarResearchChannel.OPEN_SOURCE_CODE, "https://ta-lib.org", false, true, true, true, "https://ta-lib.org"),
-        AmarResearchSourceDescriptor("model-context-protocol", "Model Context Protocol", AmarResearchChannel.OPEN_SOURCE_CODE, "https://modelcontextprotocol.io", false, true, true, true, "https://github.com/modelcontextprotocol/modelcontextprotocol")
+        AmarResearchSourceDescriptor("model-context-protocol", "Model Context Protocol", AmarResearchChannel.OPEN_SOURCE_CODE, "https://modelcontextprotocol.io", false, true, true, true, "https://github.com/modelcontextprotocol/modelcontextprotocol"),
+        AmarResearchSourceDescriptor("blackrock", "BlackRock", AmarResearchChannel.ASSET_MANAGER, "https://www.blackrock.com", true, true, true, true),
+        AmarResearchSourceDescriptor("jpm-research", "J.P. Morgan Research", AmarResearchChannel.BANK_RESEARCH, "https://www.jpmorgan.com/insights", true, true, true, true),
+        AmarResearchSourceDescriptor("quantpedia", "Quantpedia", AmarResearchChannel.QUANT_RESEARCH, "https://quantpedia.com", false, true, true, true)
     )
 }
 
