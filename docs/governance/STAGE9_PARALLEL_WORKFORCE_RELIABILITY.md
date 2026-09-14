@@ -38,4 +38,6 @@ Required before closure:
 5. re-inspection of changed files
 6. architecture/regression audit
 
+The Stage 9 CI workflow is also enabled for pull requests so the gate can be independently observed before closure.
+
 Do not mark Stage 9 CLOSED before all gates above are verified.
