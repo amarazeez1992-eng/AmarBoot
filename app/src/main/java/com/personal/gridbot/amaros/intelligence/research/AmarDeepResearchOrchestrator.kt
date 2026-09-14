@@ -73,8 +73,12 @@ class AmarDeepResearchOrchestrator(
         val independentSources = ranked.mapNotNull { hostOf(it.sourceUri) }.distinct()
         val taskConfidence = if (taskReports.isEmpty()) 0.0 else taskReports.map { it.verification.score }.average()
         val diversityScore = (independentSources.size.toDouble() / policy.targetIndependentSources.coerceAtLeast(1)).coerceIn(0.0, 1.0)
-        val confidence = (taskConfidence * 0.55 + globalVerification.score * 0.25 + diversityScore * 0.20)
+        val baseConfidence = (taskConfidence * 0.55 + globalVerification.score * 0.25 + diversityScore * 0.20)
             .coerceIn(0.0, 1.0)
+        // Conflicting evidence is a first-class uncertainty signal. It must reduce the
+        // orchestrator's confidence even when evidence quality and source integrity are high.
+        val conflictMultiplier = if (conflicts.isEmpty()) 1.0 else 0.70
+        val confidence = (baseConfidence * conflictMultiplier).coerceIn(0.0, 1.0)
 
         return AmarDeepResearchReport(
             tasks = taskReports,
