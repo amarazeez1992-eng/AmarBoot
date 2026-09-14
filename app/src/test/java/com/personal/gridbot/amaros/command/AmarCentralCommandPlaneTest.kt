@@ -3,6 +3,7 @@ package com.personal.gridbot.amaros.command
 import com.personal.gridbot.amaros.governance.AmarExecutionGovernance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -46,11 +47,16 @@ class AmarCentralCommandPlaneTest {
 
     @Test
     fun explicitPermissionIsRequiredAndRevocationIsImmediate() {
-        assertEquals(AmarCentralCommandPlane.Decision.REVOKED, plane.route(decision(), now).decision)
+        val denied = plane.route(decision(id = "d-denied"), now)
+        assertEquals(AmarCentralCommandPlane.Decision.REVOKED, denied.decision)
+
         plane.grant(permission(), now)
-        assertEquals(AmarCentralCommandPlane.Decision.ROUTED, plane.route(decision(), now).decision)
+        val routed = plane.route(decision(id = "d-routed"), now)
+        assertEquals(AmarCentralCommandPlane.Decision.ROUTED, routed.decision)
+
         assertTrue(plane.revoke("user"))
-        assertEquals(AmarCentralCommandPlane.Decision.REVOKED, plane.route(decision("d2"), now).decision)
+        assertEquals(AmarCentralCommandPlane.Decision.REVOKED, plane.route(decision("d-revoked"), now).decision)
+        assertEquals(AmarCentralCommandPlane.Decision.ROUTED, plane.receipt("d-routed")?.decision)
     }
 
     @Test
@@ -98,5 +104,18 @@ class AmarCentralCommandPlaneTest {
         val first = plane.route(decision(), now)
         val second = plane.route(decision(), now + 100L)
         assertEquals(first, second)
+    }
+
+    @Test
+    fun decisionIdIsTheIdempotencyBoundary() {
+        plane.grant(permission(), now)
+        val first = plane.route(decision(id = "d1"), now)
+        plane.revoke("user")
+        val duplicate = plane.route(decision(id = "d1"), now + 100L)
+        val newDecision = plane.route(decision(id = "d2"), now + 100L)
+
+        assertEquals(first, duplicate)
+        assertNotEquals(first.decision, newDecision.decision)
+        assertEquals(AmarCentralCommandPlane.Decision.REVOKED, newDecision.decision)
     }
 }
