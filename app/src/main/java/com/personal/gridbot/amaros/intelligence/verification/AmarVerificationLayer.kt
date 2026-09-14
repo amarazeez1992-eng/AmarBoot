@@ -29,15 +29,42 @@ class AmarVerificationLayer(
         val quality = evidenceQuality.assess(findings, nowEpochMs)
         val sourceSnapshot = sourceRegistry.index(findings)
         val claimVerification = claimVerifier.verify(answer, findings)
+        return buildReport(findings, quality, sourceSnapshot, claimVerification)
+    }
+
+    /**
+     * Verifies a research evidence set without fabricating an answer claim. Claim verification
+     * is intentionally neutral because research findings are evidence inputs, not a final answer.
+     */
+    fun verifyEvidenceOnly(
+        findings: List<ResearchFinding>,
+        nowEpochMs: Long = System.currentTimeMillis()
+    ): AmarVerificationReport {
+        val quality = evidenceQuality.assess(findings, nowEpochMs)
+        val sourceSnapshot = sourceRegistry.index(findings)
+        val neutralClaimVerification = AmarClaimVerificationReport(emptyList(), accepted = true)
+        return buildReport(findings, quality, sourceSnapshot, neutralClaimVerification)
+    }
+
+    private fun buildReport(
+        findings: List<ResearchFinding>,
+        quality: AmarEvidenceQualityReport,
+        sourceSnapshot: AmarSourceRegistrySnapshot,
+        claimVerification: AmarClaimVerificationReport
+    ): AmarVerificationReport {
         val conflicts = AmarConflictDetector.detect(findings)
         val provenance = AmarProvenanceChain.build(findings)
         val usable = findings.count { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val invalid = findings.size - usable
+        val claimScore = if (claimVerification.claims.isEmpty()) {
+            if (claimVerification.accepted) 0.25 else 0.0
+        } else {
+            claimVerification.claims.count { it.accepted }.toDouble() / claimVerification.claims.size * 0.25
+        }
         val score = (
             quality.score * 0.45 +
                 sourceSnapshot.integrityScore * 0.20 +
-                if (claimVerification.claims.isEmpty()) 0.0
-                else claimVerification.claims.count { it.accepted }.toDouble() / claimVerification.claims.size * 0.25 +
+                claimScore +
                 if (conflicts.isEmpty()) 0.10 else 0.0
             ).coerceIn(0.0, 1.0)
         val status = when {
