@@ -14,6 +14,7 @@ Before writing or modifying code:
 4. Verify every enum/reference against its canonical declaration and all current call sites.
 5. Check tests for semantic validity: tests must actually test the intended distinction, not accidentally use identical values or equivalent fixtures.
 6. Check registry/catalog logic against its stated contract, including required channels, sources, and minimum coverage.
+7. Check idempotency boundaries in tests and implementation: an idempotency key/decision ID represents one immutable decision outcome. Never reuse the same key in a test to simulate a new authorization attempt after revocation, expiry, or another state change; use a new key and separately verify that the original receipt remains stable.
 
 ## Mandatory post-write checks
 
@@ -33,6 +34,7 @@ After every implementation change:
 - Calling suspend functions from non-suspend sequence/collection lambdas.
 - Adding enum consumers without updating the single canonical enum contract.
 - Tests whose supposedly different cases accidentally use the same value.
+- Reusing an idempotency key/decision ID for a new logical authorization attempt after the original decision has already produced a receipt.
 - Catalog/discovery implementations that silently omit required channels or contract dimensions.
 - Pushing code before compile/test/CI verification.
 - Reusing a previous failing implementation pattern merely by renaming files or symbols.
