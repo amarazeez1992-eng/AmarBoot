@@ -1,15 +1,8 @@
 package com.personal.gridbot.amaros.intelligence.core
 
-/**
- * Stage 11 / 1 — Intelligence Core.
- *
- * This layer is deterministic and evidence-neutral: it structures what was received,
- * reasons only over supplied observations, and computes a bounded confidence score.
- * It does not browse, execute trades, mutate governance state, or call brokers.
- */
+/** Stage 11 / 1 — deterministic perception, reasoning and bounded confidence. */
 object AmarIntelligenceCore {
     enum class InputKind { TEXT, IMAGE, FILE, MARKET_DATA, HISTORICAL_DATA, EXTERNAL_SIGNAL, UNKNOWN }
-
     enum class ObservationStatus { PRESENT, MISSING, MALFORMED }
 
     data class InputObservation(
@@ -27,49 +20,23 @@ object AmarIntelligenceCore {
         val status: ObservationStatus
             get() = when {
                 content.isBlank() -> ObservationStatus.MISSING
+                kind == InputKind.UNKNOWN -> ObservationStatus.MALFORMED
                 else -> ObservationStatus.PRESENT
             }
     }
 
-    data class PerceptionResult(
-        val observations: List<InputObservation>,
-        val presentCount: Int,
-        val missingCount: Int,
-        val malformedCount: Int,
-        val completeness: Double
-    )
-
-    data class ReasoningResult(
-        val conclusion: String,
-        val supportingObservations: List<String>,
-        val assumptions: List<String>,
-        val alternatives: List<String>
-    )
-
-    data class ConfidenceResult(
-        val score: Double,
-        val evidenceQuality: Double,
-        val completeness: Double,
-        val freshness: Double,
-        val reasoningCoverage: Double,
-        val label: ConfidenceLabel
-    )
-
+    data class PerceptionResult(val observations: List<InputObservation>, val presentCount: Int, val missingCount: Int, val malformedCount: Int, val completeness: Double)
+    data class ReasoningResult(val conclusion: String, val supportingObservations: List<String>, val assumptions: List<String>, val alternatives: List<String>)
+    data class ConfidenceResult(val score: Double, val evidenceQuality: Double, val completeness: Double, val freshness: Double, val reasoningCoverage: Double, val label: ConfidenceLabel)
     enum class ConfidenceLabel { VERY_LOW, LOW, MODERATE, HIGH, VERY_HIGH }
-
-    data class CoreResult(
-        val perception: PerceptionResult,
-        val reasoning: ReasoningResult,
-        val confidence: ConfidenceResult
-    )
+    data class CoreResult(val perception: PerceptionResult, val reasoning: ReasoningResult, val confidence: ConfidenceResult)
 
     fun perceive(inputs: List<InputObservation>): PerceptionResult {
         val malformed = inputs.count { it.status == ObservationStatus.MALFORMED }
         val missing = inputs.count { it.status == ObservationStatus.MISSING }
         val present = inputs.count { it.status == ObservationStatus.PRESENT }
         val total = inputs.size
-        val completeness = if (total == 0) 0.0 else present.toDouble() / total
-        return PerceptionResult(inputs.toList(), present, missing, malformed, completeness)
+        return PerceptionResult(inputs.toList(), present, missing, malformed, if (total == 0) 0.0 else present.toDouble() / total)
     }
 
     fun reason(perception: PerceptionResult): ReasoningResult {
@@ -84,12 +51,7 @@ object AmarIntelligenceCore {
             perception.completeness < 0.5 -> "PARTIAL_DATA"
             else -> "SUFFICIENT_INPUT_FOR_NEXT_ANALYSIS_LAYER"
         }
-        return ReasoningResult(
-            conclusion = conclusion,
-            supportingObservations = usable.map { "${it.kind}:${it.sourceId ?: "unspecified"}" },
-            assumptions = assumptions,
-            alternatives = listOf("Collect additional evidence before making a high-impact decision")
-        )
+        return ReasoningResult(conclusion, usable.map { "${it.kind}:${it.sourceId ?: "unspecified"}" }, assumptions, listOf("Collect additional evidence before making a high-impact decision"))
     }
 
     fun confidence(perception: PerceptionResult, reasoning: ReasoningResult): ConfidenceResult {
@@ -98,11 +60,10 @@ object AmarIntelligenceCore {
         val freshness = if (present.isEmpty()) 0.0 else present.map { it.freshnessScore }.average()
         val coverage = when {
             reasoning.supportingObservations.isEmpty() -> 0.0
-            reasoning.assumptions.any { it.contains("missing", ignoreCase = true) } -> 0.6
+            reasoning.assumptions.any { it.contains("missing", ignoreCase = true) || it.contains("malformed", ignoreCase = true) } -> 0.6
             else -> 1.0
         }
-        val score = (quality * 0.35 + perception.completeness * 0.30 + freshness * 0.20 + coverage * 0.15)
-            .coerceIn(0.0, 1.0)
+        val score = (quality * 0.35 + perception.completeness * 0.30 + freshness * 0.20 + coverage * 0.15).coerceIn(0.0, 1.0)
         return ConfidenceResult(score, quality, perception.completeness, freshness, coverage, labelFor(score))
     }
 
