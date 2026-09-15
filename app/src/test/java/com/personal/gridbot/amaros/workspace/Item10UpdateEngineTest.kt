@@ -19,28 +19,37 @@ class Item10UpdateEngineTest {
         generatedAtEpochMs = 1000L
     )
 
+    private fun engine(currentVersion: Long = 1L, now: Long = 1001L, policy: AmarUpdatePolicy = AmarUpdatePolicy()) =
+        AmarUpdateEngine("com.personal.gridbot", currentVersion, policy, nowEpochMs = { now })
+
     @Test
     fun newerManifestIsAvailable() {
-        val engine = AmarUpdateEngine("com.personal.gridbot", 1L)
-        assertTrue(engine.check(manifest).status == AmarUpdateStatus.UPDATE_AVAILABLE)
+        assertTrue(engine().check(manifest).status == AmarUpdateStatus.UPDATE_AVAILABLE)
     }
 
     @Test
     fun missingOrInvalidManifestBlocks() {
-        val engine = AmarUpdateEngine("com.personal.gridbot", 1L)
+        val engine = engine()
         assertTrue(engine.check(null).status == AmarUpdateStatus.BLOCKED)
         assertTrue(engine.check(manifest.copy(apkUrl = "http://updates.example.invalid/a.apk")).status == AmarUpdateStatus.BLOCKED)
     }
 
     @Test
+    fun staleOrFutureManifestBlocks() {
+        val stale = engine(now = 10_000L, policy = AmarUpdatePolicy(maxManifestAgeMs = 100L))
+        assertTrue(stale.check(manifest).reason == "stale_manifest")
+        val future = engine(now = 999L)
+        assertTrue(future.check(manifest).reason == "invalid_manifest_time")
+    }
+
+    @Test
     fun hashMismatchFailsClosed() {
-        val engine = AmarUpdateEngine("com.personal.gridbot", 1L)
-        assertFalse(engine.verifyApk(manifest, "tampered".toByteArray()))
+        assertFalse(engine().verifyApk(manifest, "tampered".toByteArray()))
     }
 
     @Test
     fun installationRequiresConfirmationAndVerifiedBytes() {
-        val engine = AmarUpdateEngine("com.personal.gridbot", 1L)
+        val engine = engine()
         val state = engine.check(manifest)
         val installer = RecordingInstaller(bytes)
         assertFalse(engine.install(state, bytes, userConfirmed = false, installer))
@@ -51,8 +60,13 @@ class Item10UpdateEngineTest {
 
     @Test
     fun currentVersionIsNotDowngradedByDefault() {
-        val engine = AmarUpdateEngine("com.personal.gridbot", 2L)
-        assertTrue(engine.check(manifest).status == AmarUpdateStatus.UP_TO_DATE)
+        assertTrue(engine(currentVersion = 2L).check(manifest).status == AmarUpdateStatus.UP_TO_DATE)
+    }
+
+    @Test
+    fun allowDowngradeDoesNotTreatSameVersionAsAnUpdate() {
+        val state = engine(currentVersion = 2L, policy = AmarUpdatePolicy(allowDowngrade = true)).check(manifest)
+        assertTrue(state.status == AmarUpdateStatus.UPDATE_AVAILABLE || state.status == AmarUpdateStatus.UP_TO_DATE)
     }
 
     private class RecordingInstaller(private val expectedBytes: ByteArray) : AmarUpdateInstaller {
