@@ -2,7 +2,7 @@ package com.personal.gridbot.amaros.agent
 
 /**
  * Challenges a draft before it can become the agent's final answer.
- * Stage 11 Item 6 extends the existing critic instead of introducing a second critic engine.
+ * Stage 11 Item 6 extends the existing critic instead of introducing a second critique engine.
  */
 class AmarAgentCritic {
     fun review(
@@ -15,6 +15,7 @@ class AmarAgentCritic {
 
         if (draft.isBlank()) issues += "empty_answer"
         if (requireEvidence && validEvidence.isEmpty()) issues += "no_evidence"
+        if (requireEvidence && evidence.isNotEmpty() && validEvidence.size != evidence.size) issues += "invalid_evidence"
 
         val independentSources = validEvidence.map { it.sourceUri.trim() }.distinct().size
         if (requireEvidence && independentSources < 2) issues += "insufficient_independent_sources"
@@ -30,11 +31,17 @@ class AmarAgentCritic {
             if (validEvidence.size < 2 || hasSupport && hasOpposition) issues += "unsupported_certainty"
         }
 
+        // Preserve the existing critic's guarantee-language guard: these claims remain blocked
+        // even when evidence happens to be present.
+        if (draft.contains("مضمون", ignoreCase = true) || draft.contains("guaranteed", ignoreCase = true)) {
+            issues += "guarantee_language"
+        }
+
         val numericClaim = Regex("(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)").containsMatchIn(draft)
         if (numericClaim && requireEvidence && validEvidence.isEmpty()) issues += "unsupported_numeric_claim"
 
-        val score = score(validEvidence, requireEvidence, issues)
         val distinctIssues = issues.distinct()
+        val score = score(validEvidence, requireEvidence, distinctIssues)
         return AmarCritique(
             accepted = distinctIssues.isEmpty(),
             issues = distinctIssues,
@@ -54,9 +61,11 @@ class AmarAgentCritic {
         var value = 1.0
         if (requireEvidence && validEvidence.isEmpty()) value -= 0.55
         if (validEvidence.isNotEmpty()) value += (validEvidence.size.coerceAtMost(4) * 0.05)
+        if (issues.contains("invalid_evidence")) value -= 0.25
         if (issues.contains("insufficient_independent_sources")) value -= 0.20
         if (issues.contains("evidence_conflict")) value -= 0.25
         if (issues.contains("unsupported_certainty")) value -= 0.20
+        if (issues.contains("guarantee_language")) value -= 0.20
         if (issues.contains("unsupported_numeric_claim")) value -= 0.20
         return value.coerceIn(0.0, 1.0)
     }
