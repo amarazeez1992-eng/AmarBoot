@@ -6,9 +6,9 @@ This item was rebuilt from the Stage 11 Items 1–4 baseline commit `0ab1fa2bbf2
 
 ## Design authority
 
-- Existing `DecisionEngine` remains the single decision authority.
+- Existing `DecisionEngine` is the B7 decision authority for this item.
 - Existing `AmarQuantTradingMath` remains the quantitative primitive authority.
-- No second decision engine is introduced.
+- No Item 5 second decision engine is introduced.
 - No broker/execution dependency is introduced.
 
 ## Decision contract
@@ -16,7 +16,10 @@ This item was rebuilt from the Stage 11 Items 1–4 baseline commit `0ab1fa2bbf2
 - Qualitative market context remains the primary directional input.
 - Quantitative risk is optional and evidence-driven.
 - Only valid, finite quantitative metrics contribute to risk.
+- Volatility requires at least four closing prices; historical VaR requires at least five losses.
+- Insufficient samples are treated as unavailable evidence, not zero risk.
 - Missing/invalid metrics are omitted rather than fabricated.
+- Partial invalidity does not suppress independent valid metrics.
 - Quantitative risk can only reduce score magnitude and confidence.
 - Every proposal remains `executable = false`.
 
