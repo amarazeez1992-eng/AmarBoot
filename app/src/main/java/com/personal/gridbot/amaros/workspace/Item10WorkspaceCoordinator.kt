@@ -14,16 +14,28 @@ class AmarWorkspaceCoordinator(
             return fusion.fuse("", emptyList(), 0.0)
         }
         val evidence = analysis.segments.flatMap { segment ->
-            segment.frames.filter { it.confidence >= 0.8 }.map { frame ->
+            val frameEvidence = segment.frames
+                .filter { it.confidence >= 0.8 && (it.visibleText.isNotBlank() || it.description.isNotBlank()) }
+                .map { frame ->
+                    EvidenceRecord(
+                        id = "video:frame:${frame.timestampMs}",
+                        source = "multimodal:${frame.timestampMs}",
+                        statement = frame.visibleText.ifBlank { frame.description },
+                        independent = true,
+                        valid = true
+                    )
+                }
+            val transcriptEvidence = segment.transcript.trim().takeIf { it.isNotBlank() }?.let { transcript ->
                 EvidenceRecord(
-                    id = "video:${frame.timestampMs}",
-                    source = "multimodal:${frame.timestampMs}",
-                    statement = frame.visibleText.ifBlank { frame.description },
+                    id = "video:transcript:${segment.startMs}-${segment.endMs}",
+                    source = "multimodal:transcript:${segment.startMs}-${segment.endMs}",
+                    statement = transcript,
                     independent = true,
                     valid = true
                 )
             }
-        }.filter { it.statement.isNotBlank() }
+            frameEvidence + listOfNotNull(transcriptEvidence)
+        }.distinctBy { it.id }
         return fusion.fuse(analysis.summary, evidence, if (evidence.isEmpty()) 0.0 else 1.0)
     }
 
