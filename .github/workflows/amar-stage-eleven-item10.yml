@@ -47,6 +47,8 @@ jobs:
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceSettingsTest' --stacktrace
       - name: Focused Amar provider API tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10AmarProviderApiTest' --stacktrace
+      - name: Focused update engine tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10UpdateEngineTest' --stacktrace
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Debug build
@@ -90,6 +92,9 @@ jobs:
           grep -q 'AmarFontWeight' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
           grep -q 'AmarProviderApiGateway' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
           grep -q 'AmarProviderCredentialStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
+          grep -q 'AmarUpdateEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngine.kt
+          grep -q 'AmarUpdateManifest' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngine.kt
           grep -q 'Item10WorkspaceSettingsTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettingsTest.kt
           grep -q 'Item10AmarProviderApiTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApiTest.kt
           grep -q 'Item10CameraWorkspaceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10CameraWorkspaceTest.kt
+          grep -q 'Item10UpdateEngineTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngineTest.kt
