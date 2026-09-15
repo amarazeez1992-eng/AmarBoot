@@ -57,7 +57,8 @@ fun AmarAiExperienceScreenV2() {
     var transcript by remember { mutableStateOf("") }
     var image by remember { mutableStateOf<AmarAiImageInput.ImagePayload?>(null) }
     var attachmentName by remember { mutableStateOf<String?>(null) }
-    var activated by remember { mutableStateOf(AmarAiKeyStore.load(context)?.isNotBlank() == true) }
+    var activated by remember { mutableStateOf(true) }
+    var externalActivated by remember { mutableStateOf(AmarAiKeyStore.load(context)?.isNotBlank() == true) }
     var testing by remember { mutableStateOf(false) }
     var showAdvanced by remember { mutableStateOf(false) }
 
@@ -89,51 +90,46 @@ fun AmarAiExperienceScreenV2() {
                 runCatching { AmarAiImageInput(context).read(uri) }
                     .onSuccess { image = it; attachmentName = "صورة" }
                     .onFailure { conversation.addSystem("تعذر قراءة الصورة") }
-            } else {
-                attachmentName = uri.lastPathSegment ?: "ملف"
-            }
+            } else attachmentName = uri.lastPathSegment ?: "ملف"
         }
     }
 
-    fun activate() {
+    fun activateExternal() {
         val trimmed = key.trim()
         if (trimmed.isBlank()) {
-            activated = false
-            conversation.addSystem("أدخل مفتاح Gemini المجاني أولاً، ثم اضغط حفظ وتفعيل.")
+            externalActivated = false
+            conversation.addSystem("AMAR AI المحلي يعمل بدون مفتاح. أدخل Gemini فقط لتفعيل التحليل الخارجي الاختياري.")
             return
         }
         AmarAiKeyStore.save(context, trimmed)
         key = trimmed
-        activated = true
-        conversation.addSystem("تم حفظ مفتاح Gemini محلياً وتفعيل قناة الذكاء. لم يتم إرسال المفتاح إلى المحادثة.")
+        externalActivated = true
+        conversation.addSystem("تم تفعيل مزود Gemini الاختياري. AMAR AI ومحركاته المحلية تبقى السلطة الأساسية.")
     }
 
-    fun deactivate() {
+    fun deactivateExternal() {
         AmarAiKeyStore.clear(context)
         key = ""
-        activated = false
-        conversation.addSystem("تم إيقاف قناة Gemini وحذف المفتاح المخزن من مساحة التطبيق.")
+        externalActivated = false
+        conversation.addSystem("تم إيقاف Gemini الاختياري. AMAR AI المحلي ما زال يعمل.")
     }
 
     fun testConnection() {
         val trimmed = key.trim()
         if (trimmed.isBlank() || testing || busy) return
         AmarAiKeyStore.save(context, trimmed)
-        activated = true
+        externalActivated = true
         testing = true
         scope.launch {
             runCatching {
                 AmarGeminiClient().generate(
                     trimmed,
                     model.trim(),
-                    "أنت AMAR AI Supervisor. أجب بالعربية بجملة قصيرة لتأكيد اتصال API.",
-                    "اختبار اتصال فقط. قل: الاتصال يعمل."
+                    "أنت AMAR AI Supervisor. أجب بالعربية بجملة قصيرة لتأكيد اتصال المزود الاختياري.",
+                    "اختبار اتصال خارجي فقط. قل: الاتصال يعمل."
                 )
-            }.onSuccess {
-                conversation.addSystem("اختبار Gemini ناجح: $it")
-            }.onFailure {
-                conversation.addSystem("فشل اختبار Gemini: ${it.message ?: "خطأ غير معروف"}")
-            }
+            }.onSuccess { conversation.addSystem("اختبار المزود الخارجي ناجح: $it") }
+                .onFailure { conversation.addSystem("فشل المزود الخارجي: ${it.message ?: "خطأ غير معروف"}. AMAR AI المحلي لم يتوقف.") }
             testing = false
         }
     }
@@ -148,25 +144,24 @@ fun AmarAiExperienceScreenV2() {
             conversation.addAi(local.response)
             return
         }
-        if (key.isBlank()) {
-            conversation.addSystem("القناة الخارجية غير مفعلة. أدخل مفتاح Gemini المجاني واضغط حفظ وتفعيل.")
-            return
-        }
-        AmarAiKeyStore.save(context, key.trim())
         busy = true
         scope.launch {
             runCatching {
                 if (image != null) {
+                    if (key.isBlank()) error("تحليل الصور يحتاج مزوداً متعدد الوسائط مفعلاً. لم يتم اختلاق تحليل للصورة.")
                     AmarGeminiVisionClient().analyze(
                         key.trim(), model.trim(),
-                        "أنت AMAR AI Supervisor. استخدم الأدلة المتاحة فقط وأجب بالعربية.",
+                        "أنت AMAR AI Supervisor. استخدم الأدلة المرئية فقط ولا تخترع بيانات.",
                         prompt, image!!
                     )
                 } else {
-                    AmarAiAgentEngine(context).ask(key.trim(), model.trim(), prompt).answer
+                    AmarAiUiEngineBridge(
+                        context = context,
+                        externalProviderEnabled = externalActivated
+                    ).ask(key.trim(), model.trim(), prompt).answer
                 }
             }.onSuccess { conversation.addAi(it) }
-                .onFailure { conversation.addSystem("فشل الذكاء الاصطناعي: ${it.message ?: "غير معروف"}") }
+                .onFailure { conversation.addSystem("فشل الطلب: ${it.message ?: "غير معروف"}") }
             image = null
             attachmentName = null
             busy = false
@@ -174,178 +169,84 @@ fun AmarAiExperienceScreenV2() {
     }
 
     Column(Modifier.fillMaxSize().background(AiBg)) {
-        // Professional command header: identity, channel state and controls are always visible.
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("AMAR AI", color = accentColor, fontSize = 22.sp, fontWeight = FontWeight.Black)
-                Text("SUPERVISOR CONSOLE  /  AI • NEWS • MARKET", color = AiMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text("SUPERVISOR CONSOLE  /  AMAR CORE • NEWS • MARKET", color = AiMuted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
             }
-            Surface(
-                color = if (activated) AiGreen.copy(alpha = .12f) else AiRed.copy(alpha = .10f),
-                shape = RoundedCornerShape(20.dp)
-            ) {
+            Surface(color = AiGreen.copy(alpha = .12f), shape = RoundedCornerShape(20.dp)) {
                 Row(Modifier.padding(horizontal = 9.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(7.dp).background(if (activated) AiGreen else AiRed, RoundedCornerShape(50)))
+                    Box(Modifier.size(7.dp).background(AiGreen, RoundedCornerShape(50)))
                     Spacer(Modifier.width(5.dp))
-                    Text(if (activated) "AI ACTIVE" else "AI OFF", color = if (activated) AiGreen else AiRed, fontSize = 8.sp, fontWeight = FontWeight.Black)
+                    Text(if (activated) "AMAR CORE ACTIVE" else "AMAR CORE OFF", color = AiGreen, fontSize = 8.sp, fontWeight = FontWeight.Black)
                 }
             }
             Spacer(Modifier.width(4.dp))
-            IconButton({ showAdvanced = !showAdvanced }) {
-                Icon(if (showAdvanced) Icons.Default.Close else Icons.Default.Settings, "الإعدادات", tint = accentColor)
-            }
+            IconButton({ showAdvanced = !showAdvanced }) { Icon(if (showAdvanced) Icons.Default.Close else Icons.Default.Settings, "الإعدادات", tint = accentColor) }
         }
 
-        // The AI/news/market convoy is isolated inside this room; it cannot consume another room's layout.
         AmarAi3DOrbitalStage(Modifier.fillMaxWidth())
 
         if (showAdvanced) {
-            Surface(
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                color = AiPanel,
-                shape = RoundedCornerShape(16.dp),
-                tonalElevation = 4.dp
-            ) {
+            Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp), color = AiPanel, shape = RoundedCornerShape(16.dp), tonalElevation = 4.dp) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("AI CONTROL CENTER", color = AiText, fontSize = 12.sp, fontWeight = FontWeight.Black)
-                            Text("مفتاح Gemini • النموذج • قناة الاتصال", color = AiMuted, fontSize = 8.sp)
+                            Text("AMAR Core • Gemini اختياري • النموذج • قناة الاتصال", color = AiMuted, fontSize = 8.sp)
                         }
-                        if (activated) Icon(Icons.Default.CheckCircle, "مفعل", tint = AiGreen)
+                        Icon(Icons.Default.CheckCircle, "AMAR مفعل", tint = AiGreen)
                     }
                     OutlinedTextField(
                         value = key,
-                        onValueChange = { key = it; activated = false },
+                        onValueChange = { key = it; externalActivated = false },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Gemini API Key") },
-                        supportingText = { Text("مفتاحك يبقى داخل التخزين المشفر للتطبيق ولا تضعه في GitHub.", fontSize = 8.sp) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = accentColor,
-                            unfocusedBorderColor = Color(0xFF263642),
-                            focusedLabelColor = accentColor,
-                            cursorColor = accentColor,
-                            focusedTextColor = AiText,
-                            unfocusedTextColor = AiText
-                        )
+                        label = { Text("Optional Gemini API Key") },
+                        supportingText = { Text("اختياري فقط. AMAR AI لا يتوقف بدونه.", fontSize = 8.sp) },
+                        visualTransformation = PasswordVisualTransformation(), singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, unfocusedBorderColor = Color(0xFF263642), focusedLabelColor = accentColor, cursorColor = accentColor, focusedTextColor = AiText, unfocusedTextColor = AiText)
                     )
                     OutlinedTextField(
-                        value = model,
-                        onValueChange = { model = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Gemini model") },
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = accentColor,
-                            unfocusedBorderColor = Color(0xFF263642),
-                            focusedLabelColor = accentColor,
-                            cursorColor = accentColor,
-                            focusedTextColor = AiText,
-                            unfocusedTextColor = AiText
-                        )
+                        value = model, onValueChange = { model = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Optional external model") }, singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accentColor, unfocusedBorderColor = Color(0xFF263642), focusedLabelColor = accentColor, cursorColor = accentColor, focusedTextColor = AiText, unfocusedTextColor = AiText)
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Button(onClick = { activate() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.Black)) {
-                            Text("حفظ وتفعيل", fontSize = 10.sp, fontWeight = FontWeight.Black)
-                        }
-                        OutlinedButton(onClick = { testConnection() }, enabled = key.isNotBlank() && !testing && !busy, modifier = Modifier.weight(1f)) {
-                            Text(if (testing) "جارٍ الاختبار…" else "اختبار الاتصال", fontSize = 10.sp)
-                        }
-                        OutlinedButton(onClick = { deactivate() }, enabled = activated, contentPadding = PaddingValues(horizontal = 12.dp)) {
-                            Text("إيقاف", fontSize = 10.sp, color = AiRed)
-                        }
+                        Button(onClick = { activateExternal() }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.Black)) { Text("تفعيل اختياري", fontSize = 10.sp, fontWeight = FontWeight.Black) }
+                        OutlinedButton(onClick = { testConnection() }, enabled = key.isNotBlank() && !testing && !busy, modifier = Modifier.weight(1f)) { Text(if (testing) "جارٍ الاختبار…" else "اختبار المزود", fontSize = 10.sp) }
+                        OutlinedButton(onClick = { deactivateExternal() }, enabled = externalActivated, contentPadding = PaddingValues(horizontal = 12.dp)) { Text("إيقاف", fontSize = 10.sp, color = AiRed) }
                     }
+                    Text(if (externalActivated) "AMAR CORE + مزود خارجي اختياري" else "AMAR CORE يعمل مستقلاً")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("النص", color = AiMuted, fontSize = 8.sp, modifier = Modifier.align(Alignment.CenterVertically))
-                        listOf("AUTO" to "تلقائي", "WHITE" to "أبيض", "GOLD" to "ذهبي", "CYAN" to "سماوي").forEach { (value, label) ->
-                            FilterChip(selected = textColor == value, onClick = { textColor = value }, label = { Text(label, fontSize = 8.sp) })
-                        }
+                        listOf("AUTO" to "تلقائي", "WHITE" to "أبيض", "GOLD" to "ذهبي", "CYAN" to "سماوي").forEach { (value, label) -> FilterChip(selected = textColor == value, onClick = { textColor = value }, label = { Text(label, fontSize = 8.sp) }) }
                     }
                 }
             }
             Spacer(Modifier.height(7.dp))
         }
 
-        if (attachmentName != null) {
-            Surface(Modifier.padding(horizontal = 12.dp), color = AiPanel2, shape = RoundedCornerShape(8.dp)) {
-                Text("📎 $attachmentName", color = accentColor, fontSize = 8.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp))
-            }
-        }
-        if (transcript.isNotBlank()) {
-            Text("LIVE  •  $transcript", color = AiMuted, fontSize = 8.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
-        }
+        if (attachmentName != null) Surface(Modifier.padding(horizontal = 12.dp), color = AiPanel2, shape = RoundedCornerShape(8.dp)) { Text("📎 $attachmentName", color = accentColor, fontSize = 8.sp, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)) }
+        if (transcript.isNotBlank()) Text("LIVE  •  $transcript", color = AiMuted, fontSize = 8.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
 
-        LazyColumn(
-            Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            reverseLayout = true
-        ) {
+        LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp), reverseLayout = true) {
             items(conversation.messages.asReversed()) { message ->
                 val user = message.role == AmarAiConversationState.Role.USER
-                Surface(
-                    color = if (user) AiPanel2 else AiPanel,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, if (user) accentColor.copy(alpha = .15f) else Color(0xFF162530), RoundedCornerShape(12.dp))
-                ) {
+                Surface(color = if (user) AiPanel2 else AiPanel, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().border(1.dp, if (user) accentColor.copy(alpha = .15f) else Color(0xFF162530), RoundedCornerShape(12.dp))) {
                     Column(Modifier.padding(horizontal = 11.dp, vertical = 8.dp)) {
                         Text(if (user) "COMMAND / YOU" else if (message.role == AmarAiConversationState.Role.SYSTEM) "SYSTEM" else "AMAR AI", color = if (message.role == AmarAiConversationState.Role.SYSTEM) AiGold else accentColor, fontSize = 7.sp, fontWeight = FontWeight.Black)
                         Text(message.text, color = fg, fontSize = 12.sp, lineHeight = 17.sp)
-                        if (!user) {
-                            TextButton({ clipboard.setText(AnnotatedString(message.text)) }, contentPadding = PaddingValues(0.dp)) {
-                                Text("نسخ", color = AiMuted, fontSize = 8.sp)
-                            }
-                        }
+                        if (!user) TextButton({ clipboard.setText(AnnotatedString(message.text)) }, contentPadding = PaddingValues(0.dp)) { Text("نسخ", color = AiMuted, fontSize = 8.sp) }
                     }
                 }
             }
         }
 
-        // Bottom command deck: attachment, voice, text command and a real send button.
         Surface(color = AiPanel, modifier = Modifier.fillMaxWidth()) {
-            Row(
-                Modifier.fillMaxWidth().padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                IconButton({ picker.launch("*/*") }) {
-                    Icon(Icons.Default.Add, "إرفاق صورة أو ملف", tint = accentColor)
-                }
-                IconButton({
-                    if (liveState == AmarAiLiveConversationEngine.State.IDLE) {
-                        live.configure(key, model)
-                        live.start()
-                    } else {
-                        live.stop()
-                    }
-                }) {
-                    Text(if (liveState == AmarAiLiveConversationEngine.State.IDLE) "🎙" else "■", color = accentColor, fontSize = 18.sp)
-                }
-                OutlinedTextField(
-                    value = request,
-                    onValueChange = { request = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("اكتب الأمر أو السؤال…", color = AiMuted) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color(0xFF263642),
-                        focusedBorderColor = accentColor,
-                        cursorColor = accentColor,
-                        focusedTextColor = AiText,
-                        unfocusedTextColor = AiText
-                    )
-                )
-                FilledIconButton(
-                    onClick = { send() },
-                    enabled = request.isNotBlank() && !busy,
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor, contentColor = Color.Black)
-                ) {
-                    Icon(Icons.Default.Send, "إرسال")
-                }
+            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                IconButton({ picker.launch("*/*") }) { Icon(Icons.Default.Add, "إرفاق صورة أو ملف", tint = accentColor) }
+                IconButton({ if (liveState == AmarAiLiveConversationEngine.State.IDLE) { live.configure(key, model); live.start() } else live.stop() }) { Text(if (liveState == AmarAiLiveConversationEngine.State.IDLE) "🎙" else "■", color = accentColor, fontSize = 18.sp) }
+                OutlinedTextField(value = request, onValueChange = { request = it }, modifier = Modifier.weight(1f), placeholder = { Text("اكتب الأمر أو السؤال…", color = AiMuted) }, singleLine = true, colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color(0xFF263642), focusedBorderColor = accentColor, cursorColor = accentColor, focusedTextColor = AiText, unfocusedTextColor = AiText))
+                FilledIconButton(onClick = { send() }, enabled = request.isNotBlank() && !busy, colors = IconButtonDefaults.filledIconButtonColors(containerColor = accentColor, contentColor = Color.Black)) { Icon(Icons.Default.Send, "إرسال") }
             }
         }
     }
