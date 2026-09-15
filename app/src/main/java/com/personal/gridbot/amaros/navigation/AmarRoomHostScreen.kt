@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.navigation
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,7 +25,9 @@ import com.personal.gridbot.amaros.rooms.positions.AmarPositionsModernScreen
 import com.personal.gridbot.amaros.security.AmarProtectionCenterScreen
 import com.personal.gridbot.amaros.settings.AmarAppAccountCenterScreen
 import com.personal.gridbot.amaros.settings.AmarDeveloperOptionsScreen
+import com.personal.gridbot.amaros.settings.AmarSettingsOverviewScreen
 import com.personal.gridbot.amaros.sync.AmarSyncCenterScreen
+import com.personal.gridbot.amaros.visual.AmarGlobalVisualStateStore
 import com.personal.gridbot.ui.theme.AmarThemeMode
 
 @Composable
@@ -34,7 +37,8 @@ fun AmarRoomHostScreen(
     themeMode: AmarThemeMode,
     onThemeModeChange: (AmarThemeMode) -> Unit,
     homeLayout: Int = 1,
-    onHomeLayoutChange: (Int) -> Unit = {}
+    onHomeLayoutChange: (Int) -> Unit = {},
+    onVisualEffectsChange: (Boolean) -> Unit = {}
 ) {
     if (room == AmarRoom.BOT_LAB) {
         AmarBotLabInterfaceHost(onBackHome)
@@ -72,16 +76,25 @@ fun AmarRoomHostScreen(
                 AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Button({ settingsMode = 0 }, Modifier.weight(1f)) { Text("الواجهات") }
-                            Button({ settingsMode = 1 }, Modifier.weight(1f)) { Text("الحماية") }
-                            Button({ settingsMode = 2 }, Modifier.weight(1f)) { Text("متقدم") }
-                            Button({ settingsMode = 3 }, Modifier.weight(1f)) { Text("الحساب/المزامنة") }
+                        LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            item { Button({ settingsMode = 0 }) { Text("العامة") } }
+                            item { Button({ settingsMode = 1 }) { Text("الواجهات") } }
+                            item { Button({ settingsMode = 2 }) { Text("الحماية") } }
+                            item { Button({ settingsMode = 3 }) { Text("متقدم") } }
+                            item { Button({ settingsMode = 4 }) { Text("الحساب/المزامنة") } }
                         }
                         when (settingsMode) {
-                            0 -> AmarAppearanceScreen(themeMode, onThemeModeChange, homeLayout, onHomeLayoutChange)
-                            1 -> AmarProtectionCenterScreen(context)
-                            2 -> AmarDeveloperOptionsScreen()
+                            0 -> AmarSettingsOverviewScreen(
+                                mode = themeMode,
+                                onModeChange = onThemeModeChange,
+                                layout = homeLayout,
+                                onLayoutChange = onHomeLayoutChange,
+                                visualEffectsEnabled = AmarGlobalVisualStateStore.current().enabled,
+                                onVisualEffectsChange = onVisualEffectsChange
+                            )
+                            1 -> AmarAppearanceScreen(themeMode, onThemeModeChange, homeLayout, onHomeLayoutChange)
+                            2 -> AmarProtectionCenterScreen(context)
+                            3 -> AmarDeveloperOptionsScreen()
                             else -> {
                                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
