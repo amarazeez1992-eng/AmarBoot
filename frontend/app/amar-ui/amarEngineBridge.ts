@@ -2,14 +2,14 @@ import type { AmarAgentBridge, AmarAgentRequest, AmarAgentResponse, AmarSource, 
 
 type AmarNativeReply = { requestId: string; ok: boolean; response?: AmarAgentResponse; sources?: AmarSource[]; error?: string };
 type AmarNativeHost = { request: (payload: string) => void };
-declare global { interface Window { Android?: AmarNativeHost } }
+declare global { interface Window { AmarEngine?: AmarNativeHost } }
 
 export const AMAR_ENGINE_IDS = ['reasoning','market','research','knowledge','source_mesh','backtest','validation','precision','uncertainty','evolution','champion_challenger','counterfactual','self_audit','camera_multimodal','screen_multimodal','conversation_memory','provider_gateway','update_engine'] as const;
 const capabilities: AmarAgentCapabilities = { text:true,image:true,video:true,screenShare:false,searchRestricted:true,searchOpen:true,evidence:true,progress:true };
 
 function nativeHost(): AmarNativeHost | null {
   if (typeof window === 'undefined') return null;
-  return window.Android?.request ? window.Android : null;
+  return window.AmarEngine?.request ? window.AmarEngine : null;
 }
 
 function requestNative<T>(payload: Record<string, unknown>): Promise<T> {
