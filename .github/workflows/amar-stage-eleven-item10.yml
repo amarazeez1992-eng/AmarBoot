@@ -45,6 +45,15 @@ jobs:
       - name: Focused conversation governance tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ConversationGovernanceTest' --stacktrace
 
+      - name: Focused reasoning transparency tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ReasoningTransparencyTest' --stacktrace
+
+      - name: Focused editor preference tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10EditorPreferencesTest' --stacktrace
+
+      - name: Focused centralized settings tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceSettingsTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -71,5 +80,17 @@ jobs:
           grep -q 'AmarWorkspaceAuditLog' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
           grep -q 'AmarWorkspaceCoordinator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinator.kt
           grep -q 'AmarConversationGovernance' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernance.kt
+          grep -q 'AmarReasoningTransparency' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10ReasoningTransparency.kt
+          grep -q 'AmarEditorPreferences' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
+          grep -q 'AmarWorkspaceSettings' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarWorkspaceSettingsStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarCameraAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarScreenAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarDeviceControlAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarBackgroundMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarThemeMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarFontWeight' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
+          grep -q 'Item10WorkspaceSettingsTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettingsTest.kt
+          grep -q 'Item10ReasoningTransparencyTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10ReasoningTransparencyTest.kt
+          grep -q 'Item10EditorPreferencesTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferencesTest.kt
           grep -q 'Item10ConversationGovernanceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernanceTest.kt
-          grep -q 'Item10WorkspaceCoordinatorTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinatorTest.kt
