@@ -1,0 +1,1 @@
+The Android entry asset is retained for backward compatibility. The packaged Quantum UI is the current frontend target.
