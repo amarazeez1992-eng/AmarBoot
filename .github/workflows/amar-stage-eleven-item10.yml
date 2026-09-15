@@ -1,0 +1,100 @@
+name: Amar Stage Eleven Item 10
+
+on:
+  push:
+    branches: ["stage11/item10-multimodal-agent-workspace"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "app/src/main/java/com/personal/gridbot/amaros/workspace/**"
+      - "app/src/test/java/com/personal/gridbot/amaros/workspace/**"
+      - "docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md"
+      - ".github/workflows/amar-stage-eleven-item10.yml"
+
+jobs:
+  item10:
+    name: Item 10 focused tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.7"
+      - name: Focused workspace contract tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceContractsTest' --stacktrace
+      - name: Focused multimodal architecture tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10MultimodalArchitectureTest' --stacktrace
+      - name: Focused knowledge and audit tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10KnowledgeAndAuditTest' --stacktrace
+      - name: Focused workspace coordinator tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceCoordinatorTest' --stacktrace
+      - name: Focused camera workspace tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10CameraWorkspaceTest' --stacktrace
+      - name: Focused conversation governance tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ConversationGovernanceTest' --stacktrace
+      - name: Focused reasoning transparency tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ReasoningTransparencyTest' --stacktrace
+      - name: Focused editor preference tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10EditorPreferencesTest' --stacktrace
+      - name: Focused centralized settings tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceSettingsTest' --stacktrace
+      - name: Focused Amar provider API tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10AmarProviderApiTest' --stacktrace
+      - name: Focused update engine tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10UpdateEngineTest' --stacktrace
+      - name: Full unit test suite
+        run: gradle :app:testDebugUnitTest --stacktrace
+      - name: Debug build
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-ai-item10-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
+      - name: Contract and scope regression
+        run: |
+          grep -q '^# Stage 11 — Item 10 Multimodal Agent Interface & Workspace$' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
+          grep -Eq '\*\*(READY FOR CLOSURE VERIFICATION|CLOSED)\*\*' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
+          grep -q 'OPEN_SEARCH' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'deleteMemory' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'promoteToKnowledge' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'no_evidence' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'userConfirmed' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'AmarMultimodalPerceptionEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarScreenWorkspace' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarScreenActionController' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarTrustedSourceEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarConflictResolver' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarMultiEngineOrchestrator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarNinePointNineQualityGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarKnowledgeUpdateGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
+          grep -q 'AmarWorkspaceAuditLog' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
+          grep -q 'AmarWorkspaceCoordinator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinator.kt
+          grep -q 'AmarConversationGovernance' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernance.kt
+          grep -q 'AmarReasoningTransparency' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10ReasoningTransparency.kt
+          grep -q 'AmarEditorPreferences' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
+          grep -q 'AmarWorkspaceSettings' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarWorkspaceSettingsStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarCameraAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarScreenAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarDeviceControlAccess' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarBackgroundMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarThemeMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
+          grep -q 'AmarFontWeight' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
+          grep -q 'AmarProviderApiGateway' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
+          grep -q 'AmarProviderCredentialStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
+          grep -q 'AmarUpdateEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngine.kt
+          grep -q 'AmarUpdateManifest' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngine.kt
+          grep -q 'Item10WorkspaceSettingsTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettingsTest.kt
+          grep -q 'Item10AmarProviderApiTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApiTest.kt
+          grep -q 'Item10CameraWorkspaceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10CameraWorkspaceTest.kt
+          grep -q 'Item10UpdateEngineTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10UpdateEngineTest.kt
