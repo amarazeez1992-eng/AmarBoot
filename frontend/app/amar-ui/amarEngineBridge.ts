@@ -5,7 +5,7 @@ type AmarNativeHost = { request: (payload: string) => void };
 declare global { interface Window { AmarEngine?: AmarNativeHost } }
 
 export const AMAR_ENGINE_IDS = ['reasoning','market','research','knowledge','source_mesh','backtest','validation','precision','uncertainty','evolution','champion_challenger','counterfactual','self_audit','camera_multimodal','screen_multimodal','conversation_memory','provider_gateway','update_engine'] as const;
-const capabilities: AmarAgentCapabilities = { text:true,image:true,video:true,screenShare:false,searchRestricted:true,searchOpen:true,evidence:true,progress:true };
+const capabilities: AmarAgentCapabilities = { text:true,image:false,video:false,screenShare:false,searchRestricted:true,searchOpen:true,evidence:true,progress:true };
 
 function nativeHost(): AmarNativeHost | null {
   if (typeof window === 'undefined') return null;
@@ -42,11 +42,8 @@ export function createAmarEngineBridge(): AmarAgentBridge {
       if (!Array.isArray(sources)) throw new Error('Invalid AMAR source response');
       return sources;
     },
-    analyzeFile: async (file: File) => {
-      const bytes = Array.from(new Uint8Array(await file.arrayBuffer()));
-      return requestNative<AmarAgentResponse>({ action:'multimodal.analyze', media:{name:file.name,type:file.type,bytes}, engines:['camera_multimodal','screen_multimodal','reasoning','source_mesh'] });
-    },
-    startScreenShare: async () => { throw new Error('SCREEN_SHARE_NOT_IMPLEMENTED'); },
+    analyzeFile: async () => { throw new Error('MULTIMODAL_NATIVE_TRANSFER_REQUIRES_SECURE_MEDIA_CHANNEL'); },
+    startScreenShare: async () => { throw new Error('SCREEN_SHARE_REQUIRES_ANDROID_MEDIA_PROJECTION'); },
     stopScreenShare: () => undefined,
   };
 }
