@@ -26,6 +26,16 @@ class Item10MultimodalArchitectureTest {
     }
 
     @Test
+    fun visibleScreenTextIsPreservedAsEvidenceBackedSummary() {
+        val result = AmarFailClosedMultimodalPerception().analyzeScreen(
+            listOf(AmarMediaFrame(500L, visibleText = "Settings", confidence = 0.95))
+        )
+        assertTrue(result.evidenceBacked)
+        assertTrue(result.summary == "Settings")
+        assertTrue(result.blockers.isEmpty())
+    }
+
+    @Test
     fun screenWorkspaceRequiresPermissionAndSupportsImmediateStop() {
         val workspace = AmarScreenWorkspace()
         assertFalse(workspace.start(AmarScreenShareSession("s1", 1L, "Test", false)))
