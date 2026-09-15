@@ -14,6 +14,7 @@ on:
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md'
+      - 'docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
   pull_request:
     paths:
@@ -23,6 +24,7 @@ on:
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md'
+      - 'docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
 
@@ -66,6 +68,9 @@ jobs:
       - name: Focused Item 7 Benchmark Quality tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.AmarIntelligenceQualityBenchmarkTest' --stacktrace
 
+      - name: Focused Item 8 Observability tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.observability.AmarObservabilityTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -84,9 +89,11 @@ jobs:
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           test -f docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
+          grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
@@ -99,17 +106,23 @@ jobs:
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/DecisionEngineTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarAgentCriticItemSixTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/observability/AmarObservability.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/observability/AmarObservabilityTest.kt
           grep -q 'MIN_CLOSES_FOR_VOLATILITY = 4' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           grep -q 'MIN_LOSSES_FOR_HISTORICAL_VAR = 5' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           grep -q 'independentSourceCount' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           grep -q 'evidence_conflict' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           grep -q 'guarantee_language' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          grep -q 'criticalEvents' app/src/main/java/com/personal/gridbot/amaros/observability/AmarObservability.kt
+          grep -q 'auditLog.append' app/src/main/java/com/personal/gridbot/amaros/observability/AmarObservability.kt
+          grep -q 'sanitize' app/src/main/java/com/personal/gridbot/amaros/observability/AmarObservability.kt
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/AmarIntelligenceQualityBenchmark.kt
           ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence
           ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
           ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/observability
           grep -q 'benchmark_meets_correctness_safety_monotonicity_and_determinism_gates' app/src/test/java/com/personal/gridbot/amaros/intelligence/AmarIntelligenceQualityBenchmarkTest.kt
 
       - name: Upload test evidence
