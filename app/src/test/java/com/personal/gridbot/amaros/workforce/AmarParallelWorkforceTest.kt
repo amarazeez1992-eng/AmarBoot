@@ -35,8 +35,16 @@ class AmarParallelWorkforceTest {
         val items = (1..3).map { AmarParallelWorkforce.WorkItem(it, "k-$it") }
         var executions = 0
 
-        workforce.execute(items) { executions++; "v-$it" }
-        val second = workforce.execute(listOf(items[1], items[2])) { executions++; "unexpected-$it" }
+        // Execute these independently so the test verifies LRU eviction semantics rather
+        // than relying on scheduler/semaphore acquisition order among concurrent jobs.
+        workforce.execute(listOf(items[0])) { executions++; "v-$it" }
+        workforce.execute(listOf(items[1])) { executions++; "v-$it" }
+        workforce.execute(listOf(items[2])) { executions++; "v-$it" }
+
+        val second = workforce.execute(listOf(items[1], items[2])) {
+            executions++
+            "unexpected-$it"
+        }
 
         assertEquals(3, executions)
         assertEquals(2, second.cacheHits)
