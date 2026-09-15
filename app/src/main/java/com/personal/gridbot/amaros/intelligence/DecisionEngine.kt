@@ -7,9 +7,8 @@ import com.personal.gridbot.amaros.trading.quant.AmarQuantTradingMath
  * B7 decision layer. It produces an explainable strategy proposal only.
  * It has no broker dependency and cannot execute trades.
  *
- * Quantitative risk is optional and fail-closed: missing or invalid statistical
- * inputs never become synthetic risk values and therefore never create a
- * stronger decision than the qualitative context already supports.
+ * Quantitative risk is optional and evidence-driven. A statistic is ignored when
+ * its input is invalid or too small to provide a minimally useful sample.
  */
 class DecisionEngine {
     enum class Direction { LONG_BIAS, SHORT_BIAS, NEUTRAL }
@@ -75,10 +74,21 @@ class DecisionEngine {
     }
 
     fun assessQuantitativeRisk(input: QuantitativeInput): QuantitativeRisk? {
-        val volatility = AmarQuantTradingMath.realizedVolatility(input.closes)
+        val volatility = if (input.closes.size >= MIN_CLOSES_FOR_VOLATILITY) {
+            AmarQuantTradingMath.realizedVolatility(input.closes)
+        } else {
+            null
+        }
         val drawdown = AmarQuantTradingMath.maxDrawdown(input.equityCurve)
-        val rawVar = AmarQuantTradingMath.historicalVar(input.losses, input.varConfidence)
-        val normalizedVar = if (rawVar != null && input.varScale != null && input.varScale.isFinite() && input.varScale > 0.0) {
+        val rawVar = if (input.losses.size >= MIN_LOSSES_FOR_HISTORICAL_VAR) {
+            AmarQuantTradingMath.historicalVar(input.losses, input.varConfidence)
+        } else {
+            null
+        }
+        val normalizedVar = if (
+            rawVar != null && input.varScale != null &&
+            input.varScale.isFinite() && input.varScale > 0.0
+        ) {
             (rawVar / input.varScale).coerceIn(0.0, 1.0)
         } else {
             null
@@ -108,5 +118,12 @@ class DecisionEngine {
         val weight = weighted.sumOf { it.second }
         val score = weighted.sumOf { (it.first ?: 0.0) * it.second } / weight
         return QuantitativeRisk(volatility, drawdown, normalizedVar, ruin, score.coerceIn(0.0, 1.0))
+    }
+
+    private companion object {
+        // One return is not enough for a useful volatility estimate.
+        private const val MIN_CLOSES_FOR_VOLATILITY = 4
+        // A single loss is an observation, not a robust historical VaR sample.
+        private const val MIN_LOSSES_FOR_HISTORICAL_VAR = 5
     }
 }
