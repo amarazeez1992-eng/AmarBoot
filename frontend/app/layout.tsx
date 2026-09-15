@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'عمار — المحور الذكي للتداول',
   description: 'واجهة عمار الحية — مركز قيادة تداول تجريبي آمن',
-  manifest: '/manifest.webmanifest',
+  manifest: './manifest.webmanifest',
   themeColor: '#dff7fb',
 };
 
