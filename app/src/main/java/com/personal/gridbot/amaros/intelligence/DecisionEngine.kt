@@ -74,38 +74,38 @@ class DecisionEngine {
     }
 
     fun assessQuantitativeRisk(input: QuantitativeInput): QuantitativeRisk? {
-        val volatility = if (input.closes.size >= MIN_CLOSES_FOR_VOLATILITY) {
+        val volatility = if (input.closes.size >= MIN_CLOSES_FOR_VOLATILITY && input.closes.all { it.isFinite() && it > 0.0 }) {
             AmarQuantTradingMath.realizedVolatility(input.closes)
-        } else {
-            null
-        }
-        val drawdown = AmarQuantTradingMath.maxDrawdown(input.equityCurve)
-        val rawVar = if (input.losses.size >= MIN_LOSSES_FOR_HISTORICAL_VAR) {
-            AmarQuantTradingMath.historicalVar(input.losses, input.varConfidence)
-        } else {
-            null
-        }
+        } else null
+
+        val drawdown = if (input.equityCurve.isNotEmpty() && input.equityCurve.all { it.isFinite() && it >= 0.0 }) {
+            AmarQuantTradingMath.maxDrawdown(input.equityCurve)
+        } else null
+
+        val rawVar = if (
+            input.losses.size >= MIN_LOSSES_FOR_HISTORICAL_VAR &&
+            input.losses.all { it.isFinite() && it >= 0.0 } &&
+            input.varConfidence.isFinite() && input.varConfidence in 0.0..1.0
+        ) AmarQuantTradingMath.historicalVar(input.losses, input.varConfidence) else null
+
         val normalizedVar = if (
             rawVar != null && input.varScale != null &&
             input.varScale.isFinite() && input.varScale > 0.0
-        ) {
-            (rawVar / input.varScale).coerceIn(0.0, 1.0)
-        } else {
-            null
-        }
+        ) (rawVar / input.varScale).coerceIn(0.0, 1.0) else null
+
         val ruin = if (
             input.winProbability != null && input.payoffRatio != null &&
-            input.riskFraction != null && input.ruinFraction != null
-        ) {
-            AmarQuantTradingMath.riskOfRuin(
-                input.winProbability,
-                input.payoffRatio,
-                input.riskFraction,
-                input.ruinFraction
-            )
-        } else {
-            null
-        }
+            input.riskFraction != null && input.ruinFraction != null &&
+            input.winProbability.isFinite() && input.winProbability > 0.0 && input.winProbability < 1.0 &&
+            input.payoffRatio.isFinite() && input.payoffRatio > 0.0 &&
+            input.riskFraction.isFinite() && input.riskFraction > 0.0 && input.riskFraction < 1.0 &&
+            input.ruinFraction.isFinite() && input.ruinFraction > 0.0 && input.ruinFraction < 1.0
+        ) AmarQuantTradingMath.riskOfRuin(
+            input.winProbability,
+            input.payoffRatio,
+            input.riskFraction,
+            input.ruinFraction
+        ) else null
 
         val weighted = listOf(
             volatility?.coerceIn(0.0, 1.0) to 0.30,
@@ -121,9 +121,7 @@ class DecisionEngine {
     }
 
     private companion object {
-        // One return is not enough for a useful volatility estimate.
         private const val MIN_CLOSES_FOR_VOLATILITY = 4
-        // A single loss is an observation, not a robust historical VaR sample.
         private const val MIN_LOSSES_FOR_HISTORICAL_VAR = 5
     }
 }
