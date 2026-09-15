@@ -73,6 +73,8 @@ jobs:
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestratorTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/DecisionEngineTest.kt
+          grep -q 'MIN_CLOSES_FOR_VOLATILITY = 4' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          grep -q 'MIN_LOSSES_FOR_HISTORICAL_VAR = 5' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
           ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
