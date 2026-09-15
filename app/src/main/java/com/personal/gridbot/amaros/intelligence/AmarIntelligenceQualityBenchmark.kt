@@ -26,7 +26,8 @@ class AmarIntelligenceQualityBenchmark(
         val totalCases: Int,
         val passedCases: Int,
         val accuracy: Double,
-        val calibrationError: Double,
+        val calibrationDrift: Double,
+        val elapsedNanos: Long,
         val passed: Boolean,
         val failedCaseIds: List<String>
     )
@@ -34,22 +35,24 @@ class AmarIntelligenceQualityBenchmark(
     fun run(): BenchmarkReport {
         val cases = cases()
         require(cases.isNotEmpty())
-        val results = cases.map { case ->
-            val actual = runSafely(case)
-            case to actual
-        }
-        val passedCases = results.count { (case, actual) -> actual == case.expected }
+        val start = System.nanoTime()
+        val first = cases.map { case -> case to runSafely(case) }
+        val second = cases.map { case -> case to runSafely(case) }
+        val elapsedNanos = (System.nanoTime() - start).coerceAtLeast(0L)
+
+        val passedCases = first.count { (case, actual) -> actual == case.expected }
         val accuracy = passedCases.toDouble() / cases.size
-        val calibrationError = results.map { (case, actual) ->
-            kotlin.math.abs((if (actual) 1.0 else 0.0) - (if (case.expected) 1.0 else 0.0))
-        }.average()
-        val failed = results.filter { (case, actual) -> actual != case.expected }.map { it.first.id }
+        val calibrationDrift = first.zip(second).count { it.first.second != it.second.second }
+            .toDouble() / cases.size
+        val failed = first.filter { (case, actual) -> actual != case.expected }.map { it.first.id }
+
         return BenchmarkReport(
             totalCases = cases.size,
             passedCases = passedCases,
             accuracy = accuracy,
-            calibrationError = calibrationError,
-            passed = accuracy >= MIN_ACCURACY && calibrationError <= MAX_CALIBRATION_ERROR,
+            calibrationDrift = calibrationDrift,
+            elapsedNanos = elapsedNanos,
+            passed = accuracy >= MIN_ACCURACY && calibrationDrift == 0.0,
             failedCaseIds = failed
         )
     }
@@ -145,6 +148,5 @@ class AmarIntelligenceQualityBenchmark(
 
     private companion object {
         private const val MIN_ACCURACY = 0.90
-        private const val MAX_CALIBRATION_ERROR = 0.10
     }
 }
