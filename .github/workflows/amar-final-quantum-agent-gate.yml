@@ -1,0 +1,76 @@
+name: AMAR Final Quantum UI + Agent Gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "frontend/**"
+      - "app/src/main/java/com/personal/gridbot/amaros/ai/**"
+      - "app/src/main/java/com/personal/gridbot/MainActivity.kt"
+      - "app/src/main/java/com/personal/gridbot/amaros/navigation/**"
+      - "app/src/main/assets/**"
+      - "app/src/test/java/com/personal/gridbot/amaros/ai/**"
+      - "app/build.gradle"
+      - ".github/workflows/amar-final-quantum-agent-gate.yml"
+
+jobs:
+  final-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.7"
+      - name: Verify new Home -> Agent frontend chain
+        run: |
+          test -f frontend/app/page.tsx
+          grep -q 'HomeWorkspace' frontend/app/page.tsx
+          test -f frontend/app/HomeWorkspace.tsx
+          grep -q 'Item10Workspace' frontend/app/HomeWorkspace.tsx
+          test -f frontend/app/amar-ui/Item10Workspace.tsx
+          test -f frontend/app/amar-ui/amarEngineBridge.ts
+          test -f frontend/app/quantum.css
+      - name: Verify Gemini is absent from the runtime source boundary
+        run: |
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarGeminiClient.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiKeyStore.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiExperienceScreen.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiExperienceScreenV2.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiAgentScreen.kt
+          ! grep -R "AmarGeminiClient\|AmarAiKeyStore\|gemini-2.5\|Gemini API Key" app/src/main/java/com/personal/gridbot/amaros/ai --exclude='AmarAiProviderIsolationTest.kt'
+      - name: Verify Quantum export
+        run: |
+          cd frontend
+          npm install --no-audit --no-fund
+          npm run build
+          test -f out/index.html
+      - name: Full Android unit tests
+        run: gradle :app:testDebugUnitTest --stacktrace
+      - name: Provider isolation tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.ai.AmarAiProviderIsolationTest' --stacktrace
+      - name: Debug APK
+        run: gradle :app:assembleDebug --stacktrace
+      - name: Verify packaged Quantum UI
+        run: test -f app/src/main/assets/quantum/index.html
+      - name: Verify APK
+        run: test -s app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload final debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-ai-final-quantum-agent-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
