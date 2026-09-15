@@ -1,27 +1,72 @@
 package com.personal.gridbot.amaros.agent
 
-/** Challenges a draft before it can become the agent's final answer. */
+/**
+ * Challenges a draft before it can become the agent's final answer.
+ * Stage 11 Item 6 extends the existing critic instead of introducing a second critic engine.
+ */
 class AmarAgentCritic {
     fun review(
         draft: String,
         evidence: List<ResearchFinding>,
         requireEvidence: Boolean = false
     ): AmarCritique {
+        val validEvidence = evidence.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val issues = mutableListOf<String>()
+
         if (draft.isBlank()) issues += "empty_answer"
-        if (requireEvidence && evidence.isEmpty()) issues += "no_evidence"
-        if (draft.contains("مؤكد", ignoreCase = true) && evidence.size < 2) issues += "unsupported_certainty"
-        if (draft.contains("مضمون", ignoreCase = true) || draft.contains("guaranteed", ignoreCase = true)) issues += "guarantee_language"
-        return AmarCritique(
-            accepted = issues.isEmpty(),
-            issues = issues.distinct(),
-            recommendation = if (issues.isEmpty()) "PASS" else "REVISE"
+        if (requireEvidence && validEvidence.isEmpty()) issues += "no_evidence"
+
+        val independentSources = validEvidence.map { it.sourceUri.trim() }.distinct().size
+        if (requireEvidence && independentSources < 2) issues += "insufficient_independent_sources"
+
+        val hasSupport = validEvidence.any { it.stance == EvidenceStance.SUPPORTS }
+        val hasOpposition = validEvidence.any { it.stance == EvidenceStance.OPPOSES }
+        if (hasSupport && hasOpposition) issues += "evidence_conflict"
+
+        val certaintyLanguage = listOf(
+            "مؤكد", "بالتأكيد", "قطعاً", "حتماً", "مضمون", "guaranteed", "certainly", "definitely", "always", "never"
         )
+        if (certaintyLanguage.any { draft.contains(it, ignoreCase = true) }) {
+            if (validEvidence.size < 2 || hasSupport && hasOpposition) issues += "unsupported_certainty"
+        }
+
+        val numericClaim = Regex("(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)").containsMatchIn(draft)
+        if (numericClaim && requireEvidence && validEvidence.isEmpty()) issues += "unsupported_numeric_claim"
+
+        val score = score(validEvidence, requireEvidence, issues)
+        val distinctIssues = issues.distinct()
+        return AmarCritique(
+            accepted = distinctIssues.isEmpty(),
+            issues = distinctIssues,
+            recommendation = if (distinctIssues.isEmpty()) "PASS" else "REVISE",
+            score = score,
+            evidenceCount = validEvidence.size,
+            independentSourceCount = independentSources
+        )
+    }
+
+    private fun score(
+        validEvidence: List<ResearchFinding>,
+        requireEvidence: Boolean,
+        issues: List<String>
+    ): Double {
+        if (issues.contains("empty_answer")) return 0.0
+        var value = 1.0
+        if (requireEvidence && validEvidence.isEmpty()) value -= 0.55
+        if (validEvidence.isNotEmpty()) value += (validEvidence.size.coerceAtMost(4) * 0.05)
+        if (issues.contains("insufficient_independent_sources")) value -= 0.20
+        if (issues.contains("evidence_conflict")) value -= 0.25
+        if (issues.contains("unsupported_certainty")) value -= 0.20
+        if (issues.contains("unsupported_numeric_claim")) value -= 0.20
+        return value.coerceIn(0.0, 1.0)
     }
 }
 
 data class AmarCritique(
     val accepted: Boolean,
     val issues: List<String>,
-    val recommendation: String
+    val recommendation: String,
+    val score: Double = if (accepted) 1.0 else 0.0,
+    val evidenceCount: Int = 0,
+    val independentSourceCount: Int = 0
 )
