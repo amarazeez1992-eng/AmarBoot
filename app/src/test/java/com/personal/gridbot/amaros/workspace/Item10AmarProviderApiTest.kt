@@ -61,6 +61,38 @@ class Item10AmarProviderApiTest {
     }
 
     @Test
+    fun unsupportedApiVersionFailsClosed() {
+        val store = AmarProviderCredentialStore()
+        val grant = store.issue("agent-a", setOf(AmarProviderCapability.QUERY), 100L)!!
+        val audit = AmarWorkspaceAuditLog()
+        val gateway = AmarProviderApiGateway(store, audit)
+        val response = gateway.handle(AmarProviderRequest("r8", grant.credential.credentialId, grant.secret, AmarProviderCapability.QUERY, "hello", 101L, apiVersion = "v999"))
+        assertFalse(response.accepted)
+        assertEquals("unsupported_api_version", response.reason)
+    }
+
+    @Test
+    fun authorizedRequestRoutesThroughOptionalCoreHandler() {
+        val store = AmarProviderCredentialStore()
+        val grant = store.issue("agent-a", setOf(AmarProviderCapability.QUERY), 100L)!!
+        val audit = AmarWorkspaceAuditLog()
+        val gateway = AmarProviderApiGateway(store, audit, handler = AmarProviderCapabilityHandler { request -> "core:${request.payload}" })
+        val response = gateway.handle(AmarProviderRequest("r9", grant.credential.credentialId, grant.secret, AmarProviderCapability.QUERY, "hello", 101L))
+        assertTrue(response.accepted)
+        assertEquals("core:hello", response.result)
+    }
+
+    @Test
+    fun handlerFailureDegradesWithoutAcceptingRequest() {
+        val store = AmarProviderCredentialStore()
+        val grant = store.issue("agent-a", setOf(AmarProviderCapability.QUERY), 100L)!!
+        val gateway = AmarProviderApiGateway(store, AmarWorkspaceAuditLog(), handler = AmarProviderCapabilityHandler { throw IllegalStateException("boom") })
+        val response = gateway.handle(AmarProviderRequest("r10", grant.credential.credentialId, grant.secret, AmarProviderCapability.QUERY, "hello", 101L))
+        assertFalse(response.accepted)
+        assertEquals("capability_unavailable", response.reason)
+    }
+
+    @Test
     fun disabledOrAbsentProviderCanBeRepresentedByNoCredentialWithoutCoreDependency() {
         val store = AmarProviderCredentialStore()
         assertEquals(null, store.metadata("missing"))
