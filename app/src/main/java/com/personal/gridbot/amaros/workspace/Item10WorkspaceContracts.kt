@@ -59,6 +59,7 @@ class AmarConversationMemoryStore {
     private val conversations = linkedMapOf<String, ConversationRecord>()
     private val memories = linkedMapOf<String, MemoryRecord>()
     private val knowledge = linkedMapOf<String, KnowledgeRecord>()
+    private val memoryTombstones = linkedSetOf<String>()
 
     fun saveConversation(record: ConversationRecord) { conversations[record.id] = record }
     fun conversation(id: String): ConversationRecord? = conversations[id]
@@ -72,13 +73,19 @@ class AmarConversationMemoryStore {
         }
     }
 
-    fun saveMemory(record: MemoryRecord) { memories[record.id] = record.copy(deleted = false) }
-    fun memory(id: String): MemoryRecord? = memories[id]?.takeUnless { it.deleted }
+    /** A deleted id is permanently tombstoned for this authority and cannot be silently reintroduced. */
+    fun saveMemory(record: MemoryRecord): Boolean {
+        if (record.id.isBlank() || record.id in memoryTombstones) return false
+        memories[record.id] = record.copy(deleted = false)
+        return true
+    }
 
-    /** Tombstone deletion prevents the deleted id from silently returning from this authority. */
+    fun memory(id: String): MemoryRecord? = memories[id]?.takeUnless { it.deleted || it.id in memoryTombstones }
+
     fun deleteMemory(id: String): Boolean {
         val current = memories[id] ?: return false
         memories[id] = current.copy(deleted = true)
+        memoryTombstones += id
         knowledge.entries.filter { it.value.sourceIds.contains(id) }.forEach { (key, value) ->
             knowledge[key] = value.copy(deleted = true)
         }
@@ -87,7 +94,7 @@ class AmarConversationMemoryStore {
 
     fun promoteToKnowledge(record: KnowledgeRecord): Boolean {
         if (!record.validated || record.sourceIds.isEmpty()) return false
-        if (record.sourceIds.any { sourceId -> memories[sourceId]?.deleted == true }) return false
+        if (record.sourceIds.any { sourceId -> memories[sourceId]?.deleted == true || sourceId in memoryTombstones }) return false
         knowledge[record.id] = record.copy(deleted = false)
         return true
     }
@@ -103,7 +110,7 @@ class AmarConversationMemoryStore {
 class AmarMemoryCommandRouter(private val store: AmarConversationMemoryStore) {
     fun execute(command: String, memory: MemoryRecord? = null, memoryId: String? = null): Boolean =
         when (command.trim().lowercase()) {
-            "save", "save this", "احفظ هذا" -> memory?.let { store.saveMemory(it); true } ?: false
+            "save", "save this", "احفظ هذا" -> memory?.let { store.saveMemory(it) } ?: false
             "delete", "delete this", "احذف هذا" -> memoryId?.let { store.deleteMemory(it) } ?: false
             else -> false
         }
