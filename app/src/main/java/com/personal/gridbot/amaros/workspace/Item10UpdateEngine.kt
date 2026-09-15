@@ -17,7 +17,8 @@ data class AmarUpdateManifest(
 data class AmarUpdatePolicy(
     val checkAutomatically: Boolean = true,
     val requireUserConfirmation: Boolean = true,
-    val allowDowngrade: Boolean = false
+    val allowDowngrade: Boolean = false,
+    val maxManifestAgeMs: Long = 7L * 24L * 60L * 60L * 1000L
 )
 
 enum class AmarUpdateStatus { UP_TO_DATE, UPDATE_AVAILABLE, BLOCKED, FAILED }
@@ -37,12 +38,22 @@ interface AmarUpdateInstaller {
 class AmarUpdateEngine(
     private val expectedPackageName: String,
     private val currentVersionCode: Long,
-    private val policy: AmarUpdatePolicy = AmarUpdatePolicy()
+    private val policy: AmarUpdatePolicy = AmarUpdatePolicy(),
+    private val nowEpochMs: () -> Long = { System.currentTimeMillis() }
 ) {
+    init {
+        require(expectedPackageName.isNotBlank())
+        require(currentVersionCode >= 0L)
+        require(policy.maxManifestAgeMs >= 0L)
+    }
+
     fun check(manifest: AmarUpdateManifest?): AmarUpdateState {
         if (manifest == null) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "missing_manifest")
         if (!isValidManifest(manifest)) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "invalid_manifest")
         if (manifest.packageName != expectedPackageName) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "package_mismatch")
+        val now = nowEpochMs()
+        if (now < 0L || manifest.generatedAtEpochMs > now) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "invalid_manifest_time")
+        if (now - manifest.generatedAtEpochMs > policy.maxManifestAgeMs) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "stale_manifest")
         if (manifest.minSupportedVersionCode > currentVersionCode) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "incompatible_current_version")
         if (!policy.allowDowngrade && manifest.versionCode <= currentVersionCode) {
             return AmarUpdateState(AmarUpdateStatus.UP_TO_DATE, manifest = manifest, reason = "no_newer_version")
