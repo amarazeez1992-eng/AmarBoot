@@ -103,10 +103,12 @@ class AmarProviderApiGateway(
         require(windowMs > 0L)
     }
 
+    @Synchronized
     fun handle(request: AmarProviderRequest): AmarProviderResponse {
-        val allowed = credentials.authorize(request) && consume(request.credentialId, request.nowEpochMs)
+        val authorized = credentials.authorize(request)
+        val allowed = authorized && consume(request.credentialId, request.nowEpochMs)
         val reason = when {
-            !credentials.authorize(request) -> "unauthorized_or_revoked"
+            !authorized -> "unauthorized_or_revoked"
             !allowed -> "rate_limited"
             else -> "accepted"
         }
