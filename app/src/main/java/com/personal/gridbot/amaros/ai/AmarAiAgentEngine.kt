@@ -8,12 +8,10 @@ import com.personal.gridbot.amaros.intelligence.trading.AmarTradingIntelligenceR
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibrary
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
-import org.json.JSONObject
 
 /**
- * AMAR AI Supervisor. Provider-neutral by construction: no Gemini client, key store,
- * network LLM or external synthesis adapter exists on this authority path.
- * The supervisor orchestrates deterministic AMAR engines and local reasoning only.
+ * AMAR AI Supervisor. Arabic is the native response language; understanding is multilingual.
+ * Provider-neutral by construction: no external LLM/provider authority exists on this path.
  */
 class AmarAiAgentEngine(
     private val context: Context? = null,
@@ -26,9 +24,10 @@ class AmarAiAgentEngine(
         val command = AmarAiActionEngine.route(request)
         if (command.handled) return Result(command.response, emptyList(), listOf("APP_COMMAND|LOCAL_AUTHORITY"))
 
+        val codePlan = if (looksLikeCode(request)) AmarAiCodeAnalysisEngine.plan(request) else null
         val actions = selectActions(request)
         val evidence = actions.mapNotNull { executeTool(it.first, it.second) }.distinct()
-        val prompt = buildPrompt(request, evidence)
+        val prompt = buildPrompt(request, evidence, codePlan)
         val local = runCatching {
             mesh.reasoning.respond(
                 AmarAgentContext(
@@ -41,7 +40,9 @@ class AmarAiAgentEngine(
         }.getOrNull()
 
         val answer = local?.answer?.takeIf { it.isNotBlank() }
-            ?: if (evidence.isNotEmpty()) evidence.joinToString("\n") else "AMAR AI: لا توجد أدلة محلية كافية لإجابة مؤكدة. تم الإغلاق الآمن."
+            ?: if (codePlan != null) codePlan.toArabicReport()
+            else if (evidence.isNotEmpty()) evidence.joinToString("\n")
+            else "AMAR AI: لا توجد أدلة محلية كافية لإجابة مؤكدة. تم الإغلاق الآمن."
         return Result(
             answer = if (evidence.isEmpty()) answer else "$answer\n\n${evidence.joinToString("\n")}",
             proposedActions = actions.map { "${it.first}: ${it.second}" },
@@ -49,9 +50,15 @@ class AmarAiAgentEngine(
         )
     }
 
+    private fun looksLikeCode(request: String): Boolean {
+        val q = request.lowercase()
+        return listOf("//@version=", "<html", "<!doctype", "fun main(", "public class", "#include <", "oninit(", "ontick(", "std::", "def ", "import ", "code:", "كود:", "حلل الكود", "حلل هذا الكود").any(q::contains)
+    }
+
     private fun selectActions(request: String): List<Pair<String, String>> {
         val q = request.lowercase()
         val out = mutableListOf<Pair<String, String>>()
+        if (looksLikeCode(request)) out += "code_analysis" to request
         if (listOf("سوق", "market", "xau", "gold", "ذهب", "تحليل").any(q::contains)) out += "analyze_market" to ""
         if (listOf("مخاطر", "risk", "دقة", "precision", "ثقة").any(q::contains)) out += "precision_audit" to ""
         if (listOf("استراتيجية", "strategy", "اختبار", "backtest", "باك").any(q::contains)) out += "strategy_quality" to request
@@ -64,10 +71,12 @@ class AmarAiAgentEngine(
         return out.distinctBy { it.first }
     }
 
-    private fun buildPrompt(request: String, evidence: List<String>): String {
-        val snapshot = AmarAiEngineMesh().snapshot()
+    private fun buildPrompt(request: String, evidence: List<String>, codePlan: AmarAiCodeAnalysisEngine.CodeAnalysisPlan?): String {
+        val snapshot = mesh.snapshot()
         return """
 AMAR AI SUPERVISOR
+NATIVE_LANGUAGE=ar
+LANGUAGE_POLICY=${AmarAiLanguagePolicy.instruction()}
 USER_REQUEST=$request
 PROVIDER=AMAR_LOCAL_ONLY
 EXECUTION_AUTHORITY=false
@@ -77,13 +86,16 @@ MARKET_ENGINE=${snapshot.marketEngine}
 INTELLIGENCE_ENGINE_COUNT=${snapshot.intelligenceEngineCount}
 KNOWLEDGE_DOMAINS=${AmarTradingKnowledgeLibrary.domains.size}
 TOOLS=${AmarAiToolRegistry.all().joinToString(",") { it.name }}
+CODE_ANALYSIS=${codePlan?.language ?: "not_requested"}
+CODE_DIMENSIONS=${codePlan?.dimensions?.joinToString(",") ?: ""}
 EVIDENCE:
 ${evidence.joinToString("\n")}
-RULES: no invented facts; distinguish evidence/inference; fail closed on missing data; draft-only proposals; human approval required for sensitive actions.
+RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax; never invent facts; distinguish evidence/inference; explain purpose, defects, omissions, root causes, impact and safer improvements; fail closed on missing data/tooling; draft-only proposals; human approval required for sensitive actions.
 """.trimIndent()
     }
 
     private suspend fun executeTool(tool: String, args: String): String? = when (tool) {
+        "code_analysis" -> AmarAiCodeAnalysisEngine.plan(args).toArabicReport()
         "inspect_app", "engine_market", "tracking", "candle" -> AmarAiDeterministicToolGateway.execute(tool, args)
         "analyze_market" -> AmarAiEngineBinding.market()
         "precision_audit" -> {
@@ -125,3 +137,10 @@ RULES: no invented facts; distinguish evidence/inference; fail closed on missing
         else -> AmarAiDeterministicToolGateway.execute(tool, args)
     }
 }
+
+private fun AmarAiCodeAnalysisEngine.CodeAnalysisPlan.toArabicReport(): String =
+    "تحليل الكود | اللغة المكتشفة: $language\n" +
+        "المحاور: ${dimensions.joinToString("، ")}\n" +
+        "الفحوص: ${checks.joinToString("؛ ")}\n" +
+        "منهج التحسين: ${recommendations.joinToString("؛ ")}\n" +
+        "ملاحظة: اكتشاف العيوب الدقيقة يتطلب محلل/مترجم اللغة وأدوات المشروع عند توفرها؛ لا يتم ادعاء نتيجة لم تُتحقق منها."
