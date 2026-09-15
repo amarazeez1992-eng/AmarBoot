@@ -18,7 +18,7 @@ class Item10ReasoningTransparencyTest {
         controller.checkConflicts("Compare independent findings", 3000)
         controller.synthesize("Produce one supported result", 3600)
         controller.complete(4000)
-        assertEquals(7, trace.snapshot().size)
+        assertEquals(8, trace.snapshot().size)
         assertEquals("research", trace.engineSnapshot().single().engineId)
         assertTrue(trace.snapshot().all { it.detail.isNotBlank() })
     }
