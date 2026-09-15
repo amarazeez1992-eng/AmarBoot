@@ -17,7 +17,7 @@ class Item10WorkspaceContractsTest {
     @Test
     fun deleteCommandTombstonesMemoryAndPreventsKnowledgeReappearance() {
         val memory = MemoryRecord("m2", "c2", "remove me", "project", 1L, "conversation:c2", true)
-        store.saveMemory(memory)
+        assertTrue(store.saveMemory(memory))
         assertTrue(store.promoteToKnowledge(KnowledgeRecord("k2", "remove me", "project", setOf("m2"), true)))
         assertTrue(AmarMemoryCommandRouter(store).execute("احذف هذا", memoryId = "m2"))
         assertTrue(store.memory("m2") == null)
@@ -25,8 +25,17 @@ class Item10WorkspaceContractsTest {
     }
 
     @Test
+    fun deletedMemoryIdCannotBeSilentlyReintroduced() {
+        val memory = MemoryRecord("m4", "c4", "forget permanently", "project", 1L, "conversation:c4", true)
+        assertTrue(store.saveMemory(memory))
+        assertTrue(store.deleteMemory("m4"))
+        assertFalse(store.saveMemory(memory.copy(text = "reintroduced")))
+        assertTrue(store.memory("m4") == null)
+    }
+
+    @Test
     fun unvalidatedKnowledgeCannotBePromoted() {
-        store.saveMemory(MemoryRecord("m3", "c3", "unverified", "project", 1L, "conversation:c3", false))
+        assertTrue(store.saveMemory(MemoryRecord("m3", "c3", "unverified", "project", 1L, "conversation:c3", false)))
         assertFalse(store.promoteToKnowledge(KnowledgeRecord("k3", "unverified", "project", setOf("m3"), false)))
         assertTrue(store.knowledge("k3") == null)
     }
