@@ -22,12 +22,15 @@ It measures:
 - bounded finite risk scores;
 - acceptance of supported evidence;
 - rejection of evidence conflicts;
-- rejection of guarantee language.
+- rejection of guarantee language;
+- deterministic calibration drift across repeated runs;
+- benchmark execution time as an observed performance metric.
 
 ## Quality thresholds
 
 - Minimum deterministic case accuracy: **90%**.
-- Maximum calibration error: **10%**.
+- Maximum deterministic calibration drift: **0%**.
+- Benchmark elapsed time is recorded as evidence; no machine-specific hard latency threshold is imposed.
 - All benchmark cases must be repeatable.
 - Any benchmark exception is a failed case.
 
