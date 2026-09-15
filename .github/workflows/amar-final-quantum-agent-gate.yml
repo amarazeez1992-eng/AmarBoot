@@ -14,6 +14,11 @@ on:
       - "app/src/test/java/com/personal/gridbot/amaros/ai/**"
       - "app/build.gradle"
       - ".github/workflows/amar-final-quantum-agent-gate.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   final-gate:
