@@ -34,8 +34,8 @@ class Item10WorkspaceContractsTest {
     @Test
     fun emptyEvidenceFailsClosed() {
         val result = AmarEvidenceFusionEngine().fuse("answer", emptyList(), 0.8)
-        assertFalse(result.blocked)
-        assertTrue(result.evidence.isEmpty())
+        assertTrue(result.blocked)
+        assertTrue("no_evidence" in result.blockers)
     }
 
     @Test
