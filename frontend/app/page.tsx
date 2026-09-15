@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
-import Item10Workspace from './amar-ui';
-import { createAmarEngineBridge } from './amar-ui/amarEngineBridge';
+import './quantum.css';
+import './amar-ui/item10.css';
+import HomeWorkspace from './HomeWorkspace';
 
 export default function Page() {
-  const bridge = useMemo(() => createAmarEngineBridge(), []);
-  return <Item10Workspace bridge={bridge} />;
+  return <HomeWorkspace />;
 }
