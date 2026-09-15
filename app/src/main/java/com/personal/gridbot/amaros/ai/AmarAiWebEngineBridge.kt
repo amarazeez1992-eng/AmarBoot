@@ -16,6 +16,10 @@ class AmarAiWebEngineBridge(
     private val engine: AmarAiAgentEngine = AmarAiAgentEngine()
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val trustedDomains = setOf(
+        "cftc.gov", "sec.gov", "federalreserve.gov", "bis.org", "cmegroup.com",
+        "imf.org", "tradingview.com", "github.com", "python.org", "kotlinlang.org"
+    )
 
     @JavascriptInterface
     fun request(payload: String) {
@@ -48,8 +52,16 @@ class AmarAiWebEngineBridge(
             "research.search" -> {
                 val query = parsed.optString("query")
                 if (query.isBlank()) return reply(requestId, false, error = "EMPTY_QUERY")
+                val mode = parsed.optString("searchMode", "restricted")
+                if (mode != "restricted" && mode != "open") return reply(requestId, false, error = "INVALID_SEARCH_MODE")
                 scope.launch {
                     runCatching { AmarAiExternalResearch().search(query, 8) }
+                        .map { results ->
+                            if (mode == "open") results else results.filter { source ->
+                                val host = runCatching { java.net.URI(source.url).host?.lowercase().orEmpty() }.getOrDefault("")
+                                trustedDomains.any { host == it || host.endsWith(".$it") }
+                            }
+                        }
                         .onSuccess { results ->
                             val sources = JSONArray()
                             results.forEachIndexed { index, source ->
