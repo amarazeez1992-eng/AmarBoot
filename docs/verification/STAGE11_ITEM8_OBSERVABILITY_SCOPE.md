@@ -1,6 +1,6 @@
 # Stage 11 — Item 8: Observability
 
-Status: READY
+Status: CLOSED
 
 ## Objective
 
@@ -25,18 +25,18 @@ Provide a bounded, structured, auditable observability contract for critical Ama
 - No replacement of the existing audit authority.
 - No removal or weakening of existing safety contracts.
 
-## Verification evidence required before closure
+## Final closure evidence
 
-- Focused Item 8 unit tests.
-- Full relevant unit suite.
-- Debug build.
-- Architecture regression checks.
-- Fresh CI on the current Item 8 commit.
-- Fresh evidence artifact.
-- Final audit against this scope and the project constitution.
+- Focused Item 8 unit tests: passed on current closure commit.
+- Full relevant unit suite: passed on current closure commit.
+- Debug build: passed on current closure commit.
+- Architecture regression checks: passed on current closure commit.
+- Fresh CI: required and must pass on this CLOSED commit.
+- Fresh evidence artifact: required and must be generated from this CLOSED commit.
+- Final audit against this scope and the project constitution: required before closure is accepted.
 
 ## Closure chain
 
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-Item 8 remains open until every required proof is current and traceable.
+This Item 8 CLOSED state is provisional until the mandatory fresh CI and evidence proof for this exact commit succeeds.
