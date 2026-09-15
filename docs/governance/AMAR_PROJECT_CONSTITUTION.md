@@ -105,3 +105,17 @@ The AI Agent MUST NOT invent a parallel subsystem, duplicate an existing authori
 Any ambiguity, missing requirement, or conflict MUST be resolved by inspecting the authoritative repository contracts and governance documents before implementation. Assumptions MUST NOT be used to lower engineering quality or bypass required verification.
 
 This Article is a permanent project-law requirement and applies to all future stages, items, fixes, audits, AI-agent changes, and closure decisions unless the Constitution is explicitly amended under Article 11.
+
+## Article 14 — Absolute Completeness, No Deletion, No Simplification
+
+A stage, item, feature, audit, or milestone MUST NOT be closed if there is any known missing requirement, incomplete implementation, unverified dependency, untested path, unresolved defect, or missing evidence within its approved scope.
+
+**Deletion, omission, reduction of scope, or simplification is prohibited as a method of obtaining closure.** Required functionality, contracts, guards, tests, evidence, architecture, and governance controls MUST NOT be removed, weakened, hidden, bypassed, or redefined merely to make a test pass, eliminate an error, shorten implementation, or obtain a READY/CLOSED status.
+
+If a defect cannot be safely corrected without changing an approved requirement or architectural contract, closure MUST remain blocked until the change is explicitly reviewed, documented, tested, and approved under the project governance hierarchy.
+
+After every substantive change, a completeness audit MUST confirm that the correction introduced no deletion, omission, simplification, regression, contract weakening, or loss of previously required behavior. The audit MUST compare the current implementation against the authoritative scope, contracts, tests, workflow gates, and prior accepted requirements.
+
+No stage may be declared successful merely because its failing component was removed, disabled, skipped, downgraded, excluded from CI, or replaced by a weaker substitute.
+
+This Article is constitutional, permanent, and mandatory for every future stage, item, addition, correction, audit, AI-agent action, and closure decision unless the Constitution is explicitly amended under Article 11.
