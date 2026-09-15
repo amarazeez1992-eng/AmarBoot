@@ -1,20 +1,25 @@
 package com.personal.gridbot.amaros.ai
 
 import com.personal.gridbot.amaros.navigation.AmarRoom
+import com.personal.gridbot.ui.theme.AmarThemeMode
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
-/** UI/application command bridge. AI never owns broker execution. */
+/** UI/application command bridge. AI can control presentation/navigation only; broker execution remains governed. */
 object AmarAiAppCommandBus {
     sealed interface Command {
         data class OpenRoom(val room: AmarRoom) : Command
         data class SetVisualEffects(val enabled: Boolean) : Command
+        data class SetThemeMode(val mode: AmarThemeMode) : Command
+        data class SetHomeLayout(val layout: Int) : Command
         data class QueueBotCommand(val botNumber: Int, val command: String) : Command
     }
     private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 32)
     val commands: SharedFlow<Command> = _commands
     fun openRoom(room: AmarRoom) { _commands.tryEmit(Command.OpenRoom(room)) }
     fun setVisualEffects(enabled: Boolean) { _commands.tryEmit(Command.SetVisualEffects(enabled)) }
+    fun setThemeMode(mode: AmarThemeMode) { _commands.tryEmit(Command.SetThemeMode(mode)) }
+    fun setHomeLayout(layout: Int) { _commands.tryEmit(Command.SetHomeLayout(layout.coerceIn(1, 10))) }
     fun queueBotCommand(botNumber: Int, command: String) { _commands.tryEmit(Command.QueueBotCommand(botNumber, command)) }
     fun queueExecutionIntent(intent: AmarAiExecutionOrchestrator.Intent) {
         val validation = AmarAiExecutionOrchestrator.validate(intent)
@@ -40,10 +45,36 @@ object AmarAiActionEngine {
             q.contains("الاختبار") || q.contains("simulation") -> AmarRoom.TESTING
             q.contains("المكتبة") || q.contains("library") -> AmarRoom.LIBRARY
             q.contains("الأخبار") || q.contains("news") -> AmarRoom.NEWS_SESSIONS
+            q.contains("المؤشرات") || q.contains("indicators") -> AmarRoom.INDICATORS
+            q.contains("التنبيهات") || q.contains("alerts") -> AmarRoom.ALERTS
+            q.contains("القرار") || q.contains("decision") -> AmarRoom.DECISION
+            q.contains("الأدوات") || q.contains("tools") -> AmarRoom.TOOLS
+            q.contains("الحسابات") || q.contains("accounts") -> AmarRoom.ACCOUNTS
             else -> null
         }
         if (room != null && (q.contains("اذهب") || q.contains("افتح") || q.contains("روح") || q.contains("go") || q.contains("open") || q.contains("اعرض"))) {
             AmarAiAppCommandBus.openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
+        }
+
+        val wantsSettings = q.contains("الوضع الليلي") || q.contains("الوضع النهاري") || q.contains("الوضع الفاتح") || q.contains("الوضع الداكن") || q.contains("المظهر الداكن") || q.contains("المظهر الفاتح") || q.contains("الوضع التلقائي")
+        if (wantsSettings) {
+            val mode = when {
+                q.contains("ليلي") || q.contains("داكن") -> AmarThemeMode.DARK
+                q.contains("نهاري") || q.contains("فاتح") -> AmarThemeMode.LIGHT
+                else -> AmarThemeMode.AUTO
+            }
+            AmarAiAppCommandBus.setThemeMode(mode)
+            return Result(true, "تم طلب تغيير المظهر إلى ${mode.name}.")
+        }
+        val layoutMatch = Regex("(?:واجهة|تصميم|layout|v)\\s*(?:v)?(\\d{1,2})").find(q)
+        if (layoutMatch != null) {
+            val id = layoutMatch.groupValues[1].toIntOrNull()
+            if (id != null && id in 1..10) { AmarAiAppCommandBus.setHomeLayout(id); return Result(true, "فعّلت واجهة V$id.") }
+            return Result(true, "رقم الواجهة يجب أن يكون بين 1 و10.")
+        }
+        if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
+            val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
+            AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
         }
         if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) return Result(true, AmarAiEngineBinding.market())
         if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) return Result(true, AmarAiEngineBinding.riskGate())
@@ -53,10 +84,6 @@ object AmarAiActionEngine {
         }
         if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره.")
         if (q.contains("الشمعة") && (q.contains("ربع ساعة") || q.contains("15m") || q.contains("m15"))) return Result(true, "ENGINE_CANDLE|status=MT5_RUNTIME_REQUIRED|timeframe=M15|لا توجد نسبة مخترعة بدون بيانات شموع فعلية.")
-        if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
-            val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
-            AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
-        }
 
         val bot = Regex("(?:بوت|bot)\\s*(\\d+)").find(q)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
         val symbol = Regex("(?:على|في|for|on)\\s*([a-z0-9._-]+)").find(q)?.groupValues?.getOrNull(1)?.uppercase()
@@ -71,7 +98,6 @@ object AmarAiActionEngine {
             AmarAiAppCommandBus.queueBotCommand(targetBot, "SET_LOT:$targetLot")
             return Result(true, "سجلت تغيير لوت البوت $targetBot إلى $targetLot، والحالة PENDING_MT5.")
         }
-
         if ((q.contains("افتح") || q.contains("فتح") || q.contains("open")) && (q.contains("شراء") || q.contains("buy") || q.contains("بيع") || q.contains("sell"))) {
             val side = if (q.contains("شراء") || q.contains("buy")) "BUY" else "SELL"
             if (symbol == null || volume == null) return Result(true, "أحتاج الرمز واللوت صراحةً. مثال: افتح شراء XAUUSD لوت 0.01")
