@@ -220,6 +220,8 @@ class MainActivity : ComponentActivity() {
                     when (command) {
                         is AmarAiAppCommandBus.Command.OpenRoom -> showRoom(command.room)
                         is AmarAiAppCommandBus.Command.SetVisualEffects -> setVisualEffectsEnabled(command.enabled)
+                        is AmarAiAppCommandBus.Command.SetThemeMode -> onThemeModeChanged(command.mode)
+                        is AmarAiAppCommandBus.Command.SetHomeLayout -> onHomeLayoutChanged(command.layout)
                         is AmarAiAppCommandBus.Command.QueueBotCommand -> runCatching { AmarBotCommandEngine(this@MainActivity).queue(command.botNumber, command.command) }
                     }
                 }
