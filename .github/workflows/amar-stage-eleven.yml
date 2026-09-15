@@ -10,11 +10,13 @@ on:
     paths:
       - 'app/**'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
+      - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
   pull_request:
     paths:
       - 'app/**'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
+      - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
 
@@ -63,6 +65,8 @@ jobs:
         run: |
           set -euo pipefail
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
+          test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
