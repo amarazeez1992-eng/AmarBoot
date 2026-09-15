@@ -19,9 +19,7 @@ class AmarAiWebEngineBridge(
 
     @JavascriptInterface
     fun request(payload: String) {
-        val parsed = runCatching { JSONObject(payload) }.getOrElse {
-            return
-        }
+        val parsed = runCatching { JSONObject(payload) }.getOrElse { return }
         val requestId = parsed.optString("requestId").ifBlank { return }
         when (parsed.optString("action")) {
             "agent.request" -> {
@@ -32,7 +30,7 @@ class AmarAiWebEngineBridge(
                     runCatching { engine.ask("", "", prompt) }
                         .onSuccess { result ->
                             val response = JSONObject()
-                                .put("id", request.optString("id").ifBlank { requestId })
+                                .put("id", request?.optString("id").orEmpty().ifBlank { requestId })
                                 .put("text", result.answer)
                                 .put("status", "complete")
                                 .put("verification", if (result.toolEvidence.isEmpty()) "uncertain" else "confirmed")
