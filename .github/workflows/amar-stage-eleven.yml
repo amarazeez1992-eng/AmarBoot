@@ -52,6 +52,9 @@ jobs:
       - name: Focused Decision Intelligence tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.DecisionEngineTest' --stacktrace
 
+      - name: Focused Self-Critique tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentCriticItemSixTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -63,6 +66,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
+          test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
@@ -73,12 +77,15 @@ jobs:
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestratorTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/DecisionEngineTest.kt
-          grep -q 'MIN_CLOSES_FOR_VOLATILITY = 4' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
-          grep -q 'MIN_LOSSES_FOR_HISTORICAL_VAR = 5' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarAgentCriticItemSixTest.kt
+          grep -q 'independentSourceCount' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          grep -q 'evidence_conflict' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
           ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
           ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
 
       - name: Upload test evidence
         if: always()
