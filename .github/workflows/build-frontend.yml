@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 
 # CI trigger verification only; build logic is unchanged.
+# Production build retrigger after UI syntax correction.
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
