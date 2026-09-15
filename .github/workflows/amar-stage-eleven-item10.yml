@@ -2,12 +2,18 @@ name: Amar Stage Eleven Item 10
 
 on:
   push:
-    branches: ["stage11/item10-multimodal-agent-workspace"]
+    branches: ["stage11/item10-multimodal-agent-workspace", "main"]
   pull_request:
     branches: ["main"]
     paths:
       - "app/src/main/java/com/personal/gridbot/amaros/workspace/**"
+      - "app/src/main/java/com/personal/gridbot/amaros/ai/**"
+      - "app/src/main/java/com/personal/gridbot/MainActivity.kt"
+      - "app/src/main/assets/**"
       - "app/src/test/java/com/personal/gridbot/amaros/workspace/**"
+      - "app/src/test/java/com/personal/gridbot/amaros/ai/**"
+      - "frontend/**"
+      - "app/build.gradle"
       - "docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md"
       - ".github/workflows/amar-stage-eleven-item10.yml"
 
@@ -18,6 +24,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -53,6 +65,10 @@ jobs:
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Debug build
         run: gradle :app:assembleDebug --stacktrace
+      - name: Verify packaged Quantum UI
+        run: test -f app/src/main/assets/quantum/index.html
+      - name: Verify AMAR web bridge is packaged
+        run: grep -q 'AmarEngine' app/src/main/java/com/personal/gridbot/MainActivity.kt
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
