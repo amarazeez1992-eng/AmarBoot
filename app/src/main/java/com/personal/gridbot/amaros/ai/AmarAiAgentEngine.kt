@@ -9,7 +9,7 @@ import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibr
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
 
-/** AMAR AI supervisor: Arabic-native, multilingual, code-capable, and GitHub-aware. */
+/** AMAR AI supervisor: Arabic-native, multilingual, code-capable, visual-engineering, and GitHub-aware. */
 class AmarAiAgentEngine(
     private val context: Context? = null,
     private val research: AmarAiExternalResearch = AmarAiExternalResearch(),
@@ -22,9 +22,10 @@ class AmarAiAgentEngine(
         if (command.handled) return Result(command.response, emptyList(), listOf("APP_COMMAND|LOCAL_AUTHORITY"))
 
         val codePlan = if (looksLikeCode(request)) AmarAiCodeAnalysisEngine.plan(request) else null
+        val visualPlan = if (looksLikeVisual(request)) AmarAiVisualEngineeringEngine.plan(request) else null
         val actions = selectActions(request)
         val evidence = actions.mapNotNull { executeTool(it.first, it.second) }.distinct()
-        val prompt = buildPrompt(request, evidence, codePlan, isCodeGenerationRequest(request))
+        val prompt = buildPrompt(request, evidence, codePlan, visualPlan, isCodeGenerationRequest(request))
         val local = runCatching {
             mesh.reasoning.respond(
                 AmarAgentContext(
@@ -37,6 +38,7 @@ class AmarAiAgentEngine(
         }.getOrNull()
 
         val answer = local?.answer?.takeIf { it.isNotBlank() }
+            ?: visualPlan?.let(AmarAiVisualEngineeringEngine::toArabicReport)
             ?: if (codePlan != null) codePlan.toArabicReport()
             else if (evidence.isNotEmpty()) evidence.joinToString("\n")
             else "AMAR AI: لا توجد أدلة محلية كافية لإجابة مؤكدة. تم الإغلاق الآمن."
@@ -57,6 +59,15 @@ class AmarAiAgentEngine(
         return listOf("اكتب كود", "اكتب لي كود", "حول إلى كود", "حوّل إلى كود", "أنشئ كود", "برمج", "generate code", "write code", "create code", "implement", "code generation", "fix this code", "اصلح الكود", "أصلح الكود", "عدل الكود", "عدّل الكود", "refactor").any(q::contains)
     }
 
+    private fun looksLikeVisual(request: String): Boolean {
+        val q = request.lowercase()
+        return listOf(
+            "صمم الواجهة", "صمّم الواجهة", "تصميم الواجهة", "إعادة تصميم", "redesign", "design ui", "ui design",
+            "صورة", "image", "screenshot", "لقطة شاشة", "render", "preview", "معاينة", "visual",
+            "دقة عالية", "عالية الدقة", "4k", "8k", "high resolution", "high-res", "عدّل الصورة", "عدل الصورة", "edit image"
+        ).any(q::contains)
+    }
+
     private fun looksLikeGitHub(request: String): Boolean =
         request.contains("github.com", ignoreCase = true) ||
             listOf("github", "كيت هوب", "غيت هب", "مستودع", "repository", "repo").any { request.contains(it, ignoreCase = true) }
@@ -66,6 +77,17 @@ class AmarAiAgentEngine(
         val out = mutableListOf<Pair<String, String>>()
         if (looksLikeCode(request)) out += "code_analysis" to request
         if (isCodeGenerationRequest(request)) out += "code_generation" to request
+        if (looksLikeVisual(request)) {
+            val mode = AmarAiVisualEngineeringEngine.plan(request).mode
+            out += when (mode) {
+                AmarAiVisualEngineeringEngine.Mode.IDEA_TO_DESIGN -> "visual_idea_to_design"
+                AmarAiVisualEngineeringEngine.Mode.CODE_TO_VISUAL -> "visual_code_to_image"
+                AmarAiVisualEngineeringEngine.Mode.IMAGE_TO_CODE -> "visual_image_to_code"
+                AmarAiVisualEngineeringEngine.Mode.IMAGE_EDIT -> "visual_image_edit"
+                AmarAiVisualEngineeringEngine.Mode.HIGH_RES_IMAGE_GENERATION -> "visual_high_res_generation"
+                AmarAiVisualEngineeringEngine.Mode.UI_REDESIGN -> "visual_ui_redesign"
+            } to request
+        }
         if (looksLikeGitHub(request)) out += "github_workspace" to request
         if (listOf("سوق", "market", "xau", "gold", "ذهب", "تحليل").any(q::contains)) out += "analyze_market" to ""
         if (listOf("مخاطر", "risk", "دقة", "precision", "ثقة").any(q::contains)) out += "precision_audit" to ""
@@ -79,7 +101,7 @@ class AmarAiAgentEngine(
         return out.distinctBy { it.first }
     }
 
-    private fun buildPrompt(request: String, evidence: List<String>, codePlan: AmarAiCodeAnalysisEngine.CodeAnalysisPlan?, generation: Boolean): String {
+    private fun buildPrompt(request: String, evidence: List<String>, codePlan: AmarAiCodeAnalysisEngine.CodeAnalysisPlan?, visualPlan: AmarAiVisualEngineeringEngine.VisualPlan?, generation: Boolean): String {
         val snapshot = mesh.snapshot()
         return """
 AMAR AI SUPERVISOR
@@ -99,16 +121,18 @@ KNOWLEDGE_DOMAINS=${AmarTradingKnowledgeLibrary.domains.size}
 TOOLS=${AmarAiToolRegistry.all().joinToString(",") { it.name }}
 CODE_ANALYSIS=${codePlan?.language ?: "not_requested"}
 CODE_GENERATION=$generation
-CODE_DIMENSIONS=${codePlan?.dimensions?.joinToString(",") ?: ""}
+VISUAL_MODE=${visualPlan?.mode ?: "not_requested"}
+VISUAL_OUTPUTS=${visualPlan?.outputs?.joinToString(",") ?: ""}
 EVIDENCE:
 ${evidence.joinToString("\n")}
-RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax. For code-generation requests, produce the requested complete code when the requirement is sufficiently specified, explain architecture and assumptions, include setup/build/test instructions, and provide stronger alternatives when useful. For code repair/refactor, show corrected code and explain root causes. For GitHub, inspect/search/read automatically when requested; for create/update/delete/branch/PR/merge operations, prepare an explicit approval proposal and execute only after a valid user approval. Before using external source code, inspect its repository license and retain source URL/license/attribution requirements. Never silently treat unknown licensing as permission. Never invent successful compilation or runtime results. Separate verified findings from inference. Generated code is DRAFT_ONLY: never execute, install, publish, trade, access credentials, or modify the device without explicit separate authorization and tooling. Fail closed when validation is impossible.
+RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax. For code-generation requests, produce the requested complete code when sufficiently specified, explain architecture and assumptions, and include setup/build/test instructions. For code repair/refactor, show corrected code and root causes. For visual requests, analyze the idea/image/code, produce a professional responsive design specification, component tree, design tokens, accessibility constraints, implementation plan, and use a connected visual tool for actual image generation/editing when available. Support idea-to-design, code-to-visual, image-to-code, image editing, high-resolution generation, and UI redesign. When an image is converted to code, separate observed geometry/styles from inferred behavior and validate responsive states. Prefer well-supported libraries compatible with the detected platform; inspect licenses before importing external assets/code. For GitHub, inspect/search/read automatically when requested; for create/update/delete/branch/PR/merge operations, prepare an explicit approval proposal and execute only after valid user approval. Before using external source code, inspect its repository license and retain source URL/license/attribution requirements. Never silently treat unknown licensing as permission. Never invent successful rendering, compilation, or runtime results. Generated code and visual edits are DRAFT_ONLY: never execute, install, publish, trade, access credentials, or modify the device without explicit separate authorization and tooling. Fail closed when validation is impossible.
 """.trimIndent()
     }
 
     private suspend fun executeTool(tool: String, args: String): String? = when (tool) {
         "code_analysis" -> AmarAiCodeAnalysisEngine.plan(args).toArabicReport()
         "code_generation" -> "CODE_GENERATION|DRAFT_ONLY|handled_by_local_reasoning"
+        "visual_idea_to_design", "visual_code_to_image", "visual_image_to_code", "visual_image_edit", "visual_high_res_generation", "visual_ui_redesign" -> AmarAiVisualEngineeringEngine.toArabicReport(AmarAiVisualEngineeringEngine.plan(args))
         "github_workspace" -> {
             val c = context ?: return "GITHUB|FAILED=no_context"
             val parsed = AmarAiGitHubIntentParser.parse(args) ?: return "GITHUB|FAILED=لم أفهم المستودع أو العملية المطلوبة"
