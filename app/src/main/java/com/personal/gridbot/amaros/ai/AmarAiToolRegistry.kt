@@ -16,6 +16,7 @@ object AmarAiToolRegistry {
         "tracking" to Authority.READ_ONLY,
         "candle" to Authority.READ_ONLY,
         "analyze_market" to Authority.READ_ONLY,
+        "code_analysis" to Authority.READ_ONLY,
         "research_external" to Authority.READ_ONLY,
         "multi_source_research" to Authority.READ_ONLY,
         "trading_library_search" to Authority.READ_ONLY,
