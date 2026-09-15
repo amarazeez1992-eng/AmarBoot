@@ -1,6 +1,6 @@
 # Stage 11 Item 5 — Clean Rebuild Scope
 
-Status: IN PROGRESS
+Status: CLOSED
 
 This item was rebuilt from the Stage 11 Items 1–4 baseline commit `0ab1fa2bbf20d6475f2511497c0e85e92bf5e325`.
 
@@ -23,13 +23,16 @@ This item was rebuilt from the Stage 11 Items 1–4 baseline commit `0ab1fa2bbf2
 - Quantitative risk can only reduce score magnitude and confidence.
 - Every proposal remains `executable = false`.
 
-## Closure evidence required
+## Closure evidence
 
-1. Focused Item 5 regression suite passes.
-2. Full unit suite passes.
-3. Debug build passes.
-4. Architecture and execution-safety checks pass.
-5. Fresh CI runs on the exact current commit.
-6. Final audit confirms no legacy Item 5 engine or temporary verification artifacts remain.
+1. Focused Item 5 regression suite passed.
+2. Full unit suite passed.
+3. Debug build passed.
+4. Architecture and execution-safety checks passed.
+5. Fresh CI passed on the exact merged commit `748eec82f6b6baaca545739992d88b3873b72968`.
+6. Final audit confirmed no legacy Item 5 engine or temporary verification artifacts remain.
+7. Current-main Stage 5 transient test failure was rerun successfully and produced no production-code change.
 
-This document is the single Item 5 rebuild scope; no duplicate audit-marker documents are required.
+## Final status
+
+Item 5 is formally CLOSED based on the complete closure loop and current evidence.
