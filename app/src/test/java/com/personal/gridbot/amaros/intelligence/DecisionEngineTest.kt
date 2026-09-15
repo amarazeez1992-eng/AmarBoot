@@ -72,7 +72,9 @@ class DecisionEngineTest {
         assertNotNull(risk)
         assertNull(risk!!.realizedVolatility)
         assertEquals(300.0 / 1200.0, risk.maxDrawdown!!, 1e-9)
-        assertEquals(50.0 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
+        // historicalVar uses linear interpolation: position = 0.95 * (5 - 1) = 3.8,
+        // so the quantile is 40 + 0.8 * (50 - 40) = 48, not the upper sample 50.
+        assertEquals(48.0 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
         assertNull(risk.riskOfRuin)
     }
 
