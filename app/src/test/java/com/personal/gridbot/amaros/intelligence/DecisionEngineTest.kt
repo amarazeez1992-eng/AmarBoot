@@ -19,12 +19,27 @@ class DecisionEngineTest {
     }
 
     @Test
+    fun quantitativeRisk_requiresMinimumSamplesForVolatilityAndVaR() {
+        val risk = engine.assessQuantitativeRisk(
+            DecisionEngine.QuantitativeInput(
+                closes = listOf(100.0, 101.0, 99.0),
+                equityCurve = emptyList(),
+                losses = listOf(10.0),
+                varConfidence = 0.95,
+                varScale = 100.0
+            )
+        )
+
+        assertNull(risk)
+    }
+
+    @Test
     fun quantitativeRisk_usesOnlyAvailableValidMetrics() {
         val risk = engine.assessQuantitativeRisk(
             DecisionEngine.QuantitativeInput(
                 closes = listOf(100.0, 101.0, 99.0, 100.5),
                 equityCurve = listOf(1000.0, 1100.0, 900.0, 950.0),
-                losses = listOf(10.0, 20.0, 30.0, 40.0),
+                losses = listOf(10.0, 20.0, 30.0, 40.0, 35.0),
                 varConfidence = 0.75,
                 varScale = 100.0
             )
@@ -33,9 +48,32 @@ class DecisionEngineTest {
         assertNotNull(risk)
         assertTrue(risk!!.realizedVolatility!! >= 0.0)
         assertEquals(200.0 / 1100.0, risk.maxDrawdown!!, 1e-9)
-        assertEquals(32.5 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
+        assertEquals(35.0 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
         assertNull(risk.riskOfRuin)
         assertTrue(risk.score in 0.0..1.0)
+    }
+
+    @Test
+    fun partialInvalidInputs_doNotInvalidateIndependentValidMetrics() {
+        val risk = engine.assessQuantitativeRisk(
+            DecisionEngine.QuantitativeInput(
+                closes = listOf(100.0, Double.NaN, 101.0, 102.0),
+                equityCurve = listOf(1000.0, 1200.0, 900.0, 950.0),
+                losses = listOf(10.0, 20.0, 30.0, 40.0, 50.0),
+                varConfidence = 0.95,
+                varScale = 100.0,
+                winProbability = 2.0,
+                payoffRatio = 1.0,
+                riskFraction = 0.01,
+                ruinFraction = 0.5
+            )
+        )
+
+        assertNotNull(risk)
+        assertNull(risk!!.realizedVolatility)
+        assertEquals(300.0 / 1200.0, risk.maxDrawdown!!, 1e-9)
+        assertEquals(50.0 / 100.0, risk.normalizedHistoricalVar!!, 1e-9)
+        assertNull(risk.riskOfRuin)
     }
 
     @Test
@@ -43,14 +81,14 @@ class DecisionEngineTest {
         val lowRisk = DecisionEngine.QuantitativeInput(
             closes = listOf(100.0, 100.1, 100.0, 100.1),
             equityCurve = listOf(1000.0, 1005.0, 1003.0, 1007.0),
-            losses = listOf(1.0, 1.0, 2.0, 1.0),
+            losses = listOf(1.0, 1.0, 2.0, 1.0, 2.0),
             varConfidence = 0.95,
             varScale = 100.0
         )
         val highRisk = DecisionEngine.QuantitativeInput(
             closes = listOf(100.0, 120.0, 80.0, 130.0),
             equityCurve = listOf(1000.0, 1200.0, 400.0, 450.0),
-            losses = listOf(50.0, 70.0, 90.0, 100.0),
+            losses = listOf(50.0, 70.0, 90.0, 100.0, 80.0),
             varConfidence = 0.95,
             varScale = 100.0
         )
