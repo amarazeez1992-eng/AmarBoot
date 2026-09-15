@@ -93,3 +93,15 @@ Before any closure decision, the responsible engineer must be able to demonstrat
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
 If any required proof is absent, closure is forbidden.
+
+## Article 13 — Architectural Integrity and Professional Standard
+
+All Amar AI / AmarBoot engineering work MUST remain within the approved project context, architecture, contracts, governance documents, and AI-agent design authority. No implementation may be simplified, weakened, generalized, or altered merely for convenience when doing so changes the intended architectural meaning or contract.
+
+Every modification, correction, extension, refactor, test, workflow change, or governance change MUST be executed to the highest professional engineering standard reasonably applicable to the scope. The responsible engineer MUST preserve architectural coherence, explicit contracts, deterministic behavior where required, safety boundaries, traceability, maintainability, and regression protection.
+
+The AI Agent MUST NOT invent a parallel subsystem, duplicate an existing authority, bypass an established contract, silently change semantics, remove a required guard, or introduce execution authority merely to satisfy a local test or short-term objective. When an existing authoritative component already owns a responsibility, the default is to extend or correctly integrate with that authority rather than create a competing implementation.
+
+Any ambiguity, missing requirement, or conflict MUST be resolved by inspecting the authoritative repository contracts and governance documents before implementation. Assumptions MUST NOT be used to lower engineering quality or bypass required verification.
+
+This Article is a permanent project-law requirement and applies to all future stages, items, fixes, audits, AI-agent changes, and closure decisions unless the Constitution is explicitly amended under Article 11.
