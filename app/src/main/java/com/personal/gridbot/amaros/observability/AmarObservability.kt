@@ -78,6 +78,7 @@ class AmarObservability(
             errorEvents++
             lastErrorEpochMs = timestamp
         }
+        if (severity == AmarObservabilityEvent.Severity.CRITICAL) criticalEvents++
         if (severity == AmarObservabilityEvent.Severity.CRITICAL) lastCriticalEpochMs = timestamp
         counts[event] = (counts[event] ?: 0L) + 1L
         auditLog.append(
@@ -97,8 +98,6 @@ class AmarObservability(
 
     fun metrics(): AmarMetricSnapshot = synchronized(lock) {
         AmarMetricSnapshot(totalEvents, errorEvents, criticalEvents, counts.toMap())
-    }.also {
-        synchronized(lock) { criticalEvents = events.count { it.severity == AmarObservabilityEvent.Severity.CRITICAL }.toLong() }
     }
 
     fun health(): AmarHealthSnapshot = synchronized(lock) {
