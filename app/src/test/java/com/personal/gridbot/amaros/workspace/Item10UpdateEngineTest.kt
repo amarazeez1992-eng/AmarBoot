@@ -42,7 +42,7 @@ class Item10UpdateEngineTest {
     fun installationRequiresConfirmationAndVerifiedBytes() {
         val engine = AmarUpdateEngine("com.personal.gridbot", 1L)
         val state = engine.check(manifest)
-        val installer = RecordingInstaller()
+        val installer = RecordingInstaller(bytes)
         assertFalse(engine.install(state, bytes, userConfirmed = false, installer))
         assertFalse(engine.install(state, "tampered".toByteArray(), userConfirmed = true, installer))
         assertTrue(engine.install(state, bytes, userConfirmed = true, installer))
@@ -55,11 +55,12 @@ class Item10UpdateEngineTest {
         assertTrue(engine.check(manifest).status == AmarUpdateStatus.UP_TO_DATE)
     }
 
-    private class RecordingInstaller : AmarUpdateInstaller {
+    private class RecordingInstaller(private val expectedBytes: ByteArray) : AmarUpdateInstaller {
         var called = false
+
         override fun install(apkBytes: ByteArray, manifest: AmarUpdateManifest, userConfirmed: Boolean): Boolean {
             called = true
-            return apkBytes.contentEquals(bytes) && userConfirmed
+            return apkBytes.contentEquals(expectedBytes) && userConfirmed
         }
     }
 }
