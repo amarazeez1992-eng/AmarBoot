@@ -9,7 +9,7 @@ import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibr
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
 
-/** AMAR AI supervisor: Arabic-native, multilingual understanding, draft-only code generation. */
+/** AMAR AI supervisor: Arabic-native, multilingual, code-capable, and GitHub-aware. */
 class AmarAiAgentEngine(
     private val context: Context? = null,
     private val research: AmarAiExternalResearch = AmarAiExternalResearch(),
@@ -57,11 +57,16 @@ class AmarAiAgentEngine(
         return listOf("اكتب كود", "اكتب لي كود", "حول إلى كود", "حوّل إلى كود", "أنشئ كود", "برمج", "generate code", "write code", "create code", "implement", "code generation", "fix this code", "اصلح الكود", "أصلح الكود", "عدل الكود", "عدّل الكود", "refactor").any(q::contains)
     }
 
+    private fun looksLikeGitHub(request: String): Boolean =
+        request.contains("github.com", ignoreCase = true) ||
+            listOf("github", "كيت هوب", "غيت هب", "مستودع", "repository", "repo").any { request.contains(it, ignoreCase = true) }
+
     private fun selectActions(request: String): List<Pair<String, String>> {
         val q = request.lowercase()
         val out = mutableListOf<Pair<String, String>>()
         if (looksLikeCode(request)) out += "code_analysis" to request
         if (isCodeGenerationRequest(request)) out += "code_generation" to request
+        if (looksLikeGitHub(request)) out += "github_workspace" to request
         if (listOf("سوق", "market", "xau", "gold", "ذهب", "تحليل").any(q::contains)) out += "analyze_market" to ""
         if (listOf("مخاطر", "risk", "دقة", "precision", "ثقة").any(q::contains)) out += "precision_audit" to ""
         if (listOf("استراتيجية", "strategy", "اختبار", "backtest", "باك").any(q::contains)) out += "strategy_quality" to request
@@ -84,6 +89,9 @@ USER_REQUEST=$request
 PROVIDER=AMAR_LOCAL_ONLY
 EXECUTION_AUTHORITY=false
 BROKER_EXECUTION=false
+GITHUB_WORKSPACE=true
+GITHUB_WRITES=EXPLICIT_APPROVAL_REQUIRED
+GITHUB_DELETE_AND_MERGE=EXPLICIT_APPROVAL_REQUIRED
 ENGINE_MESH=${mesh.connectedEngineIds().joinToString(",")}
 MARKET_ENGINE=${snapshot.marketEngine}
 INTELLIGENCE_ENGINE_COUNT=${snapshot.intelligenceEngineCount}
@@ -94,13 +102,22 @@ CODE_GENERATION=$generation
 CODE_DIMENSIONS=${codePlan?.dimensions?.joinToString(",") ?: ""}
 EVIDENCE:
 ${evidence.joinToString("\n")}
-RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax. For code-generation requests, produce the requested complete code when the requirement is sufficiently specified, explain architecture and assumptions, include setup/build/test instructions, and provide stronger alternatives when useful. For code repair/refactor, show the corrected code and explain root causes. Never invent successful compilation or runtime results. Separate verified findings from inference. Generated code is DRAFT_ONLY: never execute, install, publish, trade, access credentials, or modify the device without explicit separate authorization and tooling. For missing requirements, ask only the minimum necessary clarification; otherwise make explicit reasonable assumptions. Fail closed when validation is impossible.
+RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax. For code-generation requests, produce the requested complete code when the requirement is sufficiently specified, explain architecture and assumptions, include setup/build/test instructions, and provide stronger alternatives when useful. For code repair/refactor, show corrected code and explain root causes. For GitHub, inspect/search/read automatically when requested; for create/update/delete/branch/PR/merge operations, prepare an explicit approval proposal and execute only after a valid user approval. Before using external source code, inspect its repository license and retain source URL/license/attribution requirements. Never silently treat unknown licensing as permission. Never invent successful compilation or runtime results. Separate verified findings from inference. Generated code is DRAFT_ONLY: never execute, install, publish, trade, access credentials, or modify the device without explicit separate authorization and tooling. Fail closed when validation is impossible.
 """.trimIndent()
     }
 
     private suspend fun executeTool(tool: String, args: String): String? = when (tool) {
         "code_analysis" -> AmarAiCodeAnalysisEngine.plan(args).toArabicReport()
         "code_generation" -> "CODE_GENERATION|DRAFT_ONLY|handled_by_local_reasoning"
+        "github_workspace" -> {
+            val c = context ?: return "GITHUB|FAILED=no_context"
+            val parsed = AmarAiGitHubIntentParser.parse(args) ?: return "GITHUB|FAILED=لم أفهم المستودع أو العملية المطلوبة"
+            val gateway = AmarAiGitHubToolGateway(c)
+            val operation = parsed.optString("operation")
+            val readOperation = operation in setOf("repo_search", "repo_inspect", "code_search", "file_read", "license_inspect")
+            val result = if (readOperation) gateway.inspect(parsed) else gateway.proposeWrite(parsed)
+            "GITHUB|operation=$operation|ok=${result.ok}|status=${result.status}|message=${result.message}|data=${result.data.take(12000)}"
+        }
         "inspect_app", "engine_market", "tracking", "candle" -> AmarAiDeterministicToolGateway.execute(tool, args)
         "analyze_market" -> AmarAiEngineBinding.market()
         "precision_audit" -> {
