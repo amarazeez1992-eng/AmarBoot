@@ -1,6 +1,6 @@
 'use client';
 
-import Item10Workspace from './Item10Workspace';
+import Item10Workspace from './amar-ui';
 
 export default function Page() {
   return <Item10Workspace />;
