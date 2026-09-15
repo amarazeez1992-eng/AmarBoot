@@ -2,7 +2,6 @@ package com.personal.gridbot.amaros.workspace
 
 import java.security.MessageDigest
 
-/** Signed-release metadata consumed by the in-app update flow. */
 data class AmarUpdateManifest(
     val versionCode: Long,
     val versionName: String,
@@ -29,7 +28,6 @@ data class AmarUpdateState(
     val reason: String = ""
 )
 
-/** Download/install boundary. Implementations must never uninstall the current app first. */
 interface AmarUpdateInstaller {
     fun install(apkBytes: ByteArray, manifest: AmarUpdateManifest, userConfirmed: Boolean): Boolean
 }
@@ -55,8 +53,11 @@ class AmarUpdateEngine(
         if (now < 0L || manifest.generatedAtEpochMs > now) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "invalid_manifest_time")
         if (now - manifest.generatedAtEpochMs > policy.maxManifestAgeMs) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "stale_manifest")
         if (manifest.minSupportedVersionCode > currentVersionCode) return AmarUpdateState(AmarUpdateStatus.BLOCKED, reason = "incompatible_current_version")
-        if (!policy.allowDowngrade && manifest.versionCode <= currentVersionCode) {
-            return AmarUpdateState(AmarUpdateStatus.UP_TO_DATE, manifest = manifest, reason = "no_newer_version")
+        if (manifest.versionCode == currentVersionCode) {
+            return AmarUpdateState(AmarUpdateStatus.UP_TO_DATE, manifest = manifest, reason = "same_version")
+        }
+        if (manifest.versionCode < currentVersionCode && !policy.allowDowngrade) {
+            return AmarUpdateState(AmarUpdateStatus.UP_TO_DATE, manifest = manifest, reason = "downgrade_blocked")
         }
         return AmarUpdateState(AmarUpdateStatus.UPDATE_AVAILABLE, manifest = manifest, reason = "new_version_available")
     }
