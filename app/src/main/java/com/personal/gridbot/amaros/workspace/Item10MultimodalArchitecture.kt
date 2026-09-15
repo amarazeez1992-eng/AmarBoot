@@ -75,6 +75,20 @@ class AmarScreenWorkspace {
     fun active(): Boolean = session?.permissionGranted == true && session?.stopped == false
 }
 
+data class AmarScreenAction(
+    val type: Type,
+    val target: String = "",
+    val text: String = "",
+    val sensitive: Boolean = false
+) {
+    enum class Type { TAP, TYPE, SCROLL, OPEN, CLOSE }
+}
+
+class AmarScreenActionController(private val safetyGate: AmarActionSafetyGate) {
+    fun authorize(action: AmarScreenAction, authorization: AmarActionAuthorization): Boolean =
+        action.target.isNotBlank() && safetyGate.authorize(authorization.copy(sensitive = action.sensitive))
+}
+
 enum class AmarSearchDepth { FAST, DEEP, PARALLEL }
 
 data class AmarWebRequest(
@@ -107,6 +121,33 @@ class AmarWebPolicyGuard {
     }
 }
 
+class AmarTrustedSourceEngine {
+    fun rank(sources: List<AmarWebSource>): List<AmarWebSource> =
+        sources.sortedWith(compareByDescending<AmarWebSource> { it.trusted }.thenByDescending { it.independent }.thenBy { it.id })
+}
+
+data class AmarEvidenceConflict(
+    val statementA: String,
+    val statementB: String,
+    val sourceA: String,
+    val sourceB: String
+)
+
+class AmarConflictResolver {
+    fun conflicts(sources: List<AmarWebSource>): List<AmarEvidenceConflict> {
+        val result = mutableListOf<AmarEvidenceConflict>()
+        for (i in sources.indices) for (j in i + 1 until sources.size) {
+            val a = sources[i]
+            val b = sources[j]
+            if (a.independent && b.independent && a.evidence.isNotBlank() && b.evidence.isNotBlank() &&
+                a.evidence.trim().lowercase() != b.evidence.trim().lowercase()) {
+                result += AmarEvidenceConflict(a.evidence, b.evidence, a.id, b.id)
+            }
+        }
+        return result
+    }
+}
+
 data class AmarOpenSourceAdapter(
     val id: String,
     val capabilities: Set<String>,
@@ -134,6 +175,7 @@ data class AmarEngineFinding(
 
 class AmarMultiEngineOrchestrator(private val fusion: AmarEvidenceFusionEngine) {
     fun fuse(answer: String, findings: List<AmarEngineFinding>): ReasoningResult {
+        if (findings.isEmpty()) return fusion.fuse(answer, emptyList(), 0.0)
         val evidence = findings.flatMap { it.evidence }.distinctBy { it.id }
         val confidence = findings.map { it.confidence }.filter { it in 0.0..1.0 }.average().takeIf { !it.isNaN() } ?: 0.0
         return fusion.fuse(answer, evidence, confidence)
