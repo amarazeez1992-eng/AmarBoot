@@ -18,48 +18,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.7"
-
       - name: Focused workspace contract tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceContractsTest' --stacktrace
-
       - name: Focused multimodal architecture tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10MultimodalArchitectureTest' --stacktrace
-
       - name: Focused knowledge and audit tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10KnowledgeAndAuditTest' --stacktrace
-
       - name: Focused workspace coordinator tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceCoordinatorTest' --stacktrace
-
       - name: Focused conversation governance tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ConversationGovernanceTest' --stacktrace
-
       - name: Focused reasoning transparency tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ReasoningTransparencyTest' --stacktrace
-
       - name: Focused editor preference tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10EditorPreferencesTest' --stacktrace
-
       - name: Focused centralized settings tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceSettingsTest' --stacktrace
-
+      - name: Focused Amar provider API tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10AmarProviderApiTest' --stacktrace
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
-
       - name: Debug build
         run: gradle :app:assembleDebug --stacktrace
-
       - name: Contract and scope regression
         run: |
           grep -q '^# Stage 11 — Item 10 Multimodal Agent Interface & Workspace$' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
@@ -90,7 +79,7 @@ jobs:
           grep -q 'AmarBackgroundMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
           grep -q 'AmarThemeMode' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettings.kt
           grep -q 'AmarFontWeight' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferences.kt
+          grep -q 'AmarProviderApiGateway' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
+          grep -q 'AmarProviderCredentialStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
           grep -q 'Item10WorkspaceSettingsTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettingsTest.kt
-          grep -q 'Item10ReasoningTransparencyTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10ReasoningTransparencyTest.kt
-          grep -q 'Item10EditorPreferencesTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10EditorPreferencesTest.kt
-          grep -q 'Item10ConversationGovernanceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernanceTest.kt
+          grep -q 'Item10AmarProviderApiTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApiTest.kt
