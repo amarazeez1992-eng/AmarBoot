@@ -30,6 +30,30 @@ android {
     }
 }
 
+def quantumFrontendDir = file("${rootDir}/frontend")
+def quantumFrontendOut = file("${rootDir}/frontend/out")
+def quantumAndroidAssets = file("${projectDir}/src/main/assets/quantum")
+
+tasks.register('buildQuantumFrontend', Exec) {
+    workingDir quantumFrontendDir
+    commandLine 'npm', 'install', '--no-audit', '--no-fund'
+    doLast {
+        exec {
+            workingDir quantumFrontendDir
+            commandLine 'npm', 'run', 'build'
+        }
+    }
+}
+
+tasks.register('syncQuantumFrontend', Copy) {
+    dependsOn 'buildQuantumFrontend'
+    from quantumFrontendOut
+    into quantumAndroidAssets
+    includeEmptyDirs = false
+}
+
+tasks.named('preBuild').configure { dependsOn 'syncQuantumFrontend' }
+
 dependencies {
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.activity:activity-compose:1.9.0'
