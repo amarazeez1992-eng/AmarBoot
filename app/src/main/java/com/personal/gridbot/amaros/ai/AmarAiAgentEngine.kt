@@ -9,10 +9,7 @@ import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibr
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
 
-/**
- * AMAR AI Supervisor. Arabic is the native response language; understanding is multilingual.
- * Provider-neutral by construction: no external LLM/provider authority exists on this path.
- */
+/** AMAR AI supervisor: Arabic-native, multilingual understanding, draft-only code generation. */
 class AmarAiAgentEngine(
     private val context: Context? = null,
     private val research: AmarAiExternalResearch = AmarAiExternalResearch(),
@@ -27,7 +24,7 @@ class AmarAiAgentEngine(
         val codePlan = if (looksLikeCode(request)) AmarAiCodeAnalysisEngine.plan(request) else null
         val actions = selectActions(request)
         val evidence = actions.mapNotNull { executeTool(it.first, it.second) }.distinct()
-        val prompt = buildPrompt(request, evidence, codePlan)
+        val prompt = buildPrompt(request, evidence, codePlan, isCodeGenerationRequest(request))
         val local = runCatching {
             mesh.reasoning.respond(
                 AmarAgentContext(
@@ -55,10 +52,16 @@ class AmarAiAgentEngine(
         return listOf("//@version=", "<html", "<!doctype", "fun main(", "public class", "#include <", "oninit(", "ontick(", "std::", "def ", "import ", "code:", "كود:", "حلل الكود", "حلل هذا الكود").any(q::contains)
     }
 
+    private fun isCodeGenerationRequest(request: String): Boolean {
+        val q = request.lowercase()
+        return listOf("اكتب كود", "اكتب لي كود", "حول إلى كود", "حوّل إلى كود", "أنشئ كود", "برمج", "generate code", "write code", "create code", "implement", "code generation", "fix this code", "اصلح الكود", "أصلح الكود", "عدل الكود", "عدّل الكود", "refactor").any(q::contains)
+    }
+
     private fun selectActions(request: String): List<Pair<String, String>> {
         val q = request.lowercase()
         val out = mutableListOf<Pair<String, String>>()
         if (looksLikeCode(request)) out += "code_analysis" to request
+        if (isCodeGenerationRequest(request)) out += "code_generation" to request
         if (listOf("سوق", "market", "xau", "gold", "ذهب", "تحليل").any(q::contains)) out += "analyze_market" to ""
         if (listOf("مخاطر", "risk", "دقة", "precision", "ثقة").any(q::contains)) out += "precision_audit" to ""
         if (listOf("استراتيجية", "strategy", "اختبار", "backtest", "باك").any(q::contains)) out += "strategy_quality" to request
@@ -71,7 +74,7 @@ class AmarAiAgentEngine(
         return out.distinctBy { it.first }
     }
 
-    private fun buildPrompt(request: String, evidence: List<String>, codePlan: AmarAiCodeAnalysisEngine.CodeAnalysisPlan?): String {
+    private fun buildPrompt(request: String, evidence: List<String>, codePlan: AmarAiCodeAnalysisEngine.CodeAnalysisPlan?, generation: Boolean): String {
         val snapshot = mesh.snapshot()
         return """
 AMAR AI SUPERVISOR
@@ -87,22 +90,22 @@ INTELLIGENCE_ENGINE_COUNT=${snapshot.intelligenceEngineCount}
 KNOWLEDGE_DOMAINS=${AmarTradingKnowledgeLibrary.domains.size}
 TOOLS=${AmarAiToolRegistry.all().joinToString(",") { it.name }}
 CODE_ANALYSIS=${codePlan?.language ?: "not_requested"}
+CODE_GENERATION=$generation
 CODE_DIMENSIONS=${codePlan?.dimensions?.joinToString(",") ?: ""}
 EVIDENCE:
 ${evidence.joinToString("\n")}
-RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax; never invent facts; distinguish evidence/inference; explain purpose, defects, omissions, root causes, impact and safer improvements; fail closed on missing data/tooling; draft-only proposals; human approval required for sensitive actions.
+RULES: answer in Arabic by default; understand multilingual input; preserve code identifiers and syntax. For code-generation requests, produce the requested complete code when the requirement is sufficiently specified, explain architecture and assumptions, include setup/build/test instructions, and provide stronger alternatives when useful. For code repair/refactor, show the corrected code and explain root causes. Never invent successful compilation or runtime results. Separate verified findings from inference. Generated code is DRAFT_ONLY: never execute, install, publish, trade, access credentials, or modify the device without explicit separate authorization and tooling. For missing requirements, ask only the minimum necessary clarification; otherwise make explicit reasonable assumptions. Fail closed when validation is impossible.
 """.trimIndent()
     }
 
     private suspend fun executeTool(tool: String, args: String): String? = when (tool) {
         "code_analysis" -> AmarAiCodeAnalysisEngine.plan(args).toArabicReport()
+        "code_generation" -> "CODE_GENERATION|DRAFT_ONLY|handled_by_local_reasoning"
         "inspect_app", "engine_market", "tracking", "candle" -> AmarAiDeterministicToolGateway.execute(tool, args)
         "analyze_market" -> AmarAiEngineBinding.market()
         "precision_audit" -> {
             val gate = AmarTradingPrecisionEngine.defaultResearchGate()
-            val result = AmarTradingPrecisionEngine.evaluate(
-                AmarTradingPrecisionEngine.Input(gate.scorePct / 100.0, gate.confidencePct / 100.0, gate.scorePct / 100.0, .25, .40, .20, .35, gate.uncertaintyPct / 100.0)
-            )
+            val result = AmarTradingPrecisionEngine.evaluate(AmarTradingPrecisionEngine.Input(gate.scorePct / 100.0, gate.confidencePct / 100.0, gate.scorePct / 100.0, .25, .40, .20, .35, gate.uncertaintyPct / 100.0))
             "PRECISION|score=${"%.1f".format(result.scorePct)}|confidence=${"%.1f".format(result.confidencePct)}|uncertainty=${"%.1f".format(result.uncertaintyPct)}|gate=${result.gate}|reasons=${result.reasons.joinToString(" || ")}"
         }
         "strategy_quality" -> {
@@ -118,12 +121,8 @@ RULES: answer in Arabic by default; understand multilingual input; preserve code
             val hits = AmarTradingIntelligenceRegistry.intelligenceEngines.filter { q.isBlank() || it.lowercase().contains(q) }
             "INTELLIGENCE_LIBRARY|${hits.joinToString(" | ")}"
         }
-        "multi_source_research" -> runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }
-            .map { r -> "MULTI_SOURCE|query=${r.query}|evidence=${r.evidence.size}|supporting=${r.supportingChannels}|conflicts=${r.conflictChannels}|independent=${r.independentChannels}|authority=${r.authorityGrade}|confidence=${"%.1f".format(r.authorityConfidencePct)}|consensus=${"%.1f".format(r.consensusPct)}|caveat=${r.caveat}" }
-            .getOrElse { "MULTI_SOURCE|FAILED=${it.message ?: "unknown"}" }
-        "research_external" -> runCatching { research.search(args, 8) }
-            .map { results -> results.joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }.ifBlank { "EXTERNAL_RESEARCH|NO_PUBLIC_RESULTS" } }
-            .getOrElse { "EXTERNAL_RESEARCH|FAILED=${it.message ?: "unknown"}" }
+        "multi_source_research" -> runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }.map { r -> "MULTI_SOURCE|query=${r.query}|evidence=${r.evidence.size}|supporting=${r.supportingChannels}|conflicts=${r.conflictChannels}|independent=${r.independentChannels}|authority=${r.authorityGrade}|confidence=${"%.1f".format(r.authorityConfidencePct)}|consensus=${"%.1f".format(r.consensusPct)}|caveat=${r.caveat}" }.getOrElse { "MULTI_SOURCE|FAILED=${it.message ?: "unknown"}" }
+        "research_external" -> runCatching { research.search(args, 8) }.map { results -> results.joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }.ifBlank { "EXTERNAL_RESEARCH|NO_PUBLIC_RESULTS" } }.getOrElse { "EXTERNAL_RESEARCH|FAILED=${it.message ?: "unknown"}" }
         "self_audit" -> {
             val c = context ?: return "SELF_AUDIT|ERROR=no_context"
             val audit = AmarAiSelfImprovementEngine(c).audit()
