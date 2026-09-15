@@ -42,7 +42,14 @@ class AmarFailClosedMultimodalPerception : AmarMultimodalPerceptionEngine {
             return AmarVideoAnalysis(emptyList(), "", emptyList(), false, listOf("unreadable_media"))
         }
         val timestamps = usable.flatMap { it.frames.filter { frame -> frame.confidence >= 0.8 }.map { it.timestampMs } }.distinct().sorted()
-        return AmarVideoAnalysis(usable, usable.joinToString(" ") { it.transcript.ifBlank { it.frames.firstOrNull()?.description.orEmpty() } }.trim(), timestamps, true)
+        val summary = usable.joinToString(" ") { segment ->
+            segment.transcript.ifBlank {
+                segment.frames.firstOrNull { it.description.isNotBlank() || it.visibleText.isNotBlank() }
+                    ?.let { frame -> frame.description.ifBlank { frame.visibleText } }
+                    .orEmpty()
+            }
+        }.trim()
+        return AmarVideoAnalysis(usable, summary, timestamps, summary.isNotBlank(), if (summary.isBlank()) listOf("no_interpretable_summary") else emptyList())
     }
 
     override fun analyzeScreen(frames: List<AmarMediaFrame>): AmarVideoAnalysis =
