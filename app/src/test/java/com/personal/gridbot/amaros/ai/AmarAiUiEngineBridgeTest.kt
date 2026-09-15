@@ -9,7 +9,6 @@ class AmarAiUiEngineBridgeTest {
     fun bridgeUsesAmarLocalPathWithoutExternalProvider() = kotlinx.coroutines.runBlocking {
         val bridge = AmarAiUiEngineBridge(externalProviderEnabled = false)
         val result = bridge.ask("", "", "حلل السوق الآن")
-
         assertEquals("AMAR_LOCAL", result.provider)
         assertTrue(result.answer.contains("AMAR AI"))
         assertTrue(result.engineIds.contains("market"))
@@ -20,8 +19,14 @@ class AmarAiUiEngineBridgeTest {
     fun bridgeKeepsExecutionOutsideUiAuthority() = kotlinx.coroutines.runBlocking {
         val bridge = AmarAiUiEngineBridge(externalProviderEnabled = false)
         val result = bridge.ask("", "", "تحليل المخاطر")
-
         assertTrue(result.engineIds.contains("precision"))
         assertTrue(result.answer.contains("بدون تنفيذ") || result.answer.contains("تحليل"))
+    }
+
+    @Test
+    fun actualAgentPathReachesMeshWithoutGemini() = kotlinx.coroutines.runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "حلل السوق الآن")
+        assertTrue(result.answer.contains("AMAR AI"))
+        assertTrue(result.toolEvidence.any { it.startsWith("ENGINE_MARKET|") })
     }
 }
