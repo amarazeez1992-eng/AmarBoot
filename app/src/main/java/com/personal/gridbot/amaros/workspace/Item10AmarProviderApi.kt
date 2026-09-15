@@ -25,27 +25,34 @@ data class AmarProviderCredentialGrant(
     val secret: String
 )
 
+object AmarProviderApiContract {
+    const val CURRENT_VERSION = "v1"
+}
+
 data class AmarProviderRequest(
     val requestId: String,
     val credentialId: String,
     val secret: String,
     val capability: AmarProviderCapability,
     val payload: String,
-    val nowEpochMs: Long
+    val nowEpochMs: Long,
+    val apiVersion: String = AmarProviderApiContract.CURRENT_VERSION
 )
 
 data class AmarProviderResponse(
     val requestId: String,
     val accepted: Boolean,
     val result: String = "",
-    val reason: String
+    val reason: String,
+    val apiVersion: String = AmarProviderApiContract.CURRENT_VERSION
 )
 
-/** Owner-controlled provider boundary. No third-party AI provider is required by this API. */
+/** Optional owner-controlled provider boundary. No third-party AI provider is required by this API. */
 class AmarProviderCredentialStore(private val random: SecureRandom = SecureRandom()) {
     private data class Stored(val credential: AmarProviderCredential, val secretDigest: ByteArray)
     private val credentials = linkedMapOf<String, Stored>()
 
+    @Synchronized
     fun issue(
         clientId: String,
         capabilities: Set<AmarProviderCapability>,
@@ -61,6 +68,7 @@ class AmarProviderCredentialStore(private val random: SecureRandom = SecureRando
         return AmarProviderCredentialGrant(credential, secret)
     }
 
+    @Synchronized
     fun revoke(credentialId: String): Boolean {
         val stored = credentials[credentialId] ?: return false
         if (stored.credential.revoked) return false
@@ -68,9 +76,12 @@ class AmarProviderCredentialStore(private val random: SecureRandom = SecureRando
         return true
     }
 
+    @Synchronized
     fun metadata(credentialId: String): AmarProviderCredential? = credentials[credentialId]?.credential
 
+    @Synchronized
     fun authorize(request: AmarProviderRequest): Boolean {
+        if (request.apiVersion != AmarProviderApiContract.CURRENT_VERSION) return false
         if (request.requestId.isBlank() || request.credentialId.isBlank() || request.secret.isBlank() || request.payload.isBlank() || request.nowEpochMs < 0L) return false
         val stored = credentials[request.credentialId] ?: return false
         val c = stored.credential
@@ -88,10 +99,15 @@ class AmarProviderCredentialStore(private val random: SecureRandom = SecureRando
     }
 }
 
+fun interface AmarProviderCapabilityHandler {
+    fun handle(request: AmarProviderRequest): String?
+}
+
 /** Rate-limited, auditable adapter; execution authority remains outside the provider API boundary. */
 class AmarProviderApiGateway(
     private val credentials: AmarProviderCredentialStore,
     private val audit: AmarWorkspaceAuditLog,
+    private val handler: AmarProviderCapabilityHandler? = null,
     private val maxRequestsPerWindow: Int = 60,
     private val windowMs: Long = 60_000L
 ) {
@@ -105,6 +121,9 @@ class AmarProviderApiGateway(
 
     @Synchronized
     fun handle(request: AmarProviderRequest): AmarProviderResponse {
+        if (request.apiVersion != AmarProviderApiContract.CURRENT_VERSION) {
+            return reject(request, "unsupported_api_version")
+        }
         val authorized = credentials.authorize(request)
         val allowed = authorized && consume(request.credentialId, request.nowEpochMs)
         val reason = when {
@@ -112,18 +131,38 @@ class AmarProviderApiGateway(
             !allowed -> "rate_limited"
             else -> "accepted"
         }
+        if (!allowed) return reject(request, reason)
+        val result = try {
+            handler?.handle(request)
+        } catch (_: RuntimeException) {
+            null
+        }
+        if (handler != null && result == null) return reject(request, "capability_unavailable")
         audit.record(
             AmarWorkspaceAuditEvent(
                 id = request.requestId,
                 action = "provider_api_request",
                 actor = request.credentialId,
                 timestampEpochMs = request.nowEpochMs,
-                allowed = allowed,
+                allowed = true,
                 reason = reason
             )
         )
-        return if (allowed) AmarProviderResponse(request.requestId, true, request.payload, "accepted")
-        else AmarProviderResponse(request.requestId, false, reason = reason)
+        return AmarProviderResponse(request.requestId, true, result ?: request.payload, reason)
+    }
+
+    private fun reject(request: AmarProviderRequest, reason: String): AmarProviderResponse {
+        audit.record(
+            AmarWorkspaceAuditEvent(
+                id = request.requestId,
+                action = "provider_api_request",
+                actor = request.credentialId.ifBlank { "unknown" },
+                timestampEpochMs = request.nowEpochMs.coerceAtLeast(0L),
+                allowed = false,
+                reason = reason
+            )
+        )
+        return AmarProviderResponse(request.requestId, false, reason = reason)
     }
 
     private fun consume(credentialId: String, now: Long): Boolean {
