@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.ai.AmarAiExperienceScreenV2
 import com.personal.gridbot.amaros.bots.AmarBotLabInterfaceHost
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
@@ -40,72 +39,39 @@ fun AmarRoomHostScreen(
     onHomeLayoutChange: (Int) -> Unit = {},
     onVisualEffectsChange: (Boolean) -> Unit = {}
 ) {
-    if (room == AmarRoom.BOT_LAB) {
-        AmarBotLabInterfaceHost(onBackHome)
-        return
-    }
-
+    if (room == AmarRoom.BOT_LAB) { AmarBotLabInterfaceHost(onBackHome); return }
     val context = LocalContext.current
     var settingsMode by remember { mutableIntStateOf(0) }
     var accountSyncMode by remember { mutableIntStateOf(0) }
-
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(Modifier.weight(1f)) {
-                    Text("عمار", style = MaterialTheme.typography.headlineSmall)
-                    Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium)
-                }
+                Column(Modifier.weight(1f)) { Text("عمار", style = MaterialTheme.typography.headlineSmall); Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium) }
                 Button(onClick = onBackHome) { Text("الرئيسية") }
             }
-
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                AmarRoom.CHART -> {
-                    val runtime = AmarMt5RuntimeRegistry.current()
-                    if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
-                    else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData)
-                }
+                AmarRoom.CHART -> { val runtime = AmarMt5RuntimeRegistry.current(); if (runtime == null) AmarTradingChartScreen(symbol = "الذهب") else AmarLiveTradingChartHost(symbol = "XAUUSD", provider = runtime.marketData) }
                 AmarRoom.ACCOUNTS -> AmarAccountsScreen()
                 AmarRoom.INDICATORS -> AmarIndicatorsModernScreen()
                 AmarRoom.LIBRARY -> AmarLibraryModernScreen()
                 AmarRoom.ALERTS -> AmarAlertsModernScreen()
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
-                AmarRoom.ANALYSIS -> AmarAiExperienceScreenV2()
+                AmarRoom.ANALYSIS -> AmarRoomWorkspace(room)
                 AmarRoom.DECISION -> AmarDecisionScreen()
-                AmarRoom.SETTINGS -> {
-                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            item { Button({ settingsMode = 0 }) { Text("العامة") } }
-                            item { Button({ settingsMode = 1 }) { Text("الواجهات") } }
-                            item { Button({ settingsMode = 2 }) { Text("الحماية") } }
-                            item { Button({ settingsMode = 3 }) { Text("متقدم") } }
-                            item { Button({ settingsMode = 4 }) { Text("الحساب/المزامنة") } }
-                        }
-                        when (settingsMode) {
-                            0 -> AmarSettingsOverviewScreen(
-                                mode = themeMode,
-                                onModeChange = onThemeModeChange,
-                                layout = homeLayout,
-                                onLayoutChange = onHomeLayoutChange,
-                                visualEffectsEnabled = AmarGlobalVisualStateStore.current().enabled,
-                                onVisualEffectsChange = onVisualEffectsChange
-                            )
-                            1 -> AmarAppearanceScreen(themeMode, onThemeModeChange, homeLayout, onHomeLayoutChange)
-                            2 -> AmarProtectionCenterScreen(context)
-                            3 -> AmarDeveloperOptionsScreen()
-                            else -> {
-                                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Button({ accountSyncMode = 0 }, Modifier.weight(1f)) { Text("حساب AMAR") }
-                                        Button({ accountSyncMode = 1 }, Modifier.weight(1f)) { Text("المزامنة واللابتوب") }
-                                    }
-                                    Box(Modifier.fillMaxSize()) {
-                                        if (accountSyncMode == 0) AmarAppAccountCenterScreen() else AmarSyncCenterScreen()
-                                    }
-                                }
-                            }
+                AmarRoom.SETTINGS -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        item { Button({ settingsMode = 0 }) { Text("العامة") } }; item { Button({ settingsMode = 1 }) { Text("الواجهات") } }; item { Button({ settingsMode = 2 }) { Text("الحماية") } }; item { Button({ settingsMode = 3 }) { Text("متقدم") } }; item { Button({ settingsMode = 4 }) { Text("الحساب/المزامنة") } }
+                    }
+                    when (settingsMode) {
+                        0 -> AmarSettingsOverviewScreen(themeMode, onThemeModeChange, homeLayout, onHomeLayoutChange, AmarGlobalVisualStateStore.current().enabled, onVisualEffectsChange)
+                        1 -> AmarAppearanceScreen(themeMode, onThemeModeChange, homeLayout, onHomeLayoutChange)
+                        2 -> AmarProtectionCenterScreen(context)
+                        3 -> AmarDeveloperOptionsScreen()
+                        else -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { Button({ accountSyncMode = 0 }, Modifier.weight(1f)) { Text("حساب AMAR") }; Button({ accountSyncMode = 1 }, Modifier.weight(1f)) { Text("المزامنة واللابتوب") } }
+                            Box(Modifier.fillMaxSize()) { if (accountSyncMode == 0) AmarAppAccountCenterScreen() else AmarSyncCenterScreen() }
                         }
                     }
                 }
