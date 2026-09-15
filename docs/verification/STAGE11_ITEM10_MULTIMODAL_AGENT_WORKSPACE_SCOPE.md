@@ -30,6 +30,7 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 18. **Open Source Architecture** — provider/engine adapters must allow suitable open-source implementations to be integrated without replacing authoritative project contracts.
 19. **Target quality** — engineering target is 9.9/10, earned through measurable tests and evidence rather than asserted by design.
 20. **Centralized User Settings** — the user must control configurable behavior from one authoritative settings model. Capability preferences support `OPEN`, `LIMITED`, and `OFF` where applicable; camera/screen/device-control access supports explicit session/action policies; web mode, memory behavior, knowledge promotion, sensitive-action confirmation, answer detail, evidence visibility, progress visibility, copy/paste/notebook/export, workspace resizing, theme, dynamic/static/automatic background, background selection, colors, font family, font size, font weight, and UI scale are all user-configurable. Settings may restrict behavior but can never bypass OS permissions, safety gates, authorization, or fail-closed requirements.
+21. **Optional Amar AI Provider API Gateway** — Amar AI must be capable of acting as an optional AI provider for external agents or applications that the owner explicitly authorizes. The system exposes a documented, versioned API/connector interface and owner-managed access credentials/API keys so an external agent can connect to Amar AI as a provider. This integration is strictly optional: absence, disabled state, unavailable credentials, or provider configuration failure must never fail the Amar AI core, Item 10, or the project build. Provider availability must be capability-scoped, auditable, revocable, rate/permission bounded where configured, and isolated from the internal authoritative intelligence contracts. The architecture must allow future provider protocols/adapters without hard-coding dependence on a specific third-party AI vendor.
 
 ## Required camera safety and privacy invariants
 
@@ -54,6 +55,17 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 - Presentation settings (backgrounds, colors, fonts, scale) must not alter intelligence, evidence, safety, memory, or execution authority.
 - One authoritative settings owner must be used; duplicate settings authorities are prohibited.
 
+## Required provider API safety invariants
+
+- Provider API access is optional and must be fail-open with respect to project availability: its absence or outage cannot break core Amar AI functionality or CI.
+- API credentials are owner-managed secrets and must never be committed to source control, logs, evidence artifacts, or client-visible source code.
+- Each issued credential must be scoped, revocable, auditable, and independently disableable.
+- External agents receive only the capabilities explicitly granted to their credential; no implicit access to internal execution authority, private memory, device control, or sensitive actions.
+- Sensitive operations remain subject to the existing authorization/confirmation/safety authorities even when invoked through the provider API.
+- Provider API errors/timeouts/auth failures must degrade safely and must not corrupt authoritative memory, knowledge, evidence, or project state.
+- API contract/version changes require regression evidence and backward-compatibility policy before activation.
+- External-provider connectivity must never become a single point of failure for Amar AI.
+
 ## Required invariants
 
 - Fail closed when required evidence, authorization, visibility, or safety state is missing.
@@ -65,6 +77,7 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 - Conversation archive and validated knowledge must remain distinguishable.
 - Open web mode must never mean security bypass.
 - Existing Stage 11 Items 1–9 remain integrated; no deletion, omission, simplification, or scope reduction is permitted.
+- The optional provider API is an adapter/service boundary, not a replacement for the Amar AI core and not a required build/runtime dependency.
 
 ## Verification plan
 
@@ -72,6 +85,6 @@ The implementation must complete the constitutional closure chain:
 
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-Required evidence includes focused Item 10 tests for multimodal perception, camera, screen, workspace coordination, reasoning transparency, centralized settings, memory/governance, relevant full regression, build, architecture/contract regression, memory/research/safety/observability checks, current CI on the exact closure commit, evidence artifact, and independent final audit.
+Required evidence includes focused Item 10 tests for multimodal perception, camera, screen, workspace coordination, reasoning transparency, centralized settings, memory/governance, optional provider API contract/auth/revocation/failure isolation, relevant full regression, build, architecture/contract regression, memory/research/safety/observability checks, current CI on the exact closure commit, evidence artifact, and independent final audit.
 
 Until every required gate has current evidence, Item 10 remains **IN PROGRESS / final verification pending**.
