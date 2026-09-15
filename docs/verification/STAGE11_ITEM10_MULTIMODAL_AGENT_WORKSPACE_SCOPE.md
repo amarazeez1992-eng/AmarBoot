@@ -29,6 +29,7 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 17. **Observability** — critical multimodal, memory, research, tool, permission, camera, screen, and deletion actions are auditable and traceable.
 18. **Open Source Architecture** — provider/engine adapters must allow suitable open-source implementations to be integrated without replacing authoritative project contracts.
 19. **Target quality** — engineering target is 9.9/10, earned through measurable tests and evidence rather than asserted by design.
+20. **Centralized User Settings** — the user must control configurable behavior from one authoritative settings model. Capability preferences support `OPEN`, `LIMITED`, and `OFF` where applicable; camera/screen/device-control access supports explicit session/action policies; web mode, memory behavior, knowledge promotion, sensitive-action confirmation, answer detail, evidence visibility, progress visibility, copy/paste/notebook/export, workspace resizing, theme, dynamic/static/automatic background, background selection, colors, font family, font size, font weight, and UI scale are all user-configurable. Settings may restrict behavior but can never bypass OS permissions, safety gates, authorization, or fail-closed requirements.
 
 ## Required camera safety and privacy invariants
 
@@ -40,6 +41,18 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 - The agent must distinguish observed visual evidence from inference and uncertainty.
 - No fabricated objects, people, text, events, or environmental claims when visibility is insufficient.
 - Camera frames/video must not automatically become long-term memory or authoritative knowledge; promotion requires the same validation/provenance rules as other knowledge.
+
+## Required settings safety invariants
+
+- User settings are preferences/policy, not an authorization bypass.
+- OS-denied camera, microphone, screen-capture, storage, network, or control permissions always override user preference and result in a safe disabled/blocked state.
+- Sensitive actions remain confirmation-gated or blocked according to the safety authority.
+- `OPEN_SEARCH` never means unrestricted authentication/security/OS bypass.
+- `OFF` must mean unavailable, not merely hidden in the UI.
+- `LIMITED` must enforce an actual bounded policy, not a cosmetic label.
+- Every persisted settings change must be auditable and deterministically recoverable.
+- Presentation settings (backgrounds, colors, fonts, scale) must not alter intelligence, evidence, safety, memory, or execution authority.
+- One authoritative settings owner must be used; duplicate settings authorities are prohibited.
 
 ## Required invariants
 
@@ -59,6 +72,6 @@ The implementation must complete the constitutional closure chain:
 
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-Required evidence includes focused Item 10 tests for multimodal perception, camera, screen, workspace coordination, reasoning transparency, memory/governance, relevant full regression, build, architecture/contract regression, memory/research/safety/observability checks, current CI on the exact closure commit, evidence artifact, and independent final audit.
+Required evidence includes focused Item 10 tests for multimodal perception, camera, screen, workspace coordination, reasoning transparency, centralized settings, memory/governance, relevant full regression, build, architecture/contract regression, memory/research/safety/observability checks, current CI on the exact closure commit, evidence artifact, and independent final audit.
 
 Until every required gate has current evidence, Item 10 remains **IN PROGRESS / final verification pending**.
