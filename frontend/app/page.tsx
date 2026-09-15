@@ -1,7 +1,7 @@
 'use client';
 
-import QuantumWorkspace from './QuantumWorkspace';
+import Item10Workspace from './Item10Workspace';
 
 export default function Page() {
-  return <QuantumWorkspace />;
+  return <Item10Workspace />;
 }
