@@ -1,0 +1,48 @@
+name: Amar Stage Eleven Item 10
+
+on:
+  push:
+    branches: ["stage11/item10-multimodal-agent-workspace"]
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "app/src/main/java/com/personal/gridbot/amaros/workspace/**"
+      - "app/src/test/java/com/personal/gridbot/amaros/workspace/**"
+      - "docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md"
+      - ".github/workflows/amar-stage-eleven-item10.yml"
+
+jobs:
+  item10:
+    name: Item 10 focused tests and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Focused Item 10 tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceContractsTest' --stacktrace
+
+      - name: Full unit test suite
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Debug build
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Contract and scope regression
+        run: |
+          grep -q '^# Stage 11 — Item 10 Multimodal Agent Interface & Workspace$' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
+          grep -q '\*\*IN PROGRESS\*\*' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
+          grep -q 'OPEN_SEARCH' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'deleteMemory' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'promoteToKnowledge' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'no_evidence' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'userConfirmed' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
