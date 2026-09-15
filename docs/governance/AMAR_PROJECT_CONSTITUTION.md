@@ -119,3 +119,39 @@ After every substantive change, a completeness audit MUST confirm that the corre
 No stage may be declared successful merely because its failing component was removed, disabled, skipped, downgraded, excluded from CI, or replaced by a weaker substitute.
 
 This Article is constitutional, permanent, and mandatory for every future stage, item, addition, correction, audit, AI-agent action, and closure decision unless the Constitution is explicitly amended under Article 11.
+
+## Article 15 — Supreme Engineering Quality Gates
+
+The following numbered quality gates are constitutional additions and MUST be applied to the corresponding project stage or to any later stage that performs the same responsibility. They raise the minimum engineering bar; they never authorize deletion, simplification, or scope reduction.
+
+1. **Contract & Architecture Gate** — Every stage must verify explicit contracts, architectural ownership, integration boundaries, and absence of conflicting authorities before READY.
+2. **Memory Integrity Gate** — Any memory/state subsystem must prove persistence integrity, retrieval correctness, consistency, corruption handling, and regression protection.
+3. **Research Integrity Gate** — Research must verify source quality, source diversity/independence, contradiction handling, deduplication, provenance, and resistance to unsupported conclusions.
+4. **Decision Safety Gate** — Decision Intelligence must remain bounded and proposal-only unless separately authorized by an explicit execution architecture; risk limits and unavailable evidence must fail safely.
+5. **Adversarial Self-Critique Gate** — Self-critique must be tested against deliberate invalid, conflicting, unsupported, overconfident, numeric, and guarantee-style claims and must reject unsafe conclusions.
+6. **Benchmark Certification Gate** — Benchmarks must measure current contracts, determinism/repeatability where required, regression resistance, boundary behavior, and architecture compliance; benchmark success cannot be achieved by weakening the implementation.
+7. **Observability Gate** — Critical behavior must expose sufficient structured logs, metrics, health signals, diagnostics, and traceability to detect, localize, and audit failures without relying on hidden state.
+8. **99% Certification Gate** — The final quality gate must independently verify the complete approved scope, all mandatory evidence, regression status, architecture, safety, and closure chain before the project may claim the 99% target.
+9. **Agent Safety Boundary Gate** — Agent reasoning, memory, tools, storage, external access, and execution authority must remain explicitly separated by contracts and permissions; no implicit execution authority is allowed.
+10. **Full-System Chaos & Failure Testing Gate** — Before final closure, the system must be tested against relevant failures including invalid/corrupt input, missing evidence, dependency failure, timeout, interruption, duplication, partial failure, and recovery paths, without disabling the affected capability.
+11. **Independent Final Audit Gate** — Final audit must reassess the complete project from the authoritative baseline rather than assuming earlier CLOSED labels are sufficient; every material claim must be traceable to current evidence.
+
+These 11 gates are permanent constitutional requirements unless explicitly amended under Article 11.
+
+## Article 16 — Supreme Engineering Laws
+
+The following seven laws apply globally to every stage, item, subsystem, workflow, agent action, test, audit, and closure decision:
+
+1. **Zero Silent Failure** — No critical failure may disappear silently. Failures must be surfaced, classified, and traceable.
+2. **Fail-Closed by Default** — When required evidence, integrity, authorization, or safety conditions are missing or uncertain, the system must stop the unsafe path rather than guess or proceed with hidden risk.
+3. **No Evidence = No Trust** — Claims of correctness, quality, safety, completion, or authorization require appropriate current evidence.
+4. **Deterministic Where Required** — Behavior that is required to be reproducible must not depend on uncontrolled randomness, hidden mutable state, or nondeterministic ordering.
+5. **No Single Point of Truth Drift** — A responsibility must have one authoritative source of truth unless an explicit architecture defines synchronization and conflict resolution.
+6. **Every Change Has a Proof Obligation** — Every material change must establish why it was made, what changed, what could regress, what was tested, and what current evidence proves the result.
+7. **Final Audit Starts From Zero Assumptions** — The final audit must not inherit trust merely from prior approvals; it must independently verify the current repository against the authoritative requirements.
+
+These seven laws are permanent constitutional requirements unless explicitly amended under Article 11.
+
+## Article 17 — Long-Term Project Agreement
+
+The constitutional additions in Articles 15 and 16 are part of the permanent Amar AI / AmarBoot engineering agreement and must be treated as long-term project baseline requirements in all future work. The project may not claim the target engineering level while knowingly bypassing any applicable numbered gate or supreme law.
