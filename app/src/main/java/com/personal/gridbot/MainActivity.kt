@@ -292,7 +292,7 @@ class MainActivity : ComponentActivity() {
 
     private fun renderCurrentRoom() {
         val room = currentRoom ?: return
-        roomHost?.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode, ::onThemeModeChanged, homeLayout, ::onHomeLayoutChanged) } }
+        roomHost?.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode, ::onThemeModeChanged, homeLayout, ::onHomeLayoutChanged, ::setVisualEffectsEnabled) } }
     }
     private fun showRoom(room: AmarRoom) {
         ensureRoomHost(); ensureVisualOverlay(); currentRoom = room; showingRoom = true; home?.visibility = View.GONE; roomHost?.visibility = View.VISIBLE; renderCurrentRoom()
