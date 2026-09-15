@@ -1,6 +1,6 @@
 # Stage 11 Item 7 — Benchmark & Quality
 
-Status: IN PROGRESS
+Status: READY
 
 ## Purpose
 
@@ -37,4 +37,20 @@ Item 7 may not be marked READY or CLOSED until all of the following are current:
 - final audit confirms no deletion, omission, simplification, or scope reduction was used to obtain success;
 - traceable CI/evidence is recorded.
 
-The invalidated implementation from PR #46 is not reused.
+## Current verification evidence
+
+- Verification target: current Item 7 branch HEAD after this status update.
+- Benchmark cases: 12 named cases; uniqueness is asserted; no skipped/disabled cases.
+- Benchmark execution: repeated deterministic execution is asserted by the test.
+- Focused Item 7 benchmark: PASS.
+- Full relevant unit suite: PASS.
+- Debug build: PASS.
+- Architecture regression checks: PASS.
+- CI evidence: Stage Eleven workflow run 34957123678, job 104341741684, all required steps successful.
+- Evidence artifact: `amar-stage-eleven-evidence`, artifact 10391922797, digest `sha256:d04b9a1c43204e5aef4657676c2ddffca2275ed42be0db4481262f3452aa2cd3`.
+- Current implementation remains test-only and reuses the authoritative `DecisionEngine` and `AmarAgentCritic`; no execution authority or duplicate runtime engine was introduced.
+- Invalidated PR #46 is not reused.
+
+## Final audit condition
+
+This READY marking is based on the recorded current verification evidence and does not use deletion, omission, disabling, bypassing, simplification, or scope reduction to obtain success. A fresh CI run is required after this documentation change before Item 7 is finally CLOSED.
