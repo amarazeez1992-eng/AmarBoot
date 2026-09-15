@@ -1,0 +1,101 @@
+name: Amar Stage Eleven Item 9 Final 99 Gate
+
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/**'
+      - 'app/src/test/**'
+      - 'docs/governance/**'
+      - 'docs/verification/STAGE11_ITEM*.md'
+      - '.github/workflows/amar-stage-eleven-item9.yml'
+  workflow_dispatch:
+
+jobs:
+  item9-final-99:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Focused Intelligence Core tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest' --stacktrace
+
+      - name: Focused Verification Layer tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
+
+      - name: Focused Advanced Memory tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest' --stacktrace
+
+      - name: Focused Deep Research tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest' --stacktrace
+
+      - name: Focused Decision Intelligence tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.DecisionEngineTest' --stacktrace
+
+      - name: Focused Self-Critique tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentCriticItemSixTest' --stacktrace
+
+      - name: Focused Item 7 Benchmark Quality tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.AmarIntelligenceQualityBenchmarkTest' --stacktrace
+
+      - name: Focused Item 8 Observability tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.observability.AmarObservabilityTest' --stacktrace
+
+      - name: Focused Item 9 Final 99 Gate tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.Final99GateTest' --stacktrace
+
+      - name: Full unit test suite
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Debug build
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Architecture and safety regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q '^\*\*Status: BINDING PROJECT LAW\*\*$' docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q 'Architectural Integrity and Professional Standard' docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q 'Absolute Completeness, No Deletion, No Simplification' docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM9_FINAL_99_GATE_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
+          grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
+          grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md
+          grep -q '^Status: IN PROGRESS$' docs/verification/STAGE11_ITEM9_FINAL_99_GATE_SCOPE.md
+          grep -q 'requiredScorePercent' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
+          grep -q 'mandatoryEvidenceComplete' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
+          grep -q 'score_below_threshold' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
+          grep -q 'stale_evidence:' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
+          grep -q 'safety_boundary_not_verified' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/observability
+
+      - name: Upload Item 9 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-stage-eleven-item9-evidence
+          path: |
+            app/build/test-results/**
+            app/build/reports/tests/**
+          if-no-files-found: warn
