@@ -57,19 +57,31 @@ class AmarAiUiEngineBridge(
             }
         }.distinct()
         val contextText = request + if (evidence.isEmpty()) "" else "\n\nLOCAL_ENGINE_EVIDENCE:\n" + evidence.joinToString("\n")
-        val local = AmarLocalReasoning().respond(
-            AmarAgentContext(
-                userText = contextText,
-                tools = emptyList(),
-                executionAllowed = false,
-                brokerAccessAllowed = false
+        val local = runCatching {
+            AmarLocalReasoning().respond(
+                AmarAgentContext(
+                    userText = contextText,
+                    tools = emptyList(),
+                    executionAllowed = false,
+                    brokerAccessAllowed = false
+                )
             )
-        )
-        return Response(
-            answer = local.answer,
-            provider = "AMAR_LOCAL",
-            evidence = evidence,
-            engineIds = mesh.connectedEngineIds()
-        )
+        }.getOrNull()
+
+        return if (local != null) {
+            Response(
+                answer = local.answer,
+                provider = "AMAR_LOCAL",
+                evidence = evidence,
+                engineIds = mesh.connectedEngineIds()
+            )
+        } else {
+            Response(
+                answer = "AMAR AI: التحليل المحلي غير متاح حالياً. تم إيقاف التنفيذ بأمان دون تجاوز الصلاحيات.",
+                provider = "AMAR_LOCAL_FAIL_CLOSED",
+                evidence = evidence,
+                engineIds = mesh.connectedEngineIds()
+            )
+        }
     }
 }
