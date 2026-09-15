@@ -35,6 +35,8 @@ jobs:
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10KnowledgeAndAuditTest' --stacktrace
       - name: Focused workspace coordinator tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceCoordinatorTest' --stacktrace
+      - name: Focused camera workspace tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10CameraWorkspaceTest' --stacktrace
       - name: Focused conversation governance tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ConversationGovernanceTest' --stacktrace
       - name: Focused reasoning transparency tests
@@ -49,6 +51,13 @@ jobs:
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Debug build
         run: gradle :app:assembleDebug --stacktrace
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-ai-item10-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
       - name: Contract and scope regression
         run: |
           grep -q '^# Stage 11 — Item 10 Multimodal Agent Interface & Workspace$' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
@@ -83,3 +92,4 @@ jobs:
           grep -q 'AmarProviderCredentialStore' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApi.kt
           grep -q 'Item10WorkspaceSettingsTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceSettingsTest.kt
           grep -q 'Item10AmarProviderApiTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10AmarProviderApiTest.kt
+          grep -q 'Item10CameraWorkspaceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10CameraWorkspaceTest.kt
