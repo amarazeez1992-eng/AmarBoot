@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** Voice-first conversation loop: speech -> AI -> speech, with no text input required. */
+/** Voice-first AMAR conversation loop. It routes directly to local AMAR intelligence; no external provider. */
 class AmarAiLiveConversationEngine(
     private val context: Context,
     private val scope: CoroutineScope,
@@ -24,20 +24,9 @@ class AmarAiLiveConversationEngine(
     private var tts: TextToSpeech? = null
     private var active = false
     private var requestJob: Job? = null
-    private var apiKey = ""
-    private var model = "gemini-2.5-flash"
-
-    fun configure(apiKey: String, model: String) {
-        this.apiKey = apiKey.trim()
-        this.model = model.trim()
-    }
 
     fun start() {
         if (active) return
-        if (apiKey.isBlank()) {
-            onError("أدخل مفتاح Gemini أولاً لتشغيل المحادثة المباشرة.")
-            return
-        }
         active = true
         ensureTts()
         listen()
@@ -71,8 +60,8 @@ class AmarAiLiveConversationEngine(
                     onState(State.THINKING)
                     val local = AmarAiActionEngine.route(text)
                     val answer = if (local.handled) local.response else {
-                        runCatching { AmarAiAgentEngine(context).ask(apiKey, model, text).answer }
-                            .getOrElse { "تعذر الرد الآن: ${it.message ?: "خطأ غير معروف"}" }
+                        runCatching { AmarAiAgentEngine(context).ask("", "", text).answer }
+                            .getOrElse { "تعذر الرد المحلي الآن: ${it.message ?: "خطأ غير معروف"}" }
                     }
                     onAnswer(answer)
                     if (active) speak(answer)
@@ -91,17 +80,11 @@ class AmarAiLiveConversationEngine(
         tts = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 val result = tts?.setLanguage(Locale("ar")) ?: TextToSpeech.ERROR
-                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    tts?.setLanguage(Locale.getDefault())
-                }
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) tts?.setLanguage(Locale.getDefault())
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) { onState(State.SPEAKING) }
-                    override fun onDone(utteranceId: String?) {
-                        if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
-                    }
-                    override fun onError(utteranceId: String?) {
-                        if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
-                    }
+                    override fun onDone(utteranceId: String?) { if (active) scope.launch(Dispatchers.Main.immediate) { listen() } }
+                    override fun onError(utteranceId: String?) { if (active) scope.launch(Dispatchers.Main.immediate) { listen() } }
                 })
             }
         }
