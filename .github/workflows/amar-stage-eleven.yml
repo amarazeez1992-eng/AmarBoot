@@ -73,6 +73,7 @@ jobs:
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
@@ -89,6 +90,7 @@ jobs:
           grep -q 'MIN_LOSSES_FOR_HISTORICAL_VAR = 5' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           grep -q 'independentSourceCount' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           grep -q 'evidence_conflict' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          grep -q 'guarantee_language' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
           ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
