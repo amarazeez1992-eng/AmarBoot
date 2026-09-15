@@ -23,11 +23,12 @@ Status: CLOSED
 
 ## Closure evidence
 
-- Current-main Stage 11 verification passed on the corrected implementation commit before this documentation closure.
+- Final current-main Stage 11 verification run: `34950131141`.
+- Final verified commit: `97d8875f96ace0198c254998d73f814859e20ae8`.
 - Focused Item 6 regression coverage passed, including invalid-evidence and guarantee-language regression guards.
 - Full unit suite passed.
 - Debug build passed.
-- Architecture/execution-safety checks passed.
+- Architecture regression checks passed, including the Item 5 and Item 6 CLOSED gates, Constitution binding-law gate, duplicate-engine guards, and execution-safety guards.
 - No duplicate critique engine and no execution authority were introduced.
 
 Closure loop completed:
