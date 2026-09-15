@@ -63,7 +63,7 @@ jobs:
       - name: Contract and scope regression
         run: |
           grep -q '^# Stage 11 — Item 10 Multimodal Agent Interface & Workspace$' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
-          grep -q '\*\*IN PROGRESS\*\*' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
+          grep -Eq '\*\*(READY FOR CLOSURE VERIFICATION|CLOSED)\*\*' docs/verification/STAGE11_ITEM10_MULTIMODAL_AGENT_WORKSPACE_SCOPE.md
           grep -q 'OPEN_SEARCH' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
           grep -q 'deleteMemory' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
           grep -q 'promoteToKnowledge' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
