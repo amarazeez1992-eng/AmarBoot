@@ -34,6 +34,9 @@ jobs:
       - name: Focused multimodal architecture tests
         run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10MultimodalArchitectureTest' --stacktrace
 
+      - name: Focused knowledge and audit tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10KnowledgeAndAuditTest' --stacktrace
+
       - name: Full unit test suite
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
@@ -53,3 +56,5 @@ jobs:
           grep -q 'AmarScreenWorkspace' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarMultiEngineOrchestrator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarNinePointNineQualityGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarKnowledgeUpdateGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
+          grep -q 'AmarWorkspaceAuditLog' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
