@@ -15,8 +15,13 @@ object AmarAiToolRegistry {
         "engine_market" to Authority.READ_ONLY,
         "tracking" to Authority.READ_ONLY,
         "candle" to Authority.READ_ONLY,
+        "candle" to Authority.READ_ONLY,
         "analyze_market" to Authority.READ_ONLY,
         "code_analysis" to Authority.READ_ONLY,
+        "code_generation" to Authority.DRAFT_ONLY,
+        "code_repair" to Authority.DRAFT_ONLY,
+        "code_refactor" to Authority.DRAFT_ONLY,
+        "test_generation" to Authority.DRAFT_ONLY,
         "research_external" to Authority.READ_ONLY,
         "multi_source_research" to Authority.READ_ONLY,
         "trading_library_search" to Authority.READ_ONLY,
@@ -40,10 +45,7 @@ object AmarAiToolRegistry {
     }
 
     fun resolve(name: String): ToolSpec? = specs[name.trim()]
-
     fun isKnown(name: String): Boolean = resolve(name) != null
-
     fun isExecutionCapable(name: String): Boolean = false
-
     fun all(): List<ToolSpec> = specs.values.sortedBy { it.name }
 }
