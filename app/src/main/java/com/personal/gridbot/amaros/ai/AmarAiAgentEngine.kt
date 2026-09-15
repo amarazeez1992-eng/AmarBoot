@@ -4,6 +4,7 @@ import android.content.Context
 import com.personal.gridbot.amaros.ai.core.AmarAiApprovalLedger
 import com.personal.gridbot.amaros.ai.core.AmarAiControlCenter
 import com.personal.gridbot.amaros.ai.core.AmarAiMt5Office
+import com.personal.gridbot.amaros.agent.AmarAgentContext
 import com.personal.gridbot.amaros.bots.AmarMarketStateStore
 import com.personal.gridbot.amaros.intelligence.advanced.AmarDriftAndUncertaintyEngine
 import com.personal.gridbot.amaros.intelligence.advanced.AmarStrategyEvolutionEngine
@@ -14,29 +15,66 @@ import com.personal.gridbot.amaros.intelligence.trading.AmarTradingSourceMesh
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** AMAR AI Supervisor: Gemini plans, deterministic local engines verify. Broker execution stays fail-closed. */
+/**
+ * AMAR AI supervisor. Gemini is an optional synthesis adapter, never the core.
+ * Deterministic AMAR engines are the evidence and validation authority.
+ */
 class AmarAiAgentEngine(
     private val context: Context? = null,
-    private val gemini: AmarGeminiClient = AmarGeminiClient(),
-    private val research: AmarAiExternalResearch = AmarAiExternalResearch()
+    private val gemini: AmarGeminiClient? = null,
+    private val research: AmarAiExternalResearch = AmarAiExternalResearch(),
+    private val mesh: AmarAiEngineMesh = AmarAiEngineMesh()
 ) {
     data class Result(val answer: String, val proposedActions: List<String>, val toolEvidence: List<String>)
     private data class Plan(val answer: String, val actions: List<Pair<String, String>>)
 
     suspend fun ask(apiKey: String, model: String, request: String): Result {
-        val first = gemini.generate(apiKey, model, systemPrompt(), buildPrompt(request))
+        val localActions = selectLocalActions(request)
+        val localEvidence = localActions.mapNotNull { executeTool(it.first, it.second) }
+        val provider = gemini
+        if (provider == null || apiKey.isBlank() || model.isBlank()) {
+            val contextText = buildPrompt(request) + "\n\nLOCAL_ENGINE_EVIDENCE:\n" + localEvidence.joinToString("\n")
+            val local = mesh.reasoning.respond(
+                AmarAgentContext(
+                    userText = contextText,
+                    tools = emptyList(),
+                    executionAllowed = false,
+                    brokerAccessAllowed = false
+                )
+            )
+            return Result(
+                answer = if (localEvidence.isEmpty()) local.answer else local.answer + "\n\n" + localEvidence.joinToString("\n"),
+                proposedActions = localActions.map { "${it.first}: ${it.second}" },
+                toolEvidence = localEvidence
+            )
+        }
+
+        val first = provider.generate(apiKey, model, systemPrompt(), buildPrompt(request) + "\n\nENGINE_MESH_EVIDENCE:\n" + localEvidence.joinToString("\n"))
         val plan = parsePlan(first.text)
-        val evidence = plan.actions.mapNotNull { executeTool(it.first, it.second) }
+        val evidence = (localEvidence + plan.actions.mapNotNull { executeTool(it.first, it.second) }).distinct()
         if (evidence.isEmpty()) return Result(plan.answer, plan.actions.map { "${it.first}: ${it.second}" }, emptyList())
-        val second = gemini.generate(
+        val second = provider.generate(
             apiKey,
             model,
             systemPrompt(),
-            buildPrompt(request) + "\n\nEXECUTED TOOL EVIDENCE:\n" + evidence.joinToString("\n") +
+            buildPrompt(request) + "\n\nEXECUTED ENGINE EVIDENCE:\n" + evidence.joinToString("\n") +
                 "\n\nFINAL REVIEW: report measured results only; expose leakage, overfit, repainting, costs, slippage, drift and uncertainty."
         )
         val finalPlan = parsePlan(second.text)
         return Result(finalPlan.answer, finalPlan.actions.map { "${it.first}: ${it.second}" }, evidence)
+    }
+
+    private fun selectLocalActions(request: String): List<Pair<String, String>> {
+        val q = request.lowercase()
+        val actions = mutableListOf<Pair<String, String>>()
+        if (listOf("سوق", "market", "xau", "gold", "ذهب", "تحليل").any { q.contains(it) }) actions += "analyze_market" to ""
+        if (listOf("مخاطر", "risk", "دقة", "precision", "ثقة").any { q.contains(it) }) actions += "precision_audit" to ""
+        if (listOf("استراتيجية", "strategy", "اختبار", "backtest", "باك").any { q.contains(it) }) actions += "strategy_quality" to request
+        if (listOf("مصادر", "بحث", "research", "ويب", "مصدر").any { q.contains(it) }) actions += "multi_source_research" to request
+        if (listOf("ذاكرة", "memory", "معرفة", "knowledge").any { q.contains(it) }) actions += "library_search" to request
+        if (listOf("عدم اليقين", "uncertainty", "drift", "انحراف").any { q.contains(it) }) actions += "uncertainty_audit" to "0,0.5,100,20,0.1"
+        if (listOf("تحسين", "improve", "audit", "تدقيق").any { q.contains(it) }) actions += "self_audit" to ""
+        return actions.distinctBy { it.first }
     }
 
     private fun buildPrompt(request: String): String {
@@ -65,11 +103,13 @@ class AmarAiAgentEngine(
             .put("mt5Office", AmarAiMt5Office.catalogText())
             .put("executionPolicy", "BROKER EXECUTION DISABLED")
             .put("approvalBoundary", "DRAFT/CHALLENGER only; explicit human approval required")
+            .put("engineMesh", mesh.connectedEngineIds().joinToString(","))
             .put("deterministicTools", "inspect_app, engine_market, tracking, candle, analyze_market, multi_source_research, test_strategy, validate_results, precision_audit, uncertainty_audit, self_audit")
     }
 
     private fun systemPrompt() = """
 You are AMAR AI Supervisor, specialized only in trading research, analysis, strategy engineering, validation, risk and governed execution planning.
+AMAR local intelligence engines are authoritative for deterministic evidence and validation. Gemini or another provider is optional synthesis only.
 Use real deterministic tools and measured evidence, never invented results.
 For important questions, gather multiple independent sources and distinguish source count from independent evidence.
 Classify evidence as SOURCE, VERIFIED, HYPOTHESIS or INFERENCE.
@@ -125,8 +165,7 @@ Return JSON: {"answer":"Arabic answer","actions":[{"tool":"...","args":"..."}],"
             "test_strategy" -> executeBacktest(args)
             "validate_results" -> {
                 val values = parseDoubles(args)
-                if (values.size < 2) "VALIDATION|ERROR=need_2_R_values"
-                else {
+                if (values.size < 2) "VALIDATION|ERROR=need_2_R_values" else {
                     val r = AmarStrategyValidationEngine.analyze(values)
                     "VALIDATION|n=${r.sampleSize}|winRate=${"%.2f".format(r.winRatePct)}|PF=${"%.3f".format(r.profitFactor)}|expectancyR=${"%.4f".format(r.expectancyR)}|maxDD=${"%.3f".format(r.maxDrawdownR)}|SQN=${"%.3f".format(r.sqn)}|verified=${r.verified}"
                 }
