@@ -86,7 +86,7 @@ jobs:
           test -f docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
-          grep -q '^Status: IN PROGRESS$' docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
+          grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
