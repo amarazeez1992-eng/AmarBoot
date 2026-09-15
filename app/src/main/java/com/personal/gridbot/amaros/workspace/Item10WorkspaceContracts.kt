@@ -55,19 +55,12 @@ data class ReasoningResult(
     val blockers: List<String> = emptyList()
 )
 
-/**
- * Small deterministic policy/state authority for Item 10. Persistence adapters can implement
- * durable storage later without changing the contracts or permission semantics.
- */
 class AmarConversationMemoryStore {
     private val conversations = linkedMapOf<String, ConversationRecord>()
     private val memories = linkedMapOf<String, MemoryRecord>()
     private val knowledge = linkedMapOf<String, KnowledgeRecord>()
 
-    fun saveConversation(record: ConversationRecord) {
-        conversations[record.id] = record
-    }
-
+    fun saveConversation(record: ConversationRecord) { conversations[record.id] = record }
     fun conversation(id: String): ConversationRecord? = conversations[id]
 
     fun searchConversations(query: String): List<ConversationRecord> {
@@ -79,10 +72,7 @@ class AmarConversationMemoryStore {
         }
     }
 
-    fun saveMemory(record: MemoryRecord) {
-        memories[record.id] = record.copy(deleted = false)
-    }
-
+    fun saveMemory(record: MemoryRecord) { memories[record.id] = record.copy(deleted = false) }
     fun memory(id: String): MemoryRecord? = memories[id]?.takeUnless { it.deleted }
 
     /** Tombstone deletion prevents the deleted id from silently returning from this authority. */
@@ -103,7 +93,6 @@ class AmarConversationMemoryStore {
     }
 
     fun knowledge(id: String): KnowledgeRecord? = knowledge[id]?.takeUnless { it.deleted }
-
     fun deleteKnowledge(id: String): Boolean {
         val current = knowledge[id] ?: return false
         knowledge[id] = current.copy(deleted = true)
@@ -111,15 +100,13 @@ class AmarConversationMemoryStore {
     }
 }
 
-/** User-facing command semantics are explicit and side-effect scoped. */
 class AmarMemoryCommandRouter(private val store: AmarConversationMemoryStore) {
-    fun execute(command: String, memory: MemoryRecord? = null, memoryId: String? = null): Boolean {
-        return when (command.trim().lowercase()) {
+    fun execute(command: String, memory: MemoryRecord? = null, memoryId: String? = null): Boolean =
+        when (command.trim().lowercase()) {
             "save", "save this", "احفظ هذا" -> memory?.let { store.saveMemory(it); true } ?: false
             "delete", "delete this", "احذف هذا" -> memoryId?.let { store.deleteMemory(it) } ?: false
             else -> false
         }
-    }
 }
 
 /** Fail-closed result fusion boundary for multimodal/research/knowledge engines. */
@@ -128,7 +115,8 @@ class AmarEvidenceFusionEngine {
         val valid = evidence.filter { it.valid && it.statement.isNotBlank() && it.source.isNotBlank() }
         val blockers = buildList {
             if (answer.isBlank()) add("empty_answer")
-            if (evidence.isNotEmpty() && valid.isEmpty()) add("no_valid_evidence")
+            if (evidence.isEmpty()) add("no_evidence")
+            else if (valid.isEmpty()) add("no_valid_evidence")
             if (confidence !in 0.0..1.0) add("invalid_confidence")
         }
         return ReasoningResult(
@@ -142,7 +130,6 @@ class AmarEvidenceFusionEngine {
     }
 }
 
-/** Sensitive device/app actions are denied until explicit permission and confirmation exist. */
 data class AmarActionAuthorization(
     val permissionGranted: Boolean,
     val userConfirmed: Boolean,
