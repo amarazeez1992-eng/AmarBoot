@@ -24,6 +24,7 @@ class AmarIntelligenceQualityBenchmarkTest {
         val second = executeBenchmark()
         assertEquals("Benchmark is nondeterministic", first, second)
         assertEquals(12, first.size)
+        assertEquals("Benchmark case IDs must be unique", first.size, first.map { it.id }.toSet().size)
         assertTrue("Benchmark accuracy below 100%", first.all { it.passed })
         assertTrue(first.all { it.detail.isNotBlank() })
     }
@@ -51,7 +52,14 @@ class AmarIntelligenceQualityBenchmarkTest {
         }
 
         check("risk.no_evidence", decisionEngine.assessQuantitativeRisk(DecisionEngine.QuantitativeInput()) == null, "absent evidence produces no fabricated risk")
-        check("risk.minimum_samples", decisionEngine.assessQuantitativeRisk(DecisionEngine.QuantitativeInput(closes = listOf(100.0, 101.0, 99.0), losses = listOf(10.0), varScale = 100.0)) == null, "insufficient samples remain unavailable")
+
+        val minimumSampleRisk = decisionEngine.assessQuantitativeRisk(DecisionEngine.QuantitativeInput(
+            closes = listOf(100.0, 101.0, 99.0),
+            equityCurve = listOf(1000.0, 900.0),
+            losses = listOf(10.0, 20.0, 30.0, 40.0),
+            varScale = 100.0
+        ))
+        check("risk.minimum_samples", minimumSampleRisk != null && minimumSampleRisk.realizedVolatility == null && minimumSampleRisk.maxDrawdown != null && minimumSampleRisk.normalizedHistoricalVar == null, "each metric enforces its own minimum sample requirement")
 
         val partialInvalid = decisionEngine.assessQuantitativeRisk(DecisionEngine.QuantitativeInput(
             closes = listOf(100.0, Double.NaN, 101.0, 102.0),
