@@ -25,7 +25,7 @@ class Item10ConversationGovernanceTest {
     fun retentionMustBePositiveAndUserControlled() {
         val governance = AmarConversationGovernance()
         assertFalse(governance.setRetention(AmarRetentionPolicy(0, true)))
-        assertFalse(governance.setRetention(30, false))
+        assertFalse(governance.setRetention(AmarRetentionPolicy(30, false)))
         assertTrue(governance.setRetention(AmarRetentionPolicy(30, true)))
     }
 }
