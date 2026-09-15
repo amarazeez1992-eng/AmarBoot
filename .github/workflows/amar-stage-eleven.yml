@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - 'docs/governance/AMAR_PROJECT_CONSTITUTION.md'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
@@ -16,6 +17,7 @@ on:
   pull_request:
     paths:
       - 'app/**'
+      - 'docs/governance/AMAR_PROJECT_CONSTITUTION.md'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
@@ -69,6 +71,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q '^\*\*Status: BINDING PROJECT LAW\*\*$' docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q 'Architectural Integrity and Professional Standard' docs/governance/AMAR_PROJECT_CONSTITUTION.md
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
