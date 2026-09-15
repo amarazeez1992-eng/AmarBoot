@@ -3,7 +3,9 @@ package com.personal.gridbot.amaros.ai
 import android.content.Context
 import com.personal.gridbot.amaros.ai.core.AmarAiApprovalLedger
 import com.personal.gridbot.amaros.agent.AmarAgentContext
+import com.personal.gridbot.amaros.agent.AmarAgentTool
 import com.personal.gridbot.amaros.agent.AmarLocalReasoning
+import com.personal.gridbot.amaros.agent.AmarToolScope
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingIntelligenceRegistry
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingKnowledgeLibrary
 import com.personal.gridbot.amaros.intelligence.trading.AmarTradingPrecisionEngine
@@ -30,7 +32,16 @@ class AmarAiAgentEngine(
             mesh.reasoning.respond(
                 AmarAgentContext(
                     userText = prompt,
-                    tools = AmarAiToolRegistry.all().map { it.name },
+                    tools = AmarAiToolRegistry.all().map { spec ->
+                        AmarAgentTool(
+                            id = spec.name,
+                            description = "AMAR capability: ${spec.name}",
+                            scope = when (spec.authority) {
+                                AmarAiToolRegistry.Authority.READ_ONLY -> AmarToolScope.READ_ONLY
+                                AmarAiToolRegistry.Authority.DRAFT_ONLY -> AmarToolScope.READ_ONLY
+                            }
+                        )
+                    },
                     executionAllowed = false,
                     brokerAccessAllowed = false
                 )
@@ -134,13 +145,19 @@ RULES: answer in Arabic by default; understand multilingual input; preserve code
         "code_generation" -> "CODE_GENERATION|DRAFT_ONLY|handled_by_local_reasoning"
         "visual_idea_to_design", "visual_code_to_image", "visual_image_to_code", "visual_image_edit", "visual_high_res_generation", "visual_ui_redesign" -> AmarAiVisualEngineeringEngine.toArabicReport(AmarAiVisualEngineeringEngine.plan(args))
         "github_workspace" -> {
-            val c = context ?: return "GITHUB|FAILED=no_context"
-            val parsed = AmarAiGitHubIntentParser.parse(args) ?: return "GITHUB|FAILED=لم أفهم المستودع أو العملية المطلوبة"
-            val gateway = AmarAiGitHubToolGateway(c)
-            val operation = parsed.optString("operation")
-            val readOperation = operation in setOf("repo_search", "repo_inspect", "code_search", "file_read", "license_inspect")
-            val result = if (readOperation) gateway.inspect(parsed) else gateway.proposeWrite(parsed)
-            "GITHUB|operation=$operation|ok=${result.ok}|status=${result.status}|message=${result.message}|data=${result.data.take(12000)}"
+            val c = context
+            if (c == null) "GITHUB|FAILED=no_context"
+            else {
+                val parsed = AmarAiGitHubIntentParser.parse(args)
+                if (parsed == null) "GITHUB|FAILED=لم أفهم المستودع أو العملية المطلوبة"
+                else {
+                    val gateway = AmarAiGitHubToolGateway(c)
+                    val operation = parsed.optString("operation")
+                    val readOperation = operation in setOf("repo_search", "repo_inspect", "code_search", "file_read", "license_inspect")
+                    val result = if (readOperation) gateway.inspect(parsed) else gateway.proposeWrite(parsed)
+                    "GITHUB|operation=$operation|ok=${result.ok}|status=${result.status}|message=${result.message}|data=${result.data.take(12000)}"
+                }
+            }
         }
         "inspect_app", "engine_market", "tracking", "candle" -> AmarAiDeterministicToolGateway.execute(tool, args)
         "analyze_market" -> AmarAiEngineBinding.market()
@@ -165,14 +182,20 @@ RULES: answer in Arabic by default; understand multilingual input; preserve code
         "multi_source_research" -> runCatching { AmarTradingSourceMesh.research(context, args, research, 12) }.map { r -> "MULTI_SOURCE|query=${r.query}|evidence=${r.evidence.size}|supporting=${r.supportingChannels}|conflicts=${r.conflictChannels}|independent=${r.independentChannels}|authority=${r.authorityGrade}|confidence=${"%.1f".format(r.authorityConfidencePct)}|consensus=${"%.1f".format(r.consensusPct)}|caveat=${r.caveat}" }.getOrElse { "MULTI_SOURCE|FAILED=${it.message ?: "unknown"}" }
         "research_external" -> runCatching { research.search(args, 8) }.map { results -> results.joinToString("\n") { "SOURCE|${it.source}|${it.title}|${it.url}|${it.excerpt}" }.ifBlank { "EXTERNAL_RESEARCH|NO_PUBLIC_RESULTS" } }.getOrElse { "EXTERNAL_RESEARCH|FAILED=${it.message ?: "unknown"}" }
         "self_audit" -> {
-            val c = context ?: return "SELF_AUDIT|ERROR=no_context"
-            val audit = AmarAiSelfImprovementEngine(c).audit()
-            "SELF_AUDIT|score=${"%.1f".format(audit.score)}/10|proposals=${audit.proposals.size}|warnings=${audit.warnings.joinToString(" || ")}"
+            val c = context
+            if (c == null) "SELF_AUDIT|ERROR=no_context"
+            else {
+                val audit = AmarAiSelfImprovementEngine(c).audit()
+                "SELF_AUDIT|score=${"%.1f".format(audit.score)}/10|proposals=${audit.proposals.size}|warnings=${audit.warnings.joinToString(" || ")}"
+            }
         }
         "approval_proposal" -> {
-            val c = context ?: return "APPROVAL_PROPOSAL|ERROR=no_context"
-            val p = AmarAiApprovalLedger(c).propose(args)
-            "APPROVAL_PROPOSAL|id=${p.id}|status=${p.status}|fingerprint=${p.fingerprint}|HUMAN_APPROVAL_REQUIRED"
+            val c = context
+            if (c == null) "APPROVAL_PROPOSAL|ERROR=no_context"
+            else {
+                val p = AmarAiApprovalLedger(c).propose(args)
+                "APPROVAL_PROPOSAL|id=${p.id}|status=${p.status}|fingerprint=${p.fingerprint}|HUMAN_APPROVAL_REQUIRED"
+            }
         }
         else -> AmarAiDeterministicToolGateway.execute(tool, args)
     }
