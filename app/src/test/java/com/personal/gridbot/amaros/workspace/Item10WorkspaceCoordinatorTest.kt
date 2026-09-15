@@ -5,12 +5,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Item10WorkspaceCoordinatorTest {
-    private fun coordinator(): AmarWorkspaceCoordinator = AmarWorkspaceCoordinator(
+    private fun coordinator(screenWorkspace: AmarScreenWorkspace = AmarScreenWorkspace()): AmarWorkspaceCoordinator = AmarWorkspaceCoordinator(
         store = AmarConversationMemoryStore(),
         perception = AmarFailClosedMultimodalPerception(),
         fusion = AmarEvidenceFusionEngine(),
         qualityGate = AmarNinePointNineQualityGate(),
-        audit = AmarWorkspaceAuditLog()
+        audit = AmarWorkspaceAuditLog(),
+        screenWorkspace = screenWorkspace
     )
 
     @Test
@@ -41,6 +42,15 @@ class Item10WorkspaceCoordinatorTest {
     }
 
     @Test
+    fun screenAnalysisUsesScreenEvidenceNamespace() {
+        val result = coordinator().analyzeScreen(
+            listOf(AmarMediaFrame(500L, visibleText = "Settings", confidence = 0.95))
+        )
+        assertFalse(result.blocked)
+        assertTrue(result.evidence.single().source.startsWith("screen:"))
+    }
+
+    @Test
     fun qualityGateRequiresAllConditions() {
         assertTrue(coordinator().certifyQuality(0.99, true, true).certified)
         assertFalse(coordinator().certifyQuality(0.989, true, true).certified)
@@ -49,7 +59,10 @@ class Item10WorkspaceCoordinatorTest {
     }
 
     @Test
-    fun screenStopIsAuditable() {
-        assertTrue(coordinator().recordStop("user", 42L))
+    fun screenStopIsAuditableAndActuallyStopsSession() {
+        val workspace = AmarScreenWorkspace()
+        assertTrue(workspace.start(AmarScreenShareSession("s1", 1L, "Test", true)))
+        assertTrue(coordinator(workspace).recordStop("user", 42L))
+        assertFalse(workspace.active())
     }
 }
