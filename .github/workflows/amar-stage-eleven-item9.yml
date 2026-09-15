@@ -79,7 +79,7 @@ jobs:
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM7_BENCHMARK_QUALITY_SCOPE.md
           grep -Eq '^Status: (IN PROGRESS|READY|CLOSED)$' docs/verification/STAGE11_ITEM8_OBSERVABILITY_SCOPE.md
-          grep -q '^Status: IN PROGRESS$' docs/verification/STAGE11_ITEM9_FINAL_99_GATE_SCOPE.md
+          grep -q '^\*\*CLOSED\*\*$' docs/verification/STAGE11_ITEM9_FINAL_99_GATE_SCOPE.md
           grep -q 'requiredScorePercent' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
           grep -q 'mandatoryEvidenceComplete' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
           grep -q 'score_below_threshold' app/src/main/java/com/personal/gridbot/amaros/intelligence/Final99Gate.kt
