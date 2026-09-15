@@ -42,6 +42,9 @@ jobs:
       - name: Focused workspace coordinator tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceCoordinatorTest' --stacktrace
 
+      - name: Focused conversation governance tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10ConversationGovernanceTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -59,9 +62,14 @@ jobs:
           grep -q 'userConfirmed' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
           grep -q 'AmarMultimodalPerceptionEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarScreenWorkspace' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarScreenActionController' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarTrustedSourceEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarConflictResolver' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarMultiEngineOrchestrator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarNinePointNineQualityGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarKnowledgeUpdateGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
           grep -q 'AmarWorkspaceAuditLog' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
           grep -q 'AmarWorkspaceCoordinator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinator.kt
+          grep -q 'AmarConversationGovernance' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernance.kt
+          grep -q 'Item10ConversationGovernanceTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10ConversationGovernanceTest.kt
           grep -q 'Item10WorkspaceCoordinatorTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinatorTest.kt
