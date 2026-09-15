@@ -36,6 +36,15 @@ class Item10MultimodalArchitectureTest {
     }
 
     @Test
+    fun screenActionRequiresTargetPermissionAndSensitiveConfirmation() {
+        val controller = AmarScreenActionController(AmarActionSafetyGate())
+        val action = AmarScreenAction(AmarScreenAction.Type.TAP, target = "send", sensitive = true)
+        assertFalse(controller.authorize(action, AmarActionAuthorization(true, false, true)))
+        assertTrue(controller.authorize(action, AmarActionAuthorization(true, true, true)))
+        assertFalse(controller.authorize(action.copy(target = ""), AmarActionAuthorization(true, true, true)))
+    }
+
+    @Test
     fun restrictedModeRejectsUnboundedParallelSearch() {
         assertFalse(AmarWebPolicyGuard().allow(AmarWebRequest("query", AmarWebMode.RESTRICTED_SEARCH, AmarSearchDepth.PARALLEL)))
         assertTrue(AmarWebPolicyGuard().allow(AmarWebRequest("query", AmarWebMode.OPEN_SEARCH, AmarSearchDepth.PARALLEL)))
@@ -46,6 +55,24 @@ class Item10MultimodalArchitectureTest {
         val guard = AmarWebPolicyGuard()
         assertFalse(guard.allow(AmarWebRequest("", AmarWebMode.RESTRICTED_SEARCH, AmarSearchDepth.FAST)))
         assertFalse(guard.allow(AmarWebRequest("", AmarWebMode.OPEN_SEARCH, AmarSearchDepth.DEEP)))
+    }
+
+    @Test
+    fun trustedSourcesRankBeforeUntrustedSources() {
+        val sources = listOf(
+            AmarWebSource("u", "u", "untrusted", false, true, "u"),
+            AmarWebSource("t", "t", "trusted", true, true, "t")
+        )
+        assertTrue(AmarTrustedSourceEngine().rank(sources).first().trusted)
+    }
+
+    @Test
+    fun independentConflictingSourcesAreDetected() {
+        val sources = listOf(
+            AmarWebSource("a", "a", "A", true, true, "claim A"),
+            AmarWebSource("b", "b", "B", true, true, "claim B")
+        )
+        assertTrue(AmarConflictResolver().conflicts(sources).size == 1)
     }
 
     @Test
