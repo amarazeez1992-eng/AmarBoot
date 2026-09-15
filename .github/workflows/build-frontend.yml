@@ -7,6 +7,7 @@ on:
       - '.github/workflows/build-frontend.yml'
   workflow_dispatch:
 
+# CI trigger verification only; build logic is unchanged.
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
