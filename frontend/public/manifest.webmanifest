@@ -2,7 +2,7 @@
   "name": "عمار — المحور الذكي للتداول",
   "short_name": "عمار",
   "description": "المحور الحي لعمار — منصة تداول تجريبية آمنة",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#dff7fb",
@@ -10,6 +10,6 @@
   "lang": "ar",
   "dir": "rtl",
   "icons": [
-    {"src":"/amar-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {"src":"./amar-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
