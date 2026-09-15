@@ -28,8 +28,11 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x gradlew
 
-      - name: Focused Item 10 tests
+      - name: Focused workspace contract tests
         run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceContractsTest' --stacktrace
+
+      - name: Focused multimodal architecture tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10MultimodalArchitectureTest' --stacktrace
 
       - name: Full unit test suite
         run: ./gradlew :app:testDebugUnitTest --stacktrace
@@ -46,3 +49,7 @@ jobs:
           grep -q 'promoteToKnowledge' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
           grep -q 'no_evidence' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
           grep -q 'userConfirmed' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceContracts.kt
+          grep -q 'AmarMultimodalPerceptionEngine' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarScreenWorkspace' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarMultiEngineOrchestrator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
+          grep -q 'AmarNinePointNineQualityGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
