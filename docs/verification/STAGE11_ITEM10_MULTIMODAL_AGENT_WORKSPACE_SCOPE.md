@@ -2,7 +2,7 @@
 
 ## Status
 
-**IN PROGRESS**
+**READY FOR CLOSURE VERIFICATION**
 
 ## Purpose
 
@@ -103,4 +103,4 @@ The implementation must complete the constitutional closure chain:
 
 Required evidence includes focused Item 10 tests for multimodal perception, camera, screen, workspace coordination, reasoning transparency, centralized settings, memory/governance, optional provider API contract/auth/revocation/failure isolation, update-engine manifest/integrity/confirmation/downgrade/data-preservation/failure isolation contracts, relevant full regression, build, architecture/contract regression, memory/research/safety/observability checks, current CI on the exact closure commit, evidence artifact, and independent final audit.
 
-Until every required gate has current evidence, Item 10 remains **IN PROGRESS / final verification pending**.
+After the exact closure commit passes all required gates and the independent final audit, Item 10 may be marked **CLOSED**.
