@@ -2,6 +2,7 @@ package com.personal.gridbot.amaros.workspace
 
 import java.security.MessageDigest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -24,22 +25,22 @@ class Item10UpdateEngineTest {
 
     @Test
     fun newerManifestIsAvailable() {
-        assertTrue(engine().check(manifest).status == AmarUpdateStatus.UPDATE_AVAILABLE)
+        assertEquals(AmarUpdateStatus.UPDATE_AVAILABLE, engine().check(manifest).status)
     }
 
     @Test
     fun missingOrInvalidManifestBlocks() {
         val engine = engine()
-        assertTrue(engine.check(null).status == AmarUpdateStatus.BLOCKED)
-        assertTrue(engine.check(manifest.copy(apkUrl = "http://updates.example.invalid/a.apk")).status == AmarUpdateStatus.BLOCKED)
+        assertEquals(AmarUpdateStatus.BLOCKED, engine.check(null).status)
+        assertEquals(AmarUpdateStatus.BLOCKED, engine.check(manifest.copy(apkUrl = "http://updates.example.invalid/a.apk")).status)
     }
 
     @Test
     fun staleOrFutureManifestBlocks() {
         val stale = engine(now = 10_000L, policy = AmarUpdatePolicy(maxManifestAgeMs = 100L))
-        assertTrue(stale.check(manifest).reason == "stale_manifest")
+        assertEquals("stale_manifest", stale.check(manifest).reason)
         val future = engine(now = 999L)
-        assertTrue(future.check(manifest).reason == "invalid_manifest_time")
+        assertEquals("invalid_manifest_time", future.check(manifest).reason)
     }
 
     @Test
@@ -60,13 +61,15 @@ class Item10UpdateEngineTest {
 
     @Test
     fun currentVersionIsNotDowngradedByDefault() {
-        assertTrue(engine(currentVersion = 2L).check(manifest).status == AmarUpdateStatus.UP_TO_DATE)
+        assertEquals(AmarUpdateStatus.UP_TO_DATE, engine(currentVersion = 2L).check(manifest).status)
+        assertEquals("downgrade_blocked", engine(currentVersion = 3L).check(manifest).reason)
     }
 
     @Test
-    fun allowDowngradeDoesNotTreatSameVersionAsAnUpdate() {
-        val state = engine(currentVersion = 2L, policy = AmarUpdatePolicy(allowDowngrade = true)).check(manifest)
-        assertTrue(state.status == AmarUpdateStatus.UPDATE_AVAILABLE || state.status == AmarUpdateStatus.UP_TO_DATE)
+    fun allowDowngradeEnablesExplicitLowerVersionOnly() {
+        val policy = AmarUpdatePolicy(allowDowngrade = true)
+        assertEquals(AmarUpdateStatus.UPDATE_AVAILABLE, engine(currentVersion = 3L, policy = policy).check(manifest).status)
+        assertEquals(AmarUpdateStatus.UP_TO_DATE, engine(currentVersion = 2L, policy = policy).check(manifest).status)
     }
 
     private class RecordingInstaller(private val expectedBytes: ByteArray) : AmarUpdateInstaller {
