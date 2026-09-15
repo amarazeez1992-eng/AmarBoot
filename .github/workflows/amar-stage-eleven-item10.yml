@@ -39,6 +39,9 @@ jobs:
       - name: Focused knowledge and audit tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10KnowledgeAndAuditTest' --stacktrace
 
+      - name: Focused workspace coordinator tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workspace.Item10WorkspaceCoordinatorTest' --stacktrace
+
       - name: Full unit test suite
         run: gradle :app:testDebugUnitTest --stacktrace
 
@@ -60,3 +63,5 @@ jobs:
           grep -q 'AmarNinePointNineQualityGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10MultimodalArchitecture.kt
           grep -q 'AmarKnowledgeUpdateGate' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
           grep -q 'AmarWorkspaceAuditLog' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10KnowledgeAndAudit.kt
+          grep -q 'AmarWorkspaceCoordinator' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinator.kt
+          grep -q 'Item10WorkspaceCoordinatorTest' app/src/test/java/com/personal/gridbot/amaros/workspace/Item10WorkspaceCoordinatorTest.kt
