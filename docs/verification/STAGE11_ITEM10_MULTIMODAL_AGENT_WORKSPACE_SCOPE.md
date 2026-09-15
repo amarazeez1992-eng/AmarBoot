@@ -2,25 +2,27 @@
 
 ## Status
 
-**CLOSED**
+**READY FOR CLOSURE VERIFICATION**
 
-## Closure Evidence
+## Re-verification Requirement
 
-The mandatory constitutional closure chain was completed for Item 10:
+Item 10 had a prior CLOSED state on commit `3ea87a290a1e083666ac8a2f6f5755bff3f76fca`. Subsequent substantive changes were made to the Android/WebView integration, the Quantum frontend packaging path, and the AMAR engine bridge. Under the project constitution, that historical closure is not sufficient for the current state.
+
+The current state therefore requires a fresh constitutional closure chain on the exact current integration commit:
 
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-Closure commit: `3ea87a290a1e083666ac8a2f6f5755bff3f76fca`
+Historical evidence remains valid for the unchanged Item 10 contracts, but it does not certify the subsequent integration changes.
 
-Fresh CI on the exact closure commit passed all required gates: Stage One, Stage Two, Stage Eleven, Item 9 Final 99 Gate, Item 10, CodeQL, and Stage 10 Final 100% Audit and Release Gate.
+## Current Integration Target
 
-Item 10 verification produced the `amar-ai-item10-debug-apk` artifact from the exact closure commit. Artifact SHA-256: `a556bae3a43d0a2e514db2707983dd86a172838a1e78e6ae1f68ece4cc00d201`.
-
-The Item 10 evidence and regression gates are required to remain green after any subsequent substantive change. This closure does not claim production release signing for the debug APK.
-
-## Purpose
-
-Build the multimodal agent/workspace layer without weakening existing intelligence, memory, research, observability, safety, provenance, or execution boundaries.
+- The latest Quantum AI Workspace under `frontend/app` is the UI target.
+- Android packages the static Quantum frontend under `app/src/main/assets/quantum` during the application build.
+- The Android entry asset remains backward-compatible and routes the packaged entry to the Quantum UI without deleting the legacy markup.
+- The WebView exposes the provider-neutral `AmarEngine` bridge.
+- Gemini is optional synthesis only; AMAR local engines remain the evidence/validation authority.
+- Restricted and open research modes are validated at the native bridge boundary.
+- Image/video transfer and screen sharing remain fail-closed until their secure native transport boundaries are implemented; they are not falsely reported as active capabilities.
 
 ## Approved capabilities
 
@@ -59,8 +61,8 @@ Build the multimodal agent/workspace layer without weakening existing intelligen
 - Provider API is optional and never a single point of failure.
 - Update engine is optional and never a single point of failure.
 - No dependency on Gemini, GPT, Claude, or another third-party AI provider is required for Amar AI core operation.
-- Existing Stage 11 Items 1–9 remain integrated; no scope reduction or omission is part of this closure.
+- Existing Stage 11 Items 1–9 remain integrated; no scope reduction or omission is part of this verification.
 
 ## Final Audit Statement
 
-**التدقيق الدستوري الإلزامي: تم التحقق من سلسلة الإغلاق على Commit الإغلاق المحدد، ونجحت بوابات التحقق الحالية المطلوبة، وتم توثيق دليل الإغلاق. الحالة الرسمية: CLOSED.**
+**التدقيق الدستوري الإلزامي: الحالة السابقة CLOSED محفوظة كدليل تاريخي فقط. بسبب التغييرات الجوهرية اللاحقة في تكامل Quantum UI وAMAR Engine Bridge، الحالة الحالية تتطلب إعادة تنفيذ سلسلة الإغلاق كاملة. الحالة الرسمية الحالية: READY FOR CLOSURE VERIFICATION.**
