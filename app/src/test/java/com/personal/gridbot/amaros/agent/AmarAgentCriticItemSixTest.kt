@@ -66,8 +66,23 @@ class AmarAgentCriticItemSixTest {
 
         assertFalse(result.accepted)
         assertTrue("no_evidence" in result.issues)
+        assertTrue("invalid_evidence" in result.issues)
         assertTrue("unsupported_numeric_claim" in result.issues)
         assertEquals(0, result.evidenceCount)
+    }
+
+    @Test fun guarantee_language_remains_blocked_even_with_multiple_sources() {
+        val result = AmarAgentCritic().review(
+            "هذا مضمون.",
+            listOf(
+                ResearchFinding("A", "https://example.com/a", "support-a", stance = EvidenceStance.SUPPORTS),
+                ResearchFinding("B", "https://example.org/b", "support-b", stance = EvidenceStance.SUPPORTS)
+            ),
+            requireEvidence = true
+        )
+
+        assertFalse(result.accepted)
+        assertTrue("guarantee_language" in result.issues)
     }
 
     @Test fun empty_answer_is_always_rejected() {
