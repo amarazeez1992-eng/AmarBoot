@@ -7,7 +7,8 @@ class AmarWorkspaceCoordinator(
     private val fusion: AmarEvidenceFusionEngine,
     private val qualityGate: AmarNinePointNineQualityGate,
     private val audit: AmarWorkspaceAuditLog,
-    private val screenWorkspace: AmarScreenWorkspace = AmarScreenWorkspace()
+    private val screenWorkspace: AmarScreenWorkspace = AmarScreenWorkspace(),
+    private val cameraWorkspace: AmarCameraWorkspace = AmarCameraWorkspace(audit)
 ) {
     fun analyzeVideo(segments: List<AmarVideoSegment>): ReasoningResult {
         val analysis = perception.analyzeVideo(segments)
@@ -15,23 +16,9 @@ class AmarWorkspaceCoordinator(
         val evidence = analysis.segments.flatMap { segment ->
             val frameEvidence = segment.frames
                 .filter { it.confidence >= 0.8 && (it.visibleText.isNotBlank() || it.description.isNotBlank()) }
-                .map { frame ->
-                    EvidenceRecord(
-                        id = "video:frame:${frame.timestampMs}",
-                        source = "multimodal:${frame.timestampMs}",
-                        statement = frame.visibleText.ifBlank { frame.description },
-                        independent = true,
-                        valid = true
-                    )
-                }
+                .map { frame -> EvidenceRecord("video:frame:${frame.timestampMs}", "multimodal:${frame.timestampMs}", frame.visibleText.ifBlank { frame.description }, true, true) }
             val transcriptEvidence = segment.transcript.trim().takeIf { it.isNotBlank() }?.let { transcript ->
-                EvidenceRecord(
-                    id = "video:transcript:${segment.startMs}-${segment.endMs}",
-                    source = "multimodal:transcript:${segment.startMs}-${segment.endMs}",
-                    statement = transcript,
-                    independent = true,
-                    valid = true
-                )
+                EvidenceRecord("video:transcript:${segment.startMs}-${segment.endMs}", "multimodal:transcript:${segment.startMs}-${segment.endMs}", transcript, true, true)
             }
             frameEvidence + listOfNotNull(transcriptEvidence)
         }.distinctBy { it.id }
@@ -42,36 +29,24 @@ class AmarWorkspaceCoordinator(
         val analysis = perception.analyzeScreen(frames)
         if (!analysis.evidenceBacked) return fusion.fuse("", emptyList(), 0.0)
         val evidence = analysis.segments.flatMap { segment ->
-            segment.frames
-                .filter { it.confidence >= 0.8 && (it.visibleText.isNotBlank() || it.description.isNotBlank()) }
-                .map { frame ->
-                    EvidenceRecord(
-                        id = "screen:frame:${frame.timestampMs}",
-                        source = "screen:${frame.timestampMs}",
-                        statement = frame.visibleText.ifBlank { frame.description },
-                        independent = true,
-                        valid = true
-                    )
-                }
+            segment.frames.filter { it.confidence >= 0.8 && (it.visibleText.isNotBlank() || it.description.isNotBlank()) }
+                .map { frame -> EvidenceRecord("screen:frame:${frame.timestampMs}", "screen:${frame.timestampMs}", frame.visibleText.ifBlank { frame.description }, true, true) }
         }.distinctBy { it.id }
         return fusion.fuse(analysis.summary, evidence, if (evidence.isEmpty()) 0.0 else 1.0)
     }
+
+    fun analyzeCamera(frames: List<AmarCameraFrame>): AmarCameraObservation = cameraWorkspace.analyze(frames)
+
+    fun startCamera(session: AmarCameraSession): Boolean = cameraWorkspace.start(session)
+
+    fun stopCamera(actor: String, nowEpochMs: Long): Boolean = cameraWorkspace.stop(nowEpochMs, actor)
 
     fun certifyQuality(weightedScore: Double, requiredGatesPassed: Boolean, evidenceCurrent: Boolean): AmarQualityMeasurement =
         qualityGate.evaluate(weightedScore, requiredGatesPassed, evidenceCurrent)
 
     fun recordStop(actor: String, nowEpochMs: Long): Boolean {
         val stopped = screenWorkspace.stop()
-        audit.record(
-            AmarWorkspaceAuditEvent(
-                id = "screen-stop:$nowEpochMs",
-                action = "screen_stop",
-                actor = actor,
-                timestampEpochMs = nowEpochMs,
-                allowed = stopped,
-                reason = if (stopped) "user_or_system_stop" else "no_active_screen_session"
-            )
-        )
+        audit.record(AmarWorkspaceAuditEvent("screen-stop:$nowEpochMs", "screen_stop", actor, nowEpochMs, stopped, if (stopped) "user_or_system_stop" else "no_active_screen_session"))
         return stopped
     }
 
