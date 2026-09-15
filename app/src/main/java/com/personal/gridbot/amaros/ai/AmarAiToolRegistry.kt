@@ -15,7 +15,6 @@ object AmarAiToolRegistry {
         "engine_market" to Authority.READ_ONLY,
         "tracking" to Authority.READ_ONLY,
         "candle" to Authority.READ_ONLY,
-        "candle" to Authority.READ_ONLY,
         "analyze_market" to Authority.READ_ONLY,
         "code_analysis" to Authority.READ_ONLY,
         "code_generation" to Authority.DRAFT_ONLY,
@@ -39,7 +38,18 @@ object AmarAiToolRegistry {
         "counterfactual" to Authority.READ_ONLY,
         "strategy_load" to Authority.READ_ONLY,
         "approval_proposal" to Authority.DRAFT_ONLY,
-        "strategy_save" to Authority.DRAFT_ONLY
+        "strategy_save" to Authority.DRAFT_ONLY,
+        "github_repo_search" to Authority.READ_ONLY,
+        "github_repo_inspect" to Authority.READ_ONLY,
+        "github_code_search" to Authority.READ_ONLY,
+        "github_file_read" to Authority.READ_ONLY,
+        "github_license_inspect" to Authority.READ_ONLY,
+        "github_branch_create" to Authority.DRAFT_ONLY,
+        "github_file_create" to Authority.DRAFT_ONLY,
+        "github_file_update" to Authority.DRAFT_ONLY,
+        "github_file_delete" to Authority.DRAFT_ONLY,
+        "github_pull_request_create" to Authority.DRAFT_ONLY,
+        "github_pull_request_merge" to Authority.DRAFT_ONLY
     ).associate { (name, authority) ->
         name to ToolSpec(name, authority, authority == Authority.DRAFT_ONLY)
     }
