@@ -32,6 +32,15 @@ class Item10WorkspaceCoordinatorTest {
     }
 
     @Test
+    fun transcriptOnlyVideoProducesTraceableEvidence() {
+        val result = coordinator().analyzeVideo(
+            listOf(AmarVideoSegment(0L, 1000L, emptyList(), transcript = "confirmed spoken instruction"))
+        )
+        assertFalse(result.blocked)
+        assertTrue(result.evidence.single().source.startsWith("multimodal:transcript:"))
+    }
+
+    @Test
     fun qualityGateRequiresAllConditions() {
         assertTrue(coordinator().certifyQuality(0.99, true, true).certified)
         assertFalse(coordinator().certifyQuality(0.989, true, true).certified)
