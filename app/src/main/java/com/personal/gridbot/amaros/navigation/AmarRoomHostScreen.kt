@@ -41,6 +41,13 @@ fun AmarRoomHostScreen(
         return
     }
 
+    // The modern Agent workspace is a complete internal surface; it must not be wrapped
+    // by the legacy room header/navigation shell.
+    if (room == AmarRoom.AMAR_AGENT || room == AmarRoom.ANALYSIS) {
+        AmarAiAgentWorkspaceScreen()
+        return
+    }
+
     val context = LocalContext.current
     var settingsMode by remember { mutableIntStateOf(0) }
     var accountSyncMode by remember { mutableIntStateOf(0) }
@@ -57,7 +64,6 @@ fun AmarRoomHostScreen(
 
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                AmarRoom.AMAR_AGENT -> AmarAiAgentWorkspaceScreen()
                 AmarRoom.CHART -> {
                     val runtime = AmarMt5RuntimeRegistry.current()
                     if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
@@ -69,7 +75,6 @@ fun AmarRoomHostScreen(
                 AmarRoom.ALERTS -> AmarAlertsModernScreen()
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
-                AmarRoom.ANALYSIS -> AmarAiAgentWorkspaceScreen()
                 AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
