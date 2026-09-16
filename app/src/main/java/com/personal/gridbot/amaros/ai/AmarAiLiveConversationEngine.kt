@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** Voice-first conversation loop: speech -> AI -> speech, with no text input required. */
+/** Voice-first conversation loop. Reasoning remains behind the provider-neutral Agent boundary. */
 class AmarAiLiveConversationEngine(
     private val context: Context,
     private val scope: CoroutineScope,
@@ -24,20 +24,12 @@ class AmarAiLiveConversationEngine(
     private var tts: TextToSpeech? = null
     private var active = false
     private var requestJob: Job? = null
-    private var apiKey = ""
-    private var model = "gemini-2.5-flash"
 
-    fun configure(apiKey: String, model: String) {
-        this.apiKey = apiKey.trim()
-        this.model = model.trim()
-    }
+    /** Compatibility hook retained for callers while provider selection stays outside this voice engine. */
+    fun configure(@Suppress("UNUSED_PARAMETER") apiKey: String, @Suppress("UNUSED_PARAMETER") model: String) = Unit
 
     fun start() {
         if (active) return
-        if (apiKey.isBlank()) {
-            onError("أدخل مفتاح Gemini أولاً لتشغيل المحادثة المباشرة.")
-            return
-        }
         active = true
         ensureTts()
         listen()
@@ -70,8 +62,10 @@ class AmarAiLiveConversationEngine(
                 requestJob = scope.launch(Dispatchers.Main.immediate) {
                     onState(State.THINKING)
                     val local = AmarAiActionEngine.route(text)
-                    val answer = if (local.handled) local.response else {
-                        runCatching { AmarAiAgentEngine(context).ask(apiKey, model, text).answer }
+                    val answer = if (local.handled) {
+                        local.response
+                    } else {
+                        runCatching { AmarAiAgentEngine(context).ask("", "", text).answer }
                             .getOrElse { "تعذر الرد الآن: ${it.message ?: "خطأ غير معروف"}" }
                     }
                     onAnswer(answer)
