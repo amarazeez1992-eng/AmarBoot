@@ -90,9 +90,11 @@ class AmarAiLiveConversationEngine(
                 }
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) { onState(State.SPEAKING) }
+                    @Suppress("DEPRECATION")
                     override fun onDone(utteranceId: String?) {
                         if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
                     }
+                    @Suppress("DEPRECATION")
                     override fun onError(utteranceId: String?) {
                         if (active) scope.launch(Dispatchers.Main.immediate) { listen() }
                     }
