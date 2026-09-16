@@ -101,7 +101,13 @@ fun AmarApprovedHomeScreen() {
                 Modifier.fillMaxWidth().weight(1f),
                 contentAlignment = Alignment.Center
             ) {
-                OfficialSpatialLayout(compact, pulse, sweep, selected) { selected = it }
+                OfficialSpatialLayout(
+                    compact = compact,
+                    pulse = pulse,
+                    sweep = sweep,
+                    selected = selected,
+                    onSelect = { selected = it }
+                )
             }
 
             Spacer(Modifier.height(5.dp))
@@ -163,7 +169,13 @@ private fun ClockCard(clock: String, compact: Boolean) {
 }
 
 @Composable
-private fun OfficialSpatialLayout(compact: Boolean, pulse: Float, sweep: Float, selected: String, onSelect: (String) -> Unit) {
+private fun OfficialSpatialLayout(
+    compact: Boolean,
+    pulse: Float,
+    sweep: Float,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
     Box(Modifier.fillMaxSize()) {
         val circle = if (compact) 62.dp else 72.dp
         val center = if (compact) 112.dp else 132.dp
@@ -178,14 +190,22 @@ private fun OfficialSpatialLayout(compact: Boolean, pulse: Float, sweep: Float, 
             drawArc(HomeCyan.copy(alpha = .45f), sweep+180f, 75f, false, Offset(c.x-r*.86f,c.y-r*.86f), Size(r*1.72f,r*1.72f), style=Stroke(1.5.dp.toPx()))
         }
 
+        // Left side: three fixed, non-overlapping circles.
         OfficialNode("الأخبار", IconKind.NEWS, HomeGold, circle, label, selected == "الأخبار", Modifier.align(Alignment.CenterStart)) { onSelect("الأخبار") }
         OfficialNode("حالة السوق", IconKind.MARKET, HomeGreen, circle, label, selected == "حالة السوق", Modifier.align(Alignment.TopStart)) { onSelect("حالة السوق") }
         OfficialNode("مختبر البوتات", IconKind.BOT, HomeCyan, circle, label, selected == "مختبر البوتات", Modifier.align(Alignment.BottomStart)) { onSelect("مختبر البوتات") }
+
+        // Right side: three fixed, non-overlapping circles.
         OfficialNode("AMAR AI", IconKind.AI, HomeCyan, circle, label, selected == "AMAR AI", Modifier.align(Alignment.CenterEnd)) { onSelect("AMAR AI") }
         OfficialNode("الرسم البياني", IconKind.CHART, HomeGold, circle, label, selected == "الرسم البياني", Modifier.align(Alignment.TopEnd)) { onSelect("الرسم البياني") }
         OfficialNode("التحليل الذكي", IconKind.ANALYSIS, HomeGoldLight, circle, label, selected == "التحليل الذكي", Modifier.align(Alignment.BottomEnd)) { onSelect("التحليل الذكي") }
 
-        AmarCenterCore(Modifier.align(Alignment.Center).size(center * pulse), sweep)
+        AmarCenterCore(
+            modifier = Modifier.align(Alignment.Center).size(center * pulse),
+            sweep = sweep
+        )
+
+        // Red state indicator is intentionally kept hidden inside the center layer.
         Box(Modifier.align(Alignment.Center).size(10.dp).clip(CircleShape).background(HomeRed.copy(alpha = 0.0f)))
     }
 }
@@ -208,7 +228,16 @@ private fun AmarCenterCore(modifier: Modifier, sweep: Float) {
 }
 
 @Composable
-private fun OfficialNode(title: String, kind: IconKind, accent: Color, circle: Dp, labelWidth: Dp, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun OfficialNode(
+    title: String,
+    kind: IconKind,
+    accent: Color,
+    circle: Dp,
+    labelWidth: Dp,
+    selected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit
+) {
     Column(modifier.clickable(onClick=onClick), horizontalAlignment=Alignment.CenterHorizontally) {
         Box(
             Modifier.size(circle).shadow(if(selected) 18.dp else 11.dp, CircleShape).clip(CircleShape)
@@ -232,11 +261,25 @@ private fun TinyLineIcon(kind: IconKind, color: Color, modifier: Modifier) {
     Canvas(modifier) {
         val s = 2.1.dp.toPx(); val w=size.width; val h=size.height
         when(kind) {
-            IconKind.NEWS -> { drawRoundRect(color, Offset(w*.17f,h*.18f), Size(w*.66f,h*.64f), CornerRadius(5f,5f), style=Stroke(s)); drawLine(color,Offset(w*.29f,h*.34f),Offset(w*.71f,h*.34f),strokeWidth=s); drawLine(color,Offset(w*.29f,h*.49f),Offset(w*.71f,h*.49f),strokeWidth=s); drawLine(color,Offset(w*.29f,h*.64f),Offset(w*.58f,h*.64f),strokeWidth=s) }
-            IconKind.MARKET -> { drawLine(color,Offset(w*.18f,h*.82f),Offset(w*.18f,h*.18f),strokeWidth=s);drawLine(color,Offset(w*.18f,h*.82f),Offset(w*.88f,h*.82f),strokeWidth=s); drawRect(color,Offset(w*.29f,h*.56f),Size(w*.11f,h*.26f));drawRect(color,Offset(w*.48f,h*.39f),Size(w*.11f,h*.43f));drawRect(color,Offset(w*.67f,h*.24f),Size(w*.11f,h*.58f)) }
-            IconKind.BOT -> { drawRoundRect(color,Offset(w*.18f,h*.25f),Size(w*.64f,h*.50f),CornerRadius(7f,7f),style=Stroke(s));drawCircle(color,2.3.dp.toPx(),Offset(w*.40f,h*.49f));drawCircle(color,2.3.dp.toPx(),Offset(w*.60f,h*.49f));drawLine(color,Offset(w*.5f,h*.25f),Offset(w*.5f,h*.10f),strokeWidth=s);drawCircle(color,2.dp.toPx(),Offset(w*.5f,h*.09f)) }
-            IconKind.AI -> { drawCircle(color,w*.30f,Offset(w*.5f,h*.5f),style=Stroke(s));drawArc(color,0f,260f,false,Offset(w*.18f,h*.18f),Size(w*.64f,h*.64f),style=Stroke(s));drawCircle(color,2.4.dp.toPx(),Offset(w*.73f,h*.28f));drawLine(color,Offset(w*.5f,h*.18f),Offset(w*.5f,h*.08f),strokeWidth=s) }
-            IconKind.CHART -> { drawLine(color,Offset(w*.12f,h*.82f),Offset(w*.12f,h*.18f),strokeWidth=s);drawLine(color,Offset(w*.12f,h*.82f),Offset(w*.90f,h*.82f),strokeWidth=s);drawLine(color,Offset(w*.23f,h*.66f),Offset(w*.43f,h*.50f),strokeWidth=s);drawLine(color,Offset(w*.43f,h*.50f),Offset(w*.58f,h*.61f),strokeWidth=s);drawLine(color,Offset(w*.58f,h*.61f),Offset(w*.82f,h*.30f),strokeWidth=s) }
+            IconKind.NEWS -> {
+                drawRoundRect(color, Offset(w*.17f,h*.18f), Size(w*.66f,h*.64f), CornerRadius(5f,5f), style=Stroke(s))
+                drawLine(color,Offset(w*.29f,h*.34f),Offset(w*.71f,h*.34f),strokeWidth=s)
+                drawLine(color,Offset(w*.29f,h*.49f),Offset(w*.71f,h*.49f),strokeWidth=s)
+                drawLine(color,Offset(w*.29f,h*.64f),Offset(w*.58f,h*.64f),strokeWidth=s)
+            }
+            IconKind.MARKET -> {
+                drawLine(color,Offset(w*.18f,h*.82f),Offset(w*.18f,h*.18f),strokeWidth=s);drawLine(color,Offset(w*.18f,h*.82f),Offset(w*.88f,h*.82f),strokeWidth=s)
+                drawRect(color,Offset(w*.29f,h*.56f),Size(w*.11f,h*.26f));drawRect(color,Offset(w*.48f,h*.39f),Size(w*.11f,h*.43f));drawRect(color,Offset(w*.67f,h*.24f),Size(w*.11f,h*.58f))
+            }
+            IconKind.BOT -> {
+                drawRoundRect(color,Offset(w*.18f,h*.25f),Size(w*.64f,h*.50f),CornerRadius(7f,7f),style=Stroke(s));drawCircle(color,2.3.dp.toPx(),Offset(w*.40f,h*.49f));drawCircle(color,2.3.dp.toPx(),Offset(w*.60f,h*.49f));drawLine(color,Offset(w*.5f,h*.25f),Offset(w*.5f,h*.10f),strokeWidth=s);drawCircle(color,2.dp.toPx(),Offset(w*.5f,h*.09f))
+            }
+            IconKind.AI -> {
+                drawCircle(color,w*.30f,Offset(w*.5f,h*.5f),style=Stroke(s));drawArc(color,0f,260f,false,Offset(w*.18f,h*.18f),Size(w*.64f,h*.64f),style=Stroke(s));drawCircle(color,2.4.dp.toPx(),Offset(w*.73f,h*.28f));drawLine(color,Offset(w*.5f,h*.18f),Offset(w*.5f,h*.08f),strokeWidth=s)
+            }
+            IconKind.CHART -> {
+                drawLine(color,Offset(w*.12f,h*.82f),Offset(w*.12f,h*.18f),strokeWidth=s);drawLine(color,Offset(w*.12f,h*.82f),Offset(w*.90f,h*.82f),strokeWidth=s);drawLine(color,Offset(w*.23f,h*.66f),Offset(w*.43f,h*.50f),strokeWidth=s);drawLine(color,Offset(w*.43f,h*.50f),Offset(w*.58f,h*.61f),strokeWidth=s);drawLine(color,Offset(w*.58f,h*.61f),Offset(w*.82f,h*.30f),strokeWidth=s)
+            }
             IconKind.ANALYSIS -> { drawCircle(color,w*.28f,Offset(w*.46f,h*.45f),style=Stroke(s));drawLine(color,Offset(w*.65f,h*.64f),Offset(w*.85f,h*.84f),strokeWidth=s);drawLine(color,Offset(w*.58f,h*.34f),Offset(w*.78f,h*.14f),strokeWidth=s) }
             IconKind.SETTINGS -> { drawCircle(color,w*.30f,Offset(w/2f,h/2f),style=Stroke(s));drawCircle(color,w*.08f,Offset(w/2f,h/2f));for(i in 0 until 8){val a=Math.toRadians((i*45).toDouble());drawLine(color,Offset(w/2f+kotlin.math.cos(a).toFloat()*w*.38f,h/2f+kotlin.math.sin(a).toFloat()*h*.38f),Offset(w/2f+kotlin.math.cos(a).toFloat()*w*.48f,h/2f+kotlin.math.sin(a).toFloat()*h*.48f),strokeWidth=s)}}
             IconKind.HOME -> { val p=Path().apply{moveTo(w*.15f,h*.46f);lineTo(w*.5f,h*.16f);lineTo(w*.85f,h*.46f);lineTo(w*.78f,h*.46f);lineTo(w*.78f,h*.84f);lineTo(w*.22f,h*.84f);lineTo(w*.22f,h*.46f);close()};drawPath(p,color,style=Stroke(s)) }
