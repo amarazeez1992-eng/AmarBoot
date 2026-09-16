@@ -33,6 +33,7 @@ fun AmarRoomHostScreen(
     onBackHome: () -> Unit,
     themeMode: AmarThemeMode,
     onThemeModeChange: (AmarThemeMode) -> Unit,
+    onSendToAgent: (String, (String) -> Unit) -> Unit = { _, _ -> },
     homeLayout: Int = 1,
     onHomeLayoutChange: (Int) -> Unit = {}
 ) {
@@ -42,7 +43,7 @@ fun AmarRoomHostScreen(
     }
 
     if (room == AmarRoom.ANALYSIS) {
-        AmarAiChatScreen(onBackHome)
+        AmarAiChatScreen(onBackHome, onSendToAgent)
         return
     }
 
@@ -73,7 +74,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.ALERTS -> AmarAlertsModernScreen()
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
-                AmarRoom.ANALYSIS -> AmarAiChatScreen(onBackHome)
+                AmarRoom.ANALYSIS -> AmarAiChatScreen(onBackHome, onSendToAgent)
                 AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
