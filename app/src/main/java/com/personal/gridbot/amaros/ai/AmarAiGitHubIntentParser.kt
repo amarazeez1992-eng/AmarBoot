@@ -9,10 +9,12 @@ object AmarAiGitHubIntentParser {
     private val path = Regex("(?:ملف|file|path)\\s+([^\\s]+)", RegexOption.IGNORE_CASE)
 
     fun parse(request: String): JSONObject? {
-        val q = request.trim()
+        val q = request.trim().replace(Regex("\\s+"), " ")
         val match = repoUrl.find(q) ?: repo.find(q) ?: return null
         val owner = match.groupValues[1]
         val name = match.groupValues[2]
+        val requestedPath = path.find(q)?.groupValues?.get(1)?.trimStart('/')
+
         val operation = when {
             q.contains("احذف") || q.contains("delete", true) -> "file_delete"
             q.contains("حدّث") || q.contains("حدث") || q.contains("عدل") || q.contains("عدّل") || q.contains("update", true) -> "file_update"
@@ -22,11 +24,16 @@ object AmarAiGitHubIntentParser {
             q.contains("طلب سحب") || q.contains("pull request", true) -> "pull_request_create"
             q.contains("ترخيص") || q.contains("license", true) -> "license_inspect"
             q.contains("ابحث") || q.contains("search", true) -> "code_search"
-            q.contains("اقرأ") || q.contains("read", true) || q.contains("افتح") || q.contains("open", true) -> "file_read"
+            q.contains("اقرأ") || q.contains("read", true) -> "file_read"
+            (q.contains("افتح") || q.contains("open", true)) && requestedPath != null -> "file_read"
             else -> "repo_inspect"
         }
-        val out = JSONObject().put("operation", operation).put("owner", owner).put("repo", name)
-        path.find(q)?.let { out.put("path", it.groupValues[1].trimStart('/')) }
+
+        val out = JSONObject()
+            .put("operation", operation)
+            .put("owner", owner)
+            .put("repo", name)
+        requestedPath?.let { out.put("path", it) }
         return out
     }
 }
