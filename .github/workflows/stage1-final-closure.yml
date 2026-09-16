@@ -70,11 +70,11 @@ jobs:
             echo 'Potential credential pattern detected in production source.'
             exit 1
           fi
-          if ! grep -RInE 'liveTrading[[:space:]]*:[[:space:]]*Boolean[[:space:]]*=[[:space:]]*false' app/src/main >/dev/null; then
+          if ! git grep -nE 'liveTrading[[:space:]]*:[[:space:]]*Boolean[[:space:]]*=[[:space:]]*false|liveTrading[[:space:]]*=[[:space:]]*false' -- 'app/src/main/**' >/dev/null; then
             echo 'Protected execution invariant missing: liveTrading must default to false.'
             exit 1
           fi
-          if ! grep -RInE 'brokerAccessAllowed[[:space:]]*=[[:space:]]*false' app/src/main >/dev/null; then
+          if ! git grep -nE 'brokerAccessAllowed[[:space:]]*:[[:space:]]*Boolean[[:space:]]*=[[:space:]]*false|brokerAccessAllowed[[:space:]]*=[[:space:]]*false' -- 'app/src/main/**' >/dev/null; then
             echo 'Protected execution invariant missing: broker access must be denied by default.'
             exit 1
           fi
