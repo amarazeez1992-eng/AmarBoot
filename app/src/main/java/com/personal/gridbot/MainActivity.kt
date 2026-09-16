@@ -108,16 +108,20 @@ class MainActivity : ComponentActivity() {
         fun ask(text: String?) {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
-            lifecycleScope.launch {
-                val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
-                if (local?.handled == true) {
-                    sendAgentResult(local.response, "تم تنفيذ أمر الواجهة")
-                    return@launch
-                }
-                val result = runCatching { agentEngine.ask("", "", request) }
-                result.onSuccess { sendAgentResult(it.answer, "Agent: جاهز") }
-                    .onFailure { error -> sendAgentResult("تعذر تمرير الطلب إلى AMAR AI Agent: ${error.message ?: error.javaClass.simpleName}", "Agent: خطأ") }
+            askAgent(request) { answer, status -> sendAgentResult(answer, status) }
+        }
+    }
+
+    private fun askAgent(request: String, onResult: (String, String) -> Unit) {
+        lifecycleScope.launch {
+            val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
+            if (local?.handled == true) {
+                onResult(local.response, "تم تنفيذ أمر الواجهة")
+                return@launch
             }
+            val result = runCatching { agentEngine.ask("", "", request) }
+            result.onSuccess { onResult(it.answer, "Agent: جاهز") }
+                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: ${error.message ?: error.javaClass.simpleName}", "Agent: خطأ") }
         }
     }
 
@@ -169,11 +173,14 @@ class MainActivity : ComponentActivity() {
     private fun enterImmersiveReferenceMode() { if (Build.VERSION.SDK_INT >= 30) window.insetsController?.let { controller -> controller.hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars()); controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE } else { @Suppress("DEPRECATION") window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE } }
     private fun effectiveDark(): Boolean = when (themeMode) { AmarThemeMode.DARK -> true; AmarThemeMode.LIGHT -> false; AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES }
     private fun palette() = if (effectiveDark()) AmarPlatinum else AmarDay
-    private fun renderCurrentRoom() { val room = currentRoom ?: return; roomHost?.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode, ::onThemeModeChanged) } } }
+    private fun renderCurrentRoom() { val room = currentRoom ?: return; roomHost?.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode, ::onThemeModeChanged, ::askAgentForCompose) } } }
+    private fun askAgentForCompose(request: String, onAnswer: (String) -> Unit) {
+        askAgent(request) { answer, _ -> runOnUiThread { onAnswer(answer) } }
+    }
     private fun showRoom(room: AmarRoom) { ensureRoomHost(); ensureVisualOverlay(); currentRoom = room; showingRoom = true; home?.visibility = android.view.View.GONE; roomHost?.visibility = android.view.View.VISIBLE; renderCurrentRoom() }
     private fun onThemeModeChanged(mode: AmarThemeMode) { themeMode = mode; renderCurrentRoom() }
     private fun showHome() { showingRoom = false; currentRoom = null; roomHost?.visibility = android.view.View.GONE; home?.visibility = android.view.View.VISIBLE }
     private fun setVisualEffectsEnabled(enabled: Boolean) { AmarVisualEffectsPreference.save(this, enabled); AmarGlobalVisualStateStore.setEnabled(enabled) }
-    private fun showStartupError(stage: String, error: Throwable) { runCatching { AmarProtectionCenter.recordFailure(this, stage, error); val message = buildString { append(error.javaClass.simpleName); if (!error.message.isNullOrBlank()) append("\n").append(error.message) }.take(260); val recovery = ComposeView(this).apply { setContent { Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) { Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) { Text("AMAR AI", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(10.dp)); Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(12.dp)); Text(stage, color = Color(0xFFFFD36A), textAlign = TextAlign.Center); Spacer(Modifier.height(8.dp)); Text(message, color = Color(0xFF9DB5BF), fontSize = 11.sp, textAlign = TextAlign.Center) } } } }; root.removeAllViews(); root.addView(recovery, FrameLayout.LayoutParams(-1, -1)) }.onFailure { Log.e("AMAR_STARTUP", "Failed to render startup error", error) } }
+    private fun showStartupError(stage: String, error: Throwable) { runCatching { AmarProtectionCenter.recordFailure(this, stage, error); val message = buildString { append(error.javaClass.simpleName); if (!error.message.isNullOrBlank()) append("\n").append(error.message) }.take(260); val recovery = ComposeView(this).apply { setContent { Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) { Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) { Text("AMAR AI", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(10.dp)); Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(12.dp)); Text(stage, color = Color(0xFFFFD36A" , textAlign = TextAlign.Center); Spacer(Modifier.height(8.dp)); Text(message, color = Color(0xFF9DB5BF), fontSize = 11.sp, textAlign = TextAlign.Center) } } } }; root.removeAllViews(); root.addView(recovery, FrameLayout.LayoutParams(-1, -1)) }.onFailure { Log.e("AMAR_STARTUP", "Failed to render startup error", error) } }
     override fun onDestroy() { home?.let { web -> runCatching { root.removeView(web); web.stopLoading(); web.removeAllViews(); web.destroy() } }; home = null; super.onDestroy() }
 }
