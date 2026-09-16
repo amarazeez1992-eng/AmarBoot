@@ -170,7 +170,23 @@ class MainActivity : ComponentActivity() {
     private fun requestApplicationUpdate() { home?.evaluateJavascript("window.amarAiRequestUpdate && window.amarAiRequestUpdate()", null) }
 
     private fun installProtectionHandler() { val previous = Thread.getDefaultUncaughtExceptionHandler(); Thread.setDefaultUncaughtExceptionHandler { thread, error -> runCatching { AmarProtectionCenter.recordFailure(this, currentRoom?.titleAr ?: "بدء التشغيل", error) }; previous?.uncaughtException(thread, error) } }
-    private fun enterImmersiveReferenceMode() { if (Build.VERSION.SDK_INT >= 30) window.insetsController?.let { controller -> controller.hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars()); controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE } else { @Suppress("DEPRECATION") window.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE } }
+    private fun enterImmersiveReferenceMode() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.insetsController?.let { controller ->
+                controller.hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                android.view.View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+                    android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        }
+    }
     private fun effectiveDark(): Boolean = when (themeMode) { AmarThemeMode.DARK -> true; AmarThemeMode.LIGHT -> false; AmarThemeMode.AUTO -> (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES }
     private fun palette() = if (effectiveDark()) AmarPlatinum else AmarDay
     private fun renderCurrentRoom() { val room = currentRoom ?: return; roomHost?.setContent { AmarTheme(palette(), themeMode) { AmarRoomHostScreen(room, ::showHome, themeMode, ::onThemeModeChanged, ::askAgentForCompose) } } }
