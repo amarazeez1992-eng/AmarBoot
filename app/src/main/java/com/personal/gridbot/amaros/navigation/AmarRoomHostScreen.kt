@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
-import com.personal.gridbot.amaros.ai.AmarAiExperienceScreenV2
+import com.personal.gridbot.amaros.ai.AmarAiAgentWorkspaceScreen
 import com.personal.gridbot.amaros.bots.AmarBotLabInterfaceHost
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
@@ -49,7 +49,7 @@ fun AmarRoomHostScreen(
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Column(Modifier.weight(1f)) {
-                    Text("عمار", style = MaterialTheme.typography.headlineSmall)
+                    Text("AMAR AI", style = MaterialTheme.typography.headlineSmall)
                     Text("${room.emoji} ${room.titleAr}", style = MaterialTheme.typography.titleMedium)
                 }
                 Button(onClick = onBackHome) { Text("الرئيسية") }
@@ -57,7 +57,7 @@ fun AmarRoomHostScreen(
 
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
-                AmarRoom.AMAR_AGENT -> AmarAiExperienceScreenV2()
+                AmarRoom.AMAR_AGENT -> AmarAiAgentWorkspaceScreen()
                 AmarRoom.CHART -> {
                     val runtime = AmarMt5RuntimeRegistry.current()
                     if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
@@ -69,7 +69,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.ALERTS -> AmarAlertsModernScreen()
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
-                AmarRoom.ANALYSIS -> AmarAiExperienceScreenV2()
+                AmarRoom.ANALYSIS -> AmarAiAgentWorkspaceScreen()
                 AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
