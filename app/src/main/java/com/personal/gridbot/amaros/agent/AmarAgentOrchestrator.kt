@@ -91,11 +91,11 @@ class AmarAgentOrchestrator(
 
         // Non-trading requests must never be blocked by a trading-only decision council.
         // Trading/broker authority remains disabled until the later MT5 stage.
-        val approved = finalVerification.approved && hardening.approved && !critique.blockingIssues.any()
+        val approved = finalVerification.approved && hardening.approved && critique.issues.isEmpty()
         val finalResponse = if (approved) {
             answer
         } else {
-            val issues = (finalVerification.issues + hardening.issues + critique.blockingIssues)
+            val issues = (finalVerification.issues + hardening.issues + critique.issues)
                 .distinct()
                 .ifEmpty { listOf("agent_validation_failed") }
             answer.copy(
@@ -166,8 +166,8 @@ class AmarAgentOrchestrator(
         if (findings.isNotEmpty() && !claims.accepted) issues += "claim_verification_failed"
         if (findings.isNotEmpty() && calibrated < .80) issues += "confidence_below_threshold"
         return AmarStageTwoHardeningReport(
-            quality = quality,
-            claims = claims,
+            evidenceQuality = quality,
+            claimVerification = claims,
             calibratedConfidence = calibrated,
             approved = issues.isEmpty(),
             issues = issues.distinct()
