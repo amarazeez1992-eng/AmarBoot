@@ -25,8 +25,11 @@ jobs:
         with:
           gradle-version: '8.7'
 
-      - name: Run Stage 9 focused tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest' --stacktrace
+      - name: Run Stage 1 core tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest' --stacktrace
+
+      - name: Run Stage 1 engine integration test
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest' --stacktrace
 
       - name: Run full AMAR AI agent unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
