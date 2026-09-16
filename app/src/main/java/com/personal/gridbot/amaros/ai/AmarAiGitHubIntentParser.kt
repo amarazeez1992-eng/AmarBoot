@@ -17,6 +17,23 @@ data class AmarAiGitHubIntent(
     }
 }
 
+/** Compatibility accessors keep the existing gateway contract without putting JSON in the parser path. */
+fun AmarAiGitHubIntent.getString(key: String): String = when (key) {
+    "operation" -> operation
+    "owner" -> owner
+    "repo" -> repo
+    "path" -> path ?: throw IllegalArgumentException("Missing required intent field: path")
+    else -> throw IllegalArgumentException("Unknown intent field: $key")
+}
+
+fun AmarAiGitHubIntent.optString(key: String, fallback: String = ""): String = when (key) {
+    "operation" -> operation
+    "owner" -> owner
+    "repo" -> repo
+    "path" -> path ?: fallback
+    else -> fallback
+}
+
 /** Converts explicit GitHub requests into safe structured intents; values are never guessed. */
 object AmarAiGitHubIntentParser {
     private val repoUrl = Regex("(?:https?://)?github\\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(?:/.*)?", RegexOption.IGNORE_CASE)
