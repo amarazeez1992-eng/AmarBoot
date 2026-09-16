@@ -25,7 +25,7 @@ class AmarAiAgentEngine(
         toolRegistry = AmarTradingTools()
     )
 
-    suspend fun ask(apiKey: String, model: String, request: String): Result {
+    suspend fun ask(_apiKey: String, _model: String, request: String): Result {
         val response = core.ask(
             AmarAgentRequest(
                 text = request,
