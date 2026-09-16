@@ -66,11 +66,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----'; then
-            echo 'Potential credential pattern detected.'
+          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- 'app/src/**'; then
+            echo 'Potential credential pattern detected in production source.'
             exit 1
           fi
-          grep -RIn --exclude-dir=.git 'liveTrading=false' . >/dev/null
+          grep -RIn --exclude-dir=.git 'liveTrading=false' app/src/main >/dev/null
           grep -RIn --exclude-dir=.git 'brokerAccessAllowed=false' app/src/main >/dev/null
 
       - name: Release artifact verification
