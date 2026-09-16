@@ -9,6 +9,8 @@ class AmarAiGitHubToolGateway(private val context: Context) {
     private val github = AmarGitHubWorkspaceEngine(context)
     private val approvals = AmarAiApprovalLedger(context)
 
+    suspend fun inspect(args: AmarAiGitHubIntent): AmarGitHubWorkspaceEngine.GitHubResult = inspect(args.toJson())
+
     suspend fun inspect(args: JSONObject): AmarGitHubWorkspaceEngine.GitHubResult = when (args.getString("operation")) {
         "repo_search" -> github.searchRepositories(args.getString("query"), args.optInt("limit", 10))
         "repo_inspect" -> github.inspectRepository(args.getString("owner"), args.getString("repo"))
@@ -17,6 +19,8 @@ class AmarAiGitHubToolGateway(private val context: Context) {
         "license_inspect" -> github.inspectLicense(args.getString("owner"), args.getString("repo"))
         else -> AmarGitHubWorkspaceEngine.GitHubResult(false, "github_inspect", 400, "عملية GitHub للقراءة غير معروفة")
     }
+
+    suspend fun proposeWrite(args: AmarAiGitHubIntent): AmarGitHubWorkspaceEngine.GitHubResult = proposeWrite(args.toJson())
 
     suspend fun proposeWrite(args: JSONObject): AmarGitHubWorkspaceEngine.GitHubResult {
         val subject = "GITHUB|${args.optString("operation")}|${args.optString("owner")}/${args.optString("repo")}|${args.optString("path")}|${args.optString("branch")}|${args.optString("message")}".trimEnd('|')
