@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.accounts.AmarAccountsScreen
+import com.personal.gridbot.amaros.ai.AmarAiChatScreen
 import com.personal.gridbot.amaros.bots.AmarBotLabInterfaceHost
 import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
@@ -40,6 +41,11 @@ fun AmarRoomHostScreen(
         return
     }
 
+    if (room == AmarRoom.ANALYSIS) {
+        AmarAiChatScreen(onBackHome)
+        return
+    }
+
     val context = LocalContext.current
     var settingsMode by remember { mutableIntStateOf(0) }
     var accountSyncMode by remember { mutableIntStateOf(0) }
@@ -67,7 +73,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.ALERTS -> AmarAlertsModernScreen()
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
-                AmarRoom.ANALYSIS -> AmarRoomWorkspace(room)
+                AmarRoom.ANALYSIS -> AmarAiChatScreen(onBackHome)
                 AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
