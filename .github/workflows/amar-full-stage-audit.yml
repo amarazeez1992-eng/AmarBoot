@@ -45,6 +45,19 @@ jobs:
             exit 1
           fi
 
+      - name: Verify modern UI integration
+        run: |
+          set -euo pipefail
+          test -s app/src/main/assets/amar_reference.html
+          test -s app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiAgentWorkspaceScreen.kt
+          test -s app/src/main/java/com/personal/gridbot/amaros/navigation/AmarRoomHostScreen.kt
+          grep -q 'AmarAiAgentWorkspaceScreen()' app/src/main/java/com/personal/gridbot/amaros/navigation/AmarRoomHostScreen.kt
+          if test -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiExperienceScreenV2.kt; then
+            echo 'Legacy Agent workspace must not remain in the production source tree.'
+            exit 1
+          fi
+          grep -q 'CENTRAL INTELLIGENCE' app/src/main/assets/amar_reference.html
+
       - name: Stage 1 focused test
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentStageOneTest' --stacktrace
 
