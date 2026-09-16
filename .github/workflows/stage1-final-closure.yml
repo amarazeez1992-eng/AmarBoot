@@ -1,0 +1,95 @@
+name: Amar Stage 1 — Final Closure Gate
+
+on:
+  push:
+    branches: [stage10-11-final-implementation]
+    paths:
+      - 'app/**'
+      - 'docs/**'
+      - '.github/workflows/**'
+      - 'gradle/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+  workflow_dispatch:
+
+jobs:
+  stage1-closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: stage10-11-final-implementation
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.7'
+
+      - name: Verify Agent authority and Gemini removal
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCore.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarGeminiClient.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiKeyStore.kt
+          if grep -RniE 'AmarGeminiClient|AmarAiKeyStore|Gemini API Key|gemini-[0-9]' app/src/main/java; then
+            echo 'Forbidden external-provider reference found in production source.'
+            exit 1
+          fi
+
+      - name: Agent focused tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.*' --stacktrace
+
+      - name: Full unit regression
+        run: gradle :app:testDebugUnitTest --stacktrace
+
+      - name: Debug build
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Release build
+        run: gradle :app:assembleRelease --stacktrace
+
+      - name: Android lint
+        run: gradle :app:lint --stacktrace
+
+      - name: Security and protected-execution audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----'; then
+            echo 'Potential credential pattern detected.'
+            exit 1
+          fi
+          grep -RIn --exclude-dir=.git 'liveTrading=false' . >/dev/null
+          grep -RIn --exclude-dir=.git 'brokerAccessAllowed=false' app/src/main >/dev/null
+
+      - name: Release artifact verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk='app/build/outputs/apk/release/app-release-unsigned.apk'
+          test -s "$apk"
+          sha256sum "$apk"
+          stat -c '%n %s bytes' "$apk"
+
+      - name: Upload closure evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: amar-stage1-closure-evidence
+          path: |
+            app/build/reports/tests/**
+            app/build/reports/lint-results-*.html
+            app/build/outputs/apk/debug/**
+            app/build/outputs/apk/release/**
+          if-no-files-found: ignore
