@@ -8,14 +8,14 @@ AMAR AI is an internal assistant room, not a decorative chatbot. The interface a
 
 ## UI
 
-- ChatGPT/Gemini-inspired mobile conversation layout.
-- White rounded composer at the bottom.
-- Animated yellow/red/orange perimeter that continuously travels around the composer.
+- Provider-neutral mobile conversation workspace.
+- Rounded composer at the bottom.
+- Animated workspace perimeter and dynamic status treatment.
 - Text input with normal Android copy/paste/delete behavior.
-- Image attachment and multimodal Gemini analysis.
+- Image attachment and multimodal input boundary; actual analysis is performed only by a verified Agent capability.
 - Voice dictation and native speech-to-text.
-- Voice-first live conversation mode: speech recognition -> AI -> speech synthesis, with automatic turn continuation.
-- Animated AMAR AI avatar with listening/thinking/speaking states and moving rings.
+- Voice-first live conversation mode: speech recognition -> Agent -> speech synthesis, with automatic turn continuation.
+- Animated AMAR AI workspace identity with listening/thinking/speaking states when the verified voice capability is active.
 - AI status and emergency-stop state remain visible.
 
 ## Application control
@@ -32,9 +32,9 @@ Commands do not bypass the application command boundary.
 
 Natural-language requests are routed first through deterministic local actions. Requests that are not local actions are sent to the real `AmarAiAgentEngine` and its research/analysis/testing tools.
 
-Image requests use `AmarGeminiVisionClient`.
+Image input is retained as a provider-neutral evidence payload. No external AI provider is embedded in the UI layer.
 
-Live voice uses `AmarAiLiveConversationEngine`.
+Live voice uses `AmarAiLiveConversationEngine` and the provider-neutral Agent boundary.
 
 ## Trading safety
 
