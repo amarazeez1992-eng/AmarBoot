@@ -1,11 +1,9 @@
 package com.personal.gridbot.amaros.ai
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
-import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
@@ -36,6 +34,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.personal.gridbot.amaros.workspace.Item10CaptureCoordinator
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -50,6 +49,7 @@ private val Muted = Color(0xFF91A5B3)
 @Composable
 fun AmarAiAgentWorkspaceScreen() {
     val context = LocalContext.current
+    val activity = context as? Activity
     val scope = rememberCoroutineScope()
     val agent = remember(context) { AmarAiAgentEngine(context) }
     val conversation = remember { AmarAiConversationState() }
@@ -58,11 +58,27 @@ fun AmarAiAgentWorkspaceScreen() {
     var menuOpen by remember { mutableStateOf(false) }
     var controlsOpen by remember { mutableStateOf(false) }
     var voiceMode by remember { mutableStateOf(false) }
-    var listening by remember { mutableStateOf(false) }
     var evidenceOpen by remember { mutableStateOf(true) }
     var attachment by remember { mutableStateOf<String?>(null) }
     var selectedTool by remember { mutableStateOf<String?>(null) }
+    var lastEvidence by remember { mutableStateOf<Item10CaptureCoordinator.Evidence?>(null) }
+    var cameraActive by remember { mutableStateOf(false) }
+    var screenActive by remember { mutableStateOf(false) }
+    var voiceRecording by remember { mutableStateOf(false) }
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
+
+    val capture = remember(activity) {
+        activity?.let { host ->
+            Item10CaptureCoordinator(host) { evidence ->
+                lastEvidence = evidence
+                when (evidence.channel) {
+                    Item10CaptureCoordinator.Channel.VOICE -> conversation.addSystem("VOICE EVIDENCE • تم تسجيل بصمة صوتية محلية: ${evidence.byteCount} bytes")
+                    Item10CaptureCoordinator.Channel.CAMERA -> cameraActive = true
+                    Item10CaptureCoordinator.Channel.SCREEN -> screenActive = true
+                }
+            }
+        }
+    }
 
     val pulse = rememberInfiniteTransition(label = "agent-pulse")
     val orbScale by pulse.animateFloat(0.96f, 1.04f, infiniteRepeatable(tween(1800), RepeatMode.Reverse), label = "orb")
@@ -71,30 +87,56 @@ fun AmarAiAgentWorkspaceScreen() {
         var engine: TextToSpeech? = null
         engine = TextToSpeech(context) { status -> if (status == TextToSpeech.SUCCESS) engine?.language = Locale("ar", "IQ") }
         tts = engine
-        onDispose { engine?.stop(); engine?.shutdown(); tts = null }
+        onDispose { engine?.stop(); engine?.shutdown(); tts = null; capture?.stopAll() }
     }
 
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) conversation.addSystem("FAIL_CLOSED: لم يُمنح إذن الميكروفون.")
+    val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            cameraActive = capture?.startCamera() == true
+            selectedTool = if (cameraActive) "الكاميرا — ACTIVE • evidence capture" else "الكاميرا — FAIL_CLOSED: تعذر بدء الالتقاط"
+        } else conversation.addSystem("FAIL_CLOSED: لم يُمنح إذن الكاميرا.")
     }
-    val speech = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        listening = false
-        result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let { text = it }
+    val screenPermission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val ok = capture?.startScreen(result.resultCode, result.data) == true
+        screenActive = ok
+        selectedTool = if (ok) "مشاركة الشاشة — ACTIVE • MediaProjection evidence" else "الشاشة — FAIL_CLOSED: لم تُمنح جلسة الالتقاط"
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         attachment = uri?.lastPathSegment
-        if (uri != null) conversation.addSystem("مرفق مستخدم: ${uri.lastPathSegment}. التحليل المتعدد الوسائط يبقى FAIL_CLOSED حتى يتصل محركه الفعلي.")
+        if (uri != null) conversation.addSystem("مرفق مستخدم: ${uri.lastPathSegment}. الإدخال محفوظ كدليل؛ التفسير البصري/المستندي لا يُدّعى دون محركه.")
     }
 
-    fun startVoice() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) { permission.launch(Manifest.permission.RECORD_AUDIO); return }
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) { conversation.addSystem("FAIL_CLOSED: التعرف الصوتي غير متاح على الجهاز."); return }
-        listening = true
-        speech.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-IQ")
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "تحدث مع AMAR AI")
-        })
+    fun toggleVoiceRecording() {
+        if (voiceRecording) {
+            val evidence = capture?.stopVoice()
+            voiceRecording = false
+            if (evidence == null) conversation.addSystem("FAIL_CLOSED: تعذر حفظ التسجيل الصوتي.") else lastEvidence = evidence
+        } else {
+            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                conversation.addSystem("FAIL_CLOSED: امنح إذن الميكروفون لتسجيل Voice Message.")
+                return
+            }
+            voiceRecording = capture?.startVoice() == true
+            if (!voiceRecording) conversation.addSystem("FAIL_CLOSED: تعذر تشغيل مسجل الصوت.")
+        }
+    }
+
+    fun toggleCamera() {
+        if (cameraActive) { capture?.stopCamera(); cameraActive = false; selectedTool = "الكاميرا — STOPPED"; return }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            cameraPermission.launch(Manifest.permission.CAMERA)
+        } else {
+            cameraActive = capture?.startCamera() == true
+            selectedTool = if (cameraActive) "الكاميرا — ACTIVE • evidence capture" else "الكاميرا — FAIL_CLOSED"
+        }
+    }
+
+    fun toggleScreen() {
+        if (screenActive) { capture?.stopScreen(); screenActive = false; selectedTool = "مشاركة الشاشة — STOPPED"; return }
+        val intent = capture?.screenPermissionIntent()
+        if (intent == null) { selectedTool = "الشاشة — FAIL_CLOSED: MediaProjection غير متاح"; return }
+        screenPermission.launch(intent)
     }
 
     fun send() {
@@ -132,7 +174,9 @@ fun AmarAiAgentWorkspaceScreen() {
                 }
                 if (controlsOpen) {
                     SettingRow("الأدلة", evidenceOpen) { evidenceOpen = it }
-                    SettingRow("المحادثة الصوتية", voiceMode) { voiceMode = it }
+                    SettingRow("المحادثة الصوتية / TTS", voiceMode) { voiceMode = it }
+                    SettingRow("الكاميرا", cameraActive) { toggleCamera() }
+                    SettingRow("مشاركة الشاشة", screenActive) { toggleScreen() }
                 }
             }
         }
@@ -147,7 +191,7 @@ fun AmarAiAgentWorkspaceScreen() {
             }
         }
 
-        if (evidenceOpen) Text("EVIDENCE • مؤكد / محتمل / مجهول • لا ادعاء بقدرة غير منفذة", color = Muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+        if (evidenceOpen) Text("EVIDENCE • capture: ${if (lastEvidence == null) "none" else lastEvidence!!.channel.name} • hash/provenance محفوظ • interpretation remains Agent-gated", color = Muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
         attachment?.let { Text("📎 $it", color = Cyan, modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)) }
 
         if (selectedTool != null) {
@@ -163,14 +207,15 @@ fun AmarAiAgentWorkspaceScreen() {
                     Tool("🖼️", "إرسال صورة", true) { picker.launch("image/*"); selectedTool = "إرسال صورة"; menuOpen = false }
                     Tool("📁", "إرسال ملف", true) { picker.launch("*/*"); selectedTool = "إرسال ملف"; menuOpen = false }
                     Tool("📄", "إرسال مستند", true) { picker.launch("application/pdf"); selectedTool = "إرسال مستند"; menuOpen = false }
-                    Tool("🗣️", "التحدث مع الوكيل", true) { voiceMode = !voiceMode; selectedTool = "التحدث مع الوكيل"; menuOpen = false }
-                    Tool("📷", "الكاميرا", false) { selectedTool = "الكاميرا — FAIL_CLOSED حتى يتصل محرك الكاميرا الفعلي"; menuOpen = false }
-                    Tool("🖥️", "مشاركة الشاشة", false) { selectedTool = "الشاشة — FAIL_CLOSED حتى تتصل جلسة MediaProjection الفعلية"; menuOpen = false }
+                    Tool("🗣️", "التحدث مع الوكيل / TTS", true) { voiceMode = !voiceMode; selectedTool = if (voiceMode) "التحدث مع الوكيل — TTS ACTIVE" else "التحدث مع الوكيل — TTS OFF"; menuOpen = false }
+                    Tool("🎙️", if (voiceRecording) "إيقاف Voice Message" else "تسجيل Voice Message", true) { toggleVoiceRecording(); selectedTool = if (voiceRecording) "Voice Message — RECORDING" else "Voice Message — STOPPED"; menuOpen = false }
+                    Tool("📷", if (cameraActive) "إيقاف الكاميرا" else "مشاركة الكاميرا", true) { toggleCamera(); menuOpen = false }
+                    Tool("🖥️", if (screenActive) "إيقاف مشاركة الشاشة" else "مشاركة الشاشة", true) { toggleScreen(); menuOpen = false }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilledTonalIconButton(onClick = { menuOpen = !menuOpen }, modifier = Modifier.size(48.dp)) { Icon(if (menuOpen) Icons.Default.Close else Icons.Default.Add, "الإضافات") }
-                FilledTonalButton(onClick = { startVoice() }, modifier = Modifier.size(48.dp), contentPadding = PaddingValues(0.dp)) { Text(if (listening) "■" else "🎙️", color = if (listening) Violet else Color.White) }
+                FilledTonalButton(onClick = { toggleVoiceRecording() }, modifier = Modifier.size(48.dp), contentPadding = PaddingValues(0.dp)) { Text(if (voiceRecording) "■" else "🎙️", color = if (voiceRecording) Violet else Color.White) }
                 OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.weight(1f), singleLine = true, enabled = !busy, placeholder = { Text(if (busy) "AMAR يعمل…" else "راسل AMAR AI…") }, shape = RoundedCornerShape(18.dp))
                 FilledIconButton(onClick = ::send, enabled = text.isNotBlank() && !busy, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Send, "إرسال") }
             }
@@ -180,4 +225,4 @@ fun AmarAiAgentWorkspaceScreen() {
 
 @Composable private fun SettingRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(label, color = Color.White); Switch(checked, onChange) } }
 
-@Composable private fun Tool(symbol: String, label: String, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("$symbol  $label"); if (!enabled) Text("  • محجوب", color = Muted) } }
+@Composable private fun Tool(symbol: String, label: String, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("$symbol  $label") } }
