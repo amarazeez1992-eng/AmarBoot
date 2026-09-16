@@ -19,6 +19,29 @@ data class AmarAiGitHubIntent(
         PULL_REQUEST_CREATE,
         PULL_REQUEST_MERGE
     }
+
+    /** Compatibility accessor for the supervisor; no Android/JSON dependency is introduced. */
+    fun optString(key: String): String = when (key) {
+        "operation" -> operation.wireName
+        "owner" -> owner
+        "repo" -> repo
+        "path" -> path.orEmpty()
+        else -> ""
+    }
+
+    private val Operation.wireName: String
+        get() = when (this) {
+            Operation.REPO_INSPECT -> "repo_inspect"
+            Operation.CODE_SEARCH -> "code_search"
+            Operation.FILE_READ -> "file_read"
+            Operation.LICENSE_INSPECT -> "license_inspect"
+            Operation.FILE_CREATE -> "file_create"
+            Operation.FILE_UPDATE -> "file_update"
+            Operation.FILE_DELETE -> "file_delete"
+            Operation.BRANCH_CREATE -> "branch_create"
+            Operation.PULL_REQUEST_CREATE -> "pull_request_create"
+            Operation.PULL_REQUEST_MERGE -> "pull_request_merge"
+        }
 }
 
 /** Parses only explicit GitHub repository requests; it never guesses missing repository values. */
