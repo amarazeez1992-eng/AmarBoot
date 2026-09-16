@@ -31,4 +31,4 @@ Anything lacking real backend/test evidence remains **NOT VERIFIED / FAIL-CLOSED
 ## Stage progression
 Stages are evaluated in order. When a defect is found, execution returns to the earliest affected stage, repairs the root cause, reruns the complete required verification, and only then continues forward.
 
-This rule applies to every branch, module, engine, UI boundary, permission boundary, memory boundary, provider boundary, multimodal capability, build artifact, and release check.
+This rule applies to every branch, module, engine, UI boundary, permission boundary, memory boundary, provider boundary, multimodal capability, build artifact, release check, and integration.
