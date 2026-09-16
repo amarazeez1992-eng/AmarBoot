@@ -51,13 +51,13 @@ object AmarAiActionEngine {
             else -> null
         }
         if (room != null && (q.contains("اذهب") || q.contains("افتح") || q.contains("روح") || q.contains("go") || q.contains("open") || q.contains("اعرض"))) {
-            openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
+            AmarAiAppCommandBus.openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
         }
-        if (q.contains("الوضع الداكن") || q.contains("dark mode")) { setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.DARK); return Result(true,"فعّلت الوضع الداكن.") }
-        if (q.contains("الوضع الفاتح") || q.contains("light mode")) { setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.LIGHT); return Result(true,"فعّلت الوضع الفاتح.") }
-        if (q.contains("تحديث التطبيق") || q.contains("حدّث التطبيق") || q.contains("update app")) { requestUpdate(); return Result(true,"أرسلت طلب التحديث إلى نظام التطبيق.") }
-        if (q.contains("الخلفية") || q.contains("background")) { setBackground("default"); return Result(true,"أرسلت أمر إدارة الخلفية إلى نظام التطبيق.") }
-        if (q.contains("اللون") || q.contains("accent color")) { setAccentColor("default"); return Result(true,"أرسلت أمر إدارة اللون إلى نظام التطبيق.") }
+        if (q.contains("الوضع الداكن") || q.contains("dark mode")) { AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.DARK); return Result(true,"فعّلت الوضع الداكن.") }
+        if (q.contains("الوضع الفاتح") || q.contains("light mode")) { AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.LIGHT); return Result(true,"فعّلت الوضع الفاتح.") }
+        if (q.contains("تحديث التطبيق") || q.contains("حدّث التطبيق") || q.contains("update app")) { AmarAiAppCommandBus.requestUpdate(); return Result(true,"أرسلت طلب التحديث إلى نظام التطبيق.") }
+        if (q.contains("الخلفية") || q.contains("background")) { AmarAiAppCommandBus.setBackground("default"); return Result(true,"أرسلت أمر إدارة الخلفية إلى نظام التطبيق.") }
+        if (q.contains("اللون") || q.contains("accent color")) { AmarAiAppCommandBus.setAccentColor("default"); return Result(true,"أرسلت أمر إدارة اللون إلى نظام التطبيق.") }
         if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) return Result(true, AmarAiEngineBinding.market())
         if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) return Result(true, AmarAiEngineBinding.riskGate())
         if (q.contains("راجع الاستراتيجية") || q.contains("validate strategy") || q.contains("تحقق من الاستراتيجية")) {
@@ -67,7 +67,7 @@ object AmarAiActionEngine {
         if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره.")
         if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
             val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
-            setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
+            AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
         }
         return Result(false, "")
     }
