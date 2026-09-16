@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -39,10 +38,7 @@ fun AmarDecisionScreen() {
     var answer by remember { mutableStateOf("لا يوجد قرار مؤكد بعد. اطلب من AMAR AI تحليل الحالة بالأدلة.") }
     var busy by remember { mutableStateOf(false) }
 
-    Column(
-        Modifier.fillMaxSize().background(Color(0xFF050608)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
+    Column(Modifier.fillMaxSize().background(Color(0xFF050608)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
                 Text("DECISION ROOM", color = Color(0xFFFFE8A0), style = MaterialTheme.typography.headlineMedium)
@@ -50,12 +46,7 @@ fun AmarDecisionScreen() {
             }
             Text("● AGENT", color = Color(0xFF69F6C0), style = MaterialTheme.typography.labelMedium)
         }
-
-        Card(
-            Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1118))
-        ) {
+        Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1118))) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 Text("AMAR AI", color = Color(0xFFFFE7A1), style = MaterialTheme.typography.titleLarge)
                 Text("غرفة القرار لا تصدر تنفيذًا مباشرًا. تجمع الطلب، الأدلة، عدم اليقين والبدائل عبر الوكيل المركزي.", color = Color(0xFFD8E2E7))
@@ -65,49 +56,18 @@ fun AmarDecisionScreen() {
                 }
             }
         }
-
-        TextField(
-            value = request,
-            onValueChange = { request = it },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !busy,
-            placeholder = { Text("اكتب سؤال القرار…") },
-            singleLine = false
-        )
-        Button(
-            onClick = {
-                val prompt = request.trim()
-                if (prompt.isBlank() || busy) return@Button
-                busy = true
-                scope.launch {
-                    runCatching { agent.ask(prompt) }
-                        .onSuccess { answer = it.answer }
-                        .onFailure { answer = "FAIL_CLOSED: ${it.message ?: "تعذر تشغيل الوكيل"}" }
-                    busy = false
-                }
-            },
-            enabled = request.isNotBlank() && !busy,
-            modifier = Modifier.fillMaxWidth()
-        ) { Text(if (busy) "AMAR AI يعمل…" else "حلّل عبر AMAR AI") }
-
+        TextField(value = request, onValueChange = { request = it }, modifier = Modifier.fillMaxWidth(), enabled = !busy, placeholder = { Text("اكتب سؤال القرار…") }, singleLine = false)
+        Button(onClick = {
+            val prompt = request.trim(); if (prompt.isBlank() || busy) return@Button
+            busy = true
+            scope.launch {
+                runCatching { agent.ask(prompt) }.onSuccess { answer = it.answer }.onFailure { answer = "FAIL_CLOSED: ${it.message ?: "تعذر تشغيل الوكيل"}" }
+                busy = false
+            }
+        }, enabled = request.isNotBlank() && !busy, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "AMAR AI يعمل…" else "حلّل عبر AMAR AI") }
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            item {
-                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F15))) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("نتيجة الوكيل", color = Color(0xFF7EEAFF), style = MaterialTheme.typography.titleMedium)
-                        Text(answer, color = Color.White)
-                    }
-                }
-            }
-            item {
-                Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F15))) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("حوكمة القرار", color = Color(0xFFFFE7A1), style = MaterialTheme.typography.titleMedium)
-                        Text("مؤكد • محتمل • مجهول", color = Color(0xFFD8E2E7))
-                        Text("لا تنفيذ حساس دون الصلاحية والتأكيد المطلوبين.", color = Color(0xFF8FA4B2))
-                    }
-                }
-            }
+            item { Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F15))) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { Text("نتيجة الوكيل", color = Color(0xFF7EEAFF), style = MaterialTheme.typography.titleMedium); Text(answer, color = Color.White) } } }
+            item { Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0F15))) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { Text("حوكمة القرار", color = Color(0xFFFFE7A1), style = MaterialTheme.typography.titleMedium); Text("مؤكد • محتمل • مجهول", color = Color(0xFFD8E2E7)); Text("لا تنفيذ حساس دون الصلاحية والتأكيد المطلوبين.", color = Color(0xFF8FA4B2)) } } }
         }
     }
 }
