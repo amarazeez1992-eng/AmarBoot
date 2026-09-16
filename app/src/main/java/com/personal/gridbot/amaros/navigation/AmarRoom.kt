@@ -6,6 +6,7 @@ enum class AmarRoom(
     val emoji: String
 ) {
     COMMAND_CENTER("مركز القيادة", "🏠"),
+    AMAR_AGENT("وكيل عمار الذكي", "🧠"),
     MARKET("غرفة السوق", "📈"),
     CHART("غرفة الرسم البياني", "📊"),
     BOT_LAB("مختبر البوتات", "🤖"),
