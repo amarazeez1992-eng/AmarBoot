@@ -18,6 +18,10 @@ class AmarAiGitHubToolGateway(private val context: Context) {
         else -> AmarGitHubWorkspaceEngine.GitHubResult(false, "github_inspect", 400, "عملية GitHub للقراءة غير معروفة")
     }
 
+    suspend fun inspect(intent: AmarAiGitHubIntent): AmarGitHubWorkspaceEngine.GitHubResult {
+        return inspect(intent.toJson())
+    }
+
     suspend fun proposeWrite(args: JSONObject): AmarGitHubWorkspaceEngine.GitHubResult {
         val subject = "GITHUB|${args.optString("operation")}|${args.optString("owner")}/${args.optString("repo")}|${args.optString("path")}|${args.optString("branch")}|${args.optString("message")}".trimEnd('|')
         val proposal = approvals.propose(subject)
@@ -28,6 +32,10 @@ class AmarAiGitHubToolGateway(private val context: Context) {
             "تحتاج هذه العملية موافقة المستخدم قبل تنفيذها",
             JSONObject().put("proposalId", proposal.id).put("status", proposal.status.name).put("subject", proposal.subject).toString()
         )
+    }
+
+    suspend fun proposeWrite(intent: AmarAiGitHubIntent): AmarGitHubWorkspaceEngine.GitHubResult {
+        return proposeWrite(intent.toJson())
     }
 
     suspend fun executeApproved(proposalId: String, args: JSONObject): AmarGitHubWorkspaceEngine.GitHubResult {
@@ -42,5 +50,24 @@ class AmarAiGitHubToolGateway(private val context: Context) {
             "pull_request_merge" -> github.mergePullRequest(args.getString("owner"), args.getString("repo"), args.getInt("number"), args.optString("method", "squash"))
             else -> AmarGitHubWorkspaceEngine.GitHubResult(false, "github_write", 400, "عملية الكتابة غير معروفة")
         }
+    }
+
+    private fun AmarAiGitHubIntent.toJson(): JSONObject = JSONObject()
+        .put("operation", operation.wireName())
+        .put("owner", owner)
+        .put("repo", repo)
+        .apply { path?.let { put("path", it) } }
+
+    private fun AmarAiGitHubIntent.Operation.wireName(): String = when (this) {
+        AmarAiGitHubIntent.Operation.REPO_INSPECT -> "repo_inspect"
+        AmarAiGitHubIntent.Operation.CODE_SEARCH -> "code_search"
+        AmarAiGitHubIntent.Operation.FILE_READ -> "file_read"
+        AmarAiGitHubIntent.Operation.LICENSE_INSPECT -> "license_inspect"
+        AmarAiGitHubIntent.Operation.FILE_CREATE -> "file_create"
+        AmarAiGitHubIntent.Operation.FILE_UPDATE -> "file_update"
+        AmarAiGitHubIntent.Operation.FILE_DELETE -> "file_delete"
+        AmarAiGitHubIntent.Operation.BRANCH_CREATE -> "branch_create"
+        AmarAiGitHubIntent.Operation.PULL_REQUEST_CREATE -> "pull_request_create"
+        AmarAiGitHubIntent.Operation.PULL_REQUEST_MERGE -> "pull_request_merge"
     }
 }
