@@ -37,7 +37,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -189,4 +188,4 @@ fun AmarAiAgentWorkspaceScreen() {
 
 @Composable private fun SettingRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(label, color = Color.White); Switch(checked, onChange) } }
 
-@Composable private fun Tool(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled || true, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Icon(icon, null); Spacer(Modifier.width(8.dp)); Text(label); if (!enabled) Text("  • محجوب", color = Muted) } }
+@Composable private fun Tool(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Icon(icon, null); Spacer(Modifier.width(8.dp)); Text(label); if (!enabled) Text("  • محجوب", color = Muted) } }
