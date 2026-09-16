@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.RenderProcessGoneDetail
@@ -33,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.personal.gridbot.amaros.ai.AmarAiActionEngine
+import com.personal.gridbot.amaros.ai.AmarAiAgentEngine
 import com.personal.gridbot.amaros.ai.AmarAiAppCommandBus
 import com.personal.gridbot.amaros.ai.AmarAiSelfImprovementScheduler
 import com.personal.gridbot.amaros.navigation.AmarRoom
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private var startupFinished = false
     private var backgroundSystemsStarted = false
     private var webViewRecoveryAttempted = false
+    private val agentEngine = AmarAiAgentEngine()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +93,31 @@ class MainActivity : ComponentActivity() {
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean { Log.e("AMAR_STARTUP", "WebView renderer terminated; crashed=${detail?.didCrash()}"); runOnUiThread { recoverWebViewAfterRendererGone(view) }; return true }
         }
         settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT; settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
+        addJavascriptInterface(AmarAndroidBridge(), "Android")
         loadUrl("file:///android_asset/amar_ai_workspace.html")
+    }
+
+    private inner class AmarAndroidBridge {
+        @JavascriptInterface
+        fun ask(text: String?) {
+            val request = text?.trim().orEmpty()
+            if (request.isEmpty()) return
+            lifecycleScope.launch {
+                val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
+                if (local?.handled == true) {
+                    sendAgentResult(local.response, "تم تنفيذ أمر الواجهة")
+                    return@launch
+                }
+                val result = runCatching { agentEngine.ask("", "", request) }
+                result.onSuccess { sendAgentResult(it.answer, "Agent: جاهز") }
+                    .onFailure { error -> sendAgentResult("تعذر تمرير الطلب إلى AMAR AI Agent: ${error.message ?: error.javaClass.simpleName}", "Agent: خطأ") }
+            }
+        }
+    }
+
+    private fun sendAgentResult(answer: String, status: String) {
+        val script = "window.receiveAgent && window.receiveAgent(${org.json.JSONObject.quote(answer)}, ${org.json.JSONObject.quote(status)})"
+        runOnUiThread { home?.evaluateJavascript(script, null) }
     }
 
     private fun recoverWebViewAfterRendererGone(deadView: WebView?) {
