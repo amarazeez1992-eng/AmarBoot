@@ -5,7 +5,7 @@ package com.personal.gridbot.amaros.agent
  * The agent can discover improvements but cannot silently replace its own policy.
  */
 class AmarSelfImprovementEngine {
-    fun propose(change: AmarImprovementProposal): AmarImprovementState =
+    fun propose(_change: AmarImprovementProposal): AmarImprovementState =
         AmarImprovementState.PROPOSED
 
     fun evaluate(baseline: AmarQualitySnapshot, candidate: AmarQualitySnapshot): AmarImprovementState {
