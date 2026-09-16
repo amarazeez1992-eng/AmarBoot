@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.ai.AmarAiAgentEngine
 import kotlinx.coroutines.launch
 
-/** Decision room: presentation only; every analytical request is delegated to the central AMAR AI agent. */
 @Composable
 fun AmarDecisionScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -40,7 +40,7 @@ fun AmarDecisionScreen() {
 
     Column(Modifier.fillMaxSize().background(Color(0xFF050608)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.width(250.dp)) {
                 Text("DECISION ROOM", color = Color(0xFFFFE8A0), style = MaterialTheme.typography.headlineMedium)
                 Text("AMAR AI • EVIDENCE-GOVERNED DECISION", color = Color(0xFF8FA4B2), style = MaterialTheme.typography.labelSmall)
             }
@@ -51,8 +51,8 @@ fun AmarDecisionScreen() {
                 Text("AMAR AI", color = Color(0xFFFFE7A1), style = MaterialTheme.typography.titleLarge)
                 Text("غرفة القرار لا تصدر تنفيذًا مباشرًا. تجمع الطلب، الأدلة، عدم اليقين والبدائل عبر الوكيل المركزي.", color = Color(0xFFD8E2E7))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    OutlinedButton(onClick = { request = "حلل الحالة الحالية وحدد البدائل والافتراضات والأدلة والتناقضات وعدم اليقين." }, Modifier.weight(1f)) { Text("تحليل") }
-                    OutlinedButton(onClick = { request = "اختبر القرار المقترح وابحث عن الأدلة الناقصة والمخاطر قبل اعتماده." }, Modifier.weight(1f)) { Text("اختبار") }
+                    OutlinedButton(onClick = { request = "حلل الحالة الحالية وحدد البدائل والافتراضات والأدلة والتناقضات وعدم اليقين." }) { Text("تحليل") }
+                    OutlinedButton(onClick = { request = "اختبر القرار المقترح وابحث عن الأدلة الناقصة والمخاطر قبل اعتماده." }) { Text("اختبار") }
                 }
             }
         }
