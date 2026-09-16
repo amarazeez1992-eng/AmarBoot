@@ -110,6 +110,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
+      # Current-HEAD closure rerun: no requirement weakening or capability removal.
       - name: Upload closure evidence
         if: always()
         uses: actions/upload-artifact@v6
