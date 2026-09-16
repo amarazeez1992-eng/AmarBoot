@@ -21,5 +21,7 @@ enum class AmarRoom(
     LIBRARY("مكتبة عمار", "🧩"),
     ACCOUNTS("حسابات التداول", "👤"),
     NEWS_SESSIONS("غرفة الأخبار والجلسات", "🛰️"),
-    SETTINGS("الإعدادات", "⚙️")
+    SETTINGS("الإعدادات", "⚙️"),
+    FUTURE_LEFT("مساحة قابلة للتخصيص 1", "＋"),
+    FUTURE_RIGHT("مساحة قابلة للتخصيص 2", "＋")
 }
