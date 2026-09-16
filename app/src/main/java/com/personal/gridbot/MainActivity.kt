@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.RenderProcessGoneDetail
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.personal.gridbot.amaros.ai.AmarAiActionEngine
 import com.personal.gridbot.amaros.ai.AmarAiAppCommandBus
 import com.personal.gridbot.amaros.ai.AmarAiSelfImprovementScheduler
 import com.personal.gridbot.amaros.navigation.AmarRoom
@@ -46,6 +48,7 @@ import com.personal.gridbot.ui.theme.AmarDay
 import com.personal.gridbot.ui.theme.AmarPlatinum
 import com.personal.gridbot.ui.theme.AmarTheme
 import com.personal.gridbot.ui.theme.AmarThemeMode
+import org.json.JSONObject
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -73,6 +76,19 @@ class MainActivity : ComponentActivity() {
             enterImmersiveReferenceMode()
         }.onFailure { error -> showStartupError("تهيئة التطبيق", error) }
         root.post { initializeHomeSafely() }
+    }
+
+    private inner class AmarWebBridge {
+        @JavascriptInterface
+        fun ask(text: String) {
+            val result = runCatching { AmarAiActionEngine.route(text) }.getOrElse {
+                AmarAiActionEngine.Result(true, "تعذر تمرير الطلب إلى الوكيل: ${it.javaClass.simpleName}.")
+            }
+            val state = if (result.handled) "تمت المعالجة" else "غير متاح"
+            runOnUiThread {
+                home?.evaluateJavascript("receiveAgent(${JSONObject.quote(result.response)},${JSONObject.quote(state)})", null)
+            }
+        }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -119,6 +135,7 @@ class MainActivity : ComponentActivity() {
         settings.allowContentAccess = false
         settings.builtInZoomControls = false
         settings.displayZoomControls = false
+        addJavascriptInterface(AmarWebBridge(), "Android")
         loadUrl("file:///android_asset/amar_ai_workspace.html")
     }
 
@@ -158,9 +175,7 @@ class MainActivity : ComponentActivity() {
     private fun startBackgroundSystemsOnce() {
         if (backgroundSystemsStarted) return
         backgroundSystemsStarted = true
-        lifecycleScope.launch {
-            runCatching { AmarAiSelfImprovementScheduler.start(this@MainActivity) }
-        }
+        lifecycleScope.launch { runCatching { AmarAiSelfImprovementScheduler.start(this@MainActivity) } }
         startAiCommandBridge()
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { if (showingRoom) showHome() else finish() }
@@ -255,11 +270,7 @@ class MainActivity : ComponentActivity() {
             val recovery = ComposeView(this).apply {
                 setContent {
                     Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) {
-                        Column(
-                            Modifier.fillMaxSize().padding(24.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                        Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("AMAR AI", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black)
                             Spacer(Modifier.height(10.dp))
                             Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -277,9 +288,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        home?.let { web ->
-            runCatching { root.removeView(web); web.stopLoading(); web.removeAllViews(); web.destroy() }
-        }
+        home?.let { web -> runCatching { root.removeView(web); web.stopLoading(); web.removeAllViews(); web.destroy() } }
         home = null
         super.onDestroy()
     }
