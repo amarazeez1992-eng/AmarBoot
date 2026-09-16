@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -24,7 +23,6 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -59,26 +57,22 @@ fun AmarAiExperienceScreenV2() {
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
 
     DisposableEffect(context) {
-        val engine = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) engineSetLanguage(engine)
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) engine?.language = Locale("ar", "IQ")
         }
         tts = engine
-        onDispose { engine.stop(); engine.shutdown(); tts = null }
+        onDispose { engine?.stop(); engine?.shutdown(); tts = null }
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (!granted) conversation.addSystem("FAIL_CLOSED: لم يتم منح إذن الميكروفون؛ لم يبدأ تسجيل أو إرسال صوت.")
     }
-
     val speechLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         voiceListening = false
         val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        if (!spoken.isNullOrBlank()) {
-            request = spoken
-            if (voiceConversation) conversation.addSystem("تم تحويل الصوت إلى نص محليًا. الإرسال للوكيل يبقى عبر نفس سلطة Agent.")
-        }
+        if (!spoken.isNullOrBlank()) request = spoken
     }
-
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         attachment = uri?.lastPathSegment
         if (uri != null) conversation.addSystem("تم إرفاق مدخل مستخدم: ${uri.lastPathSegment}. التحليل لا يصبح مؤكدًا إلا بعد تشغيل المحرك المناسب فعليًا.")
@@ -86,12 +80,10 @@ fun AmarAiExperienceScreenV2() {
 
     fun startVoice() {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            return
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO); return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            conversation.addSystem("FAIL_CLOSED: خدمة التعرف الصوتي غير متاحة على الجهاز.")
-            return
+            conversation.addSystem("FAIL_CLOSED: خدمة التعرف الصوتي غير متاحة على الجهاز."); return
         }
         voiceListening = true
         speechLauncher.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -104,9 +96,7 @@ fun AmarAiExperienceScreenV2() {
     fun send() {
         val prompt = request.trim()
         if (prompt.isBlank() || busy) return
-        conversation.addUser(prompt)
-        request = ""
-        busy = true
+        conversation.addUser(prompt); request = ""; busy = true
         scope.launch {
             runCatching { agent.ask(prompt) }
                 .onSuccess { result ->
@@ -145,15 +135,13 @@ fun AmarAiExperienceScreenV2() {
                     }
                     IconButton(onClick = { conversation.clear(); attachment = null }) { Icon(Icons.Default.Delete, "جلسة جديدة", tint = AgentMuted) }
                 }
-                if (showWorkspaceControls) {
-                    Card(colors = CardDefaults.cardColors(containerColor = AgentPanel2)) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Text("لوحة التحكم", color = AgentAccent, style = MaterialTheme.typography.titleSmall)
-                            SettingSwitch("إظهار الأدلة", showEvidence) { showEvidence = it }
-                            SettingSwitch("إضافة الأدلة تلقائيًا", autoEvidence) { autoEvidence = it }
-                            SettingSwitch("رسائل مختصرة", compactMessages) { compactMessages = it }
-                            SettingSwitch("المحادثة الصوتية", voiceConversation) { voiceConversation = it }
-                        }
+                if (showWorkspaceControls) Card(colors = CardDefaults.cardColors(containerColor = AgentPanel2)) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("لوحة التحكم", color = AgentAccent, style = MaterialTheme.typography.titleSmall)
+                        SettingSwitch("إظهار الأدلة", showEvidence) { showEvidence = it }
+                        SettingSwitch("إضافة الأدلة تلقائيًا", autoEvidence) { autoEvidence = it }
+                        SettingSwitch("رسائل مختصرة", compactMessages) { compactMessages = it }
+                        SettingSwitch("المحادثة الصوتية", voiceConversation) { voiceConversation = it }
                     }
                 }
             }
@@ -161,11 +149,7 @@ fun AmarAiExperienceScreenV2() {
 
         LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(if (compactMessages) 4.dp else 8.dp)) {
             items(conversation.messages) { message ->
-                val accent = when (message.role) {
-                    AmarAiConversationState.Role.USER -> AgentAccent
-                    AmarAiConversationState.Role.AI -> Color.White
-                    AmarAiConversationState.Role.SYSTEM -> AgentMuted
-                }
+                val accent = when (message.role) { AmarAiConversationState.Role.USER -> AgentAccent; AmarAiConversationState.Role.AI -> Color.White; AmarAiConversationState.Role.SYSTEM -> AgentMuted }
                 Surface(color = AgentPanel, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(if (compactMessages) 8.dp else 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(message.role.name, color = accent, style = MaterialTheme.typography.labelSmall)
@@ -180,25 +164,22 @@ fun AmarAiExperienceScreenV2() {
         }
         attachment?.let { Text("📎 $it", color = AgentAccent, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) }
 
-        // Compact chat composer: microphone + message + plus menu.
         Surface(color = AgentPanel, tonalElevation = 6.dp, modifier = Modifier.fillMaxWidth()) {
             Column {
-                if (toolsOpen) {
-                    Card(colors = CardDefaults.cardColors(containerColor = AgentPanel2), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
-                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("إضافات الوكيل", color = AgentAccent, style = MaterialTheme.typography.titleMedium)
-                                IconButton(onClick = { toolsOpen = false }) { Icon(Icons.Default.Close, "إغلاق", tint = AgentMuted) }
-                            }
-                            ToolRow("🖼", "إرسال صورة") { picker.launch("image/*"); toolsOpen = false }
-                            ToolRow("📁", "إرسال ملف") { picker.launch("*/*"); toolsOpen = false }
-                            ToolRow("📄", "إرسال مستند") { picker.launch("application/pdf"); toolsOpen = false }
-                            ToolRow("🎙", "بصمة صوتية / فويس") { startVoice(); toolsOpen = false }
-                            ToolRow("🗣", if (voiceConversation) "التحدث مع الوكيل • ON" else "التحدث مع الوكيل") { voiceConversation = !voiceConversation; toolsOpen = false }
-                            ToolRow("📷", "مشاركة الكاميرا") { conversation.addSystem("FAIL_CLOSED: مشاركة الكاميرا تحتاج قناة الكاميرا الفعلية قبل تفعيل التحليل."); toolsOpen = false }
-                            ToolRow("▣", "مشاركة الشاشة") { conversation.addSystem("FAIL_CLOSED: مشاركة الشاشة تحتاج جلسة MediaProjection الفعلية قبل تفعيل الفهم."); toolsOpen = false }
-                            ToolRow("🔊", "الصوت") { voiceConversation = true; toolsOpen = false }
+                if (toolsOpen) Card(colors = CardDefaults.cardColors(containerColor = AgentPanel2), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp)) {
+                    Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text("إضافات الوكيل", color = AgentAccent, style = MaterialTheme.typography.titleMedium)
+                            IconButton(onClick = { toolsOpen = false }) { Icon(Icons.Default.Close, "إغلاق", tint = AgentMuted) }
                         }
+                        ToolRow("🖼", "إرسال صورة") { picker.launch("image/*"); toolsOpen = false }
+                        ToolRow("📁", "إرسال ملف") { picker.launch("*/*"); toolsOpen = false }
+                        ToolRow("📄", "إرسال مستند") { picker.launch("application/pdf"); toolsOpen = false }
+                        ToolRow("🎙", "بصمة صوتية / فويس") { startVoice(); toolsOpen = false }
+                        ToolRow("🗣", if (voiceConversation) "التحدث مع الوكيل • ON" else "التحدث مع الوكيل") { voiceConversation = !voiceConversation; toolsOpen = false }
+                        ToolRow("📷", "مشاركة الكاميرا") { conversation.addSystem("FAIL_CLOSED: مشاركة الكاميرا تحتاج قناة الكاميرا الفعلية قبل تفعيل التحليل."); toolsOpen = false }
+                        ToolRow("▣", "مشاركة الشاشة") { conversation.addSystem("FAIL_CLOSED: مشاركة الشاشة تحتاج جلسة MediaProjection الفعلية قبل تفعيل الفهم."); toolsOpen = false }
+                        ToolRow("🔊", "الصوت") { voiceConversation = true; toolsOpen = false }
                     }
                 }
                 Row(Modifier.fillMaxWidth().padding(7.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -212,16 +193,10 @@ fun AmarAiExperienceScreenV2() {
     }
 }
 
-@Composable
-private fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+@Composable private fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(label); Switch(checked = checked, onCheckedChange = onCheckedChange) }
 }
 
-@Composable
-private fun ToolRow(symbol: String, label: String, onClick: () -> Unit) {
+@Composable private fun ToolRow(symbol: String, label: String, onClick: () -> Unit) {
     OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("$symbol  $label") }
-}
-
-private fun engineSetLanguage(engine: TextToSpeech) {
-    engine.language = Locale("ar", "IQ")
 }
