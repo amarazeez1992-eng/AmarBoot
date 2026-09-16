@@ -23,16 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -160,7 +152,7 @@ fun AmarAiAgentWorkspaceScreen() {
 
         if (selectedTool != null) {
             Card(colors = CardDefaults.cardColors(containerColor = Panel2), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)) {
-                Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Text(selectedTool!!, color = Gold, modifier = Modifier.weight(1f)); IconButton(onClick = { selectedTool = null }) { Icon(Icons.Default.Close, "إغلاق", tint = Muted) } }
+                Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Text(selectedTool!!, color = Gold, modifier = Modifier.weight(1f)); TextButton(onClick = { selectedTool = null }) { Text("إغلاق") } }
             }
         }
 
@@ -168,17 +160,17 @@ fun AmarAiAgentWorkspaceScreen() {
             if (menuOpen) {
                 Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("إضافات الوكيل", color = Gold, fontWeight = FontWeight.Bold)
-                    Tool("إرسال صورة", Icons.Default.CameraAlt, true) { picker.launch("image/*"); selectedTool = "إرسال صورة"; menuOpen = false }
-                    Tool("إرسال ملف", Icons.Default.Folder, true) { picker.launch("*/*"); selectedTool = "إرسال ملف"; menuOpen = false }
-                    Tool("إرسال مستند", Icons.Default.Description, true) { picker.launch("application/pdf"); selectedTool = "إرسال مستند"; menuOpen = false }
-                    Tool("التحدث مع الوكيل", Icons.Default.VolumeUp, true) { voiceMode = !voiceMode; selectedTool = "التحدث مع الوكيل"; menuOpen = false }
-                    Tool("الكاميرا", Icons.Default.CameraAlt, false) { selectedTool = "الكاميرا — FAIL_CLOSED حتى يتصل محرك الكاميرا الفعلي"; menuOpen = false }
-                    Tool("مشاركة الشاشة", Icons.Default.Monitor, false) { selectedTool = "الشاشة — FAIL_CLOSED حتى تتصل جلسة MediaProjection الفعلية"; menuOpen = false }
+                    Tool("🖼️", "إرسال صورة", true) { picker.launch("image/*"); selectedTool = "إرسال صورة"; menuOpen = false }
+                    Tool("📁", "إرسال ملف", true) { picker.launch("*/*"); selectedTool = "إرسال ملف"; menuOpen = false }
+                    Tool("📄", "إرسال مستند", true) { picker.launch("application/pdf"); selectedTool = "إرسال مستند"; menuOpen = false }
+                    Tool("🗣️", "التحدث مع الوكيل", true) { voiceMode = !voiceMode; selectedTool = "التحدث مع الوكيل"; menuOpen = false }
+                    Tool("📷", "الكاميرا", false) { selectedTool = "الكاميرا — FAIL_CLOSED حتى يتصل محرك الكاميرا الفعلي"; menuOpen = false }
+                    Tool("🖥️", "مشاركة الشاشة", false) { selectedTool = "الشاشة — FAIL_CLOSED حتى تتصل جلسة MediaProjection الفعلية"; menuOpen = false }
                 }
             }
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilledTonalIconButton(onClick = { menuOpen = !menuOpen }, modifier = Modifier.size(48.dp)) { Icon(if (menuOpen) Icons.Default.Close else Icons.Default.Add, "الإضافات") }
-                FilledTonalIconButton(onClick = { startVoice() }, modifier = Modifier.size(48.dp)) { Icon(if (listening) Icons.Default.Stop else Icons.Default.Mic, "فويس", tint = if (listening) Violet else Color.White) }
+                FilledTonalButton(onClick = { startVoice() }, modifier = Modifier.size(48.dp), contentPadding = PaddingValues(0.dp)) { Text(if (listening) "■" else "🎙️", color = if (listening) Violet else Color.White) }
                 OutlinedTextField(value = text, onValueChange = { text = it }, modifier = Modifier.weight(1f), singleLine = true, enabled = !busy, placeholder = { Text(if (busy) "AMAR يعمل…" else "راسل AMAR AI…") }, shape = RoundedCornerShape(18.dp))
                 FilledIconButton(onClick = ::send, enabled = text.isNotBlank() && !busy, modifier = Modifier.size(48.dp)) { Icon(Icons.Default.Send, "إرسال") }
             }
@@ -188,4 +180,4 @@ fun AmarAiAgentWorkspaceScreen() {
 
 @Composable private fun SettingRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(label, color = Color.White); Switch(checked, onChange) } }
 
-@Composable private fun Tool(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Icon(icon, null); Spacer(Modifier.width(8.dp)); Text(label); if (!enabled) Text("  • محجوب", color = Muted) } }
+@Composable private fun Tool(symbol: String, label: String, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("$symbol  $label"); if (!enabled) Text("  • محجوب", color = Muted) } }
