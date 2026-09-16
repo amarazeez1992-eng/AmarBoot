@@ -99,6 +99,12 @@ class MainActivity : ComponentActivity() {
 
     private inner class AmarAndroidBridge {
         @JavascriptInterface
+        fun openRoom(roomName: String?) {
+            val room = runCatching { AmarRoom.valueOf(roomName?.trim().orEmpty()) }.getOrNull() ?: return
+            runOnUiThread { showRoom(room) }
+        }
+
+        @JavascriptInterface
         fun ask(text: String?) {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
