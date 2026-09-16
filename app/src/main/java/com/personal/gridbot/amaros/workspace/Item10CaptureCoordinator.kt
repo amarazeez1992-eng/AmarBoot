@@ -1,15 +1,14 @@
 package com.personal.gridbot.amaros.workspace
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.util.Base64
+import android.os.Handler
+import android.os.Looper
 import java.security.MessageDigest
 
 /**
- * Single lifecycle coordinator for the three live input transports:
- * voice, camera, and screen. It only produces evidence metadata; interpretation
- * remains an Agent capability and is never fabricated here.
+ * Single lifecycle coordinator for voice, camera and screen evidence transports.
+ * Capture is explicit and session-scoped; interpretation and authority stay in AMAR Agent.
  */
 class Item10CaptureCoordinator(
     private val activity: Activity,
@@ -27,9 +26,10 @@ class Item10CaptureCoordinator(
 
     enum class Channel { VOICE, CAMERA, SCREEN }
 
+    private val main = Handler(Looper.getMainLooper())
     private val voice = Item10VoiceRecorder(activity)
     private val camera = Item10NativeCameraTransport(activity, onFrame = { frame ->
-        onEvidence(Evidence(Channel.CAMERA, frame.timestampMs, frame.jpegBytes.size, sha256(frame.jpegBytes), frame.width, frame.height))
+        publish(Evidence(Channel.CAMERA, frame.timestampMs, frame.jpegBytes.size, sha256(frame.jpegBytes), frame.width, frame.height))
     })
     private val screen = Item10NativeMediaTransport(
         activity = activity,
@@ -37,32 +37,26 @@ class Item10CaptureCoordinator(
         height = activity.resources.displayMetrics.heightPixels,
         densityDpi = activity.resources.displayMetrics.densityDpi,
         onFrame = { frame ->
-            onEvidence(Evidence(Channel.SCREEN, frame.timestampMs, frame.pngBytes.size, sha256(frame.pngBytes), frame.width, frame.height))
+            publish(Evidence(Channel.SCREEN, frame.timestampMs, frame.pngBytes.size, sha256(frame.pngBytes), frame.width, frame.height))
         }
     )
 
+    private fun publish(evidence: Evidence) { main.post { onEvidence(evidence) } }
     fun startVoice(): Boolean = voice.start()
-
     fun stopVoice(): Evidence? = voice.stop()?.let {
-        Evidence(Channel.VOICE, it.startedAtMs, it.file.length().toInt(), sha256(it.file.readBytes()), uriOrPath = it.file.absolutePath)
+        val bytes = it.file.readBytes()
+        Evidence(Channel.VOICE, it.startedAtMs, bytes.size, sha256(bytes), uriOrPath = it.file.absolutePath)
     }
-
     fun cancelVoice() = voice.cancel()
-
+    fun isVoiceActive(): Boolean = voice.isActive()
     fun startCamera(): Boolean = camera.start()
     fun stopCamera() = camera.stop()
     fun isCameraActive(): Boolean = camera.isActive()
-
     fun screenPermissionIntent(): Intent? = screen.permissionIntent()
     fun startScreen(resultCode: Int, data: Intent?): Boolean = screen.start(resultCode, data)
     fun stopScreen() = screen.stop()
     fun isScreenActive(): Boolean = screen.isActive()
-
-    fun stopAll() {
-        voice.cancel()
-        camera.stop()
-        screen.stop()
-    }
+    fun stopAll() { voice.cancel(); camera.stop(); screen.stop() }
 
     companion object {
         private fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
