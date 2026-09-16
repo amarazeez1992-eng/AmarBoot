@@ -1,7 +1,7 @@
 # AMAR AI Agent — Architecture Map
 
 ## Mission
-AMAR AI is a proprietary trading research and strategy agent. Its core does not depend on Gemini or ChatGPT.
+AMAR AI is a proprietary trading research and strategy agent. Its core is provider-neutral and currently uses the verified local reasoning fallback.
 
 ## Layers
 
@@ -51,14 +51,13 @@ AMAR AI is a proprietary trading research and strategy agent. Its core does not 
 ```
 
 ## Core principles
-1. No Gemini dependency in the core.
-2. No ChatGPT dependency in the core.
-3. API keys are never required for the core agent.
-4. Research and analysis are read-only initially.
-5. Strategy generation produces drafts, never automatic live trades.
-6. Every external source has provenance and license metadata.
-7. Broker/MT5 execution remains disabled until a separate authorization gate is deliberately implemented.
-8. A reasoning provider is replaceable: local model first, optional external adapters later.
+1. No vendor-specific external AI dependency in the core.
+2. No API key is required for the core agent.
+3. Research and analysis are read-only initially.
+4. Strategy generation produces drafts, never automatic live trades.
+5. Every external source has provenance and license metadata.
+6. Broker/MT5 execution remains disabled until a separate authorization gate is deliberately implemented.
+7. Reasoning is replaceable: the local provider is the current fail-closed implementation; future providers must be explicitly integrated and verified.
 
 ## Planned modules
 - `agent/` — orchestration and provider-neutral contracts
