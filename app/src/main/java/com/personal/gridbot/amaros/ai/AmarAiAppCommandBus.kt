@@ -40,13 +40,12 @@ object AmarAiActionEngine {
     private val numberPattern = Regex("[-+]?\\d+(?:\\.\\d+)?")
     private val botPattern = Regex("(?:البوت|bot)\\s*(\\d+)", RegexOption.IGNORE_CASE)
     private val lotPattern = Regex("(?:لوت|lot)\\s*(\\d+(?:\\.\\d+)?)", RegexOption.IGNORE_CASE)
+    private val symbolPattern = Regex("\\b[A-Za-z]{3,12}\\b")
 
     fun route(text: String): Result {
         val q = text.trim().lowercase()
         if (q.isBlank()) return Result(false, "")
 
-        // Trading commands are parsed before generic room navigation so a command such as
-        // "شغل الشبكة" cannot be swallowed by a broad bot/room match.
         parseTradingCommand(q)?.let { return it }
 
         val room = when {
@@ -105,7 +104,12 @@ object AmarAiActionEngine {
     }
 
     private fun parseTradingCommand(q: String): Result? {
-        // Explicit bot lot change: require both bot number and lot value.
+        // Incomplete lot requests are handled before the complete bot-lot grammar.
+        // This prevents a missing value from being interpreted as a bot command.
+        if ((q.contains("مستوى اللوت") || q.contains("قيمة اللوت")) && lotPattern.find(q) == null) {
+            return Result(true, "أعطني القيمة المطلوبة للوت، ولا يتم تخمينها.")
+        }
+
         if ((q.contains("ارفع") || q.contains("خفض") || q.contains("غير") || q.contains("غيّر")) &&
             (q.contains("لوت") || q.contains("lot"))) {
             val bot = botPattern.find(q)?.groupValues?.getOrNull(1)?.toIntOrNull()
@@ -119,32 +123,21 @@ object AmarAiActionEngine {
             return Result(true, "PENDING_MT5|تم تجهيز تغيير لوت البوت $bot إلى $lot، بانتظار MT5/Bridge.")
         }
 
-        if ((q.contains("مستوى اللوت") || q.contains("قيمة اللوت")) && !q.contains("لوت ")) {
-            return Result(true, "أعطني القيمة المطلوبة للوت، ولا يتم تخمينها.")
-        }
-
         if (q.contains("افتح") && (q.contains("شراء") || q.contains("بيع"))) {
             val side = if (q.contains("شراء")) "BUY" else "SELL"
-            val symbol = Regex("\\b[A-Za-z]{3,12}(?:[A-Za-z]{3,12})?\\b").find(q)?.value?.uppercase()
+            val symbol = symbolPattern.find(q)?.value?.uppercase()
             val lot = lotPattern.find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
             if (symbol == null || lot == null || lot <= 0.0) {
                 return Result(true, "أحتاج الرمز وقيمة اللوت الصريحة قبل تجهيز أمر السوق.")
             }
-            val validation = AmarAiExecutionOrchestrator.validate(
-                AmarAiExecutionOrchestrator.Intent(
-                    type = AmarAiExecutionOrchestrator.Type.OPEN_MARKET,
-                    symbol = symbol,
-                    side = side,
-                    volume = lot
-                )
-            )
-            if (!validation.accepted) return Result(true, validation.message)
             val intent = AmarAiExecutionOrchestrator.Intent(
                 type = AmarAiExecutionOrchestrator.Type.OPEN_MARKET,
                 symbol = symbol,
                 side = side,
                 volume = lot
             )
+            val validation = AmarAiExecutionOrchestrator.validate(intent)
+            if (!validation.accepted) return Result(true, validation.message)
             AmarAiAppCommandBus.queueExecutionIntent(intent)
             return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
         }
