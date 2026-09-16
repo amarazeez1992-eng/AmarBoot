@@ -57,6 +57,7 @@ fun AmarRoomHostScreen(
 
             when (room) {
                 AmarRoom.COMMAND_CENTER -> CommandCenterScreen()
+                AmarRoom.AMAR_AGENT -> AmarAiExperienceScreenV2()
                 AmarRoom.CHART -> {
                     val runtime = AmarMt5RuntimeRegistry.current()
                     if (runtime == null) AmarTradingChartScreen(symbol = "الذهب")
