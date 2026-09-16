@@ -1,6 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
-/** Provider-neutral reasoning contract. Gemini/ChatGPT are not part of the core. */
+/** Provider-neutral reasoning contract. External hosted vendors are not part of the core. */
 interface AmarReasoning {
     suspend fun generate(context: AmarAgentContext): AmarAgentResponse
 }
