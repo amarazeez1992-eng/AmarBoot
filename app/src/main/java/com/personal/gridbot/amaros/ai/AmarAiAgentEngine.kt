@@ -8,7 +8,7 @@ import com.personal.gridbot.amaros.agent.AmarTradingTools
 
 /**
  * AMAR AI Agent boundary.
- * Gemini and other vendors are not dependencies of the Agent core.
+ * External hosted vendors are not dependencies of the Agent core.
  * The current phase uses the verified local reasoning fallback and remains fail-closed.
  */
 class AmarAiAgentEngine(
