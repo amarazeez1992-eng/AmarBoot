@@ -4,7 +4,6 @@ import android.content.Context
 import com.personal.gridbot.amaros.agent.AmarAgentOrchestrator
 import com.personal.gridbot.amaros.agent.AmarAgentPolicy
 import com.personal.gridbot.amaros.agent.AmarAgentRequest
-import com.personal.gridbot.amaros.agent.AmarAgentResponse
 import com.personal.gridbot.amaros.agent.AmarAgentTool
 import com.personal.gridbot.amaros.agent.AmarAgentToolRegistry
 import com.personal.gridbot.amaros.agent.AmarLocalReasoning
@@ -23,11 +22,9 @@ import com.personal.gridbot.amaros.agent.AmarAgentBudget
 
 /**
  * Canonical AMAR AI Agent application boundary.
- *
- * The Agent owns planning, evidence, verification and policy. UI/native layers are
- * transports only. No external model, API key or provider is required by this class.
- * Execution authority remains fail-closed; future MT5 work is deliberately outside
- * this milestone.
+ * UI/native code is a transport. The Agent owns policy, planning, evidence,
+ * verification and the fail-closed boundary. No external model or API key is
+ * required. Broker/MT5 execution is intentionally outside this milestone.
  */
 class AmarAiAgentEngine(private val context: Context? = null) {
     data class Result(
@@ -89,19 +86,16 @@ class AmarAiAgentEngine(private val context: Context? = null) {
         critic = AmarAgentCritic(),
         verifier = AmarAgentVerifier(policy.minimumEvidenceConfidence),
         reasoningProvider = AmarLocalReasoning(),
-        toolRegistry = tools,
-        policy = policy
+        hierarchy = com.personal.gridbot.amaros.agent.AmarAgentHierarchy()
     )
 
-    /** Compatibility signature: credentials are intentionally ignored. */
-    suspend fun ask(@Suppress("UNUSED_PARAMETER") apiKey: String, @Suppress("UNUSED_PARAMETER") model: String, request: String): Result {
-        return ask(request)
-    }
+    /** Compatibility signature retained so existing callers do not break. */
+    suspend fun ask(@Suppress("UNUSED_PARAMETER") apiKey: String, @Suppress("UNUSED_PARAMETER") model: String, request: String): Result =
+        ask(request)
 
     suspend fun ask(request: String): Result {
         val safe = request.trim()
         if (safe.isEmpty()) return Result("اكتب طلبك للوكيل أولاً.", emptyList(), emptyList())
-
         val result = runCatching {
             orchestrator.run(
                 AmarAgentRequest(
@@ -116,15 +110,13 @@ class AmarAiAgentEngine(private val context: Context? = null) {
             )
         }.getOrElse {
             return Result(
-                answer = "تعذر إكمال دورة الوكيل بأمان: ${it.message ?: "خطأ غير معروف"}",
-                proposedActions = emptyList(),
-                toolEvidence = listOf("FAIL_CLOSED|${it.javaClass.simpleName}")
+                "تعذر إكمال دورة الوكيل بأمان: ${it.message ?: "خطأ غير معروف"}",
+                emptyList(),
+                listOf("FAIL_CLOSED|${it.javaClass.simpleName}")
             )
         }
-
         val evidence = result.sessionEvents.map { "${it.stage.name}|${it.message}" }
         val actions = result.plan.requiredTools.map { "AGENT_TOOL|$it" }
-        val answer = result.response.answer
-        return Result(answer, actions, evidence)
+        return Result(result.response.answer, actions, evidence)
     }
 }
