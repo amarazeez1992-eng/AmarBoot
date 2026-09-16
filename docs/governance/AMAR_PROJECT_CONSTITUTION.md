@@ -105,3 +105,23 @@ The AI Agent MUST NOT invent a parallel subsystem, duplicate an existing authori
 Any ambiguity, missing requirement, or conflict MUST be resolved by inspecting the authoritative repository contracts and governance documents before implementation. Assumptions MUST NOT be used to lower engineering quality or bypass required verification.
 
 This Article is a permanent project-law requirement and applies to all future stages, items, fixes, audits, AI-agent changes, and closure decisions unless the Constitution is explicitly amended under Article 11.
+
+## Article 14 — Independent Re-Verification and Closure Confidence
+
+A closure decision MUST NOT be based solely on the latest successful addition, latest green CI result, latest test run, or latest implementation change.
+
+For every stage, numbered item, feature, subsystem, or audit gate, the responsible engineer MUST evaluate the complete in-scope result as a whole against its authoritative requirements, contracts, architecture, tests, integration points, and acceptance criteria. The verification cycle MUST include independent re-checks of the completed result after the implementation evidence has been collected. Where technically applicable, this means repeating the relevant inspection/test/confirmation cycle at least twice, with the second pass explicitly checking that the first pass did not overlook a missing requirement, regression, integration defect, contradiction, or unverified capability.
+
+A repeated check MUST be substantive and evidence-based; merely rerunning the same command without examining the resulting evidence does not satisfy this Article.
+
+The final status MUST be determined from the complete evidence set, not from the newest successful component. If any required part is missing, contradictory, unverified, failing, stale, or outside the current commit, the official decision remains **قيد العمل / قيد التحقق النهائي** and the project MUST NOT advance or close that scope.
+
+Only when all applicable requirements are individually accounted for, verified on the current implementation, cross-checked as an integrated whole, and supported by reproducible evidence may the responsible engineer issue the final **نجاح / جاهز / إغلاق** decision.
+
+The final report MUST distinguish explicitly between:
+- **تم** — the requirement is implemented and independently verified;
+- **قيد العمل / قيد التحقق** — implementation or evidence is incomplete;
+- **فشل** — a required verification or acceptance criterion failed;
+- **محجوز للمرحلة اللاحقة** — intentionally deferred by the approved roadmap, without falsely treating it as completed in the current stage.
+
+No percentage, success score, readiness statement, or stage-transition decision may conceal an incomplete required item. A 100% decision is permitted only when the entire applicable scope has passed the complete closure loop and the independent re-verification requirements of this Article.
