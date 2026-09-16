@@ -24,6 +24,12 @@ object AmarRoomCatalog {
             AmarRoomSection("quick", "التحكم السريع", "⚡", "الأوامر والإجراءات السريعة"),
             AmarRoomSection("activity", "النشاط", "◉", "آخر الأحداث وحالة الوحدات")
         ))
+        AmarRoom.AMAR_AGENT -> AmarRoomDefinition(room, "العقل المركزي للتطبيق", listOf(
+            AmarRoomSection("conversation", "المحادثة", "◉", "التواصل المباشر مع وكيل عمار"),
+            AmarRoomSection("evidence", "الأدلة", "◈", "عرض مسار الأدلة والتحقق"),
+            AmarRoomSection("tools", "الأدوات", "🧰", "الأدوات التي يحددها الوكيل ضمن الصلاحيات"),
+            AmarRoomSection("safety", "الحماية", "🛡", "حالة الصلاحيات والتنفيذ المغلق")
+        ))
         AmarRoom.MARKET -> AmarRoomDefinition(room, "السوق والمراقبة", listOf(
             AmarRoomSection("watchlist", "قائمة المراقبة", "★", "الأصول التي تتابعها"),
             AmarRoomSection("quotes", "الأسعار", "↕", "Bid / Ask / Spread"),
