@@ -16,6 +16,9 @@ object AmarAiToolRegistry {
         "tracking" to Authority.READ_ONLY,
         "candle" to Authority.READ_ONLY,
         "analyze_market" to Authority.READ_ONLY,
+        "file_analyze" to Authority.READ_ONLY,
+        "code_analyze" to Authority.READ_ONLY,
+        "file_compare" to Authority.READ_ONLY,
         "research_external" to Authority.READ_ONLY,
         "multi_source_research" to Authority.READ_ONLY,
         "trading_library_search" to Authority.READ_ONLY,
@@ -35,7 +38,8 @@ object AmarAiToolRegistry {
         "approval_proposal" to Authority.DRAFT_ONLY,
         "strategy_save" to Authority.DRAFT_ONLY
     ).associate { (name, authority) ->
-        name to ToolSpec(name, authority, authority == Authority.DRAFT_ONLY)
+        val needsContext = name in setOf("file_analyze", "code_analyze", "file_compare")
+        name to ToolSpec(name, authority, needsContext || authority == Authority.DRAFT_ONLY)
     }
 
     fun resolve(name: String): ToolSpec? = specs[name.trim()]
