@@ -134,7 +134,7 @@ object AmarAiActionEngine {
             val targetLot = explicitBotLot.groupValues[2].toDoubleOrNull()
             if (targetBot !in 1..10 || targetLot == null || targetLot <= 0.0) return Result(true, "قيمة اللوت أو رقم البوت غير صالح.")
             return if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(targetBot, "SET_LOT:$targetLot"))) {
-                Result(true, "سجلت تغيير لوت البوت $targetBot عبر سلطة AMAR Agent؛ التنفيذ المالي ما زال مغلقًا حتى MT5.")
+                Result(true, "سجلت تغيير لوت البوت $targetBot عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ المالي ما زال مغلقًا حتى MT5.")
             } else Result(true, "تم رفض أمر اللوت بواسطة سلطة AMAR Agent.")
         }
 
@@ -142,26 +142,26 @@ object AmarAiActionEngine {
             val side = if (q.contains("شراء") || q.contains("buy")) "BUY" else "SELL"
             if (symbol == null || volume == null) return Result(true, "أحتاج الرمز واللوت صراحةً. مثال: افتح شراء XAUUSD لوت 0.01")
             return if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "OPEN:$side:$symbol:$volume"))) {
-                Result(true, "جهزت أمر $side على $symbol بحجم $volume عبر سلطة AMAR Agent؛ التنفيذ الفعلي ما زال مغلقًا حتى MT5.")
+                Result(true, "جهزت أمر $side على $symbol بحجم $volume عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ الفعلي ما زال مغلقًا حتى MT5.")
             } else Result(true, "تم رفض أمر التداول بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("اغلق الكل") || q.contains("أغلق الكل") || q.contains("close all")) {
             val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "CLOSE_ALL"))
-            return Result(true, if (accepted) "جهزت أمر الإغلاق عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+            return Result(true, if (accepted) "جهزت أمر الإغلاق عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("عند الخسارة") || q.contains("stop loss") || q.contains("حد الخسارة")) {
             if (usd == null) return Result(true, "أعطني قيمة الخسارة بالدولار، مثلاً: عند الخسارة 30 دولار أغلق.")
             val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_STOP_LOSS:$usd"))
-            return Result(true, if (accepted) "جهزت حد خسارة ${usd}$ عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+            return Result(true, if (accepted) "جهزت حد خسارة ${usd}$ عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("عند الربح") || q.contains("profit trigger") || q.contains("take profit")) {
             if (usd == null) return Result(true, "أعطني قيمة الربح بالدولار، مثلاً: عند الربح 2 دولار نفذ الأمر التالي.")
             val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_PROFIT_TRIGGER:$usd"))
-            return Result(true, if (accepted) "جهزت شرط ربح ${usd}$ عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+            return Result(true, if (accepted) "جهزت شرط ربح ${usd}$ عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (volume != null && (q.contains("لوت") || q.contains("lot"))) {
             val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_LOT:$volume"))
-            return Result(true, if (accepted) "سجلت تغيير لوت البوت $bot عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+            return Result(true, if (accepted) "سجلت تغيير لوت البوت $bot عبر سلطة AMAR Agent؛ PENDING_MT5: التنفيذ المالي ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("ارفع مستوى اللوت") || q.contains("ارفع اللوت") || q.contains("ارفع لوت") || q.contains("increase lot")) return Result(true, "أستطيع رفع اللوت، لكن أعطني القيمة المطلوبة ولن أخمّن قيمة مالية.")
         if (q.contains("شغل الشبكة") || q.contains("شغّل الشبكة") || q.contains("start grid")) return Result(true, if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "START_GRID"))) "جهزت تشغيل الشبكة عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
