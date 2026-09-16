@@ -6,20 +6,21 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
+/** Internal Agent workspace. The screen only sends requests to the canonical Agent boundary. */
 @Composable
 fun AmarAiAgentScreen() {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val selfImprovement = remember(context) { AmarAiSelfImprovementEngine(context) }
-    var key by remember { mutableStateOf(AmarAiKeyStore.load(context).orEmpty()) }
-    var model by remember { mutableStateOf("gemini-2.5-flash") }
+    val agent = remember(context) { AmarAiAgentEngine(context) }
     var request by remember { mutableStateOf("") }
-    var answer by remember { mutableStateOf("اكتب أمرًا للوكيل. مثال: ابحث في مكتبة المؤشرات عن أفضل الأدوات لهذه الحركة في السوق الحالي.") }
+    var answer by remember { mutableStateOf("أنا AMAR AI Agent. اكتب طلبك وسأخطط له، أتحقق من الأدلة، وأغلق أي مسار غير موثّق.") }
     var actions by remember { mutableStateOf<List<String>>(emptyList()) }
+    var evidence by remember { mutableStateOf<List<String>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
     var auditBusy by remember { mutableStateOf(false) }
     var audit by remember { mutableStateOf<AmarAiSelfImprovementEngine.Audit?>(null) }
@@ -42,28 +43,28 @@ fun AmarAiAgentScreen() {
     ) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("AMAR AI TRADING SUPERVISOR 🤖", style = MaterialTheme.typography.headlineSmall)
-                Text("العقل المركزي للتداول: بحث، تحليل، اختبار، تحقق، مخاطر، مراقبة وتطوير ذاتي محكوم بموافقتك.")
-                Text("AI يقترح ولا يغيّر الكود أو يعتمد استراتيجية تلقائيًا.", style = MaterialTheme.typography.labelMedium)
+                Text("AMAR AI AGENT — CENTRAL AUTHORITY", style = MaterialTheme.typography.headlineSmall)
+                Text("العقل المركزي للتطبيق: التخطيط، الأدلة، البحث، التحقق، النقد، الذاكرة والقرارات المحكومة. واجهة التطبيق لا تملك سلطة مستقلة.")
+                Text("التنفيذ الحساس وMT5 خارج هذه المرحلة ومغلقان افتراضيًا.", style = MaterialTheme.typography.labelMedium)
             }
         }
 
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("التطوير الذاتي للتداول 🧠", style = MaterialTheme.typography.titleLarge)
-                Text("يفحص AI مختبر البوتات ومحركات التداول ومصادر الأدلة، ثم يولد قائمة تحسينات مرتبة بالأولوية ومتطلبات التحقق.")
+                Text("التطوير الذاتي", style = MaterialTheme.typography.titleLarge)
+                Text("يفحص الوكيل المكونات الحالية ويعرض مقترحات تحتاج إلى قرار ومبررات وإثبات.")
                 Button(onClick = ::runSelfAudit, enabled = !auditBusy, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (auditBusy) "جاري الفحص العميق…" else "🔎 اكتشف ما يحتاجه النظام")
+                    Text(if (auditBusy) "جاري الفحص…" else "🔎 فحص الوكيل والنظام")
                 }
                 audit?.let { a ->
-                    Text("درجة الجاهزية الحالية: ${"%.1f".format(a.score)}/10", style = MaterialTheme.typography.titleMedium)
+                    Text("درجة الجاهزية المقاسة: ${"%.1f".format(a.score)}/10", style = MaterialTheme.typography.titleMedium)
                     a.warnings.forEach { Text("⚠️ $it", style = MaterialTheme.typography.bodySmall) }
                     a.proposals.forEach { proposal ->
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                                 Text("P${proposal.priority} • ${proposal.area} • ${proposal.title}", style = MaterialTheme.typography.titleMedium)
                                 Text(proposal.reason)
-                                Text("التطوير المقترح: ${proposal.action}")
+                                Text("المقترح: ${proposal.action}")
                                 Text("شرط الإثبات: ${proposal.evidenceRequirement}", style = MaterialTheme.typography.bodySmall)
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Button(onClick = { selfImprovement.decide(proposal.id, AmarAiSelfImprovementEngine.Status.APPROVED); audit = selfImprovement.audit() }) { Text("موافقة") }
@@ -76,42 +77,46 @@ fun AmarAiAgentScreen() {
             }
         }
 
-        OutlinedTextField(key, { key = it }, Modifier.fillMaxWidth(), label = { Text("Gemini API Key") }, visualTransformation = PasswordVisualTransformation(), singleLine = true)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(model, { model = it }, Modifier.weight(1f), label = { Text("Model") }, singleLine = true)
-            Button(onClick = { AmarAiKeyStore.save(context, key) }, enabled = key.isNotBlank()) { Text("حفظ") }
-        }
-        Text("المفتاح يُخزّن محليًا مشفّرًا عبر Android Keystore.", style = MaterialTheme.typography.labelSmall)
         OutlinedTextField(
-            request, { request = it }, Modifier.fillMaxWidth().heightIn(min = 120.dp),
-            label = { Text("أمر Amar AI") },
-            placeholder = { Text("مثال: حلل السوق، ثم ابحث في مكتبة المؤشرات عن الأدوات المناسبة، واختبر الفكرة وأعطني تقريرًا بالأدلة.") }
+            request,
+            { request = it },
+            Modifier.fillMaxWidth().heightIn(min = 120.dp),
+            label = { Text("أمر Amar AI Agent") },
+            placeholder = { Text("مثال: حلل السوق، اجمع الأدلة، اختبر الفكرة، ثم أعطني تقريرًا موثقًا مع ما هو مؤكد وما يزال مجهولًا.") }
         )
         Button(
             modifier = Modifier.fillMaxWidth(),
-            enabled = key.isNotBlank() && request.isNotBlank() && !busy,
+            enabled = request.isNotBlank() && !busy,
             onClick = {
-                AmarAiKeyStore.save(context, key)
-                busy = true; error = null
+                busy = true
+                error = null
                 scope.launch {
-                    runCatching { AmarAiAgentEngine(context).ask(key, model.trim(), request.trim()) }
-                        .onSuccess { result -> answer = result.answer; actions = result.proposedActions }
+                    runCatching { agent.ask(request.trim()) }
+                        .onSuccess { result ->
+                            answer = result.answer
+                            actions = result.proposedActions
+                            evidence = result.toolEvidence
+                        }
                         .onFailure { error = it.message ?: "حدث خطأ" }
                     busy = false
                 }
             }
-        ) { Text(if (busy) "الوكيل يعمل…" else "تشغيل Amar AI") }
+        ) { Text(if (busy) "الوكيل يعمل…" else "تشغيل AMAR AI Agent") }
 
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("النتيجة", style = MaterialTheme.typography.titleLarge)
+                Text("نتيجة الوكيل", style = MaterialTheme.typography.titleLarge)
                 Text(answer)
                 if (actions.isNotEmpty()) {
-                    Text("المقترحات / الأدوات المطلوبة", style = MaterialTheme.typography.titleMedium)
+                    Text("الأدوات/المسارات التي حددها الوكيل", style = MaterialTheme.typography.titleMedium)
                     actions.forEach { Text("• $it") }
-                    Text("⚠️ لم يتم تنفيذ أي أمر تداول. هذه المقترحات تنتظر قرارك.", style = MaterialTheme.typography.labelMedium)
                 }
+                if (evidence.isNotEmpty()) {
+                    Text("سجل الدورة", style = MaterialTheme.typography.titleMedium)
+                    evidence.takeLast(30).forEach { Text("• $it", style = MaterialTheme.typography.bodySmall) }
+                }
+                Text("حالة التنفيذ: FAIL-CLOSED — لا توجد صلاحية تنفيذ تداول في هذه المرحلة.", style = MaterialTheme.typography.labelMedium)
             }
         }
     }
