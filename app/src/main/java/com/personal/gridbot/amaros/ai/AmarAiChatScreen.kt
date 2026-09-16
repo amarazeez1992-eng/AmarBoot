@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -40,9 +39,13 @@ import androidx.compose.ui.unit.dp
 private data class AmarChatMessage(val text: String, val fromUser: Boolean)
 
 @Composable
-fun AmarAiChatScreen(onBackHome: () -> Unit) {
+fun AmarAiChatScreen(
+    onBackHome: () -> Unit,
+    onSendToAgent: (String, (String) -> Unit) -> Unit = { _, _ -> }
+) {
     var draft by remember { mutableStateOf("") }
     var attachmentsOpen by remember { mutableStateOf(false) }
+    var waitingForAgent by remember { mutableStateOf(false) }
     val messages = remember { mutableStateListOf<AmarChatMessage>() }
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -60,10 +63,10 @@ fun AmarAiChatScreen(onBackHome: () -> Unit) {
                 Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Text("كيف أستطيع مساعدتك؟", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
-                    Text("هذه واجهة جاهزة للربط لاحقاً مع AMAR AI Agent والمحركات.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("اكتب رسالة واحدة واضغط إرسال لاختبار AMAR AI Agent.", textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
-                LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = false) {
+                LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(messages) { message ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.fromUser) Arrangement.Start else Arrangement.End) {
                             Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = if (message.fromUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)) {
@@ -79,14 +82,10 @@ fun AmarAiChatScreen(onBackHome: () -> Unit) {
                     Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("الإضافات", style = MaterialTheme.typography.titleMedium)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("📷 صورة", "📎 ملف", "📄 مستند").forEach { label ->
-                                TextButton(onClick = { }) { Text(label) }
-                            }
+                            listOf("📷 صورة", "📎 ملف", "📄 مستند").forEach { label -> TextButton(onClick = { }) { Text(label) } }
                         }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("🔎 تحليل", "🖥 مشاركة الشاشة", "📹 الكاميرا").forEach { label ->
-                                TextButton(onClick = { }) { Text(label) }
-                            }
+                            listOf("🔎 تحليل", "🖥 مشاركة الشاشة", "📹 الكاميرا").forEach { label -> TextButton(onClick = { }) { Text(label) } }
                         }
                     }
                 }
@@ -100,10 +99,24 @@ fun AmarAiChatScreen(onBackHome: () -> Unit) {
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("اكتب رسالتك إلى AMAR AI...") },
                     shape = RoundedCornerShape(24.dp),
-                    maxLines = 4
+                    maxLines = 4,
+                    enabled = !waitingForAgent
                 )
                 IconButton(onClick = { }, Modifier.size(48.dp).clip(CircleShape)) { Text("🎙") }
-                Button(onClick = { val text = draft.trim(); if (text.isNotEmpty()) { messages.add(AmarChatMessage(text, true)); draft = "" } }) { Text("إرسال") }
+                Button(
+                    enabled = !waitingForAgent,
+                    onClick = {
+                        val text = draft.trim()
+                        if (text.isEmpty()) return@Button
+                        messages.add(AmarChatMessage(text, true))
+                        draft = ""
+                        waitingForAgent = true
+                        onSendToAgent(text) { answer ->
+                            messages.add(AmarChatMessage(answer, false))
+                            waitingForAgent = false
+                        }
+                    }
+                ) { Text(if (waitingForAgent) "..." else "إرسال") }
             }
         }
     }
