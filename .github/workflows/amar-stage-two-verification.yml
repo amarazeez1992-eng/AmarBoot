@@ -22,7 +22,7 @@ jobs:
         with:
           gradle-version: '8.7'
       - name: Run Stage 2 focused tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.workforce.Stage2SmokeTest' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest' --stacktrace
       - name: Run full AMAR AI agent unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Verify debug build
