@@ -45,13 +45,22 @@ jobs:
             exit 1
           fi
 
-      - name: Verify modern UI integration
+      - name: Verify modern Agent and multimodal integration contracts
         run: |
           set -euo pipefail
           test -s app/src/main/assets/amar_reference.html
           test -s app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiAgentWorkspaceScreen.kt
-          test -s app/src/main/java/com/personal/gridbot/amaros/navigation/AmarRoomHostScreen.kt
+          test -s app/src/main/java/com/personal/gridbot/amaros/workspace/Item10NativeCameraTransport.kt
+          test -s app/src/main/java/com/personal/gridbot/amaros/workspace/Item10NativeMediaTransport.kt
+          test -s app/src/main/java/com/personal/gridbot/amaros/workspace/Item10VoiceRecorder.kt
+          test -s app/src/main/java/com/personal/gridbot/amaros/workspace/Item10CaptureCoordinator.kt
+          grep -q 'CAMERA' app/src/main/AndroidManifest.xml
+          grep -q 'FOREGROUND_SERVICE_MEDIA_PROJECTION' app/src/main/AndroidManifest.xml
           grep -q 'AmarAiAgentWorkspaceScreen()' app/src/main/java/com/personal/gridbot/amaros/navigation/AmarRoomHostScreen.kt
+          grep -q 'MediaProjectionManager' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10NativeMediaTransport.kt
+          grep -q 'createVirtualDisplay' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10NativeMediaTransport.kt
+          grep -q 'CameraManager' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10NativeCameraTransport.kt
+          grep -q 'MediaRecorder' app/src/main/java/com/personal/gridbot/amaros/workspace/Item10VoiceRecorder.kt
           if test -f app/src/main/java/com/personal/gridbot/amaros/ai/AmarAiExperienceScreenV2.kt; then
             echo 'Legacy Agent workspace must not remain in the production source tree.'
             exit 1
