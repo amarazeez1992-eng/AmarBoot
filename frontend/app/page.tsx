@@ -1,7 +1,56 @@
 'use client';
-import {useEffect,useMemo,useState} from 'react';
-import {amarDemoStream,type AmarEvent} from '../lib/events';
-import {AMAR_UI_MANIFEST} from '../lib/amarUiManifest';
-const rooms=[['home','المحور'],['market','السوق'],['chart','الشارت'],['bot','البوت'],['risk','الحماية'],['analysis','التحليل'],['performance','الأداء'],['testing','الاختبار'],['tools','الأدوات'],['alerts','التنبيهات'],['library','المكتبة'],['settings','الإعدادات']];
-const sectors=[['market','السوق','01','cyan','top'],['chart','الشارت','02','gold','right'],['bot','AMAR GRID','03','green','bottomRight'],['risk','الحماية','04','rose','bottomLeft'],['analysis','التحليل','05','violet','left']];
-export default function Page(){const[entered,setEntered]=useState(false),[room,setRoom]=useState('home'),[selected,setSelected]=useState('home'),[energy,setEnergy]=useState(76),[equity,setEquity]=useState(1000),[events,setEvents]=useState<AmarEvent[]>([]),[time,setTime]=useState('');useEffect(()=>{const cb=(e:AmarEvent)=>{setEvents(v=>[e,...v].slice(0,5));setEnergy(Math.round(60+Math.random()*38));if(e.type==='ACCOUNT_UPDATE'&&typeof e.payload.equity==='number')setEquity(e.payload.equity)};amarDemoStream.connect(cb);const t=window.setInterval(()=>setTime(new Date().toLocaleTimeString('ar-IQ')),1000);return()=>{amarDemoStream.disconnect(cb);window.clearInterval(t)}},[]);const active=useMemo(()=>sectors.find(s=>s[0]===selected),[selected]);if(!entered)return <main className="atelier-entry" dir="rtl"><div className="entry-sun"/><div className="entry-mountain m1"/><div className="entry-mountain m2"/><div className="entry-starfield"/><section className="entry-center"><div className="seal"><span>ع</span><i/></div><small>AMAR TRADING OS</small><h1>عمار</h1><h2>مركز القيادة</h2><p>واجهة جديدة بالكامل — هادئة، حيّة، مصممة حول الحركة لا حول البطاقات.</p><button onClick={()=>setEntered(true)}><b>ابدأ الرحلة</b><span>↗</span></button><em><i/> وضع تجريبي آمن</em></section><footer>AMAR · {AMAR_UI_MANIFEST.version} · {time||'جاهز'}</footer></main>;return <main className="atelier" dir="rtl"><header className="atelier-header"><div className="identity"><div className="seal-mini">ع</div><div><b>عمار</b><small>مركز القيادة</small></div></div><div className="market-ticker"><span>الذهب XAUUSD</span><strong>3,472.18</strong><em>+0.42%</em></div><div className="safe"><i/> تجريبي</div></header><section className="horizon"><div className="horizon-light"/><div className="sun-disc"/><div className="terrain t1"/><div className="terrain t2"/><div className="terrain t3"/><div className="radar"><div className="radar-sweep"/><div className="radar-ring r1"/><div className="radar-ring r2"/><div className="radar-ring r3"/></div><div className="amar-heart"><div className="heart-glow"/><div className="heart-orb"><span>ع</span><b>{energy}%</b><small>نشاط حي</small></div><div className="heart-label"><b>المحور</b><span>{active?.[1]||'مركز القيادة'}</span></div></div>{sectors.map(s=><button key={s[0]} className={`satellite ${s[3]} ${s[4]} ${selected===s[0]?'selected':''}`} onClick={()=>{setSelected(s[0]);setRoom(s[0])}}><i/><small>{s[2]}</small><b>{s[1]}</b><span>{s[0]==='market'?'XAUUSD':s[0]==='chart'?'M5':s[0]==='bot'?'جاهز':s[0]==='risk'?'مراقب':'82%'}</span></button>)}<div className="axis-label top-label">نبض السوق</div><div className="axis-label bottom-label">اسحب · استكشف · ادخل</div></section><nav className="atelier-dock">{rooms.map(([id,label])=><button className={room===id?'active':''} key={id} onClick={()=>{setRoom(id);setSelected(id)}}><i/><span>{label}</span></button>)}</nav><section className="pulse-bar"><div><small>الحساب</small><b>${equity.toFixed(2)}</b></div><div><small>النشاط</small><b>{energy}%</b></div><div><small>التراجع</small><b>2.10%</b></div><div><small>الحماية</small><b>مفعلة</b></div><div className="event-flow"><i/>{events[0]?events[0].type.replaceAll('_',' '):'بانتظار المحاكاة'}<time>{time}</time></div></section><footer className="atelier-footer">AMAR · المحور الحي · تجريبي فقط · الواجهة لا تتخذ قرارات التداول</footer></main>}
+
+import { useState } from 'react';
+
+const nav = [
+  ['home', 'المحور'], ['assistant', 'AI Assistant'], ['research', 'Research'],
+  ['workspace', 'Workspace'], ['files', 'Files'], ['memory', 'Memory'], ['settings', 'Settings'],
+] as const;
+
+type View = typeof nav[number][0];
+
+export default function Page() {
+  const [entered, setEntered] = useState(false);
+  const [view, setView] = useState<View>('home');
+  const [prompt, setPrompt] = useState('');
+  const [messages, setMessages] = useState<string[]>([]);
+
+  const send = () => {
+    const value = prompt.trim();
+    if (!value) return;
+    setMessages((items) => [...items, `أنت: ${value}`, 'AMAR AI: طلب مستلم — التحقق والقرار يبقيان خارج طبقة العرض.']);
+    setPrompt('');
+    setView('assistant');
+  };
+
+  if (!entered) return (
+    <main className="amar-entry" dir="rtl">
+      <div className="amar-orbit"><b>AMAR</b></div>
+      <h1>AMAR AI</h1>
+      <p>مساحة الذكاء الموحدة — واجهة العرض والتفاعل فقط، مع حدود واضحة للمحرك والحوكمة.</p>
+      <button onClick={() => setEntered(true)}>دخول إلى مساحة AMAR AI ↗</button>
+      <small>● Fail-Closed · لا Gemini · لا تنفيذ تداول من الواجهة</small>
+    </main>
+  );
+
+  return (
+    <main className="amar-app" dir="rtl">
+      <header className="amar-top">
+        <div className="amar-brand"><strong>AMAR AI</strong><small>Agent Workspace · UI Layer</small></div>
+        <div className="amar-status">● جاهز</div>
+      </header>
+      <div className="amar-layout">
+        <aside className="amar-nav">
+          {nav.map(([id, label]) => <button key={id} className={view === id ? 'active' : ''} onClick={() => setView(id)}>{label}</button>)}
+        </aside>
+        <section className="amar-content">
+          <div className="amar-hero"><div><small>AMAR AI / {view.toUpperCase()}</small><h2>{view === 'home' ? 'مساحة الذكاء الآمنة' : nav.find((x) => x[0] === view)?.[1]}</h2><p>الواجهة لا تنشئ سلطة موازية للمحرك ولا تدّعي تحققاً غير موجود.</p></div><div className="amar-core">AMAR</div></div>
+          {view === 'assistant' || view === 'home' ? <>
+            <div className="amar-cards"><article><b>Agent</b><span>المحرك المركزي صاحب القرار، والواجهة طبقة تفاعل فقط.</span></article><article><b>Evidence</b><span>النتيجة غير المؤكدة تبقى غير مؤكدة ولا تتحول إلى نجاح.</span></article><article><b>Security</b><span>الصوت والكاميرا ومشاركة الشاشة مؤجلة للربط المعتمد في Stage 10.</span></article></div>
+            <div className="amar-chat"><div className="amar-messages">{messages.length ? messages.map((m, i) => <div key={i}>{m}</div>) : <div>مرحباً. اكتب طلبك لبدء مسار AMAR AI.</div>}</div><div className="amar-composer"><textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="اكتب طلبك…"/><button onClick={send}>إرسال</button></div></div>
+          </> : <div className="amar-placeholder">{view === 'research' ? 'Research: البحث والتحقق الموثق يبقى تحت عقد المحرك.' : view === 'workspace' ? 'Workspace: مساحة العمل جاهزة للربط التدريجي بالعقود.' : view === 'files' ? 'Files: رفع الملف لا يعني تنفيذه.' : view === 'memory' ? 'Memory: لا تظهر ذاكرة مزعومة دون بيانات مؤكدة.' : 'Settings: إعدادات العرض فقط.'}</div>}
+        </section>
+      </div>
+    </main>
+  );
+}
