@@ -86,3 +86,5 @@ jobs:
           set -euo pipefail
           test -s app/build/outputs/apk/debug/app-debug.apk
           sha256sum app/build/outputs/apk/debug/app-debug.apk
+
+      # Governance: this workflow is intentionally a push-triggered final gate.
