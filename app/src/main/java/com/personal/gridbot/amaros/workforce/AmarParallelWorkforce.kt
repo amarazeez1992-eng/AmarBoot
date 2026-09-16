@@ -102,34 +102,54 @@ class AmarParallelWorkforce<K : Any, V : Any>(
         require(items.map { it.cacheKey }.distinct().size == items.size) { "duplicate cache keys are not allowed" }
         if (!currentCoroutineContext().isActive) throw CancellationException("workforce cancelled before start")
 
-        val semaphore = Semaphore(config.maxWorkers)
-        return coroutineScope {
-            val jobs = items.mapIndexed { index, item ->
-                async(Dispatchers.IO) {
-                    if (item.requiresNetwork && connectivity == Connectivity.OFFLINE) {
-                        return@async Outcome.Skipped(item.key, index, "network unavailable") as Outcome<K, V>
-                    }
-
-                    cache.get(item.cacheKey)?.let { cached ->
-                        return@async Outcome.Success(item.key, index, cached, cached = true, attempts = 0) as Outcome<K, V>
-                    }
-
-                    semaphore.withPermit {
-                        runWithRecovery(item, index, worker)
-                    }
+        // A single-worker configuration is intentionally sequential. This preserves
+        // input-order execution as well as deterministic LRU insertion/eviction,
+        // while retaining the same timeout, retry, cancellation and cache semantics.
+        val outcomes = if (config.maxWorkers == 1) {
+            coroutineScope {
+                items.mapIndexed { index, item ->
+                    executeOne(index, item, connectivity, worker)
                 }
             }
-            jobs.awaitAll().sortedBy { it.index }.let { outcomes ->
-                val hits = outcomes.count { it is Outcome.Success && it.cached }
-                val recovered = outcomes.count { it is Outcome.Success && it.attempts > 1 }
-                Report(
-                    outcomes = outcomes,
-                    cacheHits = hits,
-                    recoveredFailures = recovered,
-                    partial = outcomes.any { it !is Outcome.Success },
-                )
+        } else {
+            val semaphore = Semaphore(config.maxWorkers)
+            coroutineScope {
+                val jobs = items.mapIndexed { index, item ->
+                    async(Dispatchers.IO) {
+                        semaphore.withPermit {
+                            executeOne(index, item, connectivity, worker)
+                        }
+                    }
+                }
+                jobs.awaitAll().sortedBy { it.index }
             }
         }
+
+        val hits = outcomes.count { it is Outcome.Success && it.cached }
+        val recovered = outcomes.count { it is Outcome.Success && it.attempts > 1 }
+        return Report(
+            outcomes = outcomes,
+            cacheHits = hits,
+            recoveredFailures = recovered,
+            partial = outcomes.any { it !is Outcome.Success },
+        )
+    }
+
+    private suspend fun executeOne(
+        index: Int,
+        item: WorkItem<K>,
+        connectivity: Connectivity,
+        worker: suspend (WorkItem<K>) -> V,
+    ): Outcome<K, V> {
+        if (item.requiresNetwork && connectivity == Connectivity.OFFLINE) {
+            return Outcome.Skipped(item.key, index, "network unavailable")
+        }
+
+        cache.get(item.cacheKey)?.let { cached ->
+            return Outcome.Success(item.key, index, cached, cached = true, attempts = 0)
+        }
+
+        return runWithRecovery(item, index, worker)
     }
 
     private suspend fun runWithRecovery(
