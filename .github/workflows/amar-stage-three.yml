@@ -1,0 +1,31 @@
+name: AMAR AI Stage Three Verification
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  stage-three:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout clean tree
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Stage 3 reasoning and critic tests
+        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeTest' --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeReasoningTest' --stacktrace
+
+      - name: Full unit regression
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Debug build
+        run: ./gradlew :app:assembleDebug --stacktrace
