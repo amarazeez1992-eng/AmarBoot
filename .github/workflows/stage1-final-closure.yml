@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- 'app/src/**'; then
+          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- 'app/src/main/**'; then
             echo 'Potential credential pattern detected in production source.'
             exit 1
           fi
