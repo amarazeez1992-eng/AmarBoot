@@ -1,0 +1,1 @@
+Final APK closure build is intentionally generated from main by CI. Closure is valid only after the final APK artifact is produced successfully.
