@@ -103,6 +103,7 @@ class AmarAiAgentEngine(private val context: Context? = null) {
     suspend fun ask(request: String): Result {
         val safe = request.trim()
         if (safe.isEmpty()) return Result("اكتب طلبك للوكيل أولاً.", emptyList(), emptyList())
+
         val result = runCatching {
             orchestrator.run(
                 AmarAgentRequest(
@@ -122,7 +123,22 @@ class AmarAiAgentEngine(private val context: Context? = null) {
                 listOf("FAIL_CLOSED|${it.javaClass.simpleName}")
             )
         }
+
         val evidence = result.sessionEvents.map { "${it.stage.name}|${it.message}" }
+
+        // Application commands are a consequence of an approved Agent decision.
+        // The UI/action parser is never the first authority anymore.
+        if (result.response.status == com.personal.gridbot.amaros.agent.AmarAgentResponse.Status.READY) {
+            val command = AmarAiActionEngine.route(safe)
+            if (command.handled) {
+                return Result(
+                    answer = command.response,
+                    proposedActions = listOf("AGENT_AUTHORITY|APPLICATION_COMMAND"),
+                    toolEvidence = evidence + "APPLICATION_COMMAND|APPROVED_BY_AGENT"
+                )
+            }
+        }
+
         val actions = result.plan.requiredTools.map { "AGENT_TOOL|$it" }
         return Result(result.response.answer, actions, evidence)
     }
