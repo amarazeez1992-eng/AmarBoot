@@ -15,8 +15,10 @@ object AmarAiAppCommandBus {
         data object RequestUpdate : Command
         data class QueueBotCommand(val botNumber: Int, val command: String) : Command
     }
+
     private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 32)
     val commands: SharedFlow<Command> = _commands
+
     fun openRoom(room: AmarRoom) { _commands.tryEmit(Command.OpenRoom(room)) }
     fun setVisualEffects(enabled: Boolean) { _commands.tryEmit(Command.SetVisualEffects(enabled)) }
     fun setTheme(mode: com.personal.gridbot.ui.theme.AmarThemeMode) { _commands.tryEmit(Command.SetTheme(mode)) }
@@ -24,18 +26,29 @@ object AmarAiAppCommandBus {
     fun setAccentColor(color: String) { _commands.tryEmit(Command.SetAccentColor(color)) }
     fun requestUpdate() { _commands.tryEmit(Command.RequestUpdate) }
     fun queueBotCommand(botNumber: Int, command: String) { _commands.tryEmit(Command.QueueBotCommand(botNumber, command)) }
+
     fun queueExecutionIntent(intent: AmarAiExecutionOrchestrator.Intent) {
         val validation = AmarAiExecutionOrchestrator.validate(intent)
         if (validation.accepted) queueBotCommand(intent.botNumber, AmarAiExecutionOrchestrator.canonical(intent))
     }
 }
 
-/** Deterministic local natural-language actions. Values are never guessed. */
+/** Deterministic local actions. Trading values are never guessed. */
 object AmarAiActionEngine {
     data class Result(val handled: Boolean, val response: String)
+
+    private val numberPattern = Regex("[-+]?\\d+(?:\\.\\d+)?")
+    private val botPattern = Regex("(?:البوت|bot)\\s*(\\d+)", RegexOption.IGNORE_CASE)
+    private val lotPattern = Regex("(?:لوت|lot)\\s*(\\d+(?:\\.\\d+)?)", RegexOption.IGNORE_CASE)
+
     fun route(text: String): Result {
         val q = text.trim().lowercase()
         if (q.isBlank()) return Result(false, "")
+
+        // Trading commands are parsed before generic room navigation so a command such as
+        // "شغل الشبكة" cannot be swallowed by a broad bot/room match.
+        parseTradingCommand(q)?.let { return it }
+
         val room = when {
             q.contains("الإعدادات") || q.contains("settings") -> AmarRoom.SETTINGS
             q.contains("السوق") || q.contains("market") -> AmarRoom.MARKET
@@ -51,24 +64,125 @@ object AmarAiActionEngine {
             else -> null
         }
         if (room != null && (q.contains("اذهب") || q.contains("افتح") || q.contains("روح") || q.contains("go") || q.contains("open") || q.contains("اعرض"))) {
-            AmarAiAppCommandBus.openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
+            AmarAiAppCommandBus.openRoom(room)
+            return Result(true, "فتحت ${room.titleAr}.")
         }
-        if (q.contains("الوضع الداكن") || q.contains("dark mode")) { AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.DARK); return Result(true,"فعّلت الوضع الداكن.") }
-        if (q.contains("الوضع الفاتح") || q.contains("light mode")) { AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.LIGHT); return Result(true,"فعّلت الوضع الفاتح.") }
-        if (q.contains("تحديث التطبيق") || q.contains("حدّث التطبيق") || q.contains("update app")) { AmarAiAppCommandBus.requestUpdate(); return Result(true,"أرسلت طلب التحديث إلى نظام التطبيق.") }
-        if (q.contains("الخلفية") || q.contains("background")) { AmarAiAppCommandBus.setBackground("default"); return Result(true,"أرسلت أمر إدارة الخلفية إلى نظام التطبيق.") }
-        if (q.contains("اللون") || q.contains("accent color")) { AmarAiAppCommandBus.setAccentColor("default"); return Result(true,"أرسلت أمر إدارة اللون إلى نظام التطبيق.") }
+        if (q.contains("الوضع الداكن") || q.contains("dark mode")) {
+            AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.DARK)
+            return Result(true, "فعّلت الوضع الداكن.")
+        }
+        if (q.contains("الوضع الفاتح") || q.contains("light mode")) {
+            AmarAiAppCommandBus.setTheme(com.personal.gridbot.ui.theme.AmarThemeMode.LIGHT)
+            return Result(true, "فعّلت الوضع الفاتح.")
+        }
+        if (q.contains("تحديث التطبيق") || q.contains("حدّث التطبيق") || q.contains("update app")) {
+            AmarAiAppCommandBus.requestUpdate()
+            return Result(true, "أرسلت طلب التحديث إلى نظام التطبيق.")
+        }
+        if (q.contains("الخلفية") || q.contains("background")) {
+            AmarAiAppCommandBus.setBackground("default")
+            return Result(true, "أرسلت أمر إدارة الخلفية إلى نظام التطبيق.")
+        }
+        if (q.contains("اللون") || q.contains("accent color")) {
+            AmarAiAppCommandBus.setAccentColor("default")
+            return Result(true, "أرسلت أمر إدارة اللون إلى نظام التطبيق.")
+        }
         if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) return Result(true, AmarAiEngineBinding.market())
         if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) return Result(true, AmarAiEngineBinding.riskGate())
         if (q.contains("راجع الاستراتيجية") || q.contains("validate strategy") || q.contains("تحقق من الاستراتيجية")) {
-            val values = Regex("[-+]?\\d+(?:\\.\\d+)?").findAll(q).mapNotNull { it.value.toDoubleOrNull() }.toList()
+            val values = numberPattern.findAll(q).mapNotNull { it.value.toDoubleOrNull() }.toList()
             return Result(true, AmarAiEngineBinding.validate(values))
         }
-        if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره.")
+        if (q.contains("حالة التتبع") || q.contains("tracking status") || q.contains("راقب الصفقات")) {
+            return Result(true, "ENGINE_TRACKING|status=PENDING_RUNTIME_QUERY|لا يتم اختلاق بيانات التتبع؛ ستقرأ من MT5 Runtime عند توفره.")
+        }
         if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
             val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
-            AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
+            AmarAiAppCommandBus.setVisualEffects(enable)
+            return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
         }
         return Result(false, "")
+    }
+
+    private fun parseTradingCommand(q: String): Result? {
+        // Explicit bot lot change: require both bot number and lot value.
+        if ((q.contains("ارفع") || q.contains("خفض") || q.contains("غير") || q.contains("غيّر")) &&
+            (q.contains("لوت") || q.contains("lot"))) {
+            val bot = botPattern.find(q)?.groupValues?.getOrNull(1)?.toIntOrNull()
+            val lot = lotPattern.find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+            if (bot == null || lot == null || lot <= 0.0) {
+                return Result(true, "أعطني رقم البوت وقيمة اللوت المطلوبة، ولا يتم تخمين أي قيمة.")
+            }
+            if (bot !in 1..10) return Result(true, "رقم البوت غير صالح؛ المسموح من 1 إلى 10.")
+            val command = "SET_LOT|bot=$bot|lot=$lot"
+            AmarAiAppCommandBus.queueBotCommand(bot, command)
+            return Result(true, "PENDING_MT5|تم تجهيز تغيير لوت البوت $bot إلى $lot، بانتظار MT5/Bridge.")
+        }
+
+        if ((q.contains("مستوى اللوت") || q.contains("قيمة اللوت")) && !q.contains("لوت ")) {
+            return Result(true, "أعطني القيمة المطلوبة للوت، ولا يتم تخمينها.")
+        }
+
+        if (q.contains("افتح") && (q.contains("شراء") || q.contains("بيع"))) {
+            val side = if (q.contains("شراء")) "BUY" else "SELL"
+            val symbol = Regex("\\b[A-Za-z]{3,12}(?:[A-Za-z]{3,12})?\\b").find(q)?.value?.uppercase()
+            val lot = lotPattern.find(q)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+            if (symbol == null || lot == null || lot <= 0.0) {
+                return Result(true, "أحتاج الرمز وقيمة اللوت الصريحة قبل تجهيز أمر السوق.")
+            }
+            val validation = AmarAiExecutionOrchestrator.validate(
+                AmarAiExecutionOrchestrator.Intent(
+                    type = AmarAiExecutionOrchestrator.Type.OPEN_MARKET,
+                    symbol = symbol,
+                    side = side,
+                    volume = lot
+                )
+            )
+            if (!validation.accepted) return Result(true, validation.message)
+            val intent = AmarAiExecutionOrchestrator.Intent(
+                type = AmarAiExecutionOrchestrator.Type.OPEN_MARKET,
+                symbol = symbol,
+                side = side,
+                volume = lot
+            )
+            AmarAiAppCommandBus.queueExecutionIntent(intent)
+            return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
+        }
+
+        if (q.contains("عند الخسارة") && q.contains("دولار") && q.contains("أغلق")) {
+            val amount = numberPattern.findAll(q).lastOrNull()?.value?.toDoubleOrNull()
+            if (amount == null || amount <= 0.0) return Result(true, "أعطني قيمة الخسارة بالدولار.")
+            val intent = AmarAiExecutionOrchestrator.Intent(
+                type = AmarAiExecutionOrchestrator.Type.SET_STOP_LOSS,
+                amountUsd = amount
+            )
+            AmarAiAppCommandBus.queueExecutionIntent(intent)
+            return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
+        }
+
+        if (q.contains("عند الربح") && q.contains("دولار")) {
+            val amount = numberPattern.findAll(q).lastOrNull()?.value?.toDoubleOrNull()
+            if (amount == null || amount <= 0.0) return Result(true, "أعطني قيمة الربح بالدولار.")
+            val intent = AmarAiExecutionOrchestrator.Intent(
+                type = AmarAiExecutionOrchestrator.Type.SET_PROFIT_TRIGGER,
+                amountUsd = amount
+            )
+            AmarAiAppCommandBus.queueExecutionIntent(intent)
+            return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
+        }
+
+        if (q.contains("شغل الشبكة") || q.contains("شغّل الشبكة") || q.contains("ابدأ الشبكة")) {
+            val intent = AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.START_GRID)
+            AmarAiAppCommandBus.queueExecutionIntent(intent)
+            return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
+        }
+
+        if (q.contains("شغل التتبع") || q.contains("شغّل التتبع") || q.contains("ابدأ التتبع")) {
+            val intent = AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.START_TRACKING)
+            AmarAiAppCommandBus.queueExecutionIntent(intent)
+            return Result(true, AmarAiExecutionOrchestrator.canonical(intent))
+        }
+
+        return null
     }
 }
