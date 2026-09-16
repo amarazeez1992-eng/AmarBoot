@@ -44,15 +44,23 @@ class AmarAiAgentEngine(private val context: Context? = null) {
 
     private val tools = object : AmarAgentToolRegistry {
         override fun availableTools(policy: AmarAgentPolicy): List<AmarAgentTool> =
-            AmarAiToolRegistry.all().mapNotNull { spec ->
+            AmarAiToolRegistry.all().map { spec ->
                 val scope = when (spec.name) {
                     "research_external", "multi_source_research", "trading_library_search", "bot_discovery" -> AmarToolScope.RESEARCH
                     "test_strategy", "validate_results", "precision_audit", "uncertainty_audit", "evolution_gate", "champion_challenger", "counterfactual" -> AmarToolScope.SIMULATION
                     "strategy_save", "approval_proposal" -> AmarToolScope.STRATEGY_WRITE
                     else -> AmarToolScope.READ_ONLY
                 }
-                if (policy.allows(scope)) AmarAgentTool(spec.name, "AMAR capability: ${spec.name}", scope) else null
-            }
+                AmarAgentTool(spec.name, "AMAR capability: ${spec.name}", scope)
+            }.filter { policyScopeAllowed(policy, it.scope) }
+    }
+
+    private fun policyScopeAllowed(policy: AmarAgentPolicy, scope: AmarToolScope): Boolean = when (scope) {
+        AmarToolScope.RESEARCH -> policy.allowResearch
+        AmarToolScope.SIMULATION -> policy.allowSimulation
+        AmarToolScope.STRATEGY_WRITE -> policy.allowStrategyDrafting
+        AmarToolScope.EXECUTION_FUTURE -> policy.allowBrokerExecution
+        AmarToolScope.READ_ONLY -> true
     }
 
     private val research = object : AmarResearchEngine {
@@ -85,8 +93,7 @@ class AmarAiAgentEngine(private val context: Context? = null) {
         consensusEngine = AmarAgentEvidenceConsensus(),
         critic = AmarAgentCritic(),
         verifier = AmarAgentVerifier(policy.minimumEvidenceConfidence),
-        reasoningProvider = AmarLocalReasoning(),
-        hierarchy = com.personal.gridbot.amaros.agent.AmarAgentHierarchy()
+        reasoningProvider = AmarLocalReasoning()
     )
 
     /** Compatibility signature retained so existing callers do not break. */
