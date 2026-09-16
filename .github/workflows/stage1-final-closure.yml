@@ -79,7 +79,22 @@ jobs:
             exit 1
           fi
 
-      - name: Release artifact verification
+      - name: Verify installable debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk='app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$apk"
+          test "$(stat -c '%s' "$apk")" -gt 100000
+          if command -v apksigner >/dev/null 2>&1; then
+            apksigner verify --verbose "$apk"
+          else
+            echo 'apksigner not on PATH; Android Gradle Plugin debug signing is still required by assembleDebug.'
+          fi
+          sha256sum "$apk"
+          stat -c '%n %s bytes' "$apk"
+
+      - name: Verify release artifact
         shell: bash
         run: |
           set -euo pipefail
@@ -87,6 +102,13 @@ jobs:
           test -s "$apk"
           sha256sum "$apk"
           stat -c '%n %s bytes' "$apk"
+
+      - name: Upload installable APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: amar-stage1-installable-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
       - name: Upload closure evidence
         if: always()
