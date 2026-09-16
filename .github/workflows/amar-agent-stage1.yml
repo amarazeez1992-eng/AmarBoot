@@ -32,11 +32,15 @@ jobs:
             exit 1
           fi
 
-      - name: Create Gradle wrapper
-        run: gradle wrapper --gradle-version 8.7
+      - name: Install Gradle 8.7
+        shell: bash
+        run: |
+          curl -fsSL https://services.gradle.org/distributions/gradle-8.7-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          echo "/tmp/gradle-8.7/bin" >> "$GITHUB_PATH"
 
       - name: Agent unit tests
-        run: ./gradlew --no-daemon testDebugUnitTest
+        run: gradle --no-daemon testDebugUnitTest
 
       - name: Android debug build
-        run: ./gradlew --no-daemon assembleDebug
+        run: gradle --no-daemon assembleDebug
