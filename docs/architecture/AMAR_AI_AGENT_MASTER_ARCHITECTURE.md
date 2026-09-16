@@ -1,7 +1,7 @@
 # AMAR AI Agent — Master Architecture
 
 ## Mission
-AMAR AI is a proprietary, trading-focused agent. It is vendor-neutral: Gemini and ChatGPT are optional adapters, never the core dependency.
+AMAR AI is a proprietary, trading-focused agent. It is provider-neutral and currently operates through the verified local reasoning boundary.
 
 ## Layers
 
