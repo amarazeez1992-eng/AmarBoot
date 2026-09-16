@@ -8,9 +8,3 @@ package com.personal.gridbot.amaros.agent
 interface AmarAgentProvider {
     suspend fun respond(request: AmarAgentRequest): AmarAgentResponse
 }
-
-/** Legacy tool contract retained under a distinct name until all integrations migrate. */
-interface AmarLegacyAgentTool {
-    val name: String
-    suspend fun execute(input: Map<String, String>): Map<String, String>
-}
