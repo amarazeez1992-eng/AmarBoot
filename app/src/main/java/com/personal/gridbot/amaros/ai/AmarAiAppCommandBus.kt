@@ -4,27 +4,89 @@ import com.personal.gridbot.amaros.navigation.AmarRoom
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
-/** UI/application command bridge. AI never owns broker execution. */
+/**
+ * Application command transport owned by the AMAR Agent authority.
+ * UI/action parsing can request capabilities, but it does not execute them directly.
+ */
 object AmarAiAppCommandBus {
     sealed interface Command {
         data class OpenRoom(val room: AmarRoom) : Command
         data class SetVisualEffects(val enabled: Boolean) : Command
         data class QueueBotCommand(val botNumber: Int, val command: String) : Command
     }
+
     private val _commands = MutableSharedFlow<Command>(extraBufferCapacity = 32)
     val commands: SharedFlow<Command> = _commands
-    fun openRoom(room: AmarRoom) { _commands.tryEmit(Command.OpenRoom(room)) }
-    fun setVisualEffects(enabled: Boolean) { _commands.tryEmit(Command.SetVisualEffects(enabled)) }
-    fun queueBotCommand(botNumber: Int, command: String) { _commands.tryEmit(Command.QueueBotCommand(botNumber, command)) }
+
+    internal fun emitFromAgent(command: Command): Boolean = _commands.tryEmit(command)
+
+    fun openRoom(room: AmarRoom) = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.OpenRoom(room))
+
+    fun setVisualEffects(enabled: Boolean) = AmarAgentApplicationAuthority.request(
+        AmarAgentApplicationAuthority.Request.SetVisualEffects(enabled)
+    )
+
+    fun queueBotCommand(botNumber: Int, command: String) = AmarAgentApplicationAuthority.request(
+        AmarAgentApplicationAuthority.Request.QueueBotCommand(botNumber, command)
+    )
+
     fun queueExecutionIntent(intent: AmarAiExecutionOrchestrator.Intent) {
         val validation = AmarAiExecutionOrchestrator.validate(intent)
-        if (validation.accepted) queueBotCommand(intent.botNumber, AmarAiExecutionOrchestrator.canonical(intent))
+        if (validation.accepted) {
+            queueBotCommand(intent.botNumber, AmarAiExecutionOrchestrator.canonical(intent))
+        }
     }
 }
 
-/** Deterministic local natural-language actions. Values are never guessed. */
+/**
+ * Single application authority for commands originating from the AMAR intelligence layer.
+ * Sensitive broker execution remains fail-closed until the explicitly deferred MT5 stage.
+ */
+object AmarAgentApplicationAuthority {
+    var agentEnabled: Boolean = true
+        private set
+    var allowApplicationControl: Boolean = true
+        private set
+    var allowBrokerExecution: Boolean = false
+        private set
+
+    sealed interface Request {
+        data class OpenRoom(val room: AmarRoom) : Request
+        data class SetVisualEffects(val enabled: Boolean) : Request
+        data class QueueBotCommand(val botNumber: Int, val command: String) : Request
+    }
+
+    fun request(request: Request): Boolean {
+        if (!agentEnabled || !allowApplicationControl) return false
+        return when (request) {
+            is Request.OpenRoom -> AmarAiAppCommandBus.emitFromAgent(
+                AmarAiAppCommandBus.Command.OpenRoom(request.room)
+            )
+            is Request.SetVisualEffects -> AmarAiAppCommandBus.emitFromAgent(
+                AmarAiAppCommandBus.Command.SetVisualEffects(request.enabled)
+            )
+            is Request.QueueBotCommand -> {
+                if (request.botNumber !in 1..10 || request.command.isBlank()) return false
+                AmarAiAppCommandBus.emitFromAgent(
+                    AmarAiAppCommandBus.Command.QueueBotCommand(request.botNumber, request.command)
+                )
+            }
+        }
+    }
+
+    fun setApplicationControlEnabled(enabled: Boolean) {
+        allowApplicationControl = enabled
+    }
+
+    fun setBrokerExecutionEnabled(enabled: Boolean) {
+        allowBrokerExecution = enabled
+    }
+}
+
+/** Deterministic local natural-language actions delegated to the Agent application authority. */
 object AmarAiActionEngine {
     data class Result(val handled: Boolean, val response: String)
+
     fun route(text: String): Result {
         val q = text.trim().lowercase()
         if (q.isBlank()) return Result(false, "")
@@ -43,7 +105,9 @@ object AmarAiActionEngine {
             else -> null
         }
         if (room != null && (q.contains("اذهب") || q.contains("افتح") || q.contains("روح") || q.contains("go") || q.contains("open") || q.contains("اعرض"))) {
-            AmarAiAppCommandBus.openRoom(room); return Result(true, "فتحت ${room.titleAr}.")
+            return if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.OpenRoom(room))) {
+                Result(true, "فتحت ${room.titleAr} عبر سلطة AMAR Agent.")
+            } else Result(true, "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("حلل السوق") || q.contains("حلل السوق الآن") || q.contains("analyze market")) return Result(true, AmarAiEngineBinding.market())
         if (q.contains("راجع المخاطر") || q.contains("risk gate") || q.contains("تحقق من المخاطر")) return Result(true, AmarAiEngineBinding.riskGate())
@@ -55,7 +119,8 @@ object AmarAiActionEngine {
         if (q.contains("الشمعة") && (q.contains("ربع ساعة") || q.contains("15m") || q.contains("m15"))) return Result(true, "ENGINE_CANDLE|status=MT5_RUNTIME_REQUIRED|timeframe=M15|لا توجد نسبة مخترعة بدون بيانات شموع فعلية.")
         if (q.contains("الإضاءة") || q.contains("الاضاءة") || q.contains("visual effects") || q.contains("المؤثرات")) {
             val enable = !(q.contains("أوقف") || q.contains("اطف") || q.contains("إيقاف") || q.contains("off"))
-            AmarAiAppCommandBus.setVisualEffects(enable); return Result(true, if (enable) "فعّلت المؤثرات والإضاءة البصرية." else "أوقفت المؤثرات والإضاءة البصرية.")
+            val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.SetVisualEffects(enable))
+            return Result(true, if (accepted) "تم تغيير المؤثرات عبر سلطة AMAR Agent." else "تم رفض تغيير المؤثرات بواسطة سلطة AMAR Agent.")
         }
 
         val bot = Regex("(?:بوت|bot)\\s*(\\d+)").find(q)?.groupValues?.getOrNull(1)?.toIntOrNull() ?: 1
@@ -68,35 +133,41 @@ object AmarAiActionEngine {
             val targetBot = explicitBotLot.groupValues[1].toIntOrNull() ?: 1
             val targetLot = explicitBotLot.groupValues[2].toDoubleOrNull()
             if (targetBot !in 1..10 || targetLot == null || targetLot <= 0.0) return Result(true, "قيمة اللوت أو رقم البوت غير صالح.")
-            AmarAiAppCommandBus.queueBotCommand(targetBot, "SET_LOT:$targetLot")
-            return Result(true, "سجلت تغيير لوت البوت $targetBot إلى $targetLot، والحالة PENDING_MT5.")
+            return if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(targetBot, "SET_LOT:$targetLot"))) {
+                Result(true, "سجلت تغيير لوت البوت $targetBot عبر سلطة AMAR Agent؛ التنفيذ المالي ما زال مغلقًا حتى MT5.")
+            } else Result(true, "تم رفض أمر اللوت بواسطة سلطة AMAR Agent.")
         }
 
         if ((q.contains("افتح") || q.contains("فتح") || q.contains("open")) && (q.contains("شراء") || q.contains("buy") || q.contains("بيع") || q.contains("sell"))) {
             val side = if (q.contains("شراء") || q.contains("buy")) "BUY" else "SELL"
             if (symbol == null || volume == null) return Result(true, "أحتاج الرمز واللوت صراحةً. مثال: افتح شراء XAUUSD لوت 0.01")
-            AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.OPEN_MARKET, symbol, side, volume, botNumber = bot))
-            return Result(true, "جهزت أمر $side على $symbol بحجم $volume. الحالة PENDING_MT5 حتى تصل مرحلة الجسر.")
+            return if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "OPEN:$side:$symbol:$volume"))) {
+                Result(true, "جهزت أمر $side على $symbol بحجم $volume عبر سلطة AMAR Agent؛ التنفيذ الفعلي ما زال مغلقًا حتى MT5.")
+            } else Result(true, "تم رفض أمر التداول بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("اغلق الكل") || q.contains("أغلق الكل") || q.contains("close all")) {
-            AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.CLOSE_ALL, botNumber = bot)); return Result(true, "جهزت أمر إغلاق شامل. التنفيذ الفعلي ينتظر MT5/Bridge.")
+            val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "CLOSE_ALL"))
+            return Result(true, if (accepted) "جهزت أمر الإغلاق عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("عند الخسارة") || q.contains("stop loss") || q.contains("حد الخسارة")) {
             if (usd == null) return Result(true, "أعطني قيمة الخسارة بالدولار، مثلاً: عند الخسارة 30 دولار أغلق.")
-            AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.SET_STOP_LOSS, amountUsd = usd, botNumber = bot)); return Result(true, "جهزت حد خسارة ${usd}$ للمحرك عند اكتمال MT5/Bridge.")
+            val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_STOP_LOSS:$usd"))
+            return Result(true, if (accepted) "جهزت حد خسارة ${usd}$ عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("عند الربح") || q.contains("profit trigger") || q.contains("take profit")) {
             if (usd == null) return Result(true, "أعطني قيمة الربح بالدولار، مثلاً: عند الربح 2 دولار نفذ الأمر التالي.")
-            AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.SET_PROFIT_TRIGGER, amountUsd = usd, botNumber = bot)); return Result(true, "جهزت شرط ربح ${usd}$ للمحرك. التنفيذ الفعلي ينتظر MT5/Bridge.")
+            val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_PROFIT_TRIGGER:$usd"))
+            return Result(true, if (accepted) "جهزت شرط ربح ${usd}$ عبر سلطة AMAR Agent؛ التنفيذ ينتظر MT5." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (volume != null && (q.contains("لوت") || q.contains("lot"))) {
-            AmarAiAppCommandBus.queueBotCommand(bot, "SET_LOT:$volume"); return Result(true, "سجلت تغيير لوت البوت $bot إلى $volume، والحالة PENDING_MT5.")
+            val accepted = AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "SET_LOT:$volume"))
+            return Result(true, if (accepted) "سجلت تغيير لوت البوت $bot عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         }
         if (q.contains("ارفع مستوى اللوت") || q.contains("ارفع اللوت") || q.contains("ارفع لوت") || q.contains("increase lot")) return Result(true, "أستطيع رفع اللوت، لكن أعطني القيمة المطلوبة ولن أخمّن قيمة مالية.")
-        if (q.contains("شغل الشبكة") || q.contains("شغّل الشبكة") || q.contains("start grid")) { AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.START_GRID, botNumber = bot)); return Result(true, "جهزت تشغيل نظام الشبكة. التنفيذ ينتظر MT5/Bridge.") }
-        if (q.contains("أوقف الشبكة") || q.contains("اوقف الشبكة") || q.contains("stop grid")) { AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.STOP_GRID, botNumber = bot)); return Result(true, "جهزت إيقاف نظام الشبكة.") }
-        if (q.contains("شغل التتبع") || q.contains("شغّل التتبع") || q.contains("start tracking")) { AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.START_TRACKING, botNumber = bot)); return Result(true, "جهزت تشغيل نظام التتبع.") }
-        if (q.contains("أوقف التتبع") || q.contains("اوقف التتبع") || q.contains("stop tracking")) { AmarAiAppCommandBus.queueExecutionIntent(AmarAiExecutionOrchestrator.Intent(AmarAiExecutionOrchestrator.Type.STOP_TRACKING, botNumber = bot)); return Result(true, "جهزت إيقاف نظام التتبع.") }
+        if (q.contains("شغل الشبكة") || q.contains("شغّل الشبكة") || q.contains("start grid")) return Result(true, if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "START_GRID"))) "جهزت تشغيل الشبكة عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+        if (q.contains("أوقف الشبكة") || q.contains("اوقف الشبكة") || q.contains("stop grid")) return Result(true, if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "STOP_GRID"))) "جهزت إيقاف الشبكة عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+        if (q.contains("شغل التتبع") || q.contains("شغّل التتبع") || q.contains("start tracking")) return Result(true, if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "START_TRACKING"))) "جهزت التتبع عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
+        if (q.contains("أوقف التتبع") || q.contains("اوقف التتبع") || q.contains("stop tracking")) return Result(true, if (AmarAgentApplicationAuthority.request(AmarAgentApplicationAuthority.Request.QueueBotCommand(bot, "STOP_TRACKING"))) "جهزت إيقاف التتبع عبر سلطة AMAR Agent." else "تم رفض الأمر بواسطة سلطة AMAR Agent.")
         return Result(false, "")
     }
 }
