@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.speech.tts.TextToSpeech
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.RepeatMode
@@ -90,6 +91,9 @@ fun AmarAiAgentWorkspaceScreen() {
         onDispose { engine?.stop(); engine?.shutdown(); tts = null; capture?.stopAll() }
     }
 
+    val micPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) voiceRecording = capture?.startVoice() == true else conversation.addSystem("FAIL_CLOSED: لم يُمنح إذن الميكروفون.")
+    }
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             cameraActive = capture?.startCamera() == true
@@ -112,24 +116,19 @@ fun AmarAiAgentWorkspaceScreen() {
             voiceRecording = false
             if (evidence == null) conversation.addSystem("FAIL_CLOSED: تعذر حفظ التسجيل الصوتي.") else lastEvidence = evidence
         } else {
-            val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-            if (!granted) {
-                conversation.addSystem("FAIL_CLOSED: امنح إذن الميكروفون لتسجيل Voice Message.")
-                return
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            } else {
+                voiceRecording = capture?.startVoice() == true
+                if (!voiceRecording) conversation.addSystem("FAIL_CLOSED: تعذر تشغيل مسجل الصوت.")
             }
-            voiceRecording = capture?.startVoice() == true
-            if (!voiceRecording) conversation.addSystem("FAIL_CLOSED: تعذر تشغيل مسجل الصوت.")
         }
     }
 
     fun toggleCamera() {
         if (cameraActive) { capture?.stopCamera(); cameraActive = false; selectedTool = "الكاميرا — STOPPED"; return }
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            cameraPermission.launch(Manifest.permission.CAMERA)
-        } else {
-            cameraActive = capture?.startCamera() == true
-            selectedTool = if (cameraActive) "الكاميرا — ACTIVE • evidence capture" else "الكاميرا — FAIL_CLOSED"
-        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) cameraPermission.launch(Manifest.permission.CAMERA)
+        else { cameraActive = capture?.startCamera() == true; selectedTool = if (cameraActive) "الكاميرا — ACTIVE • evidence capture" else "الكاميرا — FAIL_CLOSED" }
     }
 
     fun toggleScreen() {
@@ -169,9 +168,7 @@ fun AmarAiAgentWorkspaceScreen() {
                     Column { Text("غرفة الوكيل المركزية", color = Color.White, fontWeight = FontWeight.Bold); Text(if (busy) "AMAR يعمل الآن" else "جاهز • القرار داخل الوكيل", color = if (busy) Cyan else Muted, style = MaterialTheme.typography.labelSmall) }
                     Surface(color = Color(0xFF143A31), shape = CircleShape) { Text("● ONLINE", color = Color(0xFF79F0C2), modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall) }
                 }
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("تحليل", "بحث", "اختبار", "نقد", "قرار").forEach { mode -> FilterChip(selected = false, onClick = { text = mode }, label = { Text(mode) }) }
-                }
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf("تحليل", "بحث", "اختبار", "نقد", "قرار").forEach { mode -> FilterChip(selected = false, onClick = { text = mode }, label = { Text(mode) }) } }
                 if (controlsOpen) {
                     SettingRow("الأدلة", evidenceOpen) { evidenceOpen = it }
                     SettingRow("المحادثة الصوتية / TTS", voiceMode) { voiceMode = it }
@@ -185,33 +182,25 @@ fun AmarAiAgentWorkspaceScreen() {
             items(conversation.messages) { message ->
                 val isAi = message.role == AmarAiConversationState.Role.AI
                 val color = when (message.role) { AmarAiConversationState.Role.USER -> Cyan; AmarAiConversationState.Role.AI -> Color.White; else -> Muted }
-                Card(colors = CardDefaults.cardColors(containerColor = if (isAi) Panel2 else Panel), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(12.dp)) { Text(if (isAi) "AMAR AI" else message.role.name, color = color, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold); Text(message.text, color = Color.White) }
-                }
+                Card(colors = CardDefaults.cardColors(containerColor = if (isAi) Panel2 else Panel), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) { Text(if (isAi) "AMAR AI" else message.role.name, color = color, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold); Text(message.text, color = Color.White) } }
             }
         }
 
-        if (evidenceOpen) Text("EVIDENCE • capture: ${if (lastEvidence == null) "none" else lastEvidence!!.channel.name} • hash/provenance محفوظ • interpretation remains Agent-gated", color = Muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+        if (evidenceOpen) Text("EVIDENCE • ${lastEvidence?.channel?.name ?: "none"} • hash/provenance محفوظ • interpretation remains Agent-gated", color = Muted, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
         attachment?.let { Text("📎 $it", color = Cyan, modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)) }
 
-        if (selectedTool != null) {
-            Card(colors = CardDefaults.cardColors(containerColor = Panel2), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)) {
-                Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Text(selectedTool!!, color = Gold, modifier = Modifier.weight(1f)); TextButton(onClick = { selectedTool = null }) { Text("إغلاق") } }
-            }
-        }
+        if (selectedTool != null) Card(colors = CardDefaults.cardColors(containerColor = Panel2), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 5.dp)) { Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) { Text(selectedTool!!, color = Gold, modifier = Modifier.weight(1f)); TextButton(onClick = { selectedTool = null }) { Text("إغلاق") } } }
 
         Surface(color = Panel, tonalElevation = 8.dp, modifier = Modifier.fillMaxWidth()) {
-            if (menuOpen) {
-                Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("إضافات الوكيل", color = Gold, fontWeight = FontWeight.Bold)
-                    Tool("🖼️", "إرسال صورة", true) { picker.launch("image/*"); selectedTool = "إرسال صورة"; menuOpen = false }
-                    Tool("📁", "إرسال ملف", true) { picker.launch("*/*"); selectedTool = "إرسال ملف"; menuOpen = false }
-                    Tool("📄", "إرسال مستند", true) { picker.launch("application/pdf"); selectedTool = "إرسال مستند"; menuOpen = false }
-                    Tool("🗣️", "التحدث مع الوكيل / TTS", true) { voiceMode = !voiceMode; selectedTool = if (voiceMode) "التحدث مع الوكيل — TTS ACTIVE" else "التحدث مع الوكيل — TTS OFF"; menuOpen = false }
-                    Tool("🎙️", if (voiceRecording) "إيقاف Voice Message" else "تسجيل Voice Message", true) { toggleVoiceRecording(); selectedTool = if (voiceRecording) "Voice Message — RECORDING" else "Voice Message — STOPPED"; menuOpen = false }
-                    Tool("📷", if (cameraActive) "إيقاف الكاميرا" else "مشاركة الكاميرا", true) { toggleCamera(); menuOpen = false }
-                    Tool("🖥️", if (screenActive) "إيقاف مشاركة الشاشة" else "مشاركة الشاشة", true) { toggleScreen(); menuOpen = false }
-                }
+            if (menuOpen) Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("إضافات الوكيل", color = Gold, fontWeight = FontWeight.Bold)
+                Tool("🖼️", "إرسال صورة", true) { picker.launch("image/*"); selectedTool = "إرسال صورة"; menuOpen = false }
+                Tool("📁", "إرسال ملف", true) { picker.launch("*/*"); selectedTool = "إرسال ملف"; menuOpen = false }
+                Tool("📄", "إرسال مستند", true) { picker.launch("application/pdf"); selectedTool = "إرسال مستند"; menuOpen = false }
+                Tool("🗣️", "التحدث مع الوكيل / TTS", true) { voiceMode = !voiceMode; selectedTool = if (voiceMode) "التحدث مع الوكيل — TTS ACTIVE" else "التحدث مع الوكيل — TTS OFF"; menuOpen = false }
+                Tool("🎙️", if (voiceRecording) "إيقاف Voice Message" else "تسجيل Voice Message", true) { toggleVoiceRecording(); menuOpen = false }
+                Tool("📷", if (cameraActive) "إيقاف الكاميرا" else "مشاركة الكاميرا", true) { toggleCamera(); menuOpen = false }
+                Tool("🖥️", if (screenActive) "إيقاف مشاركة الشاشة" else "مشاركة الشاشة", true) { toggleScreen(); menuOpen = false }
             }
             Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilledTonalIconButton(onClick = { menuOpen = !menuOpen }, modifier = Modifier.size(48.dp)) { Icon(if (menuOpen) Icons.Default.Close else Icons.Default.Add, "الإضافات") }
@@ -224,5 +213,4 @@ fun AmarAiAgentWorkspaceScreen() {
 }
 
 @Composable private fun SettingRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(label, color = Color.White); Switch(checked, onChange) } }
-
 @Composable private fun Tool(symbol: String, label: String, enabled: Boolean, onClick: () -> Unit) { OutlinedButton(onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("$symbol  $label") } }
