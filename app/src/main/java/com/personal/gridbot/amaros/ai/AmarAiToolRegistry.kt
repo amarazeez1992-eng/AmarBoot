@@ -1,17 +1,42 @@
 package com.personal.gridbot.amaros.ai
 
-class AmarAiToolRegistry {
-    data class ToolSpec(val name: String, val authority: Authority, val draftOnly: Boolean)
+/** Explicit authority classification for tools callable by the AI Copilot. */
+object AmarAiToolRegistry {
+    enum class Authority { READ_ONLY, DRAFT_ONLY }
 
-    enum class Authority { DRAFT_ONLY, EXECUTION_CAPABLE }
-
-    private val specs = linkedMapOf(
-        "chart" to ToolSpec("chart", Authority.DRAFT_ONLY, true),
-        "news" to ToolSpec("news", Authority.DRAFT_ONLY, true),
-        "market" to ToolSpec("market", Authority.DRAFT_ONLY, true),
-        "bot_lab" to ToolSpec("bot_lab", Authority.DRAFT_ONLY, true),
-        "mt5" to ToolSpec("mt5", Authority.DRAFT_ONLY, true)
+    data class ToolSpec(
+        val name: String,
+        val authority: Authority,
+        val requiresContext: Boolean = false
     )
+
+    private val specs = listOf(
+        "inspect_app" to Authority.READ_ONLY,
+        "engine_market" to Authority.READ_ONLY,
+        "tracking" to Authority.READ_ONLY,
+        "candle" to Authority.READ_ONLY,
+        "analyze_market" to Authority.READ_ONLY,
+        "research_external" to Authority.READ_ONLY,
+        "multi_source_research" to Authority.READ_ONLY,
+        "trading_library_search" to Authority.READ_ONLY,
+        "library_search" to Authority.READ_ONLY,
+        "bot_discovery" to Authority.READ_ONLY,
+        "inspect_bot" to Authority.READ_ONLY,
+        "strategy_quality" to Authority.READ_ONLY,
+        "test_strategy" to Authority.READ_ONLY,
+        "validate_results" to Authority.READ_ONLY,
+        "precision_audit" to Authority.READ_ONLY,
+        "uncertainty_audit" to Authority.READ_ONLY,
+        "self_audit" to Authority.READ_ONLY,
+        "evolution_gate" to Authority.READ_ONLY,
+        "champion_challenger" to Authority.READ_ONLY,
+        "counterfactual" to Authority.READ_ONLY,
+        "strategy_load" to Authority.READ_ONLY,
+        "approval_proposal" to Authority.DRAFT_ONLY,
+        "strategy_save" to Authority.DRAFT_ONLY
+    ).associate { (name, authority) ->
+        name to ToolSpec(name, authority, authority == Authority.DRAFT_ONLY)
+    }
 
     fun resolve(name: String): ToolSpec? = specs[name.trim()]
 
