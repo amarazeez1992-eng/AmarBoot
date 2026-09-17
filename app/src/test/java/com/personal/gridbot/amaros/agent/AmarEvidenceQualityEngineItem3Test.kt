@@ -17,20 +17,18 @@ class AmarEvidenceQualityEngineItem3Test {
         )
         val report = engine.assess(listOf(finding), now)
         assertEquals(AmarEvidenceQualityStatus.VERIFIED, report.status)
-        assertTrue(report.score >= 0.70)
+        assertTrue(report.score >= 0.80)
         assertEquals(1, report.independentSourceCount)
         assertEquals(0, report.duplicateEvidenceCount)
     }
 
     @Test
-    fun duplicate_evidence_is_detected_and_ranked_deterministically() {
+    fun duplicate_evidence_is_detected_and_not_verified() {
         val first = finding("https://a.example/item", "The same market evidence is published here.", Authority.REPUTABLE)
         val duplicate = finding("https://b.example/item", "The same market evidence is published here.", Authority.OFFICIAL)
         val report = engine.assess(listOf(first, duplicate), now)
-        val ranked1 = engine.rank(listOf(first, duplicate), now)
-        val ranked2 = engine.rank(listOf(first, duplicate), now)
         assertEquals(1, report.duplicateEvidenceCount)
-        assertEquals(ranked1.map { it.fingerprint }, ranked2.map { it.fingerprint })
+        assertTrue(report.status != AmarEvidenceQualityStatus.VERIFIED)
     }
 
     @Test
@@ -57,7 +55,8 @@ class AmarEvidenceQualityEngineItem3Test {
 
     @Test
     fun policy_is_versioned_and_validates_weights() {
-        assertEquals(1, AmarEvidencePolicy.DEFAULT.version)
+        assertEquals(2, AmarEvidencePolicy.DEFAULT.version)
+        assertEquals(0.80, AmarEvidencePolicy.DEFAULT.verifiedThreshold, 0.000001)
         assertTrue(runCatching {
             AmarEvidencePolicy(authorityWeight = .5, freshnessWeight = .5, independenceWeight = .1, uniquenessWeight = .1)
         }.isFailure)
