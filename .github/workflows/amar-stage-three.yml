@@ -18,6 +18,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up project-compatible Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
       - name: Verify Gradle toolchain
         run: gradle --version
 
