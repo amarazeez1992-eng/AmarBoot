@@ -90,20 +90,19 @@ class AmarAgentOrchestrator(
         val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
-        val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
         val directionMismatch = decisionRelevant && stageDirection != AmarDecisionDirection.UNKNOWN && answerDirection != AmarDecisionDirection.UNKNOWN && stageDirection != answerDirection
 
         val councilReview = if (!decisionRelevant) {
             AmarDecisionReview(emptyList(), 1.0, emptyList(), true, "hierarchy review not required for this response")
-        } else if (direction != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
+        } else if (answerDirection != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
             val confidence = minOf(verification?.confidence ?: 0.0, consensus?.consensusScore ?: 0.0, stageTwo?.confidence ?: 0.0)
-            val opinions = roleOpinionEngine.buildOpinions(answer, direction, confidence, unifiedFindings)
+            val opinions = roleOpinionEngine.buildOpinions(answer, answerDirection, confidence, unifiedFindings)
             decisionCouncil.review(opinions)
         } else {
             AmarDecisionReview(emptyList(), 0.0, if (directionMismatch) listOf("final_answer_direction_mismatch") else emptyList(), false, if (directionMismatch) "final answer conflicts with Stage 2 consensus" else "explicit_direction_required")
         }
 
-        session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${direction.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
+        session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${answerDirection.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
         val decisionVerification = verifier.verify(answer.answer, consensus, critique, verification)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
         val hardeningApproved = !needsResearch || hardening.approved
