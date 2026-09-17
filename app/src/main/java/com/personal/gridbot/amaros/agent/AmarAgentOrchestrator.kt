@@ -35,14 +35,7 @@ class AmarAgentOrchestrator(
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
-            researchEngine.research(
-                ResearchRequest(
-                    request.text,
-                    safeRequestedSources,
-                    request.requireCrossValidation,
-                    minOf(safeBudget.targetIndependentSources, safeRequestedSources)
-                )
-            )
+            researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
         } else null
 
         val stageThree = if (needsResearch) {
@@ -81,62 +74,41 @@ class AmarAgentOrchestrator(
         } else null
 
         session.record(AmarAgentStage.REASON, "DIRECTOR: final synthesis with evidence and multi-role deliberation")
-        val answer = reasoningProvider.respond(
-            AmarAgentContext(
-                userText = request.text + "\n\n" + evidenceText + buildStageTwoText(stageTwo),
-                tools = plannedTools,
-                executionAllowed = false,
-                brokerAccessAllowed = false,
-                requestedSourceCount = safeRequestedSources,
-                maximumSourceCount = safeMaximumSources,
-                requireCrossValidation = request.requireCrossValidation,
-                requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
-            )
-        )
+        val answer = reasoningProvider.respond(AmarAgentContext(
+            userText = request.text + "\n\n" + evidenceText + buildStageTwoText(stageTwo),
+            tools = plannedTools,
+            executionAllowed = false,
+            brokerAccessAllowed = false,
+            requestedSourceCount = safeRequestedSources,
+            maximumSourceCount = safeMaximumSources,
+            requireCrossValidation = request.requireCrossValidation,
+            requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
+        ))
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
         val critique = critic.review(answer.answer, unifiedFindings, requireEvidence = needsResearch)
         val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
-        val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
-        val directionMismatch = decisionRelevant &&
-            stageDirection != AmarDecisionDirection.UNKNOWN &&
-            answerDirection != AmarDecisionDirection.UNKNOWN &&
-            stageDirection != answerDirection
+        val directionMismatch = decisionRelevant && stageDirection != AmarDecisionDirection.UNKNOWN && answerDirection != AmarDecisionDirection.UNKNOWN && stageDirection != answerDirection
 
-        val councilReview = if (decisionRelevant && direction != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
-            val confidence = minOf(
-                verification?.confidence ?: 0.0,
-                consensus?.consensusScore ?: 0.0,
-                stageTwo?.confidence ?: 0.0
-            )
+        val councilReview = if (!decisionRelevant) {
+            AmarDecisionReview(emptyList(), 1.0, emptyList(), true, "hierarchy review not required for this response")
+        } else if (direction != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
+            val confidence = minOf(verification?.confidence ?: 0.0, consensus?.consensusScore ?: 0.0, stageTwo?.confidence ?: 0.0)
             val opinions = roleOpinionEngine.buildOpinions(answer, direction, confidence, unifiedFindings)
             decisionCouncil.review(opinions)
         } else {
-            AmarDecisionReview(
-                emptyList(),
-                0.0,
-                if (directionMismatch) listOf("final_answer_direction_mismatch") else emptyList(),
-                false,
-                if (directionMismatch) "final answer conflicts with Stage 2 consensus" else
-                    if (decisionRelevant) "explicit_direction_required" else "hierarchy review not required for this response"
-            )
+            AmarDecisionReview(emptyList(), 0.0, if (directionMismatch) listOf("final_answer_direction_mismatch") else emptyList(), false, if (directionMismatch) "final answer conflicts with Stage 2 consensus" else "explicit_direction_required")
         }
 
-        session.record(
-            AmarAgentStage.VALIDATE,
-            "DECISION_CONFIRMATION: direction=${direction.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}"
-        )
+        session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${direction.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
         val decisionVerification = verifier.verify(answer.answer, consensus, critique, verification)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
         val hardeningApproved = !needsResearch || hardening.approved
         val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
-        session.record(
-            if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED,
-            if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked"
-        )
+        session.record(if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked")
 
         val finalIssues = mutableListOf<String>()
         finalIssues += decisionVerification.issues
@@ -145,33 +117,12 @@ class AmarAgentOrchestrator(
         if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
-        val finalResponse = if (finalApproved) answer else answer.copy(
-            status = AmarAgentResponse.Status.ERROR,
-            answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}"
-        )
+        val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}")
 
-        return AmarAgentRunResult(
-            response = finalResponse,
-            plan = plan,
-            research = report,
-            sourceVerification = verification,
-            consensus = consensus,
-            critique = critique,
-            finalVerification = decisionVerification,
-            stageTwo = stageTwo,
-            stageThree = stageThree,
-            hardening = hardening,
-            sessionEvents = session.events()
-        )
+        return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, sessionEvents = session.events())
     }
 
-    private fun buildHardeningReport(
-        answer: String,
-        findings: List<ResearchFinding>,
-        verification: AmarSourceVerification?,
-        consensus: AmarConsensusReport?,
-        stageTwo: AmarStageTwoResult?
-    ): AmarStageTwoHardeningReport {
+    private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
         val quality = evidenceQualityEngine.assess(findings)
         val claims = claimVerificationEngine.verify(answer, findings)
         val raw = listOfNotNull(verification?.confidence, consensus?.consensusScore, stageTwo?.confidence).minOrNull() ?: 0.0
@@ -193,9 +144,7 @@ class AmarAgentOrchestrator(
         appendLine("approvedForSimulation=${result.approvedForSimulation}")
         appendLine("consensusDirection=${result.deliberation.consensusDirection}")
         appendLine("conflicts=${result.deliberation.conflicts.joinToString(" | ")}")
-        result.deliberation.reports.forEach {
-            appendLine("role=${it.roleId};direction=${it.direction};confidence=${it.confidence};conclusion=${it.conclusion}")
-        }
+        result.deliberation.reports.forEach { appendLine("role=${it.roleId};direction=${it.direction};confidence=${it.confidence};conclusion=${it.conclusion}") }
         appendLine("executionAllowed=false")
         appendLine("brokerAccessAllowed=false")
     }
