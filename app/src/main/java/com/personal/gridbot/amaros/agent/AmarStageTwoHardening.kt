@@ -18,13 +18,21 @@ class AmarEvidenceQualityEngine(
 
     fun assess(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarEvidenceQualityReport {
         val items = findings.map { finding -> assessItem(finding, findings, nowEpochMs) }
-        val usableIndices = items.indices.filter { items[it].integrityValid && items[it].contentValid }
-        val usable = usableIndices.map { items[it] }
+        val usable = items.filter { it.integrityValid && it.contentValid }
         val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
-        val independentHosts = usable.mapNotNull { it.host }.distinct()
+
+        // Source topology is observable from supplied content/URIs even when an item's
+        // integrity fails. It must not silently disappear from the diagnostic report.
+        val independentHosts = items
+            .filter { it.contentValid }
+            .mapNotNull { it.host }
+            .distinct()
+
         // Duplication is a property of supplied evidence content, not of fingerprint integrity.
         // Integrity remains fail-closed independently through item.score and report.status.
-        val allEvidenceKeys = findings.map { normalizedEvidenceKey(it.evidence.trim()) }.filter { it.isNotBlank() }
+        val allEvidenceKeys = findings
+            .map { normalizedEvidenceKey(it.evidence.trim()) }
+            .filter { it.isNotBlank() }
         val duplicateCount = allEvidenceKeys.size - allEvidenceKeys.distinct().size
         val hasIntegrityFailure = items.any { !it.integrityValid }
         val hasContentFailure = items.any { !it.contentValid }
