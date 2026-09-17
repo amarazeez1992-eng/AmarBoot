@@ -21,7 +21,8 @@ class AmarEvidenceQualityEngine(
         val usable = items.filter { it.integrityValid && it.contentValid }
         val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
         val independentHosts = usable.mapNotNull { it.host }.distinct()
-        val duplicateCount = usable.size - usable.map { it.fingerprint }.distinct().size
+        val contentKeys = usable.map { contentKey(it) }
+        val duplicateCount = contentKeys.size - contentKeys.distinct().size
         val hasIntegrityFailure = items.any { !it.integrityValid }
         val hasContentFailure = items.any { !it.contentValid }
         val status = when {
@@ -66,13 +67,9 @@ class AmarEvidenceQualityEngine(
         val host = hostOf(sourceUri)
         val hostCount = if (host == null) 0 else allFindings.count { hostOf(it.sourceUri) == host }
         val independent = host != null && hostCount == 1
-        val fingerprintCount = allFindings.count {
-            val normalizedUri = it.sourceUri.trim()
-            val normalizedEvidence = it.evidence.trim()
-            val fingerprint = it.fingerprint.ifBlank { AmarEvidence.fingerprintOf("$normalizedUri|$normalizedEvidence") }
-            fingerprint == suppliedFingerprint
-        }
-        val unique = fingerprintCount == 1
+        val contentKey = normalizedEvidenceKey(evidence)
+        val contentCount = allFindings.count { normalizedEvidenceKey(it.evidence.trim()) == contentKey }
+        val unique = contentKey.isNotBlank() && contentCount == 1
         val score = (
             authority * effectivePolicy.authorityWeight +
                 freshness * effectivePolicy.freshnessWeight +
@@ -92,6 +89,13 @@ class AmarEvidenceQualityEngine(
             host = host
         )
     }
+
+    private fun contentKey(item: AmarEvidenceQualityItem): String = item.fingerprint
+
+    private fun normalizedEvidenceKey(evidence: String): String = evidence
+        .lowercase()
+        .replace(Regex("\\s+"), " ")
+        .trim()
 
     private fun authorityScore(authority: Authority): Double = when (authority) {
         Authority.PRIMARY -> 1.0
