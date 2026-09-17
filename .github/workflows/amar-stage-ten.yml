@@ -41,28 +41,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
-
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-
       - name: Regression and full unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
-
       - name: Debug build verification
         run: gradle :app:assembleDebug --stacktrace
-
       - name: Release build verification
         run: gradle :app:assembleRelease --stacktrace
-
       - name: Release artifact verification
         shell: bash
         run: |
@@ -71,21 +65,17 @@ jobs:
           test -s "$apk"
           sha256sum "$apk"
           stat -c '%n %s bytes' "$apk"
-
       - name: Dependency graph audit
         run: gradle :app:dependencies --configuration releaseRuntimeClasspath --stacktrace > stage10-release-dependencies.txt
-
       - name: Comprehensive security audit
         shell: bash
         run: |
           set -euo pipefail
-
           echo '== Secret and credential pattern scan =='
           if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}|AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9]{20,}|npm_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- ':!stage10-release-dependencies.txt'; then
             echo 'Potential credential pattern detected.'
             exit 1
           fi
-
           echo '== Android permission allowlist =='
           manifest='app/src/main/AndroidManifest.xml'
           test -s "$manifest"
@@ -93,7 +83,6 @@ jobs:
             echo 'Unexpected high-risk Android permission detected.'
             exit 1
           fi
-
           echo '== Manifest security invariants =='
           grep -q 'android:allowBackup="false"' "$manifest"
           grep -q 'android:usesCleartextTraffic="false"' "$manifest"
@@ -101,7 +90,6 @@ jobs:
           test "$(grep -c 'android:name=".MainActivity"' "$manifest")" -eq 1
           grep -q 'android:name=".GridBotService"' "$manifest"
           grep -q 'android:exported="false"' "$manifest"
-
           echo '== Source logging and live-network safety =='
           if git grep -nE 'HttpLoggingInterceptor|setLevel\([^)]*BODY|LoggingInterceptor' -- 'app/src/main'; then
             echo 'Verbose HTTP logging must not be present in the Android source.'
@@ -111,27 +99,21 @@ jobs:
             echo 'Potential live execution path detected in Android source.'
             exit 1
           fi
-
           echo '== Network transport policy =='
-          # Only cleartext HTTP endpoints are prohibited. HTTPS source URLs are
-          # legitimate when used as documented/research/provider endpoints.
           if git grep -nE 'http://[^[:space:]"<>()]+' -- 'app/src/main/**/*.kt' 'app/src/main/**/*.java' 'app/src/main/**/*.json' 'app/src/main/**/*.xml' ':!app/src/main/AndroidManifest.xml' ':!app/src/main/java/com/personal/gridbot/amaros/security/AmarSecurityContracts.kt' ':!app/src/main/java/com/personal/gridbot/amaros/sync/AmarSyncCenterScreen.kt'; then
             echo 'Cleartext HTTP endpoint detected in Android source.'
             exit 1
           fi
-
           echo '== Security documentation =='
           test -s SECURITY.md
           grep -q 'API keys and credentials must never be committed' SECURITY.md
           grep -q 'Live trading remains fail-closed' SECURITY.md
-
       - name: Protected execution safety audit
         shell: bash
         run: |
           set -euo pipefail
           grep -RIn --exclude-dir=.git 'liveTrading=false' . >/dev/null
           grep -RIn --exclude-dir=.git 'brokerAccessAllowed=false' app/src/main >/dev/null
-
       - name: Release hygiene checks
         shell: bash
         run: |
@@ -141,7 +123,6 @@ jobs:
           test -s docs/OPEN_SOURCE_POLICY.md
           test -s docs/governance/ENGINEERING_REGRESSION_EXCLUSIONS.md
           test -s docs/governance/STAGE10_FINAL_AUDIT.md
-
       - name: Upload Stage 10 evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -152,3 +133,5 @@ jobs:
             app/build/reports/tests/**
             app/build/outputs/apk/release/**
           if-no-files-found: ignore
+
+# Stage 10 retrigger: execute the final audit against the corrected security policy.
