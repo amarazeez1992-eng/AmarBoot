@@ -99,14 +99,16 @@ class AmarStageTwoHardeningTest {
     }
 
     @Test
-    fun duplicate_evidence_explanation_identifies_non_unique_content() {
+    fun duplicate_evidence_explanation_identifies_non_unique_content_without_changing_integrity() {
         val a = finding("https://a.example/x", "gold trend is rising")
         val b = finding("https://b.example/x", "  GOLD   TREND IS RISING  ")
         val result = quality.assess(listOf(a, b))
 
-        assertEquals(AmarEvidenceDecision.BELOW_WEAK_THRESHOLD, result.items[0].explanation.decision)
+        assertEquals(AmarEvidenceQualityStatus.VERIFIED, result.status)
         assertFalse(result.items[0].explanation.uniqueEvidence)
+        assertFalse(result.items[1].explanation.uniqueEvidence)
         assertEquals(result.items[0].score, result.items[0].explanation.finalScore, 0.0)
+        assertEquals(AmarEvidenceDecision.VERIFIED_THRESHOLD_MET, result.items[0].explanation.decision)
     }
 
     @Test
