@@ -4,27 +4,38 @@
 
 ## Scope
 
-Point 4 evaluates evidence freshness only. It does not collect, rank, route, explain, verify claims, or make trading decisions.
+Point 4 evaluates temporal freshness of already-collected evidence only. It does not collect, rank, route, explain, verify claims, or make trading decisions.
+
+## Verified Implementation
+
+`AmarEvidenceFreshnessAnalyzer` provides a deterministic temporal boundary:
+
+- `FRESH` when evidence age is within the configured freshness window, with score `1.0`.
+- `STALE` after the window, with deterministic score decay.
+- `FUTURE` when the retrieval timestamp is later than the evaluation time, with score `0.0`.
+- Invalid non-positive freshness windows are rejected.
+
+The implementation is present in `AmarEvidenceFreshness.kt` and is covered by focused tests for fresh, stale, future-dated, and deterministic repeated evaluation.
 
 ## Verification Evidence
 
-Implementation and focused regression were verified on `main` by Stage Two CI run `35259994432`.
+The implementation/test commit `752245e1b392ba56c7198c07c542464197743601` was verified by Stage Two CI run `35259994432`.
 
-Verified successfully:
+The completed job succeeded for:
 
 - Stage Two focused tests
 - Full AMAR AI agent unit-test suite
 - Debug build verification
-- Complete workflow execution
+- Complete workflow
 
-All workflow job steps completed successfully.
+A post-implementation source audit confirmed that both the implementation and focused test are present on the closure lineage.
 
-## Boundary
+## Runtime Boundary
 
-The repository CI verifies the software contract through unit tests and build validation. No physical Android-device runtime test is claimed where none was executed.
+Repository CI provides unit-test and build verification. No physical Android-device runtime test is claimed because no device run was executed for this contract.
 
 ## Constitutional Closure
 
-The requested Point 4 scope passed the available repository verification gate and remains bounded to evidence freshness. No new trading or execution authority is introduced.
+Point 4 is closed at the repository verification boundary: implementation exists, focused regression passes, full unit regression passes, Debug build passes, and the contract remains strictly limited to evidence freshness with no trading or execution authority.
 
 **Stage 11 Item 3 — Point 4: CLOSED.**
