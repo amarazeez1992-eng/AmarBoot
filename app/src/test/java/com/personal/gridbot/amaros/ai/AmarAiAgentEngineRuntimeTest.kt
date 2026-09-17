@@ -13,4 +13,12 @@ class AmarAiAgentEngineRuntimeTest {
         assertFalse(result.answer.isBlank())
         assertTrue(result.answer.contains("Hello"))
     }
+
+    @Test
+    fun engine_response_is_blocked_when_research_evidence_is_unavailable() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "ابحث وحلل XAUUSD")
+
+        assertTrue(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+        assertTrue(result.answer.contains("no_evidence") || result.answer.contains("source_verification_failed"))
+    }
 }
