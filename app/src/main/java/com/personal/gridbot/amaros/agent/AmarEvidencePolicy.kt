@@ -11,9 +11,7 @@ data class AmarEvidencePolicy(
     val freshnessWeight: Double = 0.25,
     val independenceWeight: Double = 0.20,
     val uniquenessWeight: Double = 0.15,
-    val minimumAuthorityForVerified: Double = 0.60,
-    val minimumFreshnessForVerified: Double = 0.50,
-    val verifiedThreshold: Double = 0.70,
+    val verifiedThreshold: Double = 0.80,
     val weakThreshold: Double = 0.35
 ) {
     init {
@@ -22,8 +20,6 @@ data class AmarEvidencePolicy(
         val weights = listOf(authorityWeight, freshnessWeight, independenceWeight, uniquenessWeight)
         require(weights.all { it.isFinite() && it >= 0.0 })
         require(kotlin.math.abs(weights.sum() - 1.0) < 1e-9)
-        require(minimumAuthorityForVerified in 0.0..1.0)
-        require(minimumFreshnessForVerified in 0.0..1.0)
         require(verifiedThreshold in 0.0..1.0)
         require(weakThreshold in 0.0..1.0)
         require(weakThreshold <= verifiedThreshold)
