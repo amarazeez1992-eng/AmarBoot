@@ -29,7 +29,7 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - 7. Benchmark & Quality: PENDING
 - 8. Observability: PENDING
 - 9. Final 99% Gate: PENDING
-- 10. Multimodal Agent Interface & Workspace: PENDING — highest-priority interface package
+- 10. Multimodal Agent Interface & Workspace: PENDING — expanded interface/engine package
 
 ## Stage 7 — Execution Governance — final constitutional closure evidence
 
@@ -79,6 +79,39 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
 8. Observability — PENDING
 9. Final 99% Gate — PENDING
 10. Multimodal Agent Interface & Workspace — PENDING — highest-priority interface package
+
+### Stage 11 — Multimodal Agent Interface & Workspace contract
+
+Item 10 explicitly includes the following capabilities. They are requirements to design, implement, test, and verify one at a time; listing them here does **not** mean they are already implemented.
+
+1. **Camera / image input** — capture or attach images for agent analysis.
+2. **Screen sharing / screen capture** — user-controlled screen sharing for visual diagnosis and guided assistance; permission must be explicit and revocable.
+3. **Screen understanding** — agent can interpret the shared screen and identify visible UI state, controls, errors, and navigation context; it must not silently control unrelated apps.
+4. **Application guidance mode** — user can show an app such as WhatsApp or Instagram and ask Amar to inspect a settings problem and guide the user step-by-step.
+5. **Code reading engine** — analyze source code, configuration, logs, stack traces, diffs, and project files with language-aware parsing where available.
+6. **APK analysis** — accept APK files for static inspection, manifest/permissions/package/resource analysis, and safe reporting; no arbitrary execution of untrusted APKs.
+7. **Text/PDF/document analysis** — accept TXT, PDF and supported document formats and extract/search/summarize/analyze their contents.
+8. **Image analysis** — attach photos/screenshots/diagrams/charts for visual analysis and evidence extraction.
+9. **Video analysis** — attach video for frame-aware visual inspection, with bounded processing and user-controlled upload/retention.
+10. **Voice conversation** — speech-to-text input plus text-to-speech/audio responses for natural two-way voice interaction.
+11. **Unified multimodal session** — text, voice, image, video, screen and files share one controlled session context without leaking data between sessions.
+12. **File handoff to Agent** — controlled attachment of APK, TXT, PDF, code archives, logs, images and supported documents directly to the Agent workspace.
+13. **Engine orchestration** — connect the available analysis engines through a central coordinator so the Agent can select one engine or a bounded combination according to the task.
+14. **Agent workforce / engine pool** — trading, market analysis, research, code analysis, document analysis, vision, voice and verification engines can operate as a coordinated workforce when requested, with explicit scope and resource limits.
+15. **Trading integration** — the same orchestration layer can route trading requests to the trading-analysis engines while preserving all existing execution governance and fail-closed controls.
+16. **Research modes** — expose explicit research depth modes: **Quick Search**, **Standard Search**, **Expert Search**, and **Deep Research**, with different evidence/time/source budgets. Mode selection must be visible and auditable.
+17. **Evidence-aware search** — every research mode records source scope, evidence used, confidence/limitations, and whether external sources were permitted.
+18. **Permission and privacy controls** — camera, microphone, screen, files and external-app viewing require explicit user permission, clear active-state indication, revocation, and safe shutdown.
+19. **Session safety / isolation** — uploaded files and multimodal content are sandboxed and scoped to the current task/session; sensitive content is not retained beyond configured policy.
+20. **Graceful fallback** — if one AI/vision/voice/search engine is unavailable, the Agent falls back to an available compatible engine or clearly reports the limitation instead of silently failing.
+
+### Workforce rule
+
+The engine pool is a coordinated workforce, not uncontrolled parallel execution. The central Agent must select, sequence, combine, cancel, and verify engines according to task scope, evidence requirements, resource limits, and safety policy. No engine may bypass the central governance contracts.
+
+### Research mode rule
+
+Quick/Standard/Expert/Deep Research are **research-depth modes**, not accuracy guarantees. Higher depth means broader/deeper evidence collection and verification within configured limits. The Agent must distinguish sourced facts, analysis, uncertainty, and unsupported claims.
 
 ### Non-negotiable Stage 11 rule
 
