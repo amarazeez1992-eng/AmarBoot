@@ -18,6 +18,23 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - Stage 10 — Final 100% Audit and Release Gate: OPEN / IN PROGRESS
 - Stage 11 — AMAR INTELLIGENCE 99: IN PROGRESS
 
+## Approved new roadmap additions
+
+The following requirements are now formally part of the roadmap and are not considered implemented merely because they are documented.
+
+### Stage 10 — Security / Release Boundary additions
+1. **Owner-controlled GitHub authorization** — explicit GitHub connection/authorization, grant/revoke/inspect, least privilege, auditable, no secrets committed to the repository.
+2. **Central Provider security contract** — define the future Amar AI provider/API boundary and the owner-controlled **ABL** credential family; ABL is a credential architecture concept, not a hard-coded secret.
+3. **Provider security audit** — secret handling, credential rotation/revocation, client isolation, provenance, logging, and release-boundary verification.
+
+### Stage 11 — Intelligence / Memory / Provider additions
+4. **GitHub-backed explicit memory** — when the user explicitly says "save this", store the item in a dedicated, human-readable, searchable GitHub-backed memory area with timestamps and provenance. User can inspect/update/delete saved entries.
+5. **Central ABL Provider** — Amar AI acts as the central provider for approved future apps/agents; owner-issued ABL credentials are scoped, revocable, auditable, and rotatable. No client bypasses central governance.
+6. **Automatic source refresh** — important saved/source-backed information can be re-checked against authoritative sources on a selectable schedule of **every 6 hours** or **every 24 hours**. Record source, timestamp, detected changes, previous value, and verification status. Ambiguous/material changes require review rather than silent overwrite.
+7. **Provider + Memory + Research integration** — central coordination of GitHub memory, source refresh, research modes, evidence chains, and future external clients, with no governance bypass.
+
+Detailed scope: `docs/governance/STAGE10_11_CENTRAL_PROVIDER_MEMORY_SYNC_SCOPE.md`.
+
 ### Stage 11 item status
 
 - 1. Intelligence Core: IN PROGRESS — final verification pending
@@ -30,6 +47,7 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - 8. Observability: PENDING
 - 9. Final 99% Gate: PENDING
 - 10. Multimodal Agent Interface & Workspace: PENDING — expanded interface/engine package
+- 11. Central Provider + GitHub Memory + Source Sync: PENDING — approved addition
 
 ## Stage 7 — Execution Governance — final constitutional closure evidence
 
@@ -58,6 +76,8 @@ Scope:
 - documentation and open-source release hygiene
 - zero unresolved critical/high defects within the Android release scope
 - successful CI/release verification
+- **owner-controlled GitHub authorization security boundary**
+- **future ABL provider credential/API security contract**
 
 The Stage 10 audit gate is implemented in `docs/governance/STAGE10_FINAL_AUDIT.md` and `.github/workflows/amar-stage-ten.yml`.
 
@@ -79,6 +99,24 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
 8. Observability — PENDING
 9. Final 99% Gate — PENDING
 10. Multimodal Agent Interface & Workspace — PENDING — highest-priority interface package
+11. Central Provider + GitHub Memory + Source Sync — PENDING
+
+### Stage 11 — Central Provider + GitHub Memory + Source Sync contract
+
+Item 11 explicitly includes:
+
+- **GitHub Workspace authorization** — owner-controlled connection, inspect/grant/revoke, least privilege.
+- **Explicit GitHub memory** — "save this" creates a visible dedicated memory record; no silent arbitrary persistence.
+- **Memory organization** — searchable records with timestamps, provenance/source, update history and user-controlled deletion.
+- **ABL central provider** — Amar AI can expose approved capabilities to future applications/agents through owner-issued ABL credentials.
+- **ABL lifecycle** — issue, scope, inspect, rotate, revoke, expire and audit credentials.
+- **Client isolation** — each external application receives only explicitly granted capabilities.
+- **Automatic source refresh** — configurable 6-hour or 24-hour source re-checks for important saved/source-backed information.
+- **Change detection** — preserve previous value, new value, source, timestamp, evidence and verification state; flag material/ambiguous changes for user review.
+- **Research integration** — refresh jobs use the evidence-aware research layer and respect source permissions/rate limits.
+- **Provider resilience** — unavailable external clients/engines must not compromise Amar's local intelligence or governance.
+
+These capabilities are approved scope, not implementation claims.
 
 ### Stage 11 — Multimodal Agent Interface & Workspace contract
 
