@@ -82,24 +82,53 @@ class AmarStageTwoHardeningTest {
     }
 
     @Test
-    fun evidence_explanation_exposes_all_quality_decision_factors() {
+    fun evidence_explanation_is_machine_readable_and_matches_quality_output() {
         val result = quality.assess(listOf(finding("https://source.example/x", "gold trend is rising")))
-        val explanation = result.items.single().explanation
-        assertTrue(explanation.authority.contains("authority="))
-        assertTrue(explanation.freshness.contains("freshness="))
-        assertTrue(explanation.independence.contains("independent"))
-        assertTrue(explanation.uniqueness.contains("unique"))
-        assertEquals("integrity-valid", explanation.integrity)
-        assertEquals("content-valid", explanation.content)
-        assertTrue(explanation.finalDecision.isNotBlank())
+        val item = result.items.single()
+        val explanation = item.explanation
+
+        assertEquals(item.authorityScore, explanation.authority, 0.0)
+        assertEquals(item.freshnessScore, explanation.freshness, 0.0)
+        assertEquals(item.independentSource, explanation.independentSource)
+        assertEquals(item.uniqueEvidence, explanation.uniqueEvidence)
+        assertEquals(item.integrityValid, explanation.integrityValid)
+        assertEquals(item.contentValid, explanation.contentValid)
+        assertEquals(item.score, explanation.finalScore, 0.0)
+        assertTrue(explanation.rawScore >= explanation.finalScore)
+        assertEquals(AmarEvidenceDecision.VERIFIED_THRESHOLD_MET, explanation.decision)
     }
 
     @Test
-    fun tampered_evidence_explanation_is_fail_closed() {
+    fun duplicate_evidence_explanation_identifies_non_unique_content() {
+        val a = finding("https://a.example/x", "gold trend is rising")
+        val b = finding("https://b.example/x", "  GOLD   TREND IS RISING  ")
+        val result = quality.assess(listOf(a, b))
+
+        assertEquals(AmarEvidenceDecision.BELOW_WEAK_THRESHOLD, result.items[0].explanation.decision)
+        assertFalse(result.items[0].explanation.uniqueEvidence)
+        assertEquals(result.items[0].score, result.items[0].explanation.finalScore, 0.0)
+    }
+
+    @Test
+    fun tampered_evidence_explanation_is_fail_closed_but_keeps_diagnostics() {
         val result = quality.assess(listOf(finding("https://source.example/x", "gold trend is rising", fingerprint = "tampered")))
+        val item = result.items.single()
+        val explanation = item.explanation
+
+        assertEquals(0.0, item.score, 0.0)
+        assertFalse(explanation.integrityValid)
+        assertEquals(AmarEvidenceDecision.INTEGRITY_FAILURE, explanation.decision)
+        assertEquals(0.0, explanation.finalScore, 0.0)
+        assertTrue(explanation.rawScore > 0.0)
+    }
+
+    @Test
+    fun invalid_content_explanation_is_fail_closed() {
+        val result = quality.assess(listOf(finding("", "")))
         val explanation = result.items.single().explanation
-        assertEquals(0.0, result.items.single().score, 0.0)
-        assertEquals("integrity-failed", explanation.integrity)
-        assertEquals("score-forced-zero-integrity-failure", explanation.finalDecision)
+
+        assertFalse(explanation.contentValid)
+        assertEquals(0.0, explanation.finalScore, 0.0)
+        assertEquals(AmarEvidenceDecision.CONTENT_FAILURE, explanation.decision)
     }
 }
