@@ -31,6 +31,9 @@ jobs:
       - name: Run Point 6 Duplicate Evidence Detection boundary test
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest'
 
+      - name: Run Point 7 Fingerprint Integrity boundary test
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest'
+
       - name: Run full unit test suite
         run: gradle :app:testDebugUnitTest
 
