@@ -11,6 +11,7 @@ on:
       - 'app/**'
       - 'docs/governance/AMAR_PROJECT_CONSTITUTION.md'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
+      - 'docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md'
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
@@ -19,6 +20,7 @@ on:
       - 'app/**'
       - 'docs/governance/AMAR_PROJECT_CONSTITUTION.md'
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
+      - 'docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md'
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
@@ -75,6 +77,7 @@ jobs:
           grep -q '^\*\*Status: BINDING PROJECT LAW\*\*$' docs/governance/AMAR_PROJECT_CONSTITUTION.md
           grep -q 'Architectural Integrity and Professional Standard' docs/governance/AMAR_PROJECT_CONSTITUTION.md
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
+          test -f docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
