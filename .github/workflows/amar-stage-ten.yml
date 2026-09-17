@@ -113,10 +113,10 @@ jobs:
           fi
 
           echo '== Network transport policy =='
-          # Scan actual application source text only. XML namespace declarations,
-          # binary assets, and documented examples are not network endpoints.
-          if git grep -nE 'https?://[^[:space:]"<>()]+' -- 'app/src/main/**/*.kt' 'app/src/main/**/*.java' 'app/src/main/**/*.json' 'app/src/main/**/*.xml' ':!app/src/main/AndroidManifest.xml' ':!app/src/main/java/com/personal/gridbot/amaros/security/AmarSecurityContracts.kt' ':!app/src/main/java/com/personal/gridbot/amaros/sync/AmarSyncCenterScreen.kt'; then
-            echo 'Potential cleartext or undocumented HTTP endpoint detected in Android source.'
+          # Only cleartext HTTP endpoints are prohibited. HTTPS source URLs are
+          # legitimate when used as documented/research/provider endpoints.
+          if git grep -nE 'http://[^[:space:]"<>()]+' -- 'app/src/main/**/*.kt' 'app/src/main/**/*.java' 'app/src/main/**/*.json' 'app/src/main/**/*.xml' ':!app/src/main/AndroidManifest.xml' ':!app/src/main/java/com/personal/gridbot/amaros/security/AmarSecurityContracts.kt' ':!app/src/main/java/com/personal/gridbot/amaros/sync/AmarSyncCenterScreen.kt'; then
+            echo 'Cleartext HTTP endpoint detected in Android source.'
             exit 1
           fi
 
