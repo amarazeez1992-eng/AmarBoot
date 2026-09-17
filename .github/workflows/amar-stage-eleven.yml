@@ -4,6 +4,7 @@ name: Amar Stage Eleven
 # the full unit suite, build verification, architecture checks, and CI evidence before closure.
 # Research uses the dedicated evidence-only verification path; no synthetic answer claims are used.
 # Item 1 verification trigger: run against the corrected current main baseline before constitutional closure.
+# Constitutional re-verification trigger: current main baseline 5b8e3c6d7d4a488d817d1b7913cca89e1f35552f.
 
 on:
   push:
