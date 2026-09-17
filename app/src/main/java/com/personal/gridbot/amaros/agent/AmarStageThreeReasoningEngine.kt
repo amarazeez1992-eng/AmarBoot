@@ -1,8 +1,8 @@
 package com.personal.gridbot.amaros.agent
 
 /**
- * Stage 3 reasoning: bounded planning/review around the existing provider contract.
- * It records audit metadata only; private chain-of-thought is never stored.
+ * Stage 3 reasoning: bounded, auditable decision stages around the existing provider contract.
+ * Only safe summaries are recorded; private chain-of-thought is never stored.
  */
 class AmarStageThreeReasoningEngine(
     private val reasoningProvider: AmarReasoningProvider,
@@ -22,22 +22,27 @@ class AmarStageThreeReasoningEngine(
     ): AmarStageThreeReasoningResult {
         val trace = mutableListOf<AmarReasoningTraceEntry>()
         val boundedEvidence = evidence.take(MAX_EVIDENCE)
+        val validEvidence = boundedEvidence.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
 
-        append(trace, "plan", AmarReasoningStep.PLANNING, "Bounded Stage 3 review plan", 1.0)
+        // 1) Plan: explicit bounded stages, without exposing private reasoning.
+        val planConfidence = if (request.text.isNotBlank()) 1.0 else 0.0
+        append(trace, "plan", AmarReasoningStep.PLANNING, "Bounded plan: classify evidence -> draft -> independent confidence -> conflict check -> critic -> final", planConfidence)
 
-        val facts = boundedEvidence.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
-        val inferences = mutableListOf<String>()
-        val assumptions = if (facts.isEmpty()) listOf("No external evidence supplied") else emptyList()
-        val evidenceConfidence = evidenceConfidence(facts)
+        // 2) Evidence classification: facts are directly supplied valid findings.
+        val facts = validEvidence.map { it.evidence }.distinct()
+        val assumptions = if (validEvidence.isEmpty()) listOf("No external evidence supplied; answer must preserve uncertainty") else emptyList()
+        val evidenceConfidence = evidenceConfidence(validEvidence)
         append(
             trace,
             "evidence",
             AmarReasoningStep.EVIDENCE_CLASSIFICATION,
-            "Facts=${facts.size}; inferences=deferred; assumptions=${assumptions.size}",
-            evidenceConfidence
+            "Facts=${facts.size}; assumptions=${assumptions.size}; invalid=${boundedEvidence.size - validEvidence.size}",
+            evidenceConfidence,
+            criticResult = "FACTS_SEPARATED"
         )
 
-        val contradiction = hasContradiction(facts)
+        // 3) Conflict check is independent from the critic score.
+        val contradiction = hasContradiction(validEvidence)
         val contradictionConfidence = if (contradiction) 0.0 else 1.0
         append(
             trace,
@@ -45,30 +50,29 @@ class AmarStageThreeReasoningEngine(
             AmarReasoningStep.CONTRADICTION_CHECK,
             if (contradiction) "Supporting and opposing evidence detected" else "No direct evidence conflict detected",
             contradictionConfidence,
-            conflict = contradiction
+            conflict = contradiction,
+            criticResult = if (contradiction) "CONFLICT" else "CLEAR"
         )
 
         var prompt = request.text
         var response = respond(prompt, request, boundedEvidence, tools)
         var critique = critic.review(response.answer, boundedEvidence, requireEvidence = boundedEvidence.isNotEmpty())
         var revisions = 0
-        var stepConfidence = confidenceFor(critique.score, evidenceConfidence, contradiction)
-        if (response.answer.isNotBlank()) inferences += response.answer
 
-        append(trace, "draft-1", AmarReasoningStep.DRAFT, "Draft evaluated by critic", stepConfidence, critique.recommendation)
+        // 4) Independent confidence is calculated from evidence quality and critic outcome separately.
+        var independentConfidence = independentConfidence(validEvidence, contradiction)
+        var criticConfidence = critique.score.coerceIn(0.0, 1.0)
+        var finalConfidence = combineConfidence(independentConfidence, criticConfidence, contradiction)
+        append(trace, "draft-1", AmarReasoningStep.DRAFT, "Draft evaluated without storing private reasoning", criticConfidence, critique.recommendation)
+        if (response.answer.isNotBlank()) {
+            append(trace, "inference-1", AmarReasoningStep.INFERENCE_CLASSIFICATION, "Provider answer recorded as inference, not fact", independentConfidence, "INFERENCE")
+        }
 
+        // Re-reason only after critic failure and never beyond the configured bound.
         while (!critique.accepted && revisions < maxRevisions) {
             revisions++
             val revisionReason = critique.issues.distinct().joinToString(", ")
-            append(
-                trace,
-                "revision-$revisions",
-                AmarReasoningStep.REVISION,
-                "Bounded revision after critic failure",
-                stepConfidence,
-                "REVISE",
-                revisionReason = revisionReason
-            )
+            append(trace, "revision-$revisions", AmarReasoningStep.REVISION, "Bounded revision after critic failure", criticConfidence, "REVISE", revisionReason = revisionReason)
 
             prompt = request.text +
                 "\n\nStage 3 review issues: " + revisionReason +
@@ -76,31 +80,19 @@ class AmarStageThreeReasoningEngine(
                 "resolve conflicts only when supported by evidence, and preserve uncertainty."
             response = respond(prompt, request, boundedEvidence, tools)
             critique = critic.review(response.answer, boundedEvidence, requireEvidence = boundedEvidence.isNotEmpty())
-            stepConfidence = confidenceFor(critique.score, evidenceConfidence, contradiction)
-            append(
-                trace,
-                "revised-$revisions",
-                AmarReasoningStep.REVISED_DRAFT,
-                "Revised draft evaluated by critic",
-                stepConfidence,
-                critique.recommendation,
-                revisionReason = revisionReason
-            )
+            criticConfidence = critique.score.coerceIn(0.0, 1.0)
+            independentConfidence = independentConfidence(validEvidence, contradiction)
+            finalConfidence = combineConfidence(independentConfidence, criticConfidence, contradiction)
+            append(trace, "revised-$revisions", AmarReasoningStep.REVISED_DRAFT, "Revised draft independently re-evaluated", finalConfidence, critique.recommendation, revisionReason = revisionReason)
         }
 
-        val finalConfidence = confidenceFor(critique.score, evidenceConfidence, contradiction)
+        // 5) Final state: acceptance is critic-gated; contradiction remains a first-class conflict.
+        finalConfidence = combineConfidence(independentConfidence, critique.score, contradiction)
         val finalResponse = if (critique.accepted) response else response.copy(
             status = AmarAgentResponse.Status.ERROR,
             answer = "لم يتم اعتماد الإجابة بعد: ${critique.issues.distinct().joinToString(", ")}"
         )
-        append(
-            trace,
-            "final",
-            AmarReasoningStep.FINAL_STATE,
-            if (critique.accepted) "Final answer accepted" else "Final answer blocked",
-            finalConfidence,
-            if (critique.accepted) "PASS" else "BLOCK"
-        )
+        append(trace, "final", AmarReasoningStep.FINAL_STATE, if (critique.accepted) "Final answer accepted" else "Final answer blocked", finalConfidence, if (critique.accepted) "PASS" else "BLOCK", conflict = contradiction)
 
         return AmarStageThreeReasoningResult(
             response = finalResponse,
@@ -108,8 +100,8 @@ class AmarStageThreeReasoningEngine(
             revisionCount = revisions,
             trace = trace.toList(),
             finalConfidence = finalConfidence,
-            facts = facts.map { it.evidence },
-            inferences = inferences.distinct(),
+            facts = facts,
+            inferences = if (response.answer.isBlank()) emptyList() else listOf(response.answer),
             assumptions = assumptions
         )
     }
@@ -147,8 +139,8 @@ class AmarStageThreeReasoningEngine(
             id = id,
             step = step,
             claim = claim,
-            confidenceBefore = confidence,
-            confidenceAfter = confidence,
+            confidenceBefore = confidence.coerceIn(0.0, 1.0),
+            confidenceAfter = confidence.coerceIn(0.0, 1.0),
             criticResult = criticResult,
             conflict = conflict,
             revisionReason = revisionReason
@@ -157,32 +149,38 @@ class AmarStageThreeReasoningEngine(
 
     private fun evidenceConfidence(evidence: List<ResearchFinding>): Double {
         if (evidence.isEmpty()) return 0.0
-        val sourceCount = evidence.map { it.sourceUri.trim() }.distinct().size
-        val authoritativeCount = evidence.count {
-            it.authority == Authority.PRIMARY ||
-                it.authority == Authority.OFFICIAL ||
-                it.authority == Authority.PEER_REVIEWED
-        }
-        return (
-            0.35 +
-                sourceCount.coerceAtMost(4) * 0.10 +
-                authoritativeCount.coerceAtMost(3) * 0.08
-            ).coerceIn(0.0, 1.0)
+        val independentSources = evidence.map { it.sourceUri.trim() }.distinct().size
+        val authority = evidence.map { authorityScore(it.authority) }.average()
+        val independence = (independentSources.toDouble() / 4.0).coerceAtMost(1.0)
+        return (authority * 0.6 + independence * 0.4).coerceIn(0.0, 1.0)
+    }
+
+    private fun authorityScore(authority: Authority): Double = when (authority) {
+        Authority.PRIMARY -> 1.0
+        Authority.OFFICIAL -> 0.95
+        Authority.PEER_REVIEWED -> 0.9
+        Authority.REPUTABLE -> 0.75
+        Authority.COMMUNITY -> 0.45
+        Authority.UNKNOWN -> 0.2
+    }
+
+    private fun independentConfidence(evidence: List<ResearchFinding>, contradiction: Boolean): Double {
+        if (evidence.isEmpty()) return 0.0
+        val sources = evidence.map { it.sourceUri.trim() }.filter { it.isNotBlank() }.distinct().size
+        val uniqueness = evidence.map { it.fingerprint.ifBlank { "${it.sourceUri}|${it.evidence}" } }.distinct().size
+        val sourceScore = (sources.toDouble() / 3.0).coerceAtMost(1.0)
+        val evidenceScore = (uniqueness.toDouble() / 4.0).coerceAtMost(1.0)
+        val conflictPenalty = if (contradiction) 0.45 else 0.0
+        return (sourceScore * 0.55 + evidenceScore * 0.45 - conflictPenalty).coerceIn(0.0, 1.0)
+    }
+
+    private fun combineConfidence(independent: Double, criticScore: Double, contradiction: Boolean): Double {
+        val conflictPenalty = if (contradiction) 0.20 else 0.0
+        return (independent * 0.55 + criticScore.coerceIn(0.0, 1.0) * 0.45 - conflictPenalty).coerceIn(0.0, 1.0)
     }
 
     private fun hasContradiction(evidence: List<ResearchFinding>): Boolean =
-        evidence.any { it.stance == EvidenceStance.SUPPORTS } &&
-            evidence.any { it.stance == EvidenceStance.OPPOSES }
-
-    private fun confidenceFor(
-        criticScore: Double,
-        evidenceScore: Double,
-        contradiction: Boolean
-    ): Double = if (contradiction) {
-        (criticScore * 0.35 + evidenceScore * 0.15).coerceIn(0.0, 1.0)
-    } else {
-        (criticScore * 0.65 + evidenceScore * 0.35).coerceIn(0.0, 1.0)
-    }
+        evidence.any { it.stance == EvidenceStance.SUPPORTS } && evidence.any { it.stance == EvidenceStance.OPPOSES }
 
     private companion object { const val MAX_EVIDENCE = 64 }
 }
@@ -192,6 +190,7 @@ enum class AmarReasoningStep {
     EVIDENCE_CLASSIFICATION,
     CONTRADICTION_CHECK,
     DRAFT,
+    INFERENCE_CLASSIFICATION,
     REVISION,
     REVISED_DRAFT,
     FINAL_STATE
