@@ -31,6 +31,17 @@ class AmarStageTwoHardeningTest {
         val result = quality.assess(listOf(a, b))
         assertEquals(2, result.independentSourceCount)
         assertEquals(1, result.duplicateEvidenceCount)
+        assertEquals(AmarEvidenceQualityStatus.UNVERIFIABLE, result.status)
+    }
+
+    @Test
+    fun duplicate_content_is_detected_even_when_valid_fingerprints_differ() {
+        val a = finding("https://a.example/x", "Gold Trend Is Rising")
+        val b = finding("https://b.example/x", "  gold   trend is rising  ")
+        val result = quality.assess(listOf(a, b))
+        assertEquals(1, result.duplicateEvidenceCount)
+        assertFalse(result.items[0].uniqueEvidence)
+        assertFalse(result.items[1].uniqueEvidence)
     }
 
     @Test
