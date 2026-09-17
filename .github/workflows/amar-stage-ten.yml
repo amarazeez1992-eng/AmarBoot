@@ -32,6 +32,9 @@ on:
       - 'gradle.properties'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   stage-ten-audit:
     runs-on: ubuntu-24.04
@@ -73,14 +76,52 @@ jobs:
       - name: Dependency graph audit
         run: gradle :app:dependencies --configuration releaseRuntimeClasspath --stacktrace > stage10-release-dependencies.txt
 
-      - name: Repository secret-pattern audit
+      - name: Comprehensive security audit
         shell: bash
         run: |
           set -euo pipefail
-          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- ':!stage10-release-dependencies.txt'; then
+
+          echo '== Secret and credential pattern scan =='
+          if git grep -nE 'AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{30,}|sk-[A-Za-z0-9]{20,}|-----BEGIN (RSA|EC|OPENSSH|PRIVATE) KEY-----' -- ':!stage10-release-dependencies.txt'; then
             echo 'Potential credential pattern detected.'
             exit 1
           fi
+
+          echo '== Android permission allowlist =='
+          manifest='app/src/main/AndroidManifest.xml'
+          test -s "$manifest"
+          if grep -nE 'android.permission.(READ|WRITE|ACCESS_FINE_LOCATION|ACCESS_COARSE_LOCATION|CAMERA|READ_CONTACTS|WRITE_CONTACTS|READ_SMS|SEND_SMS|RECEIVE_SMS|READ_CALL_LOG|WRITE_CALL_LOG|CALL_PHONE|READ_PHONE_STATE|REQUEST_INSTALL_PACKAGES|SYSTEM_ALERT_WINDOW|MANAGE_EXTERNAL_STORAGE|QUERY_ALL_PACKAGES)' "$manifest"; then
+            echo 'Unexpected high-risk Android permission detected.'
+            exit 1
+          fi
+
+          echo '== Manifest security invariants =='
+          grep -q 'android:allowBackup="false"' "$manifest"
+          grep -q 'android:usesCleartextTraffic="false"' "$manifest"
+          grep -q 'android:exported="false"' "$manifest"
+          test "$(grep -c 'android:name=".MainActivity"' "$manifest")" -eq 1
+          test "$(grep -c 'android:name=".GridBotService"' "$manifest")" -eq 1
+
+          echo '== Source logging and live-network safety =='
+          if git grep -nE 'HttpLoggingInterceptor|setLevel\([^)]*BODY|LoggingInterceptor' -- 'app/src/main'; then
+            echo 'Verbose HTTP logging must not be present in the Android source.'
+            exit 1
+          fi
+          if git grep -nE 'brokerAccessAllowed[[:space:]]*=[[:space:]]*true|liveTrading[[:space:]]*=[[:space:]]*true|OrderSend[[:space:]]*\(' -- 'app/src/main'; then
+            echo 'Potential live execution path detected in Android source.'
+            exit 1
+          fi
+
+          echo '== Network transport policy =='
+          if git grep -nE 'http://[^/]' -- 'app/src/main' 'app/src/main/assets' 'app/src/main/res'; then
+            echo 'Cleartext HTTP endpoint detected in Android application sources.'
+            exit 1
+          fi
+
+          echo '== Security documentation =='
+          test -s SECURITY.md
+          grep -q 'API keys and credentials must never be committed' SECURITY.md
+          grep -q 'Live trading remains fail-closed' SECURITY.md
 
       - name: Protected execution safety audit
         shell: bash
