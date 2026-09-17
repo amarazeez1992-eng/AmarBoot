@@ -64,7 +64,9 @@ class AmarExecutionGovernanceTest {
         val a = authority()
         a.delegate(delegation())
         assertEquals(AmarExecutionGovernance.CommandStatus.APPROVED, a.authorize(proposal()).status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.APPROVED, a.markExecuted("k1")!!.status)
         assertEquals(AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED, a.acknowledge("k1")!!.status)
+        assertEquals(AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED, a.verify("k1")!!.status)
         assertEquals(AmarExecutionGovernance.CommandStatus.EXECUTED, a.markExecuted("k1")!!.status)
         assertEquals(AmarExecutionGovernance.CommandStatus.VERIFIED, a.verify("k1")!!.status)
         assertEquals(AmarExecutionGovernance.CommandStatus.VERIFIED, a.acknowledge("k1")!!.status)
@@ -77,5 +79,16 @@ class AmarExecutionGovernanceTest {
         a.acknowledge("k1")
         assertTrue(a.reconcile("k1", AmarExecutionGovernance.CommandStatus.ACKNOWLEDGED).consistent)
         assertFalse(a.reconcile("k1", AmarExecutionGovernance.CommandStatus.EXECUTED).consistent)
+    }
+
+    @Test fun emergencyLockFailsClosedAfterExecutionToo() {
+        val a = authority()
+        a.delegate(delegation())
+        a.authorize(proposal())
+        a.acknowledge("k1")
+        a.markExecuted("k1")
+        a.setEmergencyLock(true)
+        assertEquals(AmarExecutionGovernance.CommandStatus.EXECUTED, a.reconcile("k1", AmarExecutionGovernance.CommandStatus.EXECUTED).expected)
+        assertEquals(AmarExecutionGovernance.CommandStatus.EXECUTED, a.verify("k1")!!.status)
     }
 }
