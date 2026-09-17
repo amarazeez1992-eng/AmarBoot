@@ -84,7 +84,7 @@ object AmarIntelligenceCore {
 
     fun reason(perception: PerceptionResult): ReasoningResult {
         val usable = perception.observations.filter { it.status == ObservationStatus.PRESENT }
-        val requiresMoreInput = usable.isEmpty() || perception.completeness < 0.5
+        val requiresMoreInput = usable.isEmpty() || perception.completeness <= 0.5
         val assumptions = buildList {
             if (usable.isEmpty()) add("No usable observations were supplied")
             if (perception.missingCount > 0) add("Some expected observations are missing")
@@ -92,7 +92,7 @@ object AmarIntelligenceCore {
         }
         val conclusion = when {
             usable.isEmpty() -> "INSUFFICIENT_DATA"
-            perception.completeness < 0.5 -> "PARTIAL_DATA"
+            perception.completeness <= 0.5 -> "PARTIAL_DATA"
             else -> "SUFFICIENT_INPUT_FOR_NEXT_ANALYSIS_LAYER"
         }
         return ReasoningResult(
