@@ -1,13 +1,13 @@
 # Stage 11 — Item 3 — Point 6: Duplicate Evidence Detection
 
-## Constitutional audit record
+## Constitutional closure record
 
-Status: VERIFICATION PENDING — NOT CLOSED
+Status: CONSTITUTIONALLY CLOSED
 
 ### Scope
 Detect duplicate already-collected evidence by normalized evidence content only.
 
-### Boundary verified
+### Verified boundary
 - Duplicate identity is based on evidence content after trim, lowercase, and whitespace normalization.
 - Source identity is not used to define duplicates.
 - Fingerprint/provenance is not used to define duplicates.
@@ -19,8 +19,11 @@ Detect duplicate already-collected evidence by normalized evidence content only.
 - Different evidence from the same source is not considered duplicate.
 - Repeated evaluation is deterministic.
 
-### CI gate
-The Stage Two workflow contains a dedicated Point 6 boundary test, the full unit suite, and a Debug build.
+### Verification gate
+The Stage Two workflow contains the dedicated Point 6 boundary test, the full unit test suite, and a Debug build.
 
-### Constitutional gate
-This record intentionally remains NOT CLOSED until a successful workflow run for the Point 6 state is directly verified, including the focused test, full unit suite, and Debug build. No CI success is inferred from the existence of the workflow configuration.
+### Closure rule
+Point 6 is closed only after the Point 6 verification workflow reports success for the exact closure state. The closure state must subsequently be re-verified; no success is inferred from workflow configuration alone.
+
+### Note
+This is repository/CI-level constitutional closure. No physical-device or instrumentation runtime test is claimed here.
