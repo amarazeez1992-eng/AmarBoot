@@ -67,6 +67,29 @@ jobs:
           stat -c '%n %s bytes' "$apk"
       - name: Dependency graph audit
         run: gradle :app:dependencies --configuration releaseRuntimeClasspath --stacktrace > stage10-release-dependencies.txt
+      - name: Dependency license and provenance audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          ledger='docs/governance/THIRD_PARTY_DEPENDENCIES.md'
+          gradle_file='app/build.gradle'
+          test -s "$ledger"
+          test -s "$gradle_file"
+          grep -q 'Direct dependencies' "$ledger"
+          grep -q 'Unknown, missing, or incompatible licensing is release-blocking' "$ledger"
+          grep -q 'Transitive dependencies are not implicitly approved' "$ledger"
+          grep -q 'androidx.core:core-ktx.*1.13.1' "$ledger"
+          grep -q 'androidx.lifecycle:lifecycle-runtime-ktx.*2.8.2' "$ledger"
+          grep -q 'androidx.room:room-runtime.*2.6.1' "$ledger"
+          grep -q 'com.squareup.retrofit2:retrofit.*2.11.0' "$ledger"
+          grep -q 'com.squareup.okhttp3:okhttp.*4.12.0' "$ledger"
+          grep -q 'androidx.work:work-runtime-ktx.*2.9.0' "$ledger"
+          grep -q 'junit:junit.*4.13.2' "$ledger"
+          grep -q 'repository `LICENSE` (MIT)' "$ledger"
+          if grep -nE "implementation ['\"][^:'\"]+:[^:'\"]+:([+*]|latest|release)|testImplementation ['\"][^:'\"]+:[^:'\"]+:([+*]|latest|release)" "$gradle_file"; then
+            echo 'Dynamic dependency versions are not permitted.'
+            exit 1
+          fi
       - name: Comprehensive security audit
         shell: bash
         run: |
@@ -123,6 +146,7 @@ jobs:
           test -s docs/OPEN_SOURCE_POLICY.md
           test -s docs/governance/ENGINEERING_REGRESSION_EXCLUSIONS.md
           test -s docs/governance/STAGE10_FINAL_AUDIT.md
+          test -s docs/governance/THIRD_PARTY_DEPENDENCIES.md
       - name: Upload Stage 10 evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -134,4 +158,4 @@ jobs:
             app/build/outputs/apk/release/**
           if-no-files-found: ignore
 
-# Stage 10 retrigger: execute the final audit against the corrected security policy.
+# Stage 10 dependency/license gate: verify the exact direct dependency ledger before release closure.
