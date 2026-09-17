@@ -15,6 +15,7 @@ class AmarAgentOrchestrator(
     private val roleOpinionEngine: AmarRoleOpinionEngine = AmarRoleOpinionEngine(),
     private val stageTwoEngine: AmarStageTwoEngine = AmarStageTwoEngine(reasoningProvider),
     private val stageThreeEngine: AmarStageThreeEngine = AmarStageThreeEngine(),
+    private val evidenceIntake: AmarEvidenceIntake = AmarEvidenceIntake(),
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
@@ -38,11 +39,17 @@ class AmarAgentOrchestrator(
             researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
         } else null
 
+        val intake = report?.let {
+            session.record(AmarAgentStage.RETRIEVE, "EVIDENCE_INTAKE: structural admission boundary")
+            evidenceIntake.admit(it.findings)
+        }
+        val admittedFindings = intake?.admitted.orEmpty()
+
         val stageThree = if (needsResearch) {
-            session.record(AmarAgentStage.RETRIEVE, "STAGE_3: memory + unified evidence + freshness")
-            stageThreeEngine.synchronize(request.text, report?.findings.orEmpty())
+            session.record(AmarAgentStage.RETRIEVE, "STAGE_3: memory + unified admitted evidence + freshness")
+            stageThreeEngine.synchronize(request.text, admittedFindings)
         } else null
-        val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
+        val unifiedFindings = stageThree?.unifiedEvidence ?: admittedFindings
 
         val verification = report?.let {
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
@@ -52,7 +59,10 @@ class AmarAgentOrchestrator(
         val evidenceText = buildString {
             appendLine("Evidence summary:")
             if (report == null) appendLine("No external research required.") else {
-                appendLine("newSources=${stageThree?.newEvidenceCount ?: report.findings.size}")
+                appendLine("receivedEvidence=${report.findings.size}")
+                appendLine("admittedEvidence=${intake?.admittedCount ?: 0}")
+                appendLine("rejectedAtIntake=${intake?.rejectedCount ?: 0}")
+                appendLine("newSources=${stageThree?.newEvidenceCount ?: admittedFindings.size}")
                 appendLine("unifiedEvidence=${unifiedFindings.size}")
                 appendLine("retrievedMemory=${stageThree?.retrievedMemoryCount ?: 0}")
                 appendLine("memorySize=${stageThree?.memorySize ?: 0}")
