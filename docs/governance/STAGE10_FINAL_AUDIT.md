@@ -35,7 +35,11 @@ The repository contains an MIT license for AMAR-owned source, explicit third-par
 
 ### CI/security automation
 
-CodeQL is configured for Java/Kotlin and JavaScript/TypeScript. Stage 10 additionally verifies the complete Android test/build/release artifact path.
+CodeQL is configured for Java/Kotlin and JavaScript/TypeScript. Stage 10 additionally verifies the complete Android test/build/release artifact path and now enforces the canonical Agent boundary: UI requests must enter `AmarAiAgentEngine`, which must delegate to `AmarAgentOrchestrator`; the UI must not instantiate `AmarLocalReasoning` or bypass the orchestrator with `AmarAgentCore`. The orchestrator itself remains fail-closed for execution.
+
+### Canonical Agent path correction
+
+The Android Agent boundary previously instantiated `AmarAgentCore` directly with `AmarLocalReasoning`, bypassing the canonical orchestrator pipeline. This has been corrected so `AmarAiAgentEngine` delegates through `AmarAgentOrchestrator`, while a no-evidence local research fallback refuses to fabricate sources when an external retrieval provider is unavailable. Runtime tests cover both ordinary responses and evidence-gated research requests.
 
 ## Current release decision
 
@@ -43,6 +47,6 @@ CodeQL is configured for Java/Kotlin and JavaScript/TypeScript. Stage 10 additio
 
 ## Required evidence
 
-The Stage 10 workflow records focused regression tests, full unit tests, debug and release builds, release APK existence/size checks, dependency graph generation, repository secret-pattern checks, protected execution checks, and diagnostic artifacts.
+The Stage 10 workflow records focused regression tests, full unit tests, debug and release builds, release APK existence/size checks, dependency graph generation, repository secret-pattern checks, protected execution checks, canonical Agent architecture checks, and diagnostic artifacts.
 
 **Rule:** inspect → implement/fix → re-inspect → focused test → full test → release build → CI → final audit → close only when zero critical/high defects remain within the release scope.
