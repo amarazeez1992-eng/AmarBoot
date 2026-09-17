@@ -1,8 +1,8 @@
 package com.personal.gridbot.amaros.agent
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarEvidenceQualityEngineItem3Test {
     private val now = 1_000_000L
@@ -15,9 +15,7 @@ class AmarEvidenceQualityEngineItem3Test {
             evidence = "Gold futures market structure remains supported by the reported data.",
             authority = Authority.OFFICIAL
         )
-
         val report = engine.assess(listOf(finding), now)
-
         assertEquals(AmarEvidenceQualityStatus.VERIFIED, report.status)
         assertTrue(report.score >= 0.70)
         assertEquals(1, report.independentSourceCount)
@@ -28,11 +26,9 @@ class AmarEvidenceQualityEngineItem3Test {
     fun duplicate_evidence_is_detected_and_ranked_deterministically() {
         val first = finding("https://a.example/item", "The same market evidence is published here.", Authority.REPUTABLE)
         val duplicate = finding("https://b.example/item", "The same market evidence is published here.", Authority.OFFICIAL)
-
         val report = engine.assess(listOf(first, duplicate), now)
         val ranked1 = engine.rank(listOf(first, duplicate), now)
         val ranked2 = engine.rank(listOf(first, duplicate), now)
-
         assertEquals(1, report.duplicateEvidenceCount)
         assertEquals(ranked1.map { it.fingerprint }, ranked2.map { it.fingerprint })
     }
@@ -41,9 +37,7 @@ class AmarEvidenceQualityEngineItem3Test {
     fun fingerprint_tampering_fails_closed() {
         val valid = finding("https://example.com/tampered", "Evidence that must remain intact.", Authority.OFFICIAL)
         val tampered = valid.copy(fingerprint = "invalid")
-
         val report = engine.assess(listOf(valid, tampered), now)
-
         assertEquals(AmarEvidenceQualityStatus.UNVERIFIABLE, report.status)
         assertTrue(report.items.any { !it.integrityValid })
     }
@@ -56,9 +50,7 @@ class AmarEvidenceQualityEngineItem3Test {
             authority = Authority.OFFICIAL,
             retrievedAt = now - 10 * AmarEvidencePolicy.DEFAULT.freshnessHalfLifeMs
         )
-
         val report = engine.assess(listOf(stale), now)
-
         assertTrue(report.status != AmarEvidenceQualityStatus.VERIFIED)
         assertTrue(report.items.single().freshnessScore < 0.01)
     }
