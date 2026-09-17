@@ -26,23 +26,26 @@ Stage 7 establishes a fail-closed governance boundary for financial execution. I
 8. `EXECUTED` is not final proof; `VERIFIED` is required.
 9. This stage must not be marked CLOSED until focused tests, full unit tests, build verification and failure-injection evidence pass in CI.
 
-## Final verification record
+## Complete verification evidence set
 
-- Verified implementation commit: `08942187a2a154c421edef730521646dc6ca1621`
-- CI workflow: `AMAR AI Stage Seven Verification`
-- CI run: `35174033338`
-- Result: **SUCCESS**
+- Verified implementation commit: `94e5ffaa033ed2af49be41cd5a6c94258ffa1d86`
+- Implementation CI workflow: `AMAR AI Stage Seven Verification`
+- Implementation CI run: `35174688600`
+- Implementation CI result: **SUCCESS**
 - Focused Stage 7 tests: **PASS**
 - Full unit-test suite: **PASS**
 - Android debug build verification: **PASS**
-- Diagnostic/test reports: uploaded by CI
-- Independent repository re-inspection: completed after CI, including governance implementation, Stage 7 tests, constitution, regression exclusions, and stage contract.
+- CI diagnostics upload: **PASS**
+- Evidence-record commit: `7d12ee2bbe4024d9e64a58b9f86a081cee85f254` (documentation-only; no production/test implementation change)
+- Independent re-inspection: completed against the complete Stage 7 result, constitution, stage contract, governance implementation, tests and regression exclusions.
 
 ## Closure decision
 
 Stage 7 — Execution Governance: **CLOSED**.
 
-This closure is based on the current implementation evidence above and does not authorize live broker execution. Any later implementation change reopens the affected verification gate under the project constitution.
+This closure is based on the complete evidence set as a whole, not on the latest comment or latest successful addition alone. The evidence-record commit changes documentation only; the verified implementation remains `94e5ffaa...` and its complete Stage 7 CI run is `35174688600`.
+
+The closure does not authorize live broker execution. Any substantive implementation change reopens the affected verification gate under the project constitution.
 
 ## Regression gate
 
