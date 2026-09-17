@@ -13,25 +13,25 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Make Gradle executable
-        run: chmod +x gradlew
+      - name: Verify Gradle toolchain
+        run: gradle --version
 
       - name: Structural diff check
         run: git diff --check
 
       - name: Stage 3 reasoning and critic tests
-        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeTest' --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeReasoningTest' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeTest' --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeReasoningTest' --stacktrace
 
       - name: Agent app integration regression
-        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest' --stacktrace
 
       - name: Full unit regression
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        run: gradle :app:testDebugUnitTest --stacktrace
 
       - name: Debug build
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: gradle :app:assembleDebug --stacktrace
