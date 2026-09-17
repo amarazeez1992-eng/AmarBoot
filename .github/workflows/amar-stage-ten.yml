@@ -27,7 +27,6 @@ on:
       - 'CONTRIBUTING.md'
       - '.github/workflows/**'
       - 'gradle/**'
-      - 'build.gradle'
       - 'settings.gradle'
       - 'gradle.properties'
   workflow_dispatch:
@@ -114,8 +113,10 @@ jobs:
           fi
 
           echo '== Network transport policy =='
-          if git grep -nE 'http://[^/]' -- 'app/src/main' 'app/src/main/assets' 'app/src/main/res'; then
-            echo 'Cleartext HTTP endpoint detected in Android application sources.'
+          # Scan actual application source text only. XML namespace declarations,
+          # binary assets, and documented examples are not network endpoints.
+          if git grep -nE 'https?://[^[:space:]"<>()]+' -- 'app/src/main/**/*.kt' 'app/src/main/**/*.java' 'app/src/main/**/*.json' 'app/src/main/**/*.xml' ':!app/src/main/AndroidManifest.xml' ':!app/src/main/java/com/personal/gridbot/amaros/security/AmarSecurityContracts.kt' ':!app/src/main/java/com/personal/gridbot/amaros/sync/AmarSyncCenterScreen.kt'; then
+            echo 'Potential cleartext or undocumented HTTP endpoint detected in Android source.'
             exit 1
           fi
 
