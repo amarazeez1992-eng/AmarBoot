@@ -28,24 +28,23 @@ Stage 7 establishes a fail-closed governance boundary for financial execution. I
 
 ## Complete verification evidence set
 
-- Verified implementation commit: `94e5ffaa033ed2af49be41cd5a6c94258ffa1d86`
-- Implementation CI workflow: `AMAR AI Stage Seven Verification`
-- Implementation CI run: `35174688600`
-- Implementation CI result: **SUCCESS**
+- Verified production/test implementation commit: `94e5ffaa033ed2af49be41cd5a6c94258ffa1d86`
+- Evidence-record commit: `7d12ee2bbe4024d9e64a58b9f86a081cee85f254` (documentation-only)
+- Final evidence-record CI run: `35175619707`
+- Final CI result: **SUCCESS**
 - Focused Stage 7 tests: **PASS**
 - Full unit-test suite: **PASS**
 - Android debug build verification: **PASS**
 - CI diagnostics upload: **PASS**
-- Evidence-record commit: `7d12ee2bbe4024d9e64a58b9f86a081cee85f254` (documentation-only; no production/test implementation change)
-- Independent re-inspection: completed against the complete Stage 7 result, constitution, stage contract, governance implementation, tests and regression exclusions.
+- Independent second-pass audit: **PASS**
 
 ## Closure decision
 
-Stage 7 — Execution Governance: **CLOSED**.
+Stage 7 — Execution Governance: **CLOSED OFFICIALLY / CONSTITUTIONALLY**.
 
-This closure is based on the complete evidence set as a whole, not on the latest comment or latest successful addition alone. The evidence-record commit changes documentation only; the verified implementation remains `94e5ffaa...` and its complete Stage 7 CI run is `35174688600`.
+This closure is based on the complete evidence set as a whole, not on the latest comment or latest successful addition alone. The final CI run verified the evidence-record commit; that commit is documentation-only, while the verified implementation remains `94e5ffaa...`.
 
-The closure does not authorize live broker execution. Any substantive implementation change reopens the affected verification gate under the project constitution.
+The closure does not authorize live broker execution. Any future substantive implementation or test change to Stage 7 reopens the affected verification gate under the project constitution.
 
 ## Regression gate
 
