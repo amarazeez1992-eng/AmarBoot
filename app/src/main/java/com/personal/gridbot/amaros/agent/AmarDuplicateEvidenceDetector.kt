@@ -3,16 +3,16 @@ package com.personal.gridbot.amaros.agent
 /** Point 6 boundary: detects duplicate evidence by normalized content only. */
 class AmarDuplicateEvidenceDetector {
     fun detect(findings: List<ResearchFinding>): AmarDuplicateEvidenceReport {
-        val groups = findings
-            .filter { it.evidence.isNotBlank() }
-            .groupBy { normalize(it.evidence) }
-            .filterKeys { it.isNotEmpty() && findings.count { finding -> finding.evidence.isNotBlank() && normalize(finding.evidence) == it } > 1 }
+        val indexed = findings.withIndex()
+            .filter { it.value.evidence.isNotBlank() }
+            .groupBy { normalize(it.value.evidence) }
+            .filterKeys { it.isNotEmpty() }
+            .filterValues { it.size > 1 }
 
-        val duplicateIndexes = groups.values.flatten().mapNotNull { finding -> findings.indexOf(finding).takeIf { it >= 0 } }.toSet()
         return AmarDuplicateEvidenceReport(
-            duplicateGroupCount = groups.size,
-            duplicateFindingCount = duplicateIndexes.size,
-            duplicateGroups = groups.values.map { it.toList() }
+            duplicateGroupCount = indexed.size,
+            duplicateFindingCount = indexed.values.sumOf { it.size },
+            duplicateGroups = indexed.values.map { entries -> entries.map { it.value } }
         )
     }
 
