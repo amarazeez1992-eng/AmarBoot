@@ -18,11 +18,12 @@ class AmarEvidenceQualityEngine(
 
     fun assess(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarEvidenceQualityReport {
         val items = findings.map { finding -> assessItem(finding, findings, nowEpochMs) }
-        val usable = items.filter { it.integrityValid && it.contentValid }
+        val usableIndices = items.indices.filter { items[it].integrityValid && items[it].contentValid }
+        val usable = usableIndices.map { items[it] }
         val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
         val independentHosts = usable.mapNotNull { it.host }.distinct()
-        val contentKeys = usable.map { contentKey(it) }
-        val duplicateCount = contentKeys.size - contentKeys.distinct().size
+        val usableEvidenceKeys = usableIndices.map { normalizedEvidenceKey(findings[it].evidence.trim()) }
+        val duplicateCount = usableEvidenceKeys.size - usableEvidenceKeys.distinct().size
         val hasIntegrityFailure = items.any { !it.integrityValid }
         val hasContentFailure = items.any { !it.contentValid }
         val status = when {
@@ -89,8 +90,6 @@ class AmarEvidenceQualityEngine(
             host = host
         )
     }
-
-    private fun contentKey(item: AmarEvidenceQualityItem): String = item.fingerprint
 
     private fun normalizedEvidenceKey(evidence: String): String = evidence
         .lowercase()
