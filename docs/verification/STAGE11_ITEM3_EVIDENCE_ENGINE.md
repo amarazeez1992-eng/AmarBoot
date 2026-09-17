@@ -8,9 +8,11 @@ Item 3 is executed strictly in points **1 → 24**. A later point is not conside
 
 ## Point 1 — Evidence Intake
 
-Status: IMPLEMENTED — VERIFICATION IN PROGRESS
+Status: CONSTITUTIONALLY CLOSED
 
-The canonical structural intake boundary is `AmarEvidenceIntake`. Research findings pass through this boundary before entering Stage 3 synchronization, source verification, consensus, claim verification, and evidence-quality assessment.
+Point 1 is constitutionally closed after implementation, focused regression, full regression, debug build, architecture checks, PR merge, and successful main-branch post-merge final APK verification against the merged commit.
+
+Canonical implementation: `AmarEvidenceIntake`.
 
 Point 1 performs only structural admission:
 
@@ -21,6 +23,18 @@ Point 1 performs only structural admission:
 - does not introduce research orchestration, decision logic, or execution authority.
 
 Focused coverage is in `AmarEvidenceIntakeTest` and integration is wired through `AmarAgentOrchestrator`.
+
+### Point 1 closure evidence
+
+- PR #77: merged successfully.
+- Merged commit: `f655a4bf3577f9ca9ca699e0ca8c8c8c0596d1bb`.
+- Point 1 CI run: `35234827293` — successful focused tests, full unit suite, debug build, architecture regression checks, and evidence artifact upload.
+- Stage 10 regression/audit run associated with the merge: `35234827262` — successful regression, debug/release builds, artifact verification, dependency/license/provenance, security, architecture, execution-safety, and release-hygiene gates.
+- Main post-merge Final APK Closure run: `35242700953` — successful on `main` at the merged commit.
+- Final APK artifact: `AmarAI-final-debug-apk`.
+- Final APK artifact SHA-256: `8caee0a8f723133e7521e24630ddc36cb443188308c8f708534f8526ec9776fb`.
+
+This closure is limited to Point 1. Point 2 is the next authorized sequential point; no later Item 3 point is treated as completed by this closure.
 
 ## Root-cause architecture decision
 
@@ -91,5 +105,7 @@ Item 3 cannot close until all of the following succeed against the same source t
 8. PR merge.
 9. Main-branch post-merge recheck against the merged commit.
 10. Only then: constitutional closure of Point 1.
+
+**Point 1 has now satisfied these gates. Item 3 remains open because points 2–24 are not yet closed.**
 
 **No closure is inferred from compilation or build success alone.**
