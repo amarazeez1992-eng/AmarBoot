@@ -32,6 +32,10 @@ The dedicated Stage 11 verification run completed successfully with all required
 
 The successful verification was executed against the exact Item 2 source tree through PR #68 and merged into `main` as commit `c6f0f9c838c9c75fea5bdc7d5d0f7b60b1b63375`.
 
+## Main-Branch Post-Closure Recheck
+
+This commit intentionally triggers the complete Stage 11 workflow on `main` against the constitutionally closed Item 2 baseline. The recheck is required to independently validate the merged `main` state rather than infer verification from the PR run.
+
 ## Closure Rule
 
 Item 2 is constitutionally closed only after the complete verification gate succeeded. No closure is based on code changes or build success alone.
