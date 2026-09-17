@@ -20,11 +20,26 @@ class AmarIntelligenceCoreTest {
 
     @Test
     fun reasoning_fails_closed_to_insufficient_data_when_nothing_is_usable() {
-        val result = AmarIntelligenceCore.analyze(listOf(AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.UNKNOWN, "unsupported payload")))
+        val result = AmarIntelligenceCore.analyze(listOf(
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.UNKNOWN, "unsupported payload")
+        ))
         assertEquals("INSUFFICIENT_DATA", result.reasoning.conclusion)
         assertTrue(result.reasoning.assumptions.any { it.contains("malformed") })
+        assertTrue(result.reasoning.requiresMoreInput)
+        assertEquals(AmarIntelligenceCore.AnalysisState.BLOCKED, result.state)
         assertEquals(AmarIntelligenceCore.ConfidenceLabel.VERY_LOW, result.confidence.label)
         assertTrue(result.confidence.score < 0.20)
+    }
+
+    @Test
+    fun partial_input_is_degraded_and_requires_more_input() {
+        val result = AmarIntelligenceCore.analyze(listOf(
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.TEXT, "usable"),
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.FILE, "")
+        ))
+        assertEquals("PARTIAL_DATA", result.reasoning.conclusion)
+        assertTrue(result.reasoning.requiresMoreInput)
+        assertEquals(AmarIntelligenceCore.AnalysisState.DEGRADED, result.state)
     }
 
     @Test
@@ -43,8 +58,24 @@ class AmarIntelligenceCoreTest {
     }
 
     @Test
-    fun analysis_is_deterministic_for_identical_inputs() {
-        val inputs = listOf(AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.TEXT, "same", "user", 0.8, 0.9))
-        assertEquals(AmarIntelligenceCore.analyze(inputs), AmarIntelligenceCore.analyze(inputs))
+    fun invalid_quality_or_freshness_is_rejected() {
+        assertTrue(runCatching {
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.TEXT, "x", freshnessScore = -0.1)
+        }.isFailure)
+        assertTrue(runCatching {
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.TEXT, "x", qualityScore = 1.1)
+        }.isFailure)
+    }
+
+    @Test
+    fun analysis_is_deterministic_and_does_not_mutate_input_order() {
+        val inputs = listOf(
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.TEXT, "same", "user", 0.8, 0.9),
+            AmarIntelligenceCore.InputObservation(AmarIntelligenceCore.InputKind.FILE, "file", "local", 0.7, 0.8)
+        )
+        val first = AmarIntelligenceCore.analyze(inputs)
+        val second = AmarIntelligenceCore.analyze(inputs)
+        assertEquals(first, second)
+        assertEquals("same", inputs.first().content)
     }
 }
