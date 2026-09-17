@@ -52,6 +52,13 @@ class AmarExecutionGovernanceTest {
         assertEquals(AmarExecutionGovernance.Decision.REJECTED, a.authorize(proposal("k3", security = false)).decision)
     }
 
+    @Test fun riskThresholdBoundaryIsInclusiveAtPointSeven() {
+        val a = authority()
+        a.delegate(delegation())
+        assertEquals(AmarExecutionGovernance.Decision.APPROVED, a.authorize(proposal(risk = 0.70)).decision)
+        assertEquals(AmarExecutionGovernance.Decision.REJECTED, a.authorize(proposal("k2", risk = 0.7000001)).decision)
+    }
+
     @Test fun idempotencyReturnsTheOriginalReceipt() {
         val a = authority()
         a.delegate(delegation())
@@ -81,7 +88,7 @@ class AmarExecutionGovernanceTest {
         assertFalse(a.reconcile("k1", AmarExecutionGovernance.CommandStatus.EXECUTED).consistent)
     }
 
-    @Test fun emergencyLockFailsClosedAfterExecutionToo() {
+    @Test fun emergencyLockBlocksVerificationOfAlreadyExecutedCommand() {
         val a = authority()
         a.delegate(delegation())
         a.authorize(proposal())
