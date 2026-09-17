@@ -16,9 +16,12 @@ class AmarEvidenceQualityEngine(
         val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
         val independentHosts = usable.mapNotNull { it.host }.distinct()
         val duplicateCount = usable.size - usable.map { it.fingerprint }.distinct().size
+        val hasIntegrityFailure = items.any { !it.integrityValid }
+        val hasContentFailure = items.any { !it.contentValid }
         val status = when {
             findings.isEmpty() || usable.isEmpty() -> AmarEvidenceQualityStatus.UNVERIFIABLE
-            usable.any { !it.integrityValid } -> AmarEvidenceQualityStatus.UNVERIFIABLE
+            hasIntegrityFailure -> AmarEvidenceQualityStatus.UNVERIFIABLE
+            hasContentFailure -> AmarEvidenceQualityStatus.WEAK
             score >= policy.verifiedThreshold -> AmarEvidenceQualityStatus.VERIFIED
             score >= policy.weakThreshold -> AmarEvidenceQualityStatus.WEAK
             else -> AmarEvidenceQualityStatus.UNVERIFIABLE
