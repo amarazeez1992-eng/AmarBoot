@@ -1,40 +1,101 @@
 package com.personal.gridbot.amaros.agent
 
 import java.net.URI
-import kotlin.math.max
+import kotlin.math.exp
 
-/** Hardening gate for the 40% boundary: quality, claim support, and calibrated confidence. */
+/**
+ * Canonical Stage 11 Item 3 evidence boundary.
+ * It evaluates supplied evidence quality only; it does not retrieve, research, decide, or execute.
+ */
 class AmarEvidenceQualityEngine(
-    private val freshnessWindowMs: Long = 30L * 24L * 60L * 60L * 1000L
+    private val policy: AmarEvidencePolicy = AmarEvidencePolicy.DEFAULT
 ) {
-    init { require(freshnessWindowMs > 0) }
-
     fun assess(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarEvidenceQualityReport {
-        val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
-        val hostCounts = valid.mapNotNull { hostOf(it.sourceUri) }.groupingBy { it }.eachCount()
-        val fingerprints = valid.map { it.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${it.sourceUri}|${it.evidence}") } }
-        val duplicateCount = fingerprints.size - fingerprints.distinct().size
-        val scores = valid.map { finding ->
-            val authority = when (finding.authority) {
-                Authority.PRIMARY -> 1.0
-                Authority.OFFICIAL -> .95
-                Authority.PEER_REVIEWED -> .90
-                Authority.REPUTABLE -> .75
-                Authority.COMMUNITY -> .40
-                Authority.UNKNOWN -> .15
-            }
-            val age = max(0L, nowEpochMs - finding.retrievedAtEpochMs)
-            val freshness = if (age <= freshnessWindowMs) 1.0 else (freshnessWindowMs.toDouble() / max(age, 1L)).coerceIn(0.0, 1.0)
-            val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
-            val duplicate = fingerprints.count { it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") } } > 1
-            AmarEvidenceQualityItem(finding.fingerprint, authority, freshness, independent, !duplicate)
+        val items = findings.map { finding -> assessItem(finding, findings, nowEpochMs) }
+        val usable = items.filter { it.integrityValid && it.contentValid }
+        val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
+        val independentHosts = usable.mapNotNull { it.host }.distinct()
+        val duplicateCount = usable.size - usable.map { it.fingerprint }.distinct().size
+        val status = when {
+            findings.isEmpty() || usable.isEmpty() -> AmarEvidenceQualityStatus.UNVERIFIABLE
+            usable.any { !it.integrityValid } -> AmarEvidenceQualityStatus.UNVERIFIABLE
+            score >= policy.verifiedThreshold -> AmarEvidenceQualityStatus.VERIFIED
+            score >= policy.weakThreshold -> AmarEvidenceQualityStatus.WEAK
+            else -> AmarEvidenceQualityStatus.UNVERIFIABLE
         }
-        val independentHosts = valid.mapNotNull { hostOf(it.sourceUri) }.distinct().size
-        val score = if (scores.isEmpty()) 0.0 else scores.map { it.score() }.average()
-        return AmarEvidenceQualityReport(score, independentHosts, duplicateCount, scores)
+        return AmarEvidenceQualityReport(
+            score = score.coerceIn(0.0, 1.0),
+            independentSourceCount = independentHosts.size,
+            duplicateEvidenceCount = duplicateCount,
+            items = items,
+            policyVersion = policy.version,
+            status = status
+        )
     }
 
-    private fun hostOf(uri: String): String? = runCatching { URI(uri).host?.lowercase()?.removePrefix("www.") }.getOrNull()
+    fun rank(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): List<AmarEvidenceQualityItem> =
+        findings
+            .map { assessItem(it, findings, nowEpochMs) }
+            .sortedWith(compareByDescending<AmarEvidenceQualityItem> { it.score }.thenBy { it.fingerprint })
+
+    private fun assessItem(
+        finding: ResearchFinding,
+        allFindings: List<ResearchFinding>,
+        nowEpochMs: Long
+    ): AmarEvidenceQualityItem {
+        val sourceUri = finding.sourceUri.trim()
+        val evidence = finding.evidence.trim()
+        val expectedFingerprint = AmarEvidence.fingerprintOf("$sourceUri|$evidence")
+        val suppliedFingerprint = finding.fingerprint.ifBlank { expectedFingerprint }
+        val integrityValid = suppliedFingerprint == expectedFingerprint
+        val contentValid = sourceUri.isNotBlank() && evidence.isNotBlank()
+        require(nowEpochMs >= finding.retrievedAtEpochMs) { "evidence cannot be from the future" }
+
+        val authority = authorityScore(finding.authority)
+        val age = nowEpochMs - finding.retrievedAtEpochMs
+        val freshness = exp(-age.toDouble() / policy.freshnessHalfLifeMs.toDouble()).coerceIn(0.0, 1.0)
+        val host = hostOf(sourceUri)
+        val hostCount = if (host == null) 0 else allFindings.count { hostOf(it.sourceUri) == host }
+        val independent = host != null && hostCount == 1
+        val fingerprintCount = allFindings.count {
+            val normalizedUri = it.sourceUri.trim()
+            val normalizedEvidence = it.evidence.trim()
+            val fingerprint = it.fingerprint.ifBlank { AmarEvidence.fingerprintOf("$normalizedUri|$normalizedEvidence") }
+            fingerprint == suppliedFingerprint
+        }
+        val unique = fingerprintCount == 1
+        val score = (
+            authority * policy.authorityWeight +
+                freshness * policy.freshnessWeight +
+                (if (independent) 1.0 else 0.0) * policy.independenceWeight +
+                (if (unique) 1.0 else 0.0) * policy.uniquenessWeight
+            ).coerceIn(0.0, 1.0)
+
+        return AmarEvidenceQualityItem(
+            fingerprint = suppliedFingerprint,
+            authorityScore = authority,
+            freshnessScore = freshness,
+            independentSource = independent,
+            uniqueEvidence = unique,
+            score = if (integrityValid && contentValid) score else 0.0,
+            integrityValid = integrityValid,
+            contentValid = contentValid,
+            host = host
+        )
+    }
+
+    private fun authorityScore(authority: Authority): Double = when (authority) {
+        Authority.PRIMARY -> 1.0
+        Authority.OFFICIAL -> .95
+        Authority.PEER_REVIEWED -> .90
+        Authority.REPUTABLE -> .75
+        Authority.COMMUNITY -> .40
+        Authority.UNKNOWN -> .15
+    }
+
+    private fun hostOf(uri: String): String? = runCatching {
+        URI(uri).host?.lowercase()?.removePrefix("www.")
+    }.getOrNull()?.takeIf { it.isNotBlank() }
 }
 
 data class AmarEvidenceQualityItem(
@@ -42,16 +103,22 @@ data class AmarEvidenceQualityItem(
     val authorityScore: Double,
     val freshnessScore: Double,
     val independentSource: Boolean,
-    val uniqueEvidence: Boolean
-) {
-    fun score(): Double = (authorityScore * .45 + freshnessScore * .20 + (if (independentSource) .20 else .05) + (if (uniqueEvidence) .15 else 0.0)).coerceIn(0.0, 1.0)
-}
+    val uniqueEvidence: Boolean,
+    val score: Double = 0.0,
+    val integrityValid: Boolean = true,
+    val contentValid: Boolean = true,
+    val host: String? = null
+)
+
+enum class AmarEvidenceQualityStatus { VERIFIED, WEAK, UNVERIFIABLE }
 
 data class AmarEvidenceQualityReport(
     val score: Double,
     val independentSourceCount: Int,
     val duplicateEvidenceCount: Int,
-    val items: List<AmarEvidenceQualityItem>
+    val items: List<AmarEvidenceQualityItem>,
+    val policyVersion: Int = 1,
+    val status: AmarEvidenceQualityStatus = AmarEvidenceQualityStatus.UNVERIFIABLE
 )
 
 class AmarClaimVerificationEngine {
