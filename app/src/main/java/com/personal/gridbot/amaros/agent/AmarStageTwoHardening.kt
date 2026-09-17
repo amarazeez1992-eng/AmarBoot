@@ -64,23 +64,26 @@ class AmarEvidenceQualityEngine(
         val contentKey = normalizedEvidenceKey(evidence)
         val contentCount = allFindings.count { normalizedEvidenceKey(it.evidence.trim()) == contentKey }
         val unique = contentKey.isNotBlank() && contentCount == 1
-        val score = (authority * effectivePolicy.authorityWeight + freshness * effectivePolicy.freshnessWeight +
+        val rawScore = (authority * effectivePolicy.authorityWeight + freshness * effectivePolicy.freshnessWeight +
             (if (independent) 1.0 else 0.0) * effectivePolicy.independenceWeight +
             (if (unique) 1.0 else 0.0) * effectivePolicy.uniquenessWeight).coerceIn(0.0, 1.0)
-        val finalScore = if (integrityValid && contentValid) score else 0.0
+        val finalScore = if (integrityValid && contentValid) rawScore else 0.0
         val explanation = AmarEvidenceExplanation(
-            authority = "authority=${finding.authority.name}, score=${"%.3f".format(authority)}",
-            freshness = "freshness=${"%.3f".format(freshness)}, ageMs=$age",
-            independence = if (independent) "independent-source" else "shared-or-unknown-source",
-            uniqueness = if (unique) "unique-content" else "duplicate-content",
-            integrity = if (integrityValid) "integrity-valid" else "integrity-failed",
-            content = if (contentValid) "content-valid" else "content-invalid",
-            finalDecision = when {
-                !integrityValid -> "score-forced-zero-integrity-failure"
-                !contentValid -> "score-forced-zero-content-failure"
-                finalScore >= effectivePolicy.verifiedThreshold -> "verified-threshold-met"
-                finalScore >= effectivePolicy.weakThreshold -> "weak-threshold-met"
-                else -> "below-weak-threshold"
+            authority = authority,
+            freshness = freshness,
+            freshnessAgeMs = age,
+            independentSource = independent,
+            uniqueEvidence = unique,
+            integrityValid = integrityValid,
+            contentValid = contentValid,
+            rawScore = rawScore,
+            finalScore = finalScore,
+            decision = when {
+                !integrityValid -> AmarEvidenceDecision.INTEGRITY_FAILURE
+                !contentValid -> AmarEvidenceDecision.CONTENT_FAILURE
+                finalScore >= effectivePolicy.verifiedThreshold -> AmarEvidenceDecision.VERIFIED_THRESHOLD_MET
+                finalScore >= effectivePolicy.weakThreshold -> AmarEvidenceDecision.WEAK_THRESHOLD_MET
+                else -> AmarEvidenceDecision.BELOW_WEAK_THRESHOLD
             }
         )
         return AmarEvidenceQualityItem(
@@ -109,14 +112,30 @@ class AmarEvidenceQualityEngine(
     private fun hostOf(uri: String): String? = runCatching { URI(uri).host?.lowercase()?.removePrefix("www.") }.getOrNull()?.takeIf { it.isNotBlank() }
 }
 
+enum class AmarEvidenceDecision {
+    VERIFIED_THRESHOLD_MET,
+    WEAK_THRESHOLD_MET,
+    BELOW_WEAK_THRESHOLD,
+    INTEGRITY_FAILURE,
+    CONTENT_FAILURE
+}
+
+/**
+ * Machine-readable explanation of the canonical evidence-quality decision.
+ * It contains the exact factors used by AmarEvidenceQualityEngine and does not
+ * introduce a second scoring or evidence authority.
+ */
 data class AmarEvidenceExplanation(
-    val authority: String,
-    val freshness: String,
-    val independence: String,
-    val uniqueness: String,
-    val integrity: String,
-    val content: String,
-    val finalDecision: String
+    val authority: Double,
+    val freshness: Double,
+    val freshnessAgeMs: Long,
+    val independentSource: Boolean,
+    val uniqueEvidence: Boolean,
+    val integrityValid: Boolean,
+    val contentValid: Boolean,
+    val rawScore: Double,
+    val finalScore: Double,
+    val decision: AmarEvidenceDecision
 )
 
 data class AmarEvidenceQualityItem(
@@ -129,7 +148,18 @@ data class AmarEvidenceQualityItem(
     val integrityValid: Boolean = true,
     val contentValid: Boolean = true,
     val host: String? = null,
-    val explanation: AmarEvidenceExplanation = AmarEvidenceExplanation("", "", "", "", "", "", "")
+    val explanation: AmarEvidenceExplanation = AmarEvidenceExplanation(
+        authority = 0.0,
+        freshness = 0.0,
+        freshnessAgeMs = 0L,
+        independentSource = false,
+        uniqueEvidence = false,
+        integrityValid = false,
+        contentValid = false,
+        rawScore = 0.0,
+        finalScore = 0.0,
+        decision = AmarEvidenceDecision.CONTENT_FAILURE
+    )
 )
 
 enum class AmarEvidenceQualityStatus { VERIFIED, WEAK, UNVERIFIABLE }
