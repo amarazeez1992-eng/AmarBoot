@@ -48,6 +48,7 @@ class AmarSourceIndependenceBoundaryTest {
     }
 
     private fun finding(uri: String) = ResearchFinding(
+        sourceTitle = uri,
         sourceUri = uri,
         evidence = "verified evidence",
         authority = Authority.PRIMARY,
