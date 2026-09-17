@@ -12,7 +12,7 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - Stage 4 — Simulation / Risk / Crisis / Audit: CLOSED
 - Stage 5 — Hardening & Strategy: CLOSED
 - Stage 6 — Amar Intelligence Expansion: CLOSED
-- Stage 7 — Execution Governance: CLOSED
+- Stage 7 — Execution Governance: CLOSED — current verification evidence recorded below
 - Stage 8 — Central Command Plane: CLOSED
 - Stage 9 — Parallel Workforce / Performance / Reliability: CLOSED
 - Stage 10 — Final 100% Audit and Release Gate: OPEN / IN PROGRESS
@@ -30,6 +30,17 @@ This roadmap is the authoritative stage tracker. A stage is CLOSED only after im
 - 8. Observability: PENDING
 - 9. Final 99% Gate: PENDING
 - 10. Multimodal Agent Interface & Workspace: PENDING — highest-priority interface package
+
+## Stage 7 — Execution Governance — closure evidence
+
+- Implementation verification commit: `08942187a2a154c421edef730521646dc6ca1621`
+- CI run: `35174033338`
+- Focused governance tests: PASS
+- Full unit-test suite: PASS
+- Android debug build: PASS
+- Independent second-pass repository audit: PASS
+- Closure record: `docs/governance/STAGE7_EXECUTION_GOVERNANCE.md`
+- Closure status: **CLOSED**
 
 ## Stage 10 — Final 100% Audit and Release Gate
 
@@ -73,7 +84,7 @@ For every numbered item, the mandatory completion loop is:
 
 **تحقيق → تنفيذ → فحص → اختبار → تأكيد → إثبات → تدقيق نهائي → جاهز → إغلاق**
 
-No item may advance until that loop has produced current evidence. Previous CI success does not close a later-modified implementation.
+No item may advance until that loop has produced current evidence. Previous CI success does not close later-modified implementation.
 
 ## Non-negotiable principles
 
