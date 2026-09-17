@@ -80,4 +80,26 @@ class AmarStageTwoHardeningTest {
         val fresh = finding("https://fresh.example/x", "fresh claim", Authority.PRIMARY)
         assertTrue(quality.assess(listOf(fresh)).score > quality.assess(listOf(old)).score)
     }
+
+    @Test
+    fun evidence_explanation_exposes_all_quality_decision_factors() {
+        val result = quality.assess(listOf(finding("https://source.example/x", "gold trend is rising")))
+        val explanation = result.items.single().explanation
+        assertTrue(explanation.authority.contains("authority="))
+        assertTrue(explanation.freshness.contains("freshness="))
+        assertTrue(explanation.independence.contains("independent"))
+        assertTrue(explanation.uniqueness.contains("unique"))
+        assertEquals("integrity-valid", explanation.integrity)
+        assertEquals("content-valid", explanation.content)
+        assertTrue(explanation.finalDecision.isNotBlank())
+    }
+
+    @Test
+    fun tampered_evidence_explanation_is_fail_closed() {
+        val result = quality.assess(listOf(finding("https://source.example/x", "gold trend is rising", fingerprint = "tampered")))
+        val explanation = result.items.single().explanation
+        assertEquals(0.0, result.items.single().score, 0.0)
+        assertEquals("integrity-failed", explanation.integrity)
+        assertEquals("score-forced-zero-integrity-failure", explanation.finalDecision)
+    }
 }
