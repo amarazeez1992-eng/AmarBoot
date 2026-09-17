@@ -90,6 +90,7 @@ class AmarAgentOrchestrator(
         val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
+        val direction = stageDirection.takeIf { it != AmarDecisionDirection.UNKNOWN } ?: answerDirection
         val directionMismatch = decisionRelevant && stageDirection != AmarDecisionDirection.UNKNOWN && answerDirection != AmarDecisionDirection.UNKNOWN && stageDirection != answerDirection
 
         val councilReview = if (!decisionRelevant) {
