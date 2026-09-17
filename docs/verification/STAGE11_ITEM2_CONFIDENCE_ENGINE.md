@@ -30,4 +30,8 @@ Introduce a dedicated deterministic confidence layer that converts explicit evid
 
 The Stage 11 workflow must pass the focused Confidence Engine test, Item 1 regression, existing focused intelligence tests, the full unit suite, debug build, architecture regression checks, and evidence upload before this item can be constitutionally closed.
 
+## CI Verification Correction
+
+The main branch push status for the baseline was pending with no recorded status result, so no test/build success was inferred from that state. A dedicated pull-request verification path is being used to execute the same Stage 11 gate against this exact source tree before any constitutional closure.
+
 **No Stage 11 Item 2 closure is declared from code changes alone.**
