@@ -23,6 +23,8 @@ jobs:
           gradle-version: '8.7'
       - name: Run Stage 2 focused tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest' --stacktrace
+      - name: Run Point 5 Source Independence boundary test
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest' --stacktrace
       - name: Run full AMAR AI agent unit tests
         run: gradle :app:testDebugUnitTest --stacktrace
       - name: Verify debug build
