@@ -3,6 +3,7 @@ name: Amar Stage Eleven
 # Stage 11 verification gate: every intelligence layer requires focused regression tests,
 # the full unit suite, build verification, architecture checks, and CI evidence before closure.
 # Research uses the dedicated evidence-only verification path; no synthetic answer claims are used.
+# Item 1 verification trigger: run against the corrected current main baseline before constitutional closure.
 
 on:
   push:
