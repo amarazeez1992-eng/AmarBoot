@@ -21,6 +21,9 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x gradlew
 
+      - name: Structural diff check
+        run: git diff --check
+
       - name: Stage 3 reasoning and critic tests
         run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeTest' --tests 'com.personal.gridbot.amaros.agent.AmarStageThreeReasoningTest' --stacktrace
 
