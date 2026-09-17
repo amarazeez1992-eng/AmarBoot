@@ -33,9 +33,12 @@ The following requirements are now formally part of the roadmap and are not cons
 6. **Automatic source refresh** — important saved/source-backed information can be re-checked against authoritative sources on a selectable schedule of **every 6 hours** or **every 24 hours**. Record source, timestamp, detected changes, previous value, and verification status. Ambiguous/material changes require review rather than silent overwrite.
 7. **Provider + Memory + Research integration** — central coordination of GitHub memory, source refresh, research modes, evidence chains, and future external clients, with no governance bypass.
 
+### Approved future reliability addition
+8. **Smart Monitoring & Rollback Layer** — a future reliability/safety layer that continuously monitors quality, runtime health, repeated failures, regressions and critical degradation; compares the active state with the last verified safe state; fails closed when integrity is uncertain; and rolls back to the last verified safe state when a rollback condition is met. It must never silently rewrite itself or change policy without an explicit audited change. This is approved scope for a later implementation stage, not a current implementation claim.
+
 Detailed scope: `docs/governance/STAGE10_11_CENTRAL_PROVIDER_MEMORY_SYNC_SCOPE.md`.
 
-### Stage 11 item status
+## Stage 11 item status
 
 - 1. Intelligence Core: IN PROGRESS — final verification pending
 - 2. Verification Layer: IN PROGRESS — final verification pending
@@ -48,6 +51,7 @@ Detailed scope: `docs/governance/STAGE10_11_CENTRAL_PROVIDER_MEMORY_SYNC_SCOPE.m
 - 9. Final 99% Gate: PENDING
 - 10. Multimodal Agent Interface & Workspace: PENDING — expanded interface/engine package
 - 11. Central Provider + GitHub Memory + Source Sync: PENDING — approved addition
+- 12. Smart Monitoring & Rollback Layer: PENDING — approved future reliability addition
 
 ## Stage 7 — Execution Governance — final constitutional closure evidence
 
@@ -100,6 +104,7 @@ Purpose: raise Amar AI from a feature-oriented agent into a measurable, evidence
 9. Final 99% Gate — PENDING
 10. Multimodal Agent Interface & Workspace — PENDING — highest-priority interface package
 11. Central Provider + GitHub Memory + Source Sync — PENDING
+12. Smart Monitoring & Rollback Layer — PENDING
 
 ### Stage 11 — Central Provider + GitHub Memory + Source Sync contract
 
@@ -150,6 +155,22 @@ The engine pool is a coordinated workforce, not uncontrolled parallel execution.
 ### Research mode rule
 
 Quick/Standard/Expert/Deep Research are **research-depth modes**, not accuracy guarantees. Higher depth means broader/deeper evidence collection and verification within configured limits. The Agent must distinguish sourced facts, analysis, uncertainty, and unsupported claims.
+
+### Smart Monitoring & Rollback contract
+
+Item 12 explicitly includes:
+
+- health monitoring for core services and critical agent subsystems;
+- quality/regression/degradation detection;
+- repeated-failure and anomaly detection;
+- comparison with the last verified safe state;
+- fail-closed behavior when integrity cannot be established;
+- controlled rollback to the last verified safe state;
+- auditable rollback reason, evidence and resulting state;
+- no silent self-rewrite, policy mutation or hidden self-modification;
+- recovery verification before returning a subsystem to normal operation.
+
+This is approved future scope, not an implementation claim.
 
 ### Non-negotiable Stage 11 rule
 
