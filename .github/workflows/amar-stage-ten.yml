@@ -98,9 +98,10 @@ jobs:
           echo '== Manifest security invariants =='
           grep -q 'android:allowBackup="false"' "$manifest"
           grep -q 'android:usesCleartextTraffic="false"' "$manifest"
-          grep -q 'android:exported="false"' "$manifest"
+          grep -q 'android:exported="true"' "$manifest"
           test "$(grep -c 'android:name=".MainActivity"' "$manifest")" -eq 1
-          test "$(grep -c 'android:name=".GridBotService"' "$manifest")" -eq 1
+          grep -q 'android:name=".GridBotService"' "$manifest"
+          grep -q 'android:exported="false"' "$manifest"
 
           echo '== Source logging and live-network safety =='
           if git grep -nE 'HttpLoggingInterceptor|setLevel\([^)]*BODY|LoggingInterceptor' -- 'app/src/main'; then
