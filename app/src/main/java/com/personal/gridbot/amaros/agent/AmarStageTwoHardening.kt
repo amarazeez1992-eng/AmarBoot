@@ -22,8 +22,10 @@ class AmarEvidenceQualityEngine(
         val usable = usableIndices.map { items[it] }
         val score = if (usable.isEmpty()) 0.0 else usable.map { it.score }.average()
         val independentHosts = usable.mapNotNull { it.host }.distinct()
-        val usableEvidenceKeys = usableIndices.map { normalizedEvidenceKey(findings[it].evidence.trim()) }
-        val duplicateCount = usableEvidenceKeys.size - usableEvidenceKeys.distinct().size
+        // Duplication is a property of supplied evidence content, not of fingerprint integrity.
+        // Integrity remains fail-closed independently through item.score and report.status.
+        val allEvidenceKeys = findings.map { normalizedEvidenceKey(it.evidence.trim()) }.filter { it.isNotBlank() }
+        val duplicateCount = allEvidenceKeys.size - allEvidenceKeys.distinct().size
         val hasIntegrityFailure = items.any { !it.integrityValid }
         val hasContentFailure = items.any { !it.contentValid }
         val status = when {
