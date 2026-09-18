@@ -35,18 +35,6 @@ class AmarEvidenceUniquenessAnalyzer {
         )
     }
 
-    /** Point 9 composition helper: returns whether this finding's canonical record identity is unique. */
-    fun isUnique(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
-        if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
-        val identity = canonicalIdentity(finding)
-        val occurrences = findings.count { candidate ->
-            candidate.sourceUri.isNotBlank() &&
-                candidate.evidence.isNotBlank() &&
-                canonicalIdentity(candidate) == identity
-        }
-        return occurrences == 1
-    }
-
     private fun canonicalIdentity(finding: ResearchFinding): String =
         AmarEvidence.fingerprintOf(
             finding.sourceUri.trim() +
