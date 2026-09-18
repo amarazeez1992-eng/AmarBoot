@@ -11,6 +11,10 @@ concurrency:
 nches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: amar-amar-stage-two-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stage-two:
     runs-on: ubuntu-latest
