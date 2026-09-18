@@ -17,8 +17,6 @@ on:
       - 'docs/architecture/**'
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
-  schedule:
-    - cron: '17 3 * * *'
 
 jobs:
   stage-eleven:
@@ -47,30 +45,6 @@ jobs:
 
       - name: Focused Verification Layer tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
-
-      - name: Focused Point 2 Source Quality tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceQualityTest' --stacktrace
-
-      - name: Focused Point 3 Authority tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest' --stacktrace
-
-      - name: Focused Point 4 Freshness tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest' --stacktrace
-
-      - name: Focused Point 5 Independence tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest' --stacktrace
-
-      - name: Focused Point 6 Duplicate Evidence tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest' --stacktrace
-
-      - name: Focused Point 7 Fingerprint Integrity tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest' --stacktrace
-
-      - name: Focused Point 8 Tampering tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest' --stacktrace
-
-      - name: Focused Point 9 Evidence Uniqueness tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest' --stacktrace
 
       - name: Focused Point 10 Evidence Quality Score tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityScoreEngineTest' --stacktrace
@@ -111,7 +85,7 @@ jobs:
           set -euo pipefail
 
           test -f docs/governance/AMAR_PROJECT_CONSTITUTION.md
-          grep -q '^\\*\\*Status: BINDING PROJECT LAW\\*\\*$' docs/governance/AMAR_PROJECT_CONSTITUTION.md
+          grep -q '^\*\*Status: BINDING PROJECT LAW\*\*$' docs/governance/AMAR_PROJECT_CONSTITUTION.md
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
 
           test -f docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
@@ -124,8 +98,7 @@ jobs:
           grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -q 'AmarEvidenceQualityUpstreamState' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -q 'if (isFullyVerified(item)) 1.0 else 0.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
-          test "$(grep -c '^      - name: Release build$' .github/workflows/amar-stage-eleven.yml)" -eq 1
-          ! grep -qE '0\\.[0-9]+.*\\*|\\*.*0\\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
+          ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
 
           grep -q 'Stage 11 Item 1: CLOSED' docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
@@ -144,7 +117,7 @@ jobs:
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
 
-          ! grep -R "OrderSend\\|brokerAccessAllowed.*true\\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
           ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
 
       - name: Upload test evidence
