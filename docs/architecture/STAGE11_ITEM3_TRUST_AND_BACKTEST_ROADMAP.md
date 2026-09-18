@@ -14,47 +14,24 @@ Bad source -> false evidence quality -> false warning/acceptance -> unsupported 
 
 The system must fail closed at every boundary where uncertainty, invalid provenance, future data, conflict, or non-reproducible results could otherwise become a trusted input.
 
-## Canonical flow
+## New Point 10 integration contract
 
-1. Source / data intake
-2. Source quality and authority
-3. Freshness / temporal validity
-4. Source independence
-5. Duplicate / semantic duplicate detection
-6. Fingerprint integrity
-7. Tampering / provenance integrity
-8. Evidence uniqueness
-9. Evidence quality certification
-10. Evidence status
-11. Evidence ranking
-12. Evidence explanation
-13. Conflict awareness
-14. Claim ↔ evidence verification
-15. Confidence calibration input
-16. Invalid / future evidence protection
-17. Deterministic policy
-18. Fail-closed boundary
-19. Canonical evidence authority
-20. Security / execution boundary
-21. Regression / architecture / constitutional gates
+`AmarEvidenceQualityUpstreamState` is now the explicit constitutional input contract for Point 10.
 
-The existing Point 1–9 implementations remain the owners of their individual evidence properties. Point 10 must consume their verified states rather than reimplementing their methodology.
+It carries one boolean verification state for each of Points 1–9. Point 10 consumes the states; it does not reimplement their algorithms.
 
-## Corrected Point 10 boundary
+The integration rule is strict:
+- Point 1 output must populate Point 1 state.
+- Point 2 output must populate Point 2 state.
+- Point 3 output must populate Point 3 state.
+- Point 4 output must populate Point 4 state.
+- Point 5 output must populate Point 5 state.
+- Point 6 output must populate Point 6 state.
+- Point 7 output must populate Point 7 state.
+- Point 8 output must populate Point 8 state.
+- Point 9 output must populate Point 9 state.
 
-Point 10 has two different concepts that must never be conflated:
-
-- Numeric evidence attributes: authority score and freshness score.
-- Verification states: whether the upstream contract has actually verified those attributes.
-
-Point 10 certifies the verification states. It does not reinterpret a lower-but-valid upstream score as an invented partial percentage.
-
-Therefore:
-
-- VERIFIED requires all required upstream verification states plus independence and uniqueness to pass.
-- NOT_VERIFIED is the only alternative.
-- Point 10 output remains binary.
-- No averaging, weighting, normalization, or heuristic percentage is introduced.
+No default-true values, inferred success, or compatibility-derived substitutes are permitted.
 
 ## Failure class map
 
@@ -124,7 +101,7 @@ Boundary:
 Owner:
 - Quant Research / Backtest layer
 - existing AmarQuantResearchPlatform
-- future Item/Stage responsible for deterministic strategy validation
+- future strategy-validation/promotion boundary
 
 Required controls:
 - chronological ordering
@@ -140,13 +117,37 @@ Required controls:
 - explicit hypothetical/simulated labeling
 - no promotion from a single in-sample result
 
-The repository already contains leakage checks, dataset fingerprints, walk-forward windows, stress testing, and mutation gates. Future work must connect these controls into one auditable promotion boundary instead of creating parallel backtest engines.
+TradingView's current documentation confirms that strategy scripts simulate trades through a broker emulator and that strategy reports are hypothetical; it also documents that non-standard charts can distort simulated execution and that OOS testing is used to reduce overfitting risk. The architecture therefore treats TradingView-style results as experiment evidence with explicit assumptions, not guaranteed future performance.
+
+## Trading recommendation capability
+
+The requested future behavior is accepted as an architectural product requirement:
+
+When the user asks for a trade search, the agent should be able to research the relevant market rather than answer from a single indicator. The future pipeline should support:
+- current market/data snapshot and timestamp
+- candle/price-action structure
+- multi-timeframe analysis
+- indicators and indicator limitations
+- market structure, support/resistance, supply/demand, volume/order-flow where data exists
+- trading-school lenses including trend, momentum, mean reversion, breakout, price action, market structure, Wyckoff, Elliott, Gann, quantitative/statistical, macro/fundamental, sentiment, volatility, and other documented lenses represented by the existing taxonomy
+- source/provenance verification
+- candidate trade construction
+- historical simulation/backtest
+- forward-test or paper validation where supported
+- spread/slippage/fees/latency assumptions
+- out-of-sample and walk-forward evaluation
+- stress/regime analysis
+- risk and invalidation conditions
+- explicit conflict/uncertainty disclosure
+- final recommendation only after the evidence/risk gates allow it
+
+TradingView's documentation shows that its ecosystem includes indicators, strategies, libraries, community scripts, and Pine Script v6; strategies can simulate market/limit/stop/stop-limit orders and produce strategy reports. This supports treating TradingView as one research source/tooling ecosystem, not as the sole authority.
 
 ## Important existing architectural risk
 
-AmarEvidenceQualityEngine is retained for compatibility with earlier consumers. It is not allowed to become a second constitutional Point 10 methodology.
+`AmarEvidenceQualityEngine` is retained for compatibility with earlier consumers. It is not allowed to become a second constitutional Point 10 methodology.
 
-Its numeric fields remain advisory/upstream facts. AmarEvidenceQualityScoreEngine is the canonical Point 10 certification boundary.
+Its numeric fields remain advisory/upstream facts. `AmarEvidenceQualityScoreEngine` is the canonical Point 10 certification boundary.
 
 Future changes must not silently reintroduce:
 - heuristic Point 10 weights
@@ -198,35 +199,11 @@ Hypothetical/simulated results must remain explicitly identified and must not be
 
 No Point 10–24 point is closed because the code looks correct.
 
-Closure requires the project's constitutional protocol:
+Closure requires:
 inspect → discover → root cause → architect → implement → unit test → integration test → regression → build → behavior verification → re-inspection → security/boundary check → CI evidence → documentation → constitutional decision.
 
-## External engineering reference
+## External engineering references
 
-NIST's AI Risk Management Framework treats validity, reliability, robustness, provenance, testing/evaluation, and ongoing monitoring as trustworthiness concerns rather than as a single universal percentage formula. This supports the project's decision to avoid invented universal weights while strengthening verification and auditability.
+NIST's AI Risk Management Framework treats validity, reliability, robustness, provenance, testing/evaluation, and ongoing monitoring as trustworthiness concerns rather than as a single universal percentage formula.
 
-Backtest results are also inherently limited when hypothetical or simulated; regulatory material from the CFTC and SEC describes hindsight, liquidity/execution assumptions, and differences between simulated and actual results as material limitations. The project therefore treats backtests as experiment evidence with explicit assumptions, not as guarantees.
-
-## Mandatory Point 10 integration hardening
-
-Before Point 10 can be constitutionally closed, the canonical path must be re-inspected for contract wiring, not only local correctness. The Point 10 gate must consume the established outputs of Points 1–9 through one auditable adapter/assembly boundary, without reimplementing their algorithms. The closure audit must prove that Point 6 duplicate detection, Point 7 fingerprint integrity, Point 8 tamper detection, and Point 9 canonical uniqueness are not bypassed by the compatibility path in AmarEvidenceQualityEngine.
-
-The legacy compatibility report may remain available for existing consumers, but it must not be the authoritative certification input when the canonical Point 10 path is available. Any aggregate score produced by compatibility code is an advisory/legacy signal and must not be allowed to turn mixed evidence into a constitutional VERIFIED result.
-
-This is a wiring/integration gate, not a new evidence-quality formula.
-
-## Trading-domain completeness mandate
-
-The project goal is to make Amar AI a trading-specialized research and decision-support agent, not to promise a 100% win rate or guaranteed profit. The trading mandate is therefore defined as completeness of domain coverage and verification, not certainty of market outcome.
-
-A future trade-search request must be able to route through the appropriate research mode (for example, a fast or expert mode selected by the user), gather current and historical market evidence, inspect relevant indicators/strategies/schools, reproduce calculations where possible, run controlled backtests/forward tests when data and tooling permit, compare conflicting evidence, and return a traceable trade hypothesis with entry/invalidity/target/risk assumptions and evidence provenance. It must never convert a backtest into a promise of future profit.
-
-TradingView documents that its strategies can be backtested and forward-tested and that community scripts include indicators, strategies, and libraries; these are useful research targets, subject to access, licensing, source-quality, and reproducibility controls. MetaTrader 5 documents multi-symbol strategy testing and multiple tick-generation modes, which should inform future MT5-compatible research/testing adapters rather than being duplicated blindly.
-
-The agent must preserve a strict distinction among market evidence, analysis, backtest evidence, trade hypothesis/recommendation, and execution. No component may claim that a simulated/backtested result is an actual trading result. CFTC guidance identifies hindsight, liquidity, spread/execution, fees, and other limitations of hypothetical/simulated results and states that no trading system can guarantee profits.
-
-## Additional control adopted for Points 10–24
-
-Evidence-to-Decision Traceability is now an explicit closure requirement: every downstream trade recommendation must be traceable to the evidence set, timestamps/data cutoff, analytical methods, backtest experiment identity (if used), conflicts, uncertainty state, and risk controls that produced it. Missing provenance or an unverifiable dependency must fail closed rather than being silently filled by model inference.
-
-This strengthens the existing architecture without adding a scoring weight or changing the closed methodology of Points 1–9.
+Backtest results are inherently limited when hypothetical or simulated; CFTC and SEC materials describe hindsight, liquidity/execution assumptions, and differences between simulated and actual results as material limitations.
