@@ -26,7 +26,7 @@ The contract contains one authoritative verification state for each Point 1–9 
 
 Point 10 must consume these established states. It must not recompute them, infer them from raw fields, or substitute a local heuristic.
 
-A missing upstream state is not treated as success. The constitutional integration step must connect the actual Point 1–9 outputs to this contract before Point 10 can close.
+A missing upstream state is not treated as success. The canonical composition path now consumes the existing Point 2–7 and Point 9 analyzer outputs and requires explicit Point 1 and Point 8 states from their owning upstream contracts. It never fabricates either missing state. Point 10 cannot close until all nine states are connected for the real runtime path.
 
 ### Canonical boundary
 
@@ -120,3 +120,12 @@ This point remains **NOT CLOSED** until:
 The aggregate composition also fails closed on empty input or a mismatched number of upstream states. This is a wiring contract, not a new scoring formula.
 
 The legacy `AmarEvidenceQualityEngine` remains compatibility/advisory code and is not the canonical Point 10 certification authority.
+
+
+### Canonical composition implementation status
+
+AmarCanonicalEvidenceQualityAssembler is now the single composition path from the existing evidence analyzers into Point 10. It delegates Point 2, Point 3, Point 4, Point 5, Point 6, Point 7, and Point 9 to their existing owners. Its certify method requires a one-to-one AmarEvidenceQualityUpstreamState for the findings and fails closed on missing or mismatched state.
+
+Point 1 Evidence Intake and Point 8 Evidence Tampering are deliberately not inferred by this adapter. Their states must be supplied by their owning contracts. This is an explicit integration gap to close before the constitutional gate, not a permission to guess or duplicate those methodologies.
+
+The compatibility score path remains non-canonical. The canonical runtime path must use the assembler plus the upstream-state contract.
