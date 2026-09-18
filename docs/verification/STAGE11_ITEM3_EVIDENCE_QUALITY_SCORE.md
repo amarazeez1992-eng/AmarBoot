@@ -2,7 +2,7 @@
 
 ## Constitutional audit record
 
-Status: VERIFICATION PENDING — NOT CLOSED
+Status: VERIFICATION PENDING — ROOT CORRECTION APPLIED
 
 ### Scope
 Produce one deterministic, bounded evidence-quality score from dimensions already established upstream.
@@ -30,6 +30,10 @@ All dimensions are clamped to [0,1]; the final score is clamped to [0,1].
 - invalid ranges are clamped
 - empty aggregation returns 0.0
 - aggregate output remains bounded
+
+### Root correction record
+
+The first Point 10 verification run exposed a test-contract mismatch: the perfect-dimensions assertion did not match the intended bounded scoring formula. The scorer and regression contract were aligned so perfect dimensions yield 1.0, while invalid dimensions are clamped before weighting. A dedicated Point 10 gate was also added to the Stage Eleven workflow so Item 3 cannot bypass this boundary.
 
 ### Constitutional gate
 This point remains NOT CLOSED until the exact Point 10 state passes its dedicated boundary test, full unit suite, Debug build, and the resulting CI evidence is directly verified.
