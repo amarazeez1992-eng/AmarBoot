@@ -38,6 +38,9 @@ jobs:
       - name: Run Point 8 Evidence Tampering boundary test
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest'
 
+      - name: Run Point 9 Evidence Uniqueness boundary test
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest'
+
       - name: Run full unit test suite
         run: gradle :app:testDebugUnitTest
 
