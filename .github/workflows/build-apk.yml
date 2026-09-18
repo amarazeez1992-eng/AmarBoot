@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - '.github/workflows/build-apk.yml'
       - 'app/**'
       - 'bridge/**'
       - 'gradle/**'
@@ -72,10 +73,7 @@ jobs:
           if [[ "$license_status" -ne 0 && "$license_status" -ne 141 ]]; then
             exit "$license_status"
           fi
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"             "platform-tools"             "platforms;android-34"             "build-tools;34.0.0"
 
       - name: Validate Gradle model
         run: gradle --version
