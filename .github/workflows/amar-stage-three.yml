@@ -3,9 +3,6 @@ name: AMAR AI Stage Three Verification
 on:
   push:
     b
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 ranches: [ main ]
   workflow_dispatch:
 
