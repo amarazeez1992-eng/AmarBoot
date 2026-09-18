@@ -6,40 +6,47 @@ import org.junit.Test
 class AmarEvidenceQualityUpstreamAdapterTest {
     private val adapter = AmarEvidenceQualityUpstreamAdapter()
 
+    private fun item() = AmarEvidenceQualityItem(
+        fingerprint = "upstream-fingerprint",
+        authorityScore = 0.42,
+        freshnessScore = 0.33,
+        independentSource = true,
+        uniqueEvidence = true,
+        authorityVerified = true,
+        freshnessVerified = true
+    )
+
+    private fun state() = AmarEvidenceQualityUpstreamState(
+        point1EvidenceIntakeVerified = true,
+        point2SourceQualityVerified = true,
+        point3AuthorityVerified = true,
+        point4FreshnessVerified = true,
+        point5SourceIndependenceVerified = true,
+        point6DuplicateFreeVerified = true,
+        point7FingerprintIntegrityVerified = true,
+        point8TamperingIntegrityVerified = true,
+        point9EvidenceUniquenessVerified = true
+    )
+
     @Test
-    fun canonical_bridge_consumes_upstream_states_without_recomputing_them() {
-        val state = AmarEvidenceQualityUpstreamState(
-            fingerprint = "upstream-fingerprint",
-            authorityScore = 0.42,
-            freshnessScore = 0.33,
-            authorityVerified = true,
-            freshnessVerified = true,
-            independentSource = true,
-            uniqueEvidence = true
-        )
-        assertEquals(1.0, adapter.certifyOne(state), 0.0)
+    fun canonical_bridge_delegates_verified_state_to_score_engine() {
+        assertEquals(1.0, adapter.certify(item(), state()), 0.0)
     }
 
     @Test
     fun any_failed_upstream_state_blocks_canonical_certification() {
-        val state = AmarEvidenceQualityUpstreamState(
-            fingerprint = "x",
-            authorityScore = 1.0,
-            freshnessScore = 1.0,
-            authorityVerified = true,
-            freshnessVerified = true,
-            independentSource = false,
-            uniqueEvidence = true
-        )
-        assertEquals(0.0, adapter.certifyOne(state), 0.0)
+        val failing = state().copy(point8TamperingIntegrityVerified = false)
+        assertEquals(0.0, adapter.certify(item(), failing), 0.0)
     }
 
     @Test
-    fun aggregate_requires_non_empty_all_verified_upstream_states() {
-        val passing = AmarEvidenceQualityUpstreamState("a", 1.0, 1.0, true, true, true, true)
-        val failing = passing.copy(fingerprint = "b", uniqueEvidence = false)
-        assertEquals(1.0, adapter.certify(listOf(passing)), 0.0)
-        assertEquals(0.0, adapter.certify(listOf(passing, failing)), 0.0)
-        assertEquals(0.0, adapter.certify(emptyList()), 0.0)
+    fun aggregate_requires_matching_non_empty_items_and_states() {
+        val passingItem = item()
+        val passingState = state()
+        val failingState = state().copy(point9EvidenceUniquenessVerified = false)
+        assertEquals(1.0, adapter.certifyAll(listOf(passingItem), listOf(passingState)), 0.0)
+        assertEquals(0.0, adapter.certifyAll(listOf(passingItem), listOf(failingState)), 0.0)
+        assertEquals(0.0, adapter.certifyAll(emptyList(), emptyList()), 0.0)
+        assertEquals(0.0, adapter.certifyAll(listOf(passingItem), emptyList()), 0.0)
     }
 }
