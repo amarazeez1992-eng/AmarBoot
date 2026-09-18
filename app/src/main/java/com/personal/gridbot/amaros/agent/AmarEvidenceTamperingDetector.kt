@@ -17,10 +17,10 @@ class AmarEvidenceTamperingDetector {
             val finding = findings[index]
             val node = recordedChain[index]
             val expectedFingerprint = if (finding.sourceUri.isNotBlank() && finding.evidence.isNotBlank()) {
-                AmarEvidence.fingerprintOf("\${finding.sourceUri}|\${finding.evidence}")
+                AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}")
             } else ""
             val expectedChainHash = AmarEvidence.fingerprintOf(
-                "\${previous}|\${index}|\${finding.sourceUri}|\${expectedFingerprint}|\${finding.retrievedAtEpochMs}"
+                "${previous}|${index}|${finding.sourceUri}|${expectedFingerprint}|${finding.retrievedAtEpochMs}"
             )
 
             if (node.sequence != index ||
