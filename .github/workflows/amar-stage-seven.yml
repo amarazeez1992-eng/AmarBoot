@@ -6,6 +6,11 @@ concurrency:
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'app/src/main/java/com/personal/gridbot/amaros/governance/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/governance/**'
+      - 'docs/governance/**'
   workflow_dispatch:
 
 jobs:
