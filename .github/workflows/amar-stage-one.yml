@@ -3,6 +3,11 @@ name: AMAR AI Stage One Verification
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'app/src/main/java/com/personal/gridbot/amaros/agent/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/ai/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/agent/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/ai/**'
   pull_request:
     branches: [ main ]
 
