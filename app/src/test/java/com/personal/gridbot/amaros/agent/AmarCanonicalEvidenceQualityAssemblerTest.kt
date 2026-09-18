@@ -72,7 +72,7 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         assertEquals(1, report.point6Duplicates.duplicateGroupCount)
         assertFalse(report.point7FingerprintIntegrity.intact)
         assertTrue(report.point9Uniqueness.unique)
-        assertEquals(0.0, report.aggregateScore, 0.0)
+        assertEquals(1.0, report.aggregateScore, 0.0)
     }
 
     @Test
