@@ -160,8 +160,14 @@ jobs:
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
 
-          ! grep -R 'OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true' app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
-          ! grep -R 'executable *= *true' app/src/main/java/com/personal/gridbot/amaros/intelligence
+          if grep -RInE 'OrderSend[[:space:]]*\(|brokerAccessAllowed[[:space:]]*=[[:space:]]*true|liveTrading[[:space:]]*=[[:space:]]*true' app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research; then
+            echo 'Forbidden live-execution pattern detected in Stage 11 intelligence sources.'
+            exit 1
+          fi
+          if grep -RInE 'executable[[:space:]]*=[[:space:]]*true' app/src/main/java/com/personal/gridbot/amaros/intelligence; then
+            echo 'Forbidden executable=true assignment detected in Stage 11 intelligence sources.'
+            exit 1
+          fi
 
       - name: Upload release artifact
         if: always()
