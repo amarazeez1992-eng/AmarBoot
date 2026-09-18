@@ -72,8 +72,14 @@ jobs:
       - name: Focused Point 10 Evidence Quality Score tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityScoreEngineTest' --stacktrace
 
-      - name: Focused Point 10 Upstream-state contract tests
+      - name: Focused canonical Point 10 assembler tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarCanonicalEvidenceQualityAssemblerTest' --stacktrace
+
+      - name: Focused Point 10 upstream-state contract tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityUpstreamStateTest' --stacktrace
+
+      - name: Focused Point 10 upstream adapter tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityUpstreamAdapterTest' --stacktrace
 
       - name: Focused Stage Two Hardening tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest' --stacktrace
