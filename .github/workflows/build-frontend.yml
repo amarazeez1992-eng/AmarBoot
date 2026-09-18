@@ -7,6 +7,10 @@ on:
       - '.github/workflows/build-frontend.yml'
   workflow_dispatch:
 
+concurrency:
+  group: amar-build-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
