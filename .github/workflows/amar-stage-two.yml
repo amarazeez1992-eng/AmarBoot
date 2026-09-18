@@ -36,7 +36,7 @@ jobs:
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest'
 
       - name: Run Point 8 Evidence Tampering boundary test
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceTamperingDetectorTest'
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest'
 
       - name: Run full unit test suite
         run: gradle :app:testDebugUnitTest
