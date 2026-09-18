@@ -18,7 +18,11 @@ on:
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
   schedule:
-    - cron: '17 3 * * *'
+ 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+   - cron: '17 3 * * *'
 
 jobs:
   stage-eleven:
