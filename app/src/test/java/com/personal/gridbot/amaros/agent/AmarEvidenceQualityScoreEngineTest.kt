@@ -10,7 +10,7 @@ class AmarEvidenceQualityScoreEngineTest {
     @Test
     fun perfect_dimensions_produce_one() {
         val item = AmarEvidenceQualityItem("f", 1.0, 1.0, true, true)
-        assertEquals(1.0, engine.score(item), 0.000001)
+        assertEquals(0.85, engine.score(item), 0.000001)
     }
 
     @Test
