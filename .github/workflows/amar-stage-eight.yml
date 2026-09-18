@@ -2,7 +2,11 @@ name: Amar Stage 8 — Central Command Plane
 
 on:
   push:
-    branches: [ main ]
+ 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+   branches: [ main ]
   workflow_dispatch:
 
 jobs:
