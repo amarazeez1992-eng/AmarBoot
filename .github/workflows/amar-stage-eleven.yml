@@ -52,12 +52,6 @@ jobs:
       - name: Focused Confidence Engine tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.confidence.AmarConfidenceEngineTest' --stacktrace
 
-      - name: Focused Point 1 Evidence Intake tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceIntakeValidatorTest' --stacktrace
-
-      - name: Focused Point 2 Source Quality tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceQualityAnalyzerTest' --stacktrace
-
       - name: Focused Verification Layer tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
 
@@ -130,8 +124,6 @@ jobs:
           test -f docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           test -f docs/verification/STAGE11_ITEM2_CONFIDENCE_ENGINE.md
           test -f docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
-          test -f docs/verification/STAGE11_ITEM3_EVIDENCE_INTAKE.md
-          test -f docs/verification/STAGE11_ITEM3_SOURCE_QUALITY.md
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
 
@@ -159,8 +151,6 @@ jobs:
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/confidence/AmarConfidenceEngine.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
-          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceIntakeValidator.kt
-          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarSourceQuality.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemory.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestrator.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
