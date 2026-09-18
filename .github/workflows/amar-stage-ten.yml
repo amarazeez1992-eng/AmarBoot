@@ -28,9 +28,6 @@ on:
       - '.github/workflows/**'
       - 'gradle/**'
       - 'settings.g
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 radle'
       - 'gradle.properties'
   workflow_dispatch:
