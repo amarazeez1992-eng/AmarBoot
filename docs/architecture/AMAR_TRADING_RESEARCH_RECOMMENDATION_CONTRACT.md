@@ -126,7 +126,7 @@ Every backtest used in a recommendation must carry an experiment identity and re
 
 The engine MUST reject or downgrade the experiment as non-decisive when required controls are absent.
 
-Backtests are experiment evidence, not proof of future profitability. Hypothetical/simulated performance must remain explicitly labeled. CFTC materials specifically identify hindsight, liquidity, execution, and other differences between simulated and actual trading as material limitations. citeturn0search0turn0search2
+Backtests are experiment evidence, not proof of future profitability. Hypothetical/simulated performance must remain explicitly labeled. CFTC materials specifically identify hindsight, liquidity, execution, and other differences between simulated and actual trading as material limitations.
 
 ## Recommendation contract
 
@@ -204,5 +204,4 @@ No layer may duplicate another layer's canonical responsibility.
 
 This contract does not alter Point 10's binary certification model and does not authorize invented weights or percentages.
 
-NIST's AI RMF emphasizes validity, reliability, robustness, testing/evaluation, and lifecycle monitoring as trustworthiness concerns; it does not establish a universal trading-success percentage. citeturn0search12turn0search13
-
+NIST's AI Risk Management Framework treats validity, reliability, robustness, testing/evaluation, and lifecycle monitoring as trustworthiness concerns. It does not establish a universal trading-success percentage.
