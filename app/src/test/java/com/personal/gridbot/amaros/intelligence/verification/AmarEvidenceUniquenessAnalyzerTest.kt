@@ -53,6 +53,16 @@ class AmarEvidenceUniquenessAnalyzerTest {
     }
 
     @Test
+    fun per_finding_uniqueness_uses_the_same_canonical_record_identity() {
+        val a = finding("https://a.example/e", "Gold rises", 100L)
+        val b = finding("https://b.example/e", "Gold rises", 100L)
+        val duplicate = finding("https://a.example/e", "Gold rises", 100L)
+        assertTrue(analyzer.isUnique(a, listOf(a, b)))
+        assertFalse(analyzer.isUnique(a, listOf(a, duplicate)))
+        assertTrue(analyzer.isUnique(b, listOf(a, b)))
+    }
+
+    @Test
     fun missing_source_or_evidence_is_not_unique() {
         val result = analyzer.analyze(
             listOf(
