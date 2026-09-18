@@ -6,6 +6,10 @@ on:
 ranches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stage-three:
     runs-on: ubuntu-latest
