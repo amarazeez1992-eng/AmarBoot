@@ -7,8 +7,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'app/src/main/java/com/personal/gridbot/amaros/**'
-      - 'app/src/test/java/com/personal/gridbot/amaros/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/**/AmarStageFive*'
+      - 'app/src/test/java/com/personal/gridbot/amaros/**/AmarStageFive*'
   workflow_dispatch:
 
 jobs:
