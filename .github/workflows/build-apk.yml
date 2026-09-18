@@ -96,6 +96,14 @@ jobs:
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
+          build_tools="$ANDROID_SDK_ROOT/build-tools/34.0.0"
+          if [ ! -d "$build_tools" ]; then
+            build_tools="$ANDROID_HOME/build-tools/34.0.0"
+          fi
+          test -x "$build_tools/zipalign"
+          test -x "$build_tools/apksigner"
+          test -x "$build_tools/apkanalyzer"
+          export PATH="$build_tools:$PATH"
           zipalign -c -p -v 4 "$apk"
           apksigner verify --verbose "$apk"
           apksigner verify --print-certs "$apk"
