@@ -311,3 +311,104 @@ The project target is therefore **100% adherence to the defined research, verifi
 
 These gates are additive architecture requirements. They do not reopen the closed Point 1–9 methodologies and do not authorize live execution.
 
+
+
+## Canonical Point 10 bridge — added after architectural inspection
+
+The AmarEvidenceQualityUpstreamAdapter is now the explicit transport boundary between Points 1–9 and Point 10.
+
+It accepts only already-established upstream verification states:
+- authority verification
+- freshness verification
+- source independence
+- evidence uniqueness
+- the owning numeric audit attributes
+
+It does not recalculate authority, freshness, independence, uniqueness, fingerprints, tampering, duplicates, conflicts, claims, or trading decisions.
+
+This prevents the compatibility AmarEvidenceQualityEngine from being mistaken for the constitutional Point 10 path. Existing closed Point 1–9 owners remain authoritative.
+
+## Trading-agent capability contract for the remaining Item 3 closure path
+
+The requested future capability is: when the user asks for a trade/search/research task, Amar AI must be able to gather and evaluate the relevant market evidence rather than rely on one indicator or one school.
+
+The architecture therefore reserves explicit responsibilities for later stages without turning Point 10 into a trading-decision engine:
+
+1. **Market data plane**
+   - candles/OHLCV
+   - bid/ask and spread where available
+   - volume/order-flow inputs where legitimately available
+   - multi-timeframe synchronization
+   - session/time-zone context
+   - symbol and contract metadata
+   - data timestamp/provenance/fingerprint
+
+2. **Research and methodology plane**
+   - technical indicators
+   - documented trading methodologies/schools
+   - TradingView-compatible indicator logic where the implementation/license/source permits
+   - fundamental and macro context where relevant
+   - cross-source comparison and conflict preservation
+   - strategy/indicator versioning
+
+3. **Trade hypothesis plane**
+   - separate observation from hypothesis
+   - explicit entry condition
+   - invalidation/stop condition
+   - target/exit condition
+   - time horizon
+   - market regime/context
+   - evidence references
+   - reason for abstention when the setup is not sufficiently supported
+
+4. **Backtest / validation plane**
+   - chronological data access
+   - decision-cutoff enforcement
+   - no future leakage
+   - reproducible dataset/strategy fingerprints
+   - train/validation/OOS separation where applicable
+   - walk-forward evaluation
+   - spread/slippage/commission/latency assumptions
+   - stress scenarios
+   - trade-level and aggregate statistics
+   - out-of-sample and regime-specific results
+   - explicit simulated/hypothetical labeling
+
+5. **Decision / risk plane**
+   - evidence quality is not profitability probability
+   - no-trade/abstain is a first-class outcome
+   - risk sizing and account constraints are evaluated separately
+   - execution authority remains outside Evidence Engine
+   - live execution requires its existing authentication, permission, idempotency, ACK/read-back, reconciliation and emergency-stop boundaries
+
+6. **Drift / monitoring plane**
+   - detect deterioration between backtest assumptions and observed market/execution conditions
+   - detect stale market data, changed spread/liquidity, strategy/version mismatch, and data-source degradation
+   - preserve versioned evidence and rollback/deprecation paths
+
+### Constitutional interpretation of “100% trading”
+
+The engineering target can be 100% coverage of the required capabilities, contracts, verification gates, and fail-closed behavior. It cannot truthfully be defined as 100% profitable trades or guaranteed financial profit.
+
+NIST frames trustworthy AI around validity, reliability, robustness, testing/evaluation, and safe failure rather than a universal accuracy percentage.
+
+Likewise, the CFTC warns that hypothetical/simulated trading results have limitations involving hindsight, liquidity, execution, costs, and other assumptions, and states that no trading system can guarantee profits.
+
+Therefore the project will pursue **maximum verifiable trading capability without converting backtest/evidence quality into a promise of profit**.
+
+## Additional closure requirements to carry from Point 10 through Point 24
+
+The following are now mandatory architectural checks when their owning point is reached:
+
+- **Provenance completeness:** every research/trading conclusion remains traceable to its source/evidence identity and retrieval/market timestamp.
+- **Temporal causality:** no component may use information that was unavailable at the decision cutoff.
+- **Market-data readiness:** a trade-search request must expose data gaps/staleness instead of silently substituting unknown values.
+- **Multi-timeframe consistency:** timeframes must be explicitly identified and synchronized; no implicit mixing of incompatible timestamps.
+- **Indicator reproducibility:** indicator name, implementation/version, parameters and input dataset must be recorded for reproducible backtests.
+- **Strategy reproducibility:** strategy/version/configuration and execution assumptions must be part of the experiment identity.
+- **Abstention:** the agent must be able to return no-trade/insufficient-evidence rather than manufacture a setup.
+- **Execution realism:** simulated fills must remain distinguishable from broker-confirmed execution.
+- **Out-of-sample protection:** in-sample performance alone cannot authorize promotion.
+- **Conflict preservation:** contradictory evidence remains visible until a later owner explicitly resolves it.
+- **Decision/evidence separation:** evidence certification never becomes an implicit trade approval.
+- **Security boundary:** research, indicators, scripts, or retrieved content must not gain execution authority merely because the agent researched or evaluated them.
