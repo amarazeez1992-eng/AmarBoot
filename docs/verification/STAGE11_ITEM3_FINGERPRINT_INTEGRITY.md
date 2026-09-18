@@ -2,7 +2,7 @@
 
 ## Constitutional audit record
 
-Status: VERIFICATION PENDING — NOT CLOSED
+Status: CONSTITUTIONALLY CLOSED
 
 ### Scope
 Verify that each supplied evidence fingerprint matches the exact source URI + evidence payload that produced it.
@@ -27,4 +27,7 @@ Verify that each supplied evidence fingerprint matches the exact source URI + ev
 The Stage Two workflow contains the dedicated Point 7 boundary test, the existing Point 6 gate, the full unit suite, and a Debug build.
 
 ### Constitutional gate
-This record remains NOT CLOSED until the exact Point 7 state passes the Stage Two workflow and the successful run is directly verified. No success is inferred from workflow configuration alone.
+Closed after successful Point 7 verification runs were visibly confirmed by the repository owner on the exact `1ec5e2a127ba06966dcac8401fb9ab1ce03f90d3` state. The focused Point 7 test, existing Point 6 gate, Stage Two regression, full unit suite, and Debug/APK verification runs are shown successful in the supplied GitHub Actions evidence. No success is inferred from workflow configuration alone.
+
+### Closure boundary
+Repository/CI-level closure only. No physical-device or instrumentation runtime test is claimed. Point 7 adds no evidence collection, ranking, routing, claim verification, decision logic, or trading/execution authority.
