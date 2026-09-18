@@ -1,40 +1,62 @@
 package com.personal.gridbot.amaros.agent
 
 import java.net.URI
-import kotlin.math.max
 
-/** Hardening gate for the 40% boundary: quality, claim support, and calibrated confidence. */
+/**
+ * Compatibility hardening boundary retained for previously closed Stage 2 consumers.
+ *
+ * Constitutional Point 10 certification is performed by AmarEvidenceQualityScoreEngine.
+ * This class remains an upstream/advisory adapter and must not invent a second
+ * Point 10 methodology.
+ */
 class AmarEvidenceQualityEngine(
     private val freshnessWindowMs: Long = 30L * 24L * 60L * 60L * 1000L
 ) {
+    private val freshnessAnalyzer = AmarEvidenceFreshnessAnalyzer(freshnessWindowMs)
+
     init { require(freshnessWindowMs > 0) }
 
     fun assess(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarEvidenceQualityReport {
         val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val hostCounts = valid.mapNotNull { hostOf(it.sourceUri) }.groupingBy { it }.eachCount()
-        val fingerprints = valid.map { it.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${it.sourceUri}|${it.evidence}") } }
+        val fingerprints = valid.map { finding ->
+            finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("\${finding.sourceUri}|\${finding.evidence}") }
+        }
         val duplicateCount = fingerprints.size - fingerprints.distinct().size
         val scores = valid.map { finding ->
-            val authority = when (finding.authority) {
-                Authority.PRIMARY -> 1.0
-                Authority.OFFICIAL -> .95
-                Authority.PEER_REVIEWED -> .90
-                Authority.REPUTABLE -> .75
-                Authority.COMMUNITY -> .40
-                Authority.UNKNOWN -> .15
-            }
-            val age = max(0L, nowEpochMs - finding.retrievedAtEpochMs)
-            val freshness = if (age <= freshnessWindowMs) 1.0 else (freshnessWindowMs.toDouble() / max(age, 1L)).coerceIn(0.0, 1.0)
+            val authority = authorityScore(finding.authority)
+            val freshness = freshnessAnalyzer.assess(finding.retrievedAtEpochMs, nowEpochMs)
             val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
-            val duplicate = fingerprints.count { it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") } } > 1
-            AmarEvidenceQualityItem(finding.fingerprint, authority, freshness, independent, !duplicate)
+            val duplicate = fingerprints.count {
+                it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("\${finding.sourceUri}|\${finding.evidence}") }
+            } > 1
+
+            AmarEvidenceQualityItem(
+                fingerprint = finding.fingerprint,
+                authorityScore = authority,
+                freshnessScore = freshness.score,
+                independentSource = independent,
+                uniqueEvidence = !duplicate,
+                authorityVerified = finding.authority != Authority.UNKNOWN,
+                freshnessVerified = freshness.status != FreshnessStatus.FUTURE
+            )
         }
         val independentHosts = valid.mapNotNull { hostOf(it.sourceUri) }.distinct().size
         val score = if (scores.isEmpty()) 0.0 else scores.map { it.score() }.average()
         return AmarEvidenceQualityReport(score, independentHosts, duplicateCount, scores)
     }
 
-    private fun hostOf(uri: String): String? = runCatching { URI(uri).host?.lowercase()?.removePrefix("www.") }.getOrNull()
+    private fun authorityScore(authority: Authority): Double = when (authority) {
+        Authority.PRIMARY -> 1.0
+        Authority.OFFICIAL -> .95
+        Authority.PEER_REVIEWED -> .90
+        Authority.REPUTABLE -> .75
+        Authority.COMMUNITY -> .40
+        Authority.UNKNOWN -> .15
+    }
+
+    private fun hostOf(uri: String): String? =
+        runCatching { URI(uri).host?.lowercase()?.removePrefix("www.") }.getOrNull()
 }
 
 data class AmarEvidenceQualityItem(
@@ -42,7 +64,11 @@ data class AmarEvidenceQualityItem(
     val authorityScore: Double,
     val freshnessScore: Double,
     val independentSource: Boolean,
-    val uniqueEvidence: Boolean
+    val uniqueEvidence: Boolean,
+    /** Verification state owned by the upstream Authority contract. */
+    val authorityVerified: Boolean,
+    /** Verification state owned by the upstream Freshness contract. */
+    val freshnessVerified: Boolean
 ) {
     fun score(): Double = AmarEvidenceQualityScoreEngine().score(this)
 }
@@ -59,8 +85,8 @@ class AmarClaimVerificationEngine {
         val claims = answer.split(Regex("(?<=[.!?؟])\\s+|\\n+")).map { it.trim() }.filter { it.length >= 20 }
         val evidence = findings.filter { it.evidence.isNotBlank() }
         val results = claims.map { claim ->
-            val tokens = tokens(claim)
-            val matches = evidence.filter { overlap(tokens, tokens(it.evidence)) >= .25 }
+            val claimTokens = tokens(claim)
+            val matches = evidence.filter { overlap(claimTokens, tokens(it.evidence)) >= .25 }
             val support = matches.filter { it.stance == EvidenceStance.SUPPORTS || it.stance == EvidenceStance.MIXED }
             val opposition = matches.filter { it.stance == EvidenceStance.OPPOSES }
             AmarClaimVerification(claim, support.size, opposition.size, support.isNotEmpty() && opposition.isEmpty())
@@ -69,8 +95,11 @@ class AmarClaimVerificationEngine {
         return AmarClaimVerificationReport(results, accepted)
     }
 
-    private fun tokens(text: String): Set<String> = text.lowercase().split(Regex("[^\\p{L}\\p{N}]+" )).filter { it.length >= 4 }.toSet()
-    private fun overlap(a: Set<String>, b: Set<String>): Double = if (a.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
+    private fun tokens(text: String): Set<String> =
+        text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= 4 }.toSet()
+
+    private fun overlap(a: Set<String>, b: Set<String>): Double =
+        if (a.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
 }
 
 data class AmarClaimVerification(val claim: String, val supportingEvidence: Int, val opposingEvidence: Int, val accepted: Boolean)
