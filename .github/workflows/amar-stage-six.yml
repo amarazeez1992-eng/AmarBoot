@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'app/src/main/java/com/personal/gridbot/amaros/**'
-      - 'app/src/test/java/com/personal/gridbot/amaros/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/**/AmarStageSix*'
+      - 'app/src/test/java/com/personal/gridbot/amaros/**/AmarStageSix*'
   workflow_dispatch:
 
 concurrency:
