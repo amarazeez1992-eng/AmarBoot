@@ -7,10 +7,6 @@ on:
   push:
     branches: [ main ]
 
-concurrency:
-  group: amar-final-apk-closure-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-final-apk:
     runs-on: ubuntu-latest
