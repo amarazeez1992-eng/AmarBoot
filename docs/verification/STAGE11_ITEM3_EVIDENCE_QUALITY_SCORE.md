@@ -71,3 +71,11 @@ There is no universal institutional percentage allocation that can be truthfully
 ### Constitutional gate
 
 This point remains **NOT CLOSED** until the exact Point 10 implementation state passes its dedicated boundary tests, relevant regression suite, full unit suite, Debug build, CI verification, and evidence recording, followed by constitutional re-inspection.
+
+## Integration closure gate
+
+Point 10 is not considered complete merely because AmarEvidenceQualityScoreEngine passes isolated tests. Before constitutional closure, the canonical execution path must be traced from the established Point 1–9 outputs into Point 10, with no bypass through the legacy AmarEvidenceQualityEngine aggregate score. Mixed or partially verified evidence must not become VERIFIED through compatibility averaging.
+
+The final closure audit must also verify that the trading-domain expansion remains downstream of this evidence boundary: market research, indicator/strategy research, backtests, and trade hypotheses must consume traceable evidence and must preserve the distinction between historical experiment results and future trading outcomes.
+
+A project goal of “100% trading specialization/completeness” is interpreted as full domain coverage and verification controls, not a guaranteed 100% win rate or guaranteed profit. No such guarantee is technically or empirically supportable.
