@@ -24,6 +24,9 @@ jobs:
   stage-eleven:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    concurrency:
+      group: amar-stage-eleven-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
