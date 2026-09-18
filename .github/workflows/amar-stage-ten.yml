@@ -27,7 +27,11 @@ on:
       - 'CONTRIBUTING.md'
       - '.github/workflows/**'
       - 'gradle/**'
-      - 'settings.gradle'
+      - 'settings.g
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+radle'
       - 'gradle.properties'
   workflow_dispatch:
 
