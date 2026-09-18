@@ -24,7 +24,7 @@ concurrency:
 jobs:
   build:
     name: Android APK and bridge verification
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
@@ -41,9 +41,8 @@ jobs:
           cache: gradle
 
       - name: Configure Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v3
         with:
-          cmdline-tools-version: 12266719
           packages: ''
           accept-android-sdk-licenses: true
 
