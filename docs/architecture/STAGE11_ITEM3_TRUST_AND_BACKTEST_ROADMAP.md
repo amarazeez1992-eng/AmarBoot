@@ -261,3 +261,53 @@ Backtest and strategy-validation layers must record the market regime/context re
 Failed searches, rejected evidence, conflicting sources, failed backtests, and invalidated hypotheses must remain auditable inputs. The system must not discard negative evidence merely because it conflicts with a desired trade direction.
 
 These controls increase domain completeness without introducing a universal profitability score or claiming a 100% win rate. They are compatible with NIST's emphasis on validity, reliability, robustness, explicit test methodology, uncertainty, and ongoing evaluation.
+
+
+## Canonical composition now implemented
+
+The \`AmarCanonicalEvidenceQualityAssembler\` is the single composition adapter between the closed Point 2–9 contracts and the canonical Point 10 engine.
+
+It delegates to the owning contracts for:
+- Point 2 source usability
+- Point 3 authority value
+- Point 4 freshness
+- Point 5 source independence
+- Point 6 semantic duplicate detection
+- Point 7 fingerprint integrity
+- Point 9 canonical-record uniqueness
+
+It does not turn Point 6/7 audit facts into hidden Point 10 weights. Point 10 still consumes only its defined authority/freshness verification states plus independence and uniqueness.
+
+This removes the immediate architectural risk of Point 10 consuming an ad-hoc copy of the earlier evidence rules.
+
+## Trading-research capability baseline
+
+The later trading-analysis path is to be built as a research-and-validation system, not as a promise of guaranteed profitability.
+
+For a request such as "find me a trade", the intended pipeline is:
+
+\`Request -> Market/Data Intake -> Source Discovery -> Evidence Verification -> Market Structure/Price Action -> Indicators/Libraries -> Strategy/School Analysis -> Candidate Setups -> Deterministic Backtest -> OOS/Walk-Forward/Stress Validation -> Conflict & Uncertainty Analysis -> Risk Constraints -> Trade Proposal -> Explanation -> Human Decision\`
+
+The research layer may consult TradingView/Pine documentation, indicator implementations, academic/statistical sources, official market data, broker/exchange documentation, and other permitted sources. It must preserve source identity, retrieval time, provenance, methodology, assumptions and limitations.
+
+TradingView's current documentation confirms that Pine strategies can simulate historical/realtime trades and that strategy results depend on execution assumptions and available historical data. It also documents that non-standard chart prices can produce unrealistic results and that historical results can change as the underlying dataset changes. These facts are therefore inputs to the backtest trust boundary rather than reasons to treat a backtest as proof of future profitability.
+
+The project target is therefore **100% adherence to the defined research, verification, reproducibility, risk and execution gates**, not a claim that any agent can guarantee 100% profitable trades. A trade recommendation must be allowed to return \`NO_VALID_SETUP\`, \`INSUFFICIENT_EVIDENCE\`, \`CONFLICTED\`, or \`VALIDATION_FAILED\` instead of inventing precision.
+
+### Additional capability gates to preserve for Points 10–24
+
+1. **Data lineage gate** — every market observation used in a recommendation is traceable to symbol, timeframe, source, retrieval time and dataset/version identity.
+2. **Decision-cutoff gate** — no information published or observed after the simulated decision time may enter that decision.
+3. **Multi-timeframe consistency gate** — timeframe transformations and aggregation rules are explicit and reproducible.
+4. **Indicator implementation identity** — the exact indicator/library version and parameters used in research/backtest are recorded.
+5. **Execution-model gate** — spread, slippage, commission, latency, fill assumptions and order type are explicit.
+6. **Repaint/look-ahead gate** — strategies using future-dependent, repainting, or unavailable-at-decision information are blocked or explicitly marked research-only.
+7. **OOS/walk-forward gate** — in-sample performance alone cannot promote a strategy.
+8. **Regime/stress gate** — results are segmented by market regime and tested under adverse execution/market conditions.
+9. **Conflict gate** — contradictory evidence or materially different strategy conclusions remain visible and block automatic certainty.
+10. **Recommendation provenance** — every proposed entry/SL/TP/reason is traceable to the exact evidence, market snapshot, rules and validation run that produced it.
+11. **Live-data freshness gate** — a stale market snapshot cannot be presented as a current trade opportunity.
+12. **Post-deployment monitoring gate** — promoted capabilities remain monitored for drift, data-quality changes and unexpected behavior.
+
+These gates are additive architecture requirements. They do not reopen the closed Point 1–9 methodologies and do not authorize live execution.
+
