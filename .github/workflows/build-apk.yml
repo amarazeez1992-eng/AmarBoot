@@ -1,4 +1,5 @@
 name: Build APK
+# Build verification is triggered on every relevant main-branch change.
 
 on:
   push:
