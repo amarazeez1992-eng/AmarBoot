@@ -35,6 +35,10 @@ radle'
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stage-ten-audit:
     runs-on: ubuntu-24.04
