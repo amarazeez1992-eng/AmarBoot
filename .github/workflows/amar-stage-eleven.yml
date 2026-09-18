@@ -48,11 +48,8 @@ jobs:
       - name: Focused Verification Layer tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
 
-      - name: Focused Point 2 Source Quality tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceQualityTest' --stacktrace
-
       - name: Focused Point 3 Authority Scoring tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAuthorityScoringTest' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest' --stacktrace
 
       - name: Focused Point 4 Freshness tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest' --stacktrace
@@ -102,8 +99,6 @@ jobs:
       - name: Release build
         run: gradle :app:assembleRelease --stacktrace
 
-      - name: Release build
-        run: gradle :app:assembleRelease --stacktrace
 
       - name: Architecture and constitutional regression checks
         shell: bash
