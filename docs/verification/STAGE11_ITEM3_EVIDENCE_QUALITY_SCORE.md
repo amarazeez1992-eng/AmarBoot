@@ -108,3 +108,15 @@ This point remains **NOT CLOSED** until:
 7. security/boundary checks pass;
 8. documentation and artifacts are re-inspected; and
 9. the constitutional verification gate approves closure.
+
+
+### Canonical Point 1–9 composition
+
+`AmarEvidenceQualityUpstreamState` is the explicit composition contract for Points 1–9. Point 10 now exposes a composition overload that requires:
+- every Point 1–9 verification state to be true;
+- the Point 10 item-local independence/uniqueness gates to be true;
+- finite, bounded numeric audit attributes.
+
+The aggregate composition also fails closed on empty input or a mismatched number of upstream states. This is a wiring contract, not a new scoring formula.
+
+The legacy `AmarEvidenceQualityEngine` remains compatibility/advisory code and is not the canonical Point 10 certification authority.
