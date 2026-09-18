@@ -5,6 +5,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: amar-amar-stage-six-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stage-six:
     runs-on: ubuntu-latest
