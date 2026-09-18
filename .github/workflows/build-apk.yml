@@ -43,7 +43,8 @@ jobs:
       - name: Configure Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: 'platform-tools'
+          cmdline-tools-version: 12266719
+          packages: ''
           accept-android-sdk-licenses: true
 
       - name: Configure Gradle 8.7
