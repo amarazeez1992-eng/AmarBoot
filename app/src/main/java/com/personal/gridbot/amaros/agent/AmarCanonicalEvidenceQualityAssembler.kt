@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzer
+import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessReport
 
 /**
  * Stage 11 / Item 3 composition boundary.
