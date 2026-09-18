@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzer
 import java.net.URI
 
 /**
@@ -19,31 +20,32 @@ class AmarEvidenceQualityEngine(
     fun assess(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarEvidenceQualityReport {
         val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val hostCounts = valid.mapNotNull { hostOf(it.sourceUri) }.groupingBy { it }.eachCount()
-        val fingerprints = valid.map { finding ->
-            finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") }
-        }
-        val duplicateCount = fingerprints.size - fingerprints.distinct().size
+
+        // Compatibility adapter: consume the established Point 6 and Point 9 contracts;
+        // do not recreate their detection algorithms here.
+        val duplicateReport = AmarDuplicateEvidenceDetector().detect(valid)
+        val uniquenessReport = AmarEvidenceUniquenessAnalyzer().analyze(findings)
+
         val scores = valid.map { finding ->
             val authority = authorityScore(finding.authority)
             val freshness = freshnessAnalyzer.assess(finding.retrievedAtEpochMs, nowEpochMs)
             val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
-            val duplicate = fingerprints.count {
-                it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") }
-            } > 1
 
             AmarEvidenceQualityItem(
                 fingerprint = finding.fingerprint,
                 authorityScore = authority,
                 freshnessScore = freshness.score,
                 independentSource = independent,
-                uniqueEvidence = !duplicate,
+                // Point 9 is the canonical uniqueness gate. A collision therefore
+                // fails the aggregate certification closed rather than being averaged away.
+                uniqueEvidence = uniquenessReport.unique,
                 authorityVerified = finding.authority != Authority.UNKNOWN,
                 freshnessVerified = freshness.status != FreshnessStatus.FUTURE
             )
         }
         val independentHosts = valid.mapNotNull { hostOf(it.sourceUri) }.distinct().size
-        val score = if (scores.isEmpty()) 0.0 else scores.map { it.score() }.average()
-        return AmarEvidenceQualityReport(score, independentHosts, duplicateCount, scores)
+        val score = AmarEvidenceQualityScoreEngine().aggregate(scores)
+        return AmarEvidenceQualityReport(score, independentHosts, duplicateReport.duplicateGroupCount, scores)
     }
 
     private fun authorityScore(authority: Authority): Double = when (authority) {
