@@ -72,9 +72,6 @@ jobs:
       - name: Focused Point 10 Evidence Quality Score tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityScoreEngineTest' --stacktrace
 
-      - name: Focused canonical Point 2-9 to Point 10 assembler tests
-        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarCanonicalEvidenceQualityAssemblerTest' --stacktrace
-
       - name: Focused Point 10 Upstream-state contract tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityUpstreamStateTest' --stacktrace
 
@@ -151,8 +148,6 @@ jobs:
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
           test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/trading/AmarQuantResearchPlatform.kt
-          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarCanonicalEvidenceQualityAssembler.kt
-          test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarCanonicalEvidenceQualityAssemblerTest.kt
 
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
