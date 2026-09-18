@@ -58,6 +58,9 @@ jobs:
       - name: Focused Verification Layer tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
 
+      - name: Focused Point 10 Evidence Quality Score tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityScoreEngineTest' --stacktrace
+
       - name: Focused Advanced Memory tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest' --stacktrace
 
