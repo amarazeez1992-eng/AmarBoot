@@ -44,7 +44,7 @@ data class AmarEvidenceQualityItem(
     val independentSource: Boolean,
     val uniqueEvidence: Boolean
 ) {
-    fun score(): Double = (authorityScore * .45 + freshnessScore * .20 + (if (independentSource) .20 else .05) + (if (uniqueEvidence) .15 else 0.0)).coerceIn(0.0, 1.0)
+    fun score(): Double = AmarEvidenceQualityScoreEngine().score(this)
 }
 
 data class AmarEvidenceQualityReport(
