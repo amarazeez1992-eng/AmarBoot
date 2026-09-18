@@ -20,15 +20,15 @@ class AmarSourceVerifier {
         )
     }
 
-    /** Point 5 composition helper: exposes the owning independence rule without duplicating it downstream. */
+    /** Point 5 owner-level per-finding state; uses the same canonical host rule as verify(). */
     fun isIndependent(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
         if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
-        val key = independentKey(finding.sourceUri)
-        return findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
-            .count { independentKey(it.sourceUri) == key } == 1
+        val host = independentKey(finding.sourceUri)
+        val usable = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
+        return usable.count { independentKey(it.sourceUri) == host } == 1
     }
 
-    /** Point 3 composition helper: exposes the canonical authority value already used by this verifier. */
+    /** Point 3 owner-level numeric audit attribute; no new scoring methodology is introduced. */
     fun authorityScore(authority: Authority): Double = authority.weight()
 
     private fun independentKey(uri: String): String = runCatching {
