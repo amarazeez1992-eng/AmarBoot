@@ -65,8 +65,19 @@ class AmarStageTwoHardeningTest {
 
     @Test
     fun evidence_quality_penalizes_old_unknown_sources() {
-        val old = finding("https://old.example/x", "old claim", Authority.UNKNOWN).copy(retrievedAtEpochMs = System.currentTimeMillis() - 10_000L)
+        val old = finding("https://old.example/x", "old claim", Authority.UNKNOWN)
+            .copy(retrievedAtEpochMs = System.currentTimeMillis() - 10_000L)
         val fresh = finding("https://fresh.example/x", "fresh claim", Authority.PRIMARY)
         assertTrue(quality.assess(listOf(fresh)).score > quality.assess(listOf(old)).score)
+    }
+
+    @Test
+    fun future_evidence_is_blocked_by_freshness_contract() {
+        val future = finding("https://future.example/x", "future claim")
+            .copy(retrievedAtEpochMs = System.currentTimeMillis() + 10_000L)
+        val result = quality.assess(listOf(future))
+        assertEquals(0.0, result.score, 0.0)
+        assertFalse(result.items.single().freshnessVerified)
+        assertEquals(0.0, result.items.single().score(), 0.0)
     }
 }
