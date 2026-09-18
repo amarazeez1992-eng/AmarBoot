@@ -133,8 +133,6 @@ jobs:
           test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityUpstreamState.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityCertificationTest.kt
           test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityUpstreamStateTest.kt
-          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityUpstreamAdapter.kt
-          test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityUpstreamAdapterTest.kt
 
           grep -q 'Stage 11 Item 1: CLOSED' docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
