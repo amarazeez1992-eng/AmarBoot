@@ -1,11 +1,11 @@
 package com.personal.gridbot.amaros.agent
 
 /**
- * Canonical Stage 11 / Item 3 / Point 10 input contract.
+ * Canonical Stage 11 / Item 3 / Point 10 adapter.
  *
- * This is an adapter boundary, not a reimplementation of Points 1-9.
- * Each boolean must be produced by the already-owned upstream point.
- * Point 10 only certifies the supplied verified state.
+ * Points 1-9 own the verification booleans. This class assembles those established
+ * states and delegates the actual binary certification decision to the canonical
+ * AmarEvidenceQualityScoreEngine. It contains no independent scoring methodology.
  */
 data class AmarEvidenceQualityCertificationInput(
     val evidenceIntakeValid: Boolean,
@@ -39,13 +39,27 @@ data class AmarEvidenceQualityCertificationInput(
 }
 
 /**
- * Small bridge used by Point 10. It intentionally contains no thresholds,
- * weights, averaging, normalization, or repair logic.
+ * Wiring adapter only: all Point 1-9 states must pass before the canonical
+ * Point 10 score engine is allowed to certify the evidence item.
  */
-class AmarEvidenceQualityCertification {
-    fun certify(input: AmarEvidenceQualityCertificationInput): Double =
-        if (input.upstreamGatesPass() && input.finiteAuditFields()) 1.0 else 0.0
+class AmarEvidenceQualityCertification(
+    private val scoreEngine: AmarEvidenceQualityScoreEngine = AmarEvidenceQualityScoreEngine()
+) {
+    fun certify(input: AmarEvidenceQualityCertificationInput): Double {
+        if (!input.upstreamGatesPass() || !input.finiteAuditFields()) return 0.0
+
+        val item = AmarEvidenceQualityItem(
+            fingerprint = "canonical-upstream-state",
+            authorityScore = input.authorityScore,
+            freshnessScore = input.freshnessScore,
+            independentSource = input.sourceIndependenceVerified,
+            uniqueEvidence = input.uniquenessVerified,
+            authorityVerified = input.authorityVerified,
+            freshnessVerified = input.freshnessVerified
+        )
+        return scoreEngine.score(item)
+    }
 
     fun certifyAll(inputs: List<AmarEvidenceQualityCertificationInput>): Double =
-        if (inputs.isNotEmpty() && inputs.all { it.upstreamGatesPass() && it.finiteAuditFields() }) 1.0 else 0.0
+        if (inputs.isNotEmpty() && inputs.all { certify(it) == 1.0 }) 1.0 else 0.0
 }
