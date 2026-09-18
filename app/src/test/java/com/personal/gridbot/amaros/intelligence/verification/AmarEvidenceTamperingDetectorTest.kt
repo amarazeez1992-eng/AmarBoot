@@ -38,6 +38,30 @@ class AmarEvidenceTamperingDetectorTest {
     }
 
     @Test
+    fun changed_evidence_fingerprint_is_detected() {
+        val findings = listOf(finding("https://a.example/e", "Gold rises", 100L))
+        val chain = AmarProvenanceChain.build(findings)
+        val tamperedNode = chain.single().copy(evidenceFingerprint = "tampered")
+        assertFalse(detector.detect(findings, listOf(tamperedNode)).intact)
+    }
+
+    @Test
+    fun changed_previous_hash_is_detected() {
+        val findings = listOf(finding("https://a.example/e", "Gold rises", 100L))
+        val chain = AmarProvenanceChain.build(findings)
+        val tamperedNode = chain.single().copy(previousHash = "tampered")
+        assertFalse(detector.detect(findings, listOf(tamperedNode)).intact)
+    }
+
+    @Test
+    fun changed_sequence_is_detected() {
+        val findings = listOf(finding("https://a.example/e", "Gold rises", 100L))
+        val chain = AmarProvenanceChain.build(findings)
+        val tamperedNode = chain.single().copy(sequence = 1)
+        assertFalse(detector.detect(findings, listOf(tamperedNode)).intact)
+    }
+
+    @Test
     fun changed_recorded_chain_hash_is_detected() {
         val findings = listOf(finding("https://a.example/e", "Gold rises", 100L))
         val chain = AmarProvenanceChain.build(findings)
