@@ -5,7 +5,11 @@ on:
     branches: [ "main" ]
     paths:
       - "bridge/**"
-      - ".github/workflows/bridge-validation.yml"
+      - ".github/workflows/bridge-validation.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+yml"
   workflow_dispatch:
 
 jobs:
