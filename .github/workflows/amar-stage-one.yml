@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: amar-amar-stage-one-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   stage-one:
     runs-on: ubuntu-latest
