@@ -20,7 +20,7 @@ class AmarEvidenceQualityEngine(
         val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val hostCounts = valid.mapNotNull { hostOf(it.sourceUri) }.groupingBy { it }.eachCount()
         val fingerprints = valid.map { finding ->
-            finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("\${finding.sourceUri}|\${finding.evidence}") }
+            finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") }
         }
         val duplicateCount = fingerprints.size - fingerprints.distinct().size
         val scores = valid.map { finding ->
@@ -28,7 +28,7 @@ class AmarEvidenceQualityEngine(
             val freshness = freshnessAnalyzer.assess(finding.retrievedAtEpochMs, nowEpochMs)
             val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
             val duplicate = fingerprints.count {
-                it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("\${finding.sourceUri}|\${finding.evidence}") }
+                it == finding.fingerprint.ifBlank { AmarEvidence.fingerprintOf("${finding.sourceUri}|${finding.evidence}") }
             } > 1
 
             AmarEvidenceQualityItem(
