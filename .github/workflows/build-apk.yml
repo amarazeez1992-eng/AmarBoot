@@ -3,6 +3,14 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths:
+      - 'app/**'
+      - 'bridge/**'
+      - 'gradle/**'
+      - 'build.gradle*'
+      - 'settings.gradle*'
+      - 'gradle.properties'
+      - 'AndroidManifest.xml'
   workflow_dispatch:
 
 permissions:
