@@ -177,6 +177,16 @@ The result record should remain traceable to:
 
 Hypothetical/simulated results must remain explicitly identified and must not be represented as actual trading performance.
 
+## Trading-recommendation capability baseline
+
+The requested future capability to research and produce a trade recommendation is recorded as a separate architectural baseline in `docs/architecture/AMAR_TRADING_RECOMMENDATION_ARCHITECTURE_BASELINE.md`.
+
+The baseline defines the future path for fast and expert research profiles, broad market-data and analytical-source routing, indicator and trading-school research, order-flow where data exists, deterministic candidate validation, backtest leakage/hindsight/execution-cost controls, explicit conflicts and invalidation, risk/uncertainty reporting, and a first-class `NO_TRADE` result.
+
+It deliberately does **not** make a 100% profit guarantee. The constitutional target is 100% coverage and verification of the defined workflow, with no fabricated evidence or hidden assumptions. Simulated/backtested performance remains experimental evidence rather than proof of future profitability.
+
+This baseline must remain downstream of the canonical Evidence Engine boundaries and must not duplicate Points 10–24 responsibilities or create a parallel decision/execution path.
+
 ## Point 10 → 24 execution map
 
 - Point 10: certify evidence quality from upstream verified states.
