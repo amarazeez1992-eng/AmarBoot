@@ -5,40 +5,62 @@
 Status: VERIFICATION PENDING — ROOT CORRECTION APPLIED
 
 ### Scope
-Produce one deterministic, bounded evidence-quality score from dimensions already established upstream.
+
+Produce one deterministic evidence-quality certification result from facts already established by the upstream Evidence Engine points.
 
 ### Canonical boundary
-Point 10 only aggregates:
+
+Point 10 only certifies the already-established dimensions:
 - authority score
 - freshness score
 - source independence state
 - evidence uniqueness state
 
-It does not collect evidence, detect semantic duplicates, verify fingerprints, detect tampering, or verify claims.
+It does not collect evidence, detect semantic duplicates, verify fingerprints, detect tampering, verify claims, rank evidence, or resolve conflicts.
 
 ### Root-cause architecture
-The scoring formula was previously embedded inside the general Stage Two hardening model. It has been extracted into the dedicated AmarEvidenceQualityScoreEngine, and the existing quality item delegates to that single implementation. This removes duplicate scoring logic without changing the upstream evidence boundaries.
+
+The former heuristic Point 10 scoring path has been replaced by the dedicated `AmarEvidenceQualityScoreEngine`.
+
+The dedicated engine is the canonical Point 10 gate. Upstream dimensions remain owned by their respective earlier Evidence Engine points; Point 10 consumes their verified outputs and does not redefine their methodology.
 
 ### Deterministic rule
 
-There are no heuristic weights in Point 10.
+There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.
 
-The score is:
-- **1.0 (100%)** only when authority = 1.0, freshness = 1.0, source independence is fully verified, and uniqueness is fully verified.
-- **0.0 (not verified)** if any required condition is not fully verified.
+For a single evidence item:
+- **1.0 (100% / VERIFIED)** only when every required Point 10 gate is fully verified.
+- **0.0 (NOT VERIFIED)** when any required gate is not fully verified.
 
-This is a strict verification gate, not an estimator.
+For an aggregate:
+- **1.0 (100% / VERIFIED)** only when the input set is non-empty and every item is fully verified.
+- **0.0 (NOT VERIFIED)** for an empty set or when any item fails a required gate.
+
+The canonical Point 10 result therefore has no invented intermediate percentage.
+
+### Invalid-value behavior
+
+Point 10 is fail-closed. Non-finite or otherwise non-verified upstream values cannot satisfy the exact verification predicates and therefore cannot produce VERIFIED.
+
+Point 10 does not clamp, normalize, average, or otherwise repair upstream evidence-quality values. Validation and normalization remain the responsibility of the owning upstream boundary.
 
 ### Regression coverage
-- perfect dimensions produce 1.0
-- weak dimensions remain bounded and deterministic
-- invalid ranges are clamped
-- empty aggregation returns 0.0
-- aggregate output remains bounded
 
-### Root correction record
+The dedicated Point 10 regression suite must prove:
+- perfect dimensions produce exactly 1.0
+- every individual failed dimension produces exactly 0.0
+- aggregate certification requires every item to pass
+- empty aggregation is NOT VERIFIED
+- non-finite numeric inputs cannot pass
+- repeated execution with identical inputs is deterministic
+- the result remains strictly bounded to the two canonical outcomes
 
-The first Point 10 verification run exposed a test-contract mismatch: the perfect-dimensions assertion did not match the intended bounded scoring formula. The scorer and regression contract were aligned so perfect dimensions yield 1.0, while invalid dimensions are clamped before weighting. A dedicated Point 10 gate was also added to the Stage Eleven workflow so Item 3 cannot bypass this boundary.
+### Weighting policy
+
+No new Point 10 weights are permitted.
+
+There is no universal institutional percentage allocation that can be truthfully presented as a global standard for evidence quality. External frameworks such as NIST emphasize accuracy, reliability, objectivity, integrity, context, timeliness, reproducibility and explicit uncertainty rather than prescribing one universal set of percentages. Those principles may inform future methodology decisions in the owning upstream points, but they do not justify inventing weights inside Point 10.
 
 ### Constitutional gate
-This point remains NOT CLOSED until the exact Point 10 state passes its dedicated boundary test, full unit suite, Debug build, and the resulting CI evidence is directly verified.
+
+This point remains **NOT CLOSED** until the exact Point 10 implementation state passes its dedicated boundary tests, relevant regression suite, full unit suite, Debug build, CI verification, and evidence recording, followed by constitutional re-inspection.
