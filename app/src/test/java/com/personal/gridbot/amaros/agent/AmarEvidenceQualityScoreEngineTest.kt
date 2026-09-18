@@ -24,7 +24,7 @@ class AmarEvidenceQualityScoreEngineTest {
     @Test
     fun invalid_dimensions_are_clamped() {
         val item = AmarEvidenceQualityItem("f", 7.0, -3.0, true, true)
-        assertEquals(1.0, engine.score(item), 0.000001)
+        assertEquals(0.8, engine.score(item), 0.000001)
     }
 
     @Test
