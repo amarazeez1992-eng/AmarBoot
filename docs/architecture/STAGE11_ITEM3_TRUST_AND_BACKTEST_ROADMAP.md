@@ -207,3 +207,47 @@ inspect → discover → root cause → architect → implement → unit test �
 NIST's AI Risk Management Framework treats validity, reliability, robustness, provenance, testing/evaluation, and ongoing monitoring as trustworthiness concerns rather than as a single universal percentage formula.
 
 Backtest results are inherently limited when hypothetical or simulated; CFTC and SEC materials describe hindsight, liquidity/execution assumptions, and differences between simulated and actual results as material limitations.
+
+
+## Adopted trading-agent completeness controls for Points 10–24
+
+The following controls are adopted as architecture requirements now, while their concrete implementation belongs to the responsible later point/stage and must not be backfilled into Point 10:
+
+### A. Market-data evidence contract
+A trade-search request must distinguish, at minimum:
+- instrument/symbol
+- market/session and timezone
+- timeframe
+- candle/bar source and timestamp
+- bid/ask or executable-price context when available
+- spread/fee/commission assumptions
+- order-flow/order-book data when actually available
+- indicator inputs and calculation version
+- data cutoff used for the decision
+
+Missing or unverifiable market-data provenance must not be silently replaced by model inference.
+
+### B. Strategy / indicator provenance
+Every indicator, strategy, school, script, library, or external methodology used by a trade-search run must remain attributable to its source and version where available. The agent may compare multiple methodologies, but must not imply that community scripts, educational material, or proprietary claims are equivalent in authority.
+
+### C. Backtest promotion gate
+A backtest may support a trade hypothesis only when its experiment identity, dataset fingerprint, cutoff, execution/cost assumptions, leakage result, validation/OOS protocol, and stress results are available. A single favorable in-sample result is insufficient for promotion.
+
+### D. Recommendation trace
+A final trade hypothesis must be traceable through:
+market data -> evidence -> analysis/method -> conflict state -> backtest/forward-test evidence (if used) -> risk constraints -> recommendation.
+If a link in that chain is missing or unverifiable, the downstream recommendation must be marked accordingly or blocked by the owning fail-closed policy.
+
+### E. Research-mode separation
+The future Fast and Expert research modes may use different breadth/depth budgets, but they must consume the same canonical evidence, verification, provenance, and fail-closed contracts. Fast mode is not permitted to bypass safety/verification gates.
+
+### F. Execution separation
+Trade recommendation and trade execution remain different authorities. The research/intelligence/evidence layers may produce a trade hypothesis and its conditions, but cannot silently acquire broker execution authority.
+
+### G. Market-regime and non-stationarity awareness
+Backtest and strategy-validation layers must record the market regime/context represented by their data and avoid treating historical stationarity as an assumption of future behavior. Regime coverage is an evaluation dimension, not an invented confidence weight.
+
+### H. Negative-result preservation
+Failed searches, rejected evidence, conflicting sources, failed backtests, and invalidated hypotheses must remain auditable inputs. The system must not discard negative evidence merely because it conflicts with a desired trade direction.
+
+These controls increase domain completeness without introducing a universal profitability score or claiming a 100% win rate. They are compatible with NIST's emphasis on validity, reliability, robustness, explicit test methodology, uncertainty, and ongoing evaluation.
