@@ -6,9 +6,6 @@ on:
     paths:
       - "bridge/**"
       - ".github/workflows/bridge-validation.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 yml"
   workflow_dispatch:
 
