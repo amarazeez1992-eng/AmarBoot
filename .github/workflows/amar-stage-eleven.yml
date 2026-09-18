@@ -142,6 +142,14 @@ jobs:
           ! grep -R "OrderSend\\|brokerAccessAllowed.*true\\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
           ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
 
+      - name: Upload release artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-stage-eleven-release
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn
+
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4
