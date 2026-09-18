@@ -15,6 +15,7 @@ on:
       - 'docs/governance/STAGE11_ERROR_PREVENTION_RULES.md'
       - 'docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md'
       - 'docs/verification/STAGE11_ITEM2_CONFIDENCE_ENGINE.md'
+      - 'docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md'
       - 'docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md'
       - 'docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md'
       - '.github/workflows/amar-stage-eleven.yml'
@@ -89,7 +90,50 @@ jobs:
           test -f docs/governance/STAGE11_ERROR_PREVENTION_RULES.md
           test -f docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           test -f docs/verification/STAGE11_ITEM2_CONFIDENCE_ENGINE.md
-          grep -q '^\*\*Status: CONSTITUTIONALLY CLOSED\*\*$' docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
+          grep -q '^\*\*Status: CONSTITUTIONALLY CLOSED\*\*          grep -q 'Stage 11 Item 1: CLOSED' docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
+          test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
+          grep -q '^Status: CLOSED$' docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCore.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/core/AmarIntelligenceCoreTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/confidence/AmarConfidenceEngine.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/confidence/AmarConfidenceEngineTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayer.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/verification/AmarVerificationLayerTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemory.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/memory/AmarAdvancedMemoryTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestrator.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/research/AmarDeepResearchOrchestratorTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/intelligence/DecisionEngineTest.kt
+          test -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          test -f app/src/test/java/com/personal/gridbot/amaros/agent/AmarAgentCriticItemSixTest.kt
+          grep -q 'MIN_CLOSES_FOR_VOLATILITY = 4' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          grep -q 'MIN_LOSSES_FOR_HISTORICAL_VAR = 5' app/src/main/java/com/personal/gridbot/amaros/intelligence/DecisionEngine.kt
+          grep -q 'independentSourceCount' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          grep -q 'evidence_conflict' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          grep -q 'guarantee_language' app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+          test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
+          test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "executable *= *true" app/src/main/java/com/personal/gridbot/amaros/intelligence
+          ! grep -R "OrderSend\|brokerAccessAllowed.*true\|liveTrading.*true" app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCritic.kt
+
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amar-stage-eleven-evidence
+          path: |
+            app/build/test-results/**
+            app/build/reports/tests/**
+          if-no-files-found: warn
+ docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
+          test -f docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
+          grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
+          ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
+          grep -q 'if (isFullyVerified(item)) 1.0 else 0.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
           grep -q 'Stage 11 Item 1: CLOSED' docs/verification/STAGE11_ITEM1_INTELLIGENCE_CORE.md
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
