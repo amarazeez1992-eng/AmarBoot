@@ -54,7 +54,7 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val report = assembler.assemble(listOf(item), nowEpochMs = 1_500L)
 
         assertFalse(report.items.single().authorityVerified)
-        assertEquals(0.0, report.itemScores.single(), 0.0)
+        assertEquals(0.0, report.compatibilityItemScores.single(), 0.0)
     }
 
     @Test
