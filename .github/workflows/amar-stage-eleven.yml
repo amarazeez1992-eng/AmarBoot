@@ -19,9 +19,6 @@ on:
   workflow_dispatch:
   schedule:
  
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
    - cron: '17 3 * * *'
 
 jobs:
