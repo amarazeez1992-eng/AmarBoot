@@ -2,8 +2,7 @@ name: AMAR AI Stage Three Verification
 
 on:
   push:
-    b
-ranches: [ main ]
+    branches: [ main ]
   workflow_dispatch:
 
 concurrency:
