@@ -206,3 +206,27 @@ inspect → discover → root cause → architect → implement → unit test �
 NIST's AI Risk Management Framework treats validity, reliability, robustness, provenance, testing/evaluation, and ongoing monitoring as trustworthiness concerns rather than as a single universal percentage formula. This supports the project's decision to avoid invented universal weights while strengthening verification and auditability.
 
 Backtest results are also inherently limited when hypothetical or simulated; regulatory material from the CFTC and SEC describes hindsight, liquidity/execution assumptions, and differences between simulated and actual results as material limitations. The project therefore treats backtests as experiment evidence with explicit assumptions, not as guarantees.
+
+## Mandatory Point 10 integration hardening
+
+Before Point 10 can be constitutionally closed, the canonical path must be re-inspected for contract wiring, not only local correctness. The Point 10 gate must consume the established outputs of Points 1–9 through one auditable adapter/assembly boundary, without reimplementing their algorithms. The closure audit must prove that Point 6 duplicate detection, Point 7 fingerprint integrity, Point 8 tamper detection, and Point 9 canonical uniqueness are not bypassed by the compatibility path in AmarEvidenceQualityEngine.
+
+The legacy compatibility report may remain available for existing consumers, but it must not be the authoritative certification input when the canonical Point 10 path is available. Any aggregate score produced by compatibility code is an advisory/legacy signal and must not be allowed to turn mixed evidence into a constitutional VERIFIED result.
+
+This is a wiring/integration gate, not a new evidence-quality formula.
+
+## Trading-domain completeness mandate
+
+The project goal is to make Amar AI a trading-specialized research and decision-support agent, not to promise a 100% win rate or guaranteed profit. The trading mandate is therefore defined as completeness of domain coverage and verification, not certainty of market outcome.
+
+A future trade-search request must be able to route through the appropriate research mode (for example, a fast or expert mode selected by the user), gather current and historical market evidence, inspect relevant indicators/strategies/schools, reproduce calculations where possible, run controlled backtests/forward tests when data and tooling permit, compare conflicting evidence, and return a traceable trade hypothesis with entry/invalidity/target/risk assumptions and evidence provenance. It must never convert a backtest into a promise of future profit.
+
+TradingView documents that its strategies can be backtested and forward-tested and that community scripts include indicators, strategies, and libraries; these are useful research targets, subject to access, licensing, source-quality, and reproducibility controls. MetaTrader 5 documents multi-symbol strategy testing and multiple tick-generation modes, which should inform future MT5-compatible research/testing adapters rather than being duplicated blindly.
+
+The agent must preserve a strict distinction among market evidence, analysis, backtest evidence, trade hypothesis/recommendation, and execution. No component may claim that a simulated/backtested result is an actual trading result. CFTC guidance identifies hindsight, liquidity, spread/execution, fees, and other limitations of hypothetical/simulated results and states that no trading system can guarantee profits.
+
+## Additional control adopted for Points 10–24
+
+Evidence-to-Decision Traceability is now an explicit closure requirement: every downstream trade recommendation must be traceable to the evidence set, timestamps/data cutoff, analytical methods, backtest experiment identity (if used), conflicts, uncertainty state, and risk controls that produced it. Missing provenance or an unverifiable dependency must fail closed rather than being silently filled by model inference.
+
+This strengthens the existing architecture without adding a scoring weight or changing the closed methodology of Points 1–9.
