@@ -18,8 +18,7 @@ on:
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
   schedule:
- 
-   - cron: '17 3 * * *'
+    - cron: '17 3 * * *'
 
 concurrency:
   group: amar-workflow-stage-eleven-${{ github.ref }}
