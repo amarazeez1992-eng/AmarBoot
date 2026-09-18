@@ -67,7 +67,10 @@ class AmarDeepResearchOrchestrator(
         }
 
         val ranked = rankAndDeduplicate(taskReports.flatMap { it.findings })
-        val globalVerification = verificationLayer.verifyEvidenceOnly(ranked, nowEpochMs)
+        // Independence is scoped to each research question. The same host may legitimately
+        // provide evidence for multiple distinct questions; it must not be treated as a
+        // cross-question independence failure.
+        val globalVerification = aggregateTaskVerification(taskReports, ranked, nowEpochMs)
         val conflicts = (taskReports.flatMap { it.verification.conflicts } + globalVerification.conflicts)
             .distinctBy { it.supportingFingerprints.sorted() to it.opposingFingerprints.sorted() }
         val independentSources = ranked.mapNotNull { hostOf(it.sourceUri) }.distinct()
@@ -88,6 +91,45 @@ class AmarDeepResearchOrchestrator(
             verification = globalVerification,
             confidence = confidence,
             partial = execution.partial || taskReports.any { it.error != null }
+        )
+    }
+
+    private fun aggregateTaskVerification(
+        taskReports: List<AmarResearchTaskReport>,
+        ranked: List<ResearchFinding>,
+        nowEpochMs: Long
+    ): AmarVerificationReport {
+        val global = verificationLayer.verifyEvidenceOnly(ranked, nowEpochMs)
+        if (taskReports.isEmpty()) return global
+
+        val taskQuality = taskReports.map { it.verification.evidenceQuality }
+        val scopedQuality = AmarEvidenceQualityReport(
+            score = taskQuality.map { it.score }.average(),
+            independentSourceCount = taskReports.sumOf { it.independentSourceCount },
+            duplicateEvidenceCount = taskQuality.sumOf { it.duplicateEvidenceCount },
+            items = taskQuality.flatMap { it.items }
+        )
+        val conflicts = taskReports.flatMap { it.verification.conflicts }.distinctBy {
+            it.supportingFingerprints.sorted() to it.opposingFingerprints.sorted()
+        }
+        val score = (
+            scopedQuality.score * 0.45 +
+                global.sourceRegistry.integrityScore * 0.20 +
+                0.25 +
+                if (conflicts.isEmpty()) 0.10 else 0.0
+            ).coerceIn(0.0, 1.0)
+        val allTasksVerified = taskReports.all { it.error == null && it.verification.status == AmarVerificationStatus.VERIFIED }
+        val status = when {
+            ranked.isEmpty() -> AmarVerificationStatus.UNVERIFIABLE
+            allTasksVerified && conflicts.isEmpty() && score >= 0.70 -> AmarVerificationStatus.VERIFIED
+            score >= 0.40 -> AmarVerificationStatus.PARTIAL
+            else -> AmarVerificationStatus.REJECTED
+        }
+        return global.copy(
+            status = status,
+            score = score,
+            evidenceQuality = scopedQuality,
+            conflicts = conflicts
         )
     }
 
