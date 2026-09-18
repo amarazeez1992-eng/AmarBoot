@@ -20,6 +20,17 @@ class AmarSourceVerifier {
         )
     }
 
+    /** Point 5 composition helper: exposes the owning independence rule without duplicating it downstream. */
+    fun isIndependent(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
+        if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
+        val key = independentKey(finding.sourceUri)
+        return findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
+            .count { independentKey(it.sourceUri) == key } == 1
+    }
+
+    /** Point 3 composition helper: returns the canonical authority value already used by this verifier. */
+    fun authorityScore(authority: Authority): Double = authority.weight()
+
     private fun independentKey(uri: String): String = runCatching {
         java.net.URI(uri).host?.lowercase()?.removePrefix("www.") ?: uri.trim().lowercase()
     }.getOrElse { uri.trim().lowercase() }
