@@ -129,7 +129,7 @@ A recommendation supported by a backtest must be traceable to:
 
 A single in-sample result is never sufficient to establish future profitability.
 
-Hypothetical/simulated results must remain explicitly labeled as such. CFTC material notes that simulated results can differ from actual trading because of execution/liquidity assumptions and hindsight limitations. citeturn0search2
+Hypothetical/simulated results must remain explicitly labeled as such. CFTC material notes that simulated results can differ from actual trading because of execution/liquidity assumptions and hindsight limitations.
 
 ## Recommendation contract
 
