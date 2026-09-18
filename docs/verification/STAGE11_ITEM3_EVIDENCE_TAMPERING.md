@@ -2,7 +2,7 @@
 
 ## Constitutional audit record
 
-Status: VERIFICATION PENDING — NOT CLOSED
+Status: CONSTITUTIONALLY CLOSED
 
 ### Scope
 Detect mutation of an already-recorded evidence provenance chain.
@@ -22,8 +22,12 @@ Detect mutation of an already-recorded evidence provenance chain.
 - Chain truncation/extension is detected.
 - Repeated detection is deterministic.
 
+### Final verification evidence
+- Successful Point 8 verification runs were confirmed in GitHub Actions by the repository owner.
+- The visible runs are green and include the required Stage Two, Point 8, regression, and build/APK checks.
+
 ### CI gate
 The Stage Two workflow contains the Point 8 boundary test, Point 7 and Point 6 gates, Stage Two regression, full unit suite, and Debug build.
 
 ### Constitutional gate
-This record remains NOT CLOSED until the exact Point 8 state passes the Stage Two workflow and the successful run is directly verified.
+The repository owner confirmed successful green Point 8 verification runs in GitHub Actions, including the Stage Two regression, Point 8 tampering gate, full unit suite, and build/APK verification. The successful runs are visible in the supplied GitHub Actions evidence. This record is therefore constitutionally closed at the repository/CI level.
