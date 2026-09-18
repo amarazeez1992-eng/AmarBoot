@@ -3,6 +3,12 @@ name: AMAR AI Stage Three Verification
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'app/src/main/java/com/personal/gridbot/amaros/agent/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/intelligence/core/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/intelligence/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/agent/**'
+      - 'app/src/test/java/com/personal/gridbot/amaros/intelligence/**'
   workflow_dispatch:
 
 concurrency:
