@@ -30,6 +30,24 @@ class AmarSourceAuthorityTest {
     }
 
     @Test
+    fun per_finding_independence_uses_the_same_canonical_host_rule() {
+        val verifier = AmarSourceVerifier()
+        val a = ResearchFinding("a", "https://www.a.example/source", "evidence-a")
+        val b = ResearchFinding("b", "https://a.example/other", "evidence-b")
+        val c = ResearchFinding("c", "https://b.example/source", "evidence-c")
+        assertTrue(verifier.isIndependent(a, listOf(a, c)))
+        assertTrue(verifier.isIndependent(c, listOf(a, c)))
+        assertTrue(!verifier.isIndependent(a, listOf(a, b, c)))
+    }
+
+    @Test
+    fun authority_score_exposes_the_existing_owner_scale_without_recalculation() {
+        val verifier = AmarSourceVerifier()
+        assertEquals(1.0, verifier.authorityScore(Authority.PRIMARY), 0.0)
+        assertEquals(0.15, verifier.authorityScore(Authority.UNKNOWN), 0.0)
+    }
+
+    @Test
     fun higher_authority_produces_higher_score_without_changing_source_count() {
         val verifier = AmarSourceVerifier()
         val primary = verifier.verify(
