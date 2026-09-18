@@ -1,17 +1,13 @@
 package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzer
-import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessReport
 
 /**
  * Stage 11 / Item 3 composition boundary.
  *
- * This adapter connects the closed Point 2-9 contracts to the canonical Point 10
- * certification engine without reimplementing their methodologies.
- *
- * Point 10 still certifies only its defined inputs. Point 7 integrity and Point 9
- * aggregate reports remain audit facts for later boundaries; they are not silently
- * converted into extra Point 10 weights.
+ * This adapter connects the existing Point 2-9 analyzers to auditable Point 10
+ * inputs. It never invents Point 1 or Point 8 state: those states must be
+ * supplied by their owning upstream contracts before constitutional certification.
  */
 class AmarCanonicalEvidenceQualityAssembler(
     private val sourceQuality: AmarSourceQualityAnalyzer = AmarSourceQualityAnalyzer(),
@@ -33,7 +29,7 @@ class AmarCanonicalEvidenceQualityAssembler(
         val uniqueness = uniquenessAnalyzer.analyze(findings)
         val sourceVerification = sourceVerifier.verify(findings)
 
-        val items = findings.mapIndexed { index, finding ->
+        val items = findings.map { finding ->
             val source = sourceQuality.assess(finding)
             val fresh = freshness.assess(finding.retrievedAtEpochMs, nowEpochMs)
             val independent = sourceVerifier.isIndependent(finding, findings)
@@ -57,8 +53,27 @@ class AmarCanonicalEvidenceQualityAssembler(
             point5Verification = sourceVerification,
             point6Duplicates = duplicates,
             point7FingerprintIntegrity = fingerprints,
-            point9Uniqueness = uniqueness,
-            aggregateScore = scoreEngine.aggregate(items)
+            point9Uniqueness = uniqueness
+        )
+    }
+
+    /**
+     * Constitutional Point 10 certification.
+     *
+     * The caller must provide one canonical upstream state for every finding.
+     * Missing/mismatched state fails closed; no default-success state is created here.
+     */
+    fun certify(
+        findings: List<ResearchFinding>,
+        nowEpochMs: Long,
+        upstreamStates: List<AmarEvidenceQualityUpstreamState>
+    ): AmarCanonicalEvidenceQualityCertificationReport {
+        val quality = assemble(findings, nowEpochMs)
+        val certificationScore = scoreEngine.aggregate(quality.items, upstreamStates)
+        return AmarCanonicalEvidenceQualityCertificationReport(
+            quality = quality,
+            upstreamStates = upstreamStates,
+            certificationScore = certificationScore
         )
     }
 }
@@ -70,6 +85,11 @@ data class AmarCanonicalEvidenceQualityReport(
     val point5Verification: AmarSourceVerification,
     val point6Duplicates: AmarDuplicateEvidenceReport,
     val point7FingerprintIntegrity: AmarFingerprintIntegrityReport,
-    val point9Uniqueness: AmarEvidenceUniquenessReport,
-    val aggregateScore: Double
+    val point9Uniqueness: AmarEvidenceUniquenessReport
+)
+
+data class AmarCanonicalEvidenceQualityCertificationReport(
+    val quality: AmarCanonicalEvidenceQualityReport,
+    val upstreamStates: List<AmarEvidenceQualityUpstreamState>,
+    val certificationScore: Double
 )
