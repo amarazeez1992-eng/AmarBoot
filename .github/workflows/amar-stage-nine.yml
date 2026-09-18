@@ -1,4 +1,7 @@
 name: Amar Stage 9 — Performance, Parallel Workforce and Reliability
+concurrency:
+  group: amar-amar-stage-nine.yml-main
+  cancel-in-progress: true
 
 on:
   push:
