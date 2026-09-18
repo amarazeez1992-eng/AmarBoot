@@ -23,6 +23,18 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         fingerprint = fingerprint
     )
 
+    private fun allUpstreamVerified() = AmarEvidenceQualityUpstreamState(
+        point1EvidenceIntakeVerified = true,
+        point2SourceQualityVerified = true,
+        point3AuthorityVerified = true,
+        point4FreshnessVerified = true,
+        point5SourceIndependenceVerified = true,
+        point6DuplicateFreeVerified = true,
+        point7FingerprintIntegrityVerified = true,
+        point8TamperingIntegrityVerified = true,
+        point9EvidenceUniquenessVerified = true
+    )
+
     @Test
     fun assembler_consumes_existing_point_contracts_without_reimplementing_them() {
         val a = finding("https://a.example/x", "gold trend rising")
@@ -33,17 +45,15 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         assertEquals(2, report.point5Verification.independentSources)
         assertTrue(report.point7FingerprintIntegrity.intact)
         assertTrue(report.point9Uniqueness.unique)
-        assertEquals(1.0, report.aggregateScore, 0.0)
         assertEquals(listOf(1.0, 1.0), report.itemScores)
     }
 
     @Test
-    fun unknown_authority_blocks_point_ten_but_preserves_owner_state() {
+    fun unknown_authority_blocks_item_quality_but_preserves_owner_state() {
         val item = finding("https://a.example/x", "gold trend", authority = Authority.UNKNOWN)
         val report = assembler.assemble(listOf(item), nowEpochMs = 1_500L)
 
         assertFalse(report.items.single().authorityVerified)
-        assertEquals(0.0, report.aggregateScore, 0.0)
         assertEquals(0.0, report.itemScores.single(), 0.0)
     }
 
@@ -54,7 +64,7 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
 
         assertFalse(report.items.single().freshnessVerified)
         assertEquals(0.0, report.items.single().freshnessScore, 0.0)
-        assertEquals(0.0, report.aggregateScore, 0.0)
+        assertEquals(0.0, report.itemScores.single(), 0.0)
     }
 
     @Test
@@ -72,7 +82,49 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         assertEquals(1, report.point6Duplicates.duplicateGroupCount)
         assertFalse(report.point7FingerprintIntegrity.intact)
         assertTrue(report.point9Uniqueness.unique)
-        assertEquals(1.0, report.aggregateScore, 0.0)
+    }
+
+    @Test
+    fun certification_requires_canonical_upstream_states() {
+        val a = finding("https://a.example/x", "gold trend")
+        val b = finding("https://b.example/x", "gold momentum")
+        val valid = assembler.certify(
+            listOf(a, b),
+            nowEpochMs = 1_500L,
+            upstreamStates = listOf(allUpstreamVerified(), allUpstreamVerified())
+        )
+        assertEquals(1.0, valid.certificationScore, 0.0)
+
+        val duplicateBlocked = assembler.certify(
+            listOf(a, b),
+            nowEpochMs = 1_500L,
+            upstreamStates = listOf(
+                allUpstreamVerified().copy(point6DuplicateFreeVerified = false),
+                allUpstreamVerified()
+            )
+        )
+        assertEquals(0.0, duplicateBlocked.certificationScore, 0.0)
+
+        val tamperingBlocked = assembler.certify(
+            listOf(a, b),
+            nowEpochMs = 1_500L,
+            upstreamStates = listOf(
+                allUpstreamVerified().copy(point8TamperingIntegrityVerified = false),
+                allUpstreamVerified()
+            )
+        )
+        assertEquals(0.0, tamperingBlocked.certificationScore, 0.0)
+    }
+
+    @Test
+    fun certification_rejects_missing_or_mismatched_upstream_state() {
+        val a = finding("https://a.example/x", "gold trend")
+        val report = assembler.certify(
+            listOf(a),
+            nowEpochMs = 1_500L,
+            upstreamStates = emptyList()
+        )
+        assertEquals(0.0, report.certificationScore, 0.0)
     }
 
     @Test
@@ -80,7 +132,6 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val first = assembler.assemble(emptyList(), 1_500L)
         val second = assembler.assemble(emptyList(), 1_500L)
 
-        assertEquals(0.0, first.aggregateScore, 0.0)
         assertEquals(first, second)
         assertEquals(0, first.point5Verification.totalSources)
     }
