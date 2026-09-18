@@ -3,11 +3,9 @@ package com.personal.gridbot.amaros.agent
 /**
  * Stage 11 / Item 3 / Point 10.
  *
- * Strict verification gate. No heuristic weights, estimates, or partial
- * confidence are introduced here.
- *
- * Score = 1.0 only when every upstream evidence-quality condition is itself
- * fully verified. Otherwise the result is 0.0 (not verified).
+ * Strict certification gate. There are no heuristic weights and no partial
+ * confidence. A record is certified at 100% only when every required
+ * evidence-quality condition is fully satisfied; otherwise it is 0%.
  */
 class AmarEvidenceQualityScoreEngine {
     fun score(item: AmarEvidenceQualityItem): Double =
