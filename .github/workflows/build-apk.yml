@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   build:
-    name: Android and bridge verification
+    name: Android APK and bridge verification
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
