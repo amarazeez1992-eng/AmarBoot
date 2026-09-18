@@ -1,4 +1,7 @@
 name: AMAR AI Stage Seven Verification
+concurrency:
+  group: amar-amar-stage-seven.yml-main
+  cancel-in-progress: true
 
 on:
   push:
