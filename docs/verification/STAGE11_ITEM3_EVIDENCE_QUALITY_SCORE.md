@@ -19,10 +19,15 @@ It does not collect evidence, detect semantic duplicates, verify fingerprints, d
 ### Root-cause architecture
 The scoring formula was previously embedded inside the general Stage Two hardening model. It has been extracted into the dedicated AmarEvidenceQualityScoreEngine, and the existing quality item delegates to that single implementation. This removes duplicate scoring logic without changing the upstream evidence boundaries.
 
-### Deterministic formula
-authority × 0.45 + freshness × 0.20 + independence × 0.20 + uniqueness × 0.15
+### Deterministic rule
 
-All dimensions are clamped to [0,1]; the final score is clamped to [0,1].
+There are no heuristic weights in Point 10.
+
+The score is:
+- **1.0 (100%)** only when authority = 1.0, freshness = 1.0, source independence is fully verified, and uniqueness is fully verified.
+- **0.0 (not verified)** if any required condition is not fully verified.
+
+This is a strict verification gate, not an estimator.
 
 ### Regression coverage
 - perfect dimensions produce 1.0
