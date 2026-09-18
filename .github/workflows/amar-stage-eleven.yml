@@ -73,6 +73,9 @@ jobs:
       - name: Debug build
         run: gradle :app:assembleDebug --stacktrace
 
+      - name: Release build
+        run: gradle :app:assembleRelease --stacktrace
+
       - name: Architecture and constitutional regression checks
         shell: bash
         run: |
