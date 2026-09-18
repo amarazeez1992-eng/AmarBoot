@@ -64,7 +64,7 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
 
         assertFalse(report.items.single().freshnessVerified)
         assertEquals(0.0, report.items.single().freshnessScore, 0.0)
-        assertEquals(0.0, report.itemScores.single(), 0.0)
+        assertEquals(0.0, report.compatibilityItemScores.single(), 0.0)
     }
 
     @Test
