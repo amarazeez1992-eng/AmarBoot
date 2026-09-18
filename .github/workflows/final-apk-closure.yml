@@ -1,4 +1,7 @@
 name: Final APK Closure
+concurrency:
+  group: amar-final-apk-closure-main
+  cancel-in-progress: true
 
 on:
   push:
