@@ -11,13 +11,13 @@ class AmarEvidenceQualityScoreEngine {
     fun score(item: AmarEvidenceQualityItem): Double {
         val authority = item.authorityScore.coerceIn(0.0, 1.0)
         val freshness = item.freshnessScore.coerceIn(0.0, 1.0)
-        val independence = if (item.independentSource) 1.0 else 0.25
+        val independenceContribution = if (item.independentSource) 0.20 else 0.05
         val uniqueness = if (item.uniqueEvidence) 1.0 else 0.0
 
         return (
             authority * 0.45 +
                 freshness * 0.20 +
-                independence * 0.20 +
+                independenceContribution +
                 uniqueness * 0.15
             ).coerceIn(0.0, 1.0)
     }
