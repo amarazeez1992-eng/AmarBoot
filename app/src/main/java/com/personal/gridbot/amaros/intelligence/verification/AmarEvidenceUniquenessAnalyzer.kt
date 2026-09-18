@@ -35,6 +35,17 @@ class AmarEvidenceUniquenessAnalyzer {
         )
     }
 
+    /** Point 9 composition helper: exposes the owning canonical identity rule. */
+    fun isUnique(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
+        if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
+        val identity = canonicalIdentity(finding)
+        return findings.count { candidate ->
+            candidate.sourceUri.isNotBlank() &&
+                candidate.evidence.isNotBlank() &&
+                canonicalIdentity(candidate) == identity
+        } == 1
+    }
+
     private fun canonicalIdentity(finding: ResearchFinding): String =
         AmarEvidence.fingerprintOf(
             finding.sourceUri.trim() +
