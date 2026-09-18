@@ -16,42 +16,36 @@ import com.personal.gridbot.amaros.agent.ResearchFinding
 class AmarEvidenceUniquenessAnalyzer {
     fun analyze(findings: List<ResearchFinding>): AmarEvidenceUniquenessReport {
         val eligible = findings.filter {
-            it.sourceUri.isNotBlank() &&
-                it.evidence.isNotBlank()
+            it.sourceUri.isNotBlank() && it.evidence.isNotBlank()
         }
-
         val identities = eligible.map { canonicalIdentity(it) }
         val counts = identities.groupingBy { it }.eachCount()
         val collisions = counts.filterValues { it > 1 }
-
         return AmarEvidenceUniquenessReport(
             totalFindings = findings.size,
             eligibleFindings = eligible.size,
             uniqueRecordCount = counts.size,
             collisionGroupCount = collisions.size,
             collidingFindingCount = collisions.values.sum(),
-            uniquenessRatio = if (eligible.isEmpty()) 0.0
-            else counts.size.toDouble() / eligible.size
+            uniquenessRatio = if (eligible.isEmpty()) 0.0 else counts.size.toDouble() / eligible.size
         )
     }
 
-    /** Point 9 composition helper: exposes the owning canonical identity rule. */
+    /** Point 9 owner-level per-record state using the same canonical identity as analyze(). */
     fun isUnique(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
         if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
         val identity = canonicalIdentity(finding)
-        return findings.count { candidate ->
-            candidate.sourceUri.isNotBlank() &&
-                candidate.evidence.isNotBlank() &&
-                canonicalIdentity(candidate) == identity
+        return findings.count {
+            it.sourceUri.isNotBlank() &&
+                it.evidence.isNotBlank() &&
+                canonicalIdentity(it) == identity
         } == 1
     }
 
     private fun canonicalIdentity(finding: ResearchFinding): String =
         AmarEvidence.fingerprintOf(
-            finding.sourceUri.trim() +
-                "|" +
-                finding.evidence.trim() +
-                "|" +
+            finding.sourceUri.trim() + "|" +
+                finding.evidence.trim() + "|" +
                 finding.retrievedAtEpochMs
         )
 }
@@ -64,7 +58,5 @@ data class AmarEvidenceUniquenessReport(
     val collidingFindingCount: Int,
     val uniquenessRatio: Double
 ) {
-    val unique: Boolean
-        get() = eligibleFindings == totalFindings &&
-            collisionGroupCount == 0
+    val unique: Boolean get() = eligibleFindings == totalFindings && collisionGroupCount == 0
 }
