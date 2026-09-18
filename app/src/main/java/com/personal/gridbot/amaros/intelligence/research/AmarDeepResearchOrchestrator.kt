@@ -2,12 +2,14 @@ package com.personal.gridbot.amaros.intelligence.research
 
 import com.personal.gridbot.amaros.agent.AmarResearchEngine
 import com.personal.gridbot.amaros.agent.AmarSourceType
+import com.personal.gridbot.amaros.agent.AmarEvidenceQualityReport
 import com.personal.gridbot.amaros.agent.Authority
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus
 import com.personal.gridbot.amaros.workforce.AmarParallelWorkforce
 
 /**
