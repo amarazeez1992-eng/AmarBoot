@@ -8,9 +8,9 @@ Status: VERIFICATION PENDING — NOT CLOSED
 Detect mutation of an already-recorded evidence provenance chain.
 
 ### Boundary
-- Validates the recorded provenance chain against the supplied evidence set.
+- Validates a separately recorded provenance snapshot against the supplied evidence set; the detector does not rebuild the reference snapshot from the possibly mutated input.
 - Validates sequence, previous-chain hash, source URI, evidence fingerprint, retrieval timestamp, and chain hash.
-- Point 7 fingerprint integrity remains the direct fingerprint/content boundary.
+- The reference chain must come from a previously recorded snapshot; generating a fresh chain from the same possibly modified findings is not treated as tamper evidence.
 - Point 6 duplicate detection remains separate.
 - Point 5 source independence remains separate.
 - No collection, ranking, routing, claim verification, decision logic, or trading/execution authority is added.
