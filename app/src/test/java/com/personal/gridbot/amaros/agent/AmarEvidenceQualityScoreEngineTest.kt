@@ -94,4 +94,47 @@ class AmarEvidenceQualityScoreEngineTest {
         assertEquals(1.0, engine.score(verified), 0.0)
         assertEquals(0.0, engine.score(rejected), 0.0)
     }
+
+    private fun upstreamVerified() = AmarEvidenceQualityUpstreamState(
+        point1EvidenceIntakeVerified = true,
+        point2SourceQualityVerified = true,
+        point3AuthorityVerified = true,
+        point4FreshnessVerified = true,
+        point5SourceIndependenceVerified = true,
+        point6DuplicateFreeVerified = true,
+        point7FingerprintIntegrityVerified = true,
+        point8TamperingIntegrityVerified = true,
+        point9EvidenceUniquenessVerified = true
+    )
+
+    @Test
+    fun canonical_composition_requires_all_point_1_to_9_states() {
+        val state = upstreamVerified()
+        assertEquals(1.0, engine.score(item(), state), 0.0)
+
+        val failures = listOf<(AmarEvidenceQualityUpstreamState) -> AmarEvidenceQualityUpstreamState>(
+            { it.copy(point1EvidenceIntakeVerified = false) },
+            { it.copy(point2SourceQualityVerified = false) },
+            { it.copy(point3AuthorityVerified = false) },
+            { it.copy(point4FreshnessVerified = false) },
+            { it.copy(point5SourceIndependenceVerified = false) },
+            { it.copy(point6DuplicateFreeVerified = false) },
+            { it.copy(point7FingerprintIntegrityVerified = false) },
+            { it.copy(point8TamperingIntegrityVerified = false) },
+            { it.copy(point9EvidenceUniquenessVerified = false) }
+        )
+
+        failures.forEach { mutate ->
+            assertEquals(0.0, engine.score(item(), mutate(state)), 0.0)
+        }
+    }
+
+    @Test
+    fun canonical_aggregate_fails_on_empty_or_mismatched_upstream_state() {
+        val state = upstreamVerified()
+        assertEquals(0.0, engine.aggregate(emptyList(), emptyList()), 0.0)
+        assertEquals(0.0, engine.aggregate(listOf(item()), emptyList()), 0.0)
+        assertEquals(1.0, engine.aggregate(listOf(item()), listOf(state)), 0.0)
+    }
+
 }
