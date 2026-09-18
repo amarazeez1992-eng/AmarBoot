@@ -1,5 +1,4 @@
 name: Build APK
-# Build verification is triggered on every relevant main-branch change.
 
 on:
   push:
@@ -22,11 +21,6 @@ concurrency:
   group: android-build-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx2048m
-  ANDROID_HOME: /usr/local/lib/android/sdk
-  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
-
 jobs:
   build:
     name: Android and bridge verification
@@ -35,22 +29,24 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Configure Java 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
 
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Configure Gradle 8.7
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.7'
-          cache-read-only: false
 
       - name: Verify Python bridge
         shell: bash
@@ -64,19 +60,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -d "$ANDROID_HOME"
-          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          set +o pipefail
-          yes 2>/dev/null | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          license_status=$?
-          set -o pipefail
-          if [[ "$license_status" -ne 0 && "$license_status" -ne 141 ]]; then
-            exit "$license_status"
-          fi
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
+          sdkmanager --licenses </dev/null || true
+          sdkmanager             "platform-tools"             "platforms;android-34"             "build-tools;34.0.0"
 
       - name: Validate Gradle model
         run: gradle --version
@@ -96,18 +81,15 @@ jobs:
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
-          # Build-tools 34.0.0 uses lowercase -p for page-align during check.
-          "$ANDROID_HOME/build-tools/34.0.0/zipalign" -c -p -v 4 "$apk"
-          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$apk"
-          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --print-certs "$apk"
-          apkanalyzer="$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"
-          test -x "$apkanalyzer"
-          "$apkanalyzer" manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
+          zipalign -c -p -v 4 "$apk"
+          apksigner verify --verbose "$apk"
+          apksigner verify --print-certs "$apk"
+          apkanalyzer manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
           sha256sum "$apk" | tee "$apk.sha256"
           ls -lh "$apk" "$apk.sha256"
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: GridTradeBot-debug-apk
           path: |
