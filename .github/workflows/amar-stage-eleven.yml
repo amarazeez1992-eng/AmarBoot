@@ -120,6 +120,9 @@ jobs:
           test -f docs/verification/STAGE11_ITEM5_REBUILD_SCOPE.md
           test -f docs/verification/STAGE11_ITEM6_SELF_CRITIQUE_SCOPE.md
           test -f docs/architecture/STAGE11_ITEM3_TRUST_AND_BACKTEST_ROADMAP.md
+          test -f docs/architecture/AMAR_TRADING_RESEARCH_RECOMMENDATION_CONTRACT.md
+          grep -q 'Evidence-to-Decision Traceability' docs/architecture/STAGE11_ITEM3_TRUST_AND_BACKTEST_ROADMAP.md
+          grep -q 'Provider capability truth' docs/architecture/AMAR_TRADING_RESEARCH_RECOMMENDATION_CONTRACT.md
 
           grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -q 'if (isFullyVerified(item)) 1.0 else 0.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
