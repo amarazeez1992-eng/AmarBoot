@@ -60,8 +60,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sdkmanager --licenses </dev/null || true
-          sdkmanager             "platform-tools"             "platforms;android-34"             "build-tools;34.0.0"
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Validate Gradle model
         run: gradle --version
