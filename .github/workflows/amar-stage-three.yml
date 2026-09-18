@@ -4,11 +4,9 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'app/src/main/java/com/personal/gridbot/amaros/agent/**'
-      - 'app/src/main/java/com/personal/gridbot/amaros/intelligence/core/**'
-      - 'app/src/main/java/com/personal/gridbot/amaros/intelligence/**'
-      - 'app/src/test/java/com/personal/gridbot/amaros/agent/**'
-      - 'app/src/test/java/com/personal/gridbot/amaros/intelligence/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/agent/AmarStageThree*'
+      - 'app/src/test/java/com/personal/gridbot/amaros/agent/AmarStageThree*'
+      - 'app/src/test/java/com/personal/gridbot/amaros/ai/AmarAiAgentEngineRuntimeTest.kt'
   workflow_dispatch:
 
 concurrency:
