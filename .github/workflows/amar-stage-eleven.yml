@@ -17,6 +17,8 @@ on:
       - 'docs/architecture/**'
       - '.github/workflows/amar-stage-eleven.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
 
 jobs:
   stage-eleven:
@@ -46,6 +48,30 @@ jobs:
       - name: Focused Verification Layer tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest' --stacktrace
 
+      - name: Focused Point 2 Source Quality tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceQualityTest' --stacktrace
+
+      - name: Focused Point 3 Authority Scoring tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAuthorityScoringTest' --stacktrace
+
+      - name: Focused Point 4 Freshness tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest' --stacktrace
+
+      - name: Focused Point 5 Source Independence tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest' --stacktrace
+
+      - name: Focused Point 6 Duplicate Evidence tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest' --stacktrace
+
+      - name: Focused Point 7 Fingerprint Integrity tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest' --stacktrace
+
+      - name: Focused Point 8 Tampering tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest' --stacktrace
+
+      - name: Focused Point 9 Evidence Uniqueness tests
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest' --stacktrace
+
       - name: Focused Point 10 Evidence Quality Score tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarEvidenceQualityScoreEngineTest' --stacktrace
 
@@ -72,6 +98,9 @@ jobs:
 
       - name: Debug build
         run: gradle :app:assembleDebug --stacktrace
+
+      - name: Release build
+        run: gradle :app:assembleRelease --stacktrace
 
       - name: Release build
         run: gradle :app:assembleRelease --stacktrace
