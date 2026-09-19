@@ -29,8 +29,7 @@ class AmarEvidenceQualityEngine(
         val scores = valid.map { finding ->
             val authority = authorityScore(finding.authority)
             val freshness = freshnessAnalyzer.assess(finding.retrievedAtEpochMs, nowEpochMs)
-            // A source remains independent when its canonical host is valid; repeated use of the same host across separate research questions must not erase valid multi-question evidence.
-            val independent = hostOf(finding.sourceUri) != null
+            val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
 
             AmarEvidenceQualityItem(
                 fingerprint = finding.fingerprint,
