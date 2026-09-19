@@ -1,69 +1,35 @@
 package com.personal.gridbot.amaros.agent
 
-/** Provider-neutral reasoning contract. External hosted vendors are not part of the core. */
-interface AmarReasoning {
-    suspend fun generate(context: AmarAgentContext): AmarAgentResponse
-}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-/**
- * Deterministic internal synthesis layer.
- *
- * It is deliberately local: it does not call a hosted LLM and it does not invent
- * market evidence. The orchestrator supplies the planning/evidence/verification
- * context; this layer turns that context into a readable response.
- */
+interface AmarReasoning { suspend fun generate(context: AmarAgentContext): AmarAgentResponse }
+
 class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
-    override suspend fun generate(context: AmarAgentContext): AmarAgentResponse {
-        // The orchestrator keeps the original user request at the beginning of the
-        // synthesis prompt and appends machine-generated evidence metadata after it.
-        // Parse the original request before inspecting that metadata so greeting and
-        // intent handling always operate on what the user actually sent.
-        val request = context.userText
-            .substringBefore("\n\nEvidence summary:")
-            .trim()
-        if (request.isEmpty()) {
-            return AmarAgentResponse(
-                answer = "اكتب طلبك وسأفهمه ثم أرتّب خطوات التحليل وأوضح ما يمكن إثباته وما يحتاج إلى بيانات إضافية."
-            )
-        }
-
-        val lower = request.lowercase()
-        val evidenceBlock = context.userText
-            .substringAfter("Evidence summary:", "")
-            .substringBefore("Stage 2 deliberation:")
-            .trim()
-
-        val isGreeting = listOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "hello", "hi")
-            .any { lower == it || lower.startsWith("$it ") }
-
-        val answer = when {
-            isGreeting -> "أهلاً بك. أنا AMAR AI Agent. أستطيع فهم الطلب، ترتيب خطواته، تحليل الأدلة المتاحة، التحقق منها، ثم إعطائك نتيجة واضحة مع بيان ما هو مؤكد وما يزال غير متحقق."
-            evidenceBlock.isBlank() || evidenceBlock == "No external research required." ->
-                buildString {
-                    append("فهمت طلبك: ")
-                    append(request)
-                    append("\n\n")
-                    append("سأتعامل معه عبر المسار الداخلي: فهم الطلب → التخطيط → التحليل → التحقق → النقد → القرار → صياغة الإجابة.")
-                    append("\nلا توجد في هذه الدورة أدلة خارجية مقدمة للمحرك، لذلك لن أختلق مصادر أو نتائج غير متاحة.")
-                }
-            else ->
-                buildString {
-                    append("فهمت طلبك: ")
-                    append(request)
-                    append("\n\n")
-                    append("تم تمرير الطلب عبر محركات AMAR الداخلية، وهذه هي حالة الأدلة المتاحة:")
-                    append("\n")
-                    append(evidenceBlock)
-                    append("\n\n")
-                    append("النتيجة أعلاه تصف ما وصل فعلياً إلى المحرك؛ أي معلومة غير مدعومة ببيانات متاحة تبقى غير مؤكدة.")
-                }
-        }
-
-        return AmarAgentResponse(
-            answer = answer,
-            actions = context.tools.map { it.id }
-        )
-    }
-
-    override suspend fun respond(context: AmarAgentContext): AmarAgentResponse = generate(context)
+ override suspend fun generate(context: AmarAgentContext): AmarAgentResponse {
+  val request=context.userText.substringBefore("\n\nEvidence summary:").trim()
+  if(request.isBlank()) return AmarAgentResponse("اكتب طلبك وسأفهم المقصود وأحدد المسار المناسب له.")
+  val q=normalize(request)
+  val evidence=context.userText.substringAfter("Evidence summary:","").substringBefore("Stage 2 deliberation:").trim()
+  val answer=when {
+   any(q,"هلو","مرحبا","السلام عليكم","اهلا","hello","hi","hey") -> "أهلاً بك. أنا AMAR AI Agent. أفهم الطلب، أحدد مساره، أستخدم الأدلة والأدوات المتاحة، ثم أتحقق من النتيجة قبل عرضها."
+   any(q,"من انت","عرف نفسك","ما اسمك","who are you","your name") -> "أنا AMAR AI، المحرك المركزي للمشروع. أعمل عبر التخطيط والبحث والأدلة والتحقق والنقد والقرار ثم صياغة الإجابة، دون الاعتماد على Gemini أو GPT كمحرك خارجي."
+   any(q,"كم الوقت","الوقت الان","الساعة الان","what time","current time") -> "الوقت المحلي على الجهاز الآن: "+LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss",Locale.getDefault()))+"."
+   any(q,"كم التاريخ","التاريخ الان","التاريخ اليوم","what date","today date") -> "التاريخ المحلي على الجهاز الآن: "+LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd",Locale.getDefault()))+"."
+   any(q,"ما هو اليوم","اي يوم","what day","which day") -> "اليوم المحلي هو: "+LocalDateTime.now().dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL,Locale.getDefault())+"."
+   any(q,"ماذا تستطيع","ما قدراتك","ماذا يمكنك","what can you do","capabilities") -> "قدراتي: فهم الطلب، التخطيط، البحث العام عند الحاجة، جمع الأدلة، التحقق، النقد وصياغة النتيجة. لا أنفذ صفقات حقيقية."
+   evidence.lineSequence().any{it.trim().startsWith("source=")} -> researchAnswer(request,evidence)
+   else -> "فهمت طلبك: "+request+"\n\nالمسار الداخلي: فهم المقصود → التخطيط → البحث عند الحاجة → الأدلة → التحقق → النقد → القرار → الإجابة.\nلا أختلق معلومة غير متاحة."
+  }
+  return AmarAgentResponse(answer=answer,actions=context.tools.map{it.id})
+ }
+ private fun researchAnswer(request:String,evidence:String):String {
+  val rows=evidence.lineSequence().filter{it.trim().startsWith("source=")}.mapNotNull{val p=it.trim().removePrefix("source=").split(" | ",limit=3);if(p.size==3) Triple(p[0],p[1],p[2]) else null}.toList()
+  if(rows.isEmpty()) return "فهمت طلبك: "+request+"\n\nتم البحث لكن لم تصل أدلة قابلة للعرض؛ لن أختلق نتيجة."
+  return buildString{append("نتيجة البحث الداخلي: ").append(request).append("\n\nالأدلة التي وصلت فعلياً:");rows.take(6).forEachIndexed{i,r->append("\n\n").append(i+1).append(". ").append(r.first);if(r.third.isNotBlank())append(": ").append(r.third);append("\n").append(r.second)};append("\n\nعند نقص الأدلة أو تعارضها أبقي النتيجة غير مؤكدة بدلاً من اختلاقها.")}
+ }
+ private fun normalize(v:String)=v.lowercase(Locale.getDefault()).replace('أ','ا').replace('إ','ا').replace('آ','ا').replace('ة','ه').replace(Regex("[؟?!.,،؛:]+")," ").replace(Regex("\\s+")," ").trim()
+ private fun any(t:String,vararg terms:String)=terms.any{t.contains(it)}
+ override suspend fun respond(context:AmarAgentContext):AmarAgentResponse=generate(context)
 }
