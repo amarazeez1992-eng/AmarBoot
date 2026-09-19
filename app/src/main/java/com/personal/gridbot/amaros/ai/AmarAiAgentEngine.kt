@@ -38,7 +38,7 @@ class AmarAiAgentEngine(
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
     private val orchestrator = AmarAgentOrchestrator(
         planner = AmarAgentPlanner(),
-        researchEngine = LocalResearchFallback(),
+        researchEngine = AmarExternalResearchAdapter(),
         sourceVerifier = AmarSourceVerifier(),
         consensusEngine = AmarAgentEvidenceConsensus(),
         critic = AmarAgentCritic(),
@@ -68,8 +68,11 @@ class AmarAiAgentEngine(
      * No fake evidence is fabricated when an external retrieval provider is absent.
      * Research-dependent requests therefore remain fail-closed at the orchestrator gate.
      */
-    private class LocalResearchFallback : AmarResearchEngine {
-        override suspend fun research(request: ResearchRequest): ResearchReport =
-            ResearchReport(findings = emptyList(), conflicts = listOf("external_research_provider_unavailable"))
-    }
-}
+    private class AmarExternalResearchAdapter : AmarResearchEngine {
+        private val research = AmarAiExternalResearch()
+        override suspend fun research(request: ResearchRequest): ResearchReport {
+            val results=research.search(request.question,request.maxSources.coerceAtMost(20))
+            val findings=results.map{ ResearchFinding(sourceTitle=it.title,sourceUri=it.url,evidence=it.excerpt,publisher=it.source,authority=Authority.UNKNOWN,sourceType=AmarSourceType.KNOWLEDGE) }
+            return ResearchReport(findings=findings,conflicts=if(findings.isEmpty()) listOf("no_public_research_results") else emptyList(),confidence=if(findings.isEmpty()) 0.0 else 0.5)
+        }
+    }}
