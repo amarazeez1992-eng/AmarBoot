@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
         fun ask(text: String?) {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
+            sendAgentStatus("Agent: يعالج الطلب…")
             askAgent(request) { answer, status -> sendAgentResult(answer, status) }
         }
     }
@@ -123,6 +124,11 @@ class MainActivity : ComponentActivity() {
             result.onSuccess { onResult(it.answer, "Agent: جاهز") }
                 .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: ${error.message ?: error.javaClass.simpleName}", "Agent: خطأ") }
         }
+    }
+
+    private fun sendAgentStatus(status: String) {
+        val script = "window.setAgentStatus && window.setAgentStatus(${org.json.JSONObject.quote(status)})"
+        runOnUiThread { home?.evaluateJavascript(script, null) }
     }
 
     private fun sendAgentResult(answer: String, status: String) {

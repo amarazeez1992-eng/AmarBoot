@@ -21,7 +21,7 @@ class AmarAgentCoreRuntimeTest {
         val response = core.ask(AmarAgentRequest("Hello"))
 
         assertEquals(AmarAgentResponse.Status.READY, response.status)
-        assertTrue(response.answer.contains("Hello"))
+        assertTrue(response.answer.contains("AMAR AI Agent"))
         assertFalse(response.answer.isBlank())
     }
 
