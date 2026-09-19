@@ -53,13 +53,12 @@ class AmarAiExternalResearch(
     }
 
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
-        val linkPattern = Regex("""<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE)
+        val pattern = Regex("""<a[^>]+class=[\"']result__a[\"'][^>]+href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE)
         val results = mutableListOf<SourceResult>()
-        for (match in linkPattern.findAll(html).take(limit)) {
+        for (match in pattern.findAll(html).take(limit)) {
             val url = decodeHtml(match.groupValues[1])
-            if (!url.startsWith("http")) continue
-            val title = decodeHtml(match.groupValues[2].replace(Regex("<[^>]*>"), "")).trim()
-            results += SourceResult("Public Web", title, url, title)
+            val title = decodeHtml(match.groupValues[2].replace(Regex("<[^>]*>"), ""))
+            if (url.startsWith("http")) results += SourceResult("Public Web", title, url, title)
         }
         return results
     }
