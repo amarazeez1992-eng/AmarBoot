@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
     private var webViewRecoveryAttempted = false
     private var homePageReady = false
     private var pendingAgentResult: Pair<String, String>? = null
-    private val agentEngine by lazy { AmarAiAgentEngine(applicationContext) }
+    private val agentEngine = AmarAiAgentEngine()
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
