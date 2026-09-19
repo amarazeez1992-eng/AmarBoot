@@ -22,7 +22,7 @@ class AmarDeepResearchOrchestratorTest {
                 findings = listOf(
                     researchFinding("https://official-${request.question}.example", "Official evidence for ${request.question}", Authority.OFFICIAL),
                     researchFinding("https://paper-${request.question}.example", "Peer reviewed evidence for ${request.question}", Authority.PEER_REVIEWED),
-                    researchFinding("https://official-${request.question}-duplicate.example", "Official evidence for ${request.question}", Authority.OFFICIAL)
+                    researchFinding("https://official-${request.question}.example", "Official evidence for ${request.question}", Authority.OFFICIAL)
                 )
             )
         }
