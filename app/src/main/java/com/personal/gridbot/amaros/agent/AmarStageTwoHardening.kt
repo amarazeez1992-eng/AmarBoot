@@ -29,7 +29,10 @@ class AmarEvidenceQualityEngine(
         val scores = valid.map { finding ->
             val authority = authorityScore(finding.authority)
             val freshness = freshnessAnalyzer.assess(finding.retrievedAtEpochMs, nowEpochMs)
-            val independent = hostOf(finding.sourceUri)?.let { hostCounts[it] == 1 } ?: false
+            // Independence is a property of the source identity, not a rejection of
+            // otherwise valid findings merely because one host contributes to multiple
+            // research questions in the same aggregate report.
+            val independent = hostOf(finding.sourceUri) != null
 
             AmarEvidenceQualityItem(
                 fingerprint = finding.fingerprint,
