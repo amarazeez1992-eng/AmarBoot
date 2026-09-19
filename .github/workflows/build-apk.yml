@@ -103,17 +103,30 @@ jobs:
           build_tools=""
           for candidate in             "$ANDROID_SDK_ROOT/build-tools/35.0.0"             "$ANDROID_HOME/build-tools/35.0.0"             "$ANDROID_SDK_ROOT/build-tools/34.0.0"             "$ANDROID_HOME/build-tools/34.0.0"; do
             if [ -x "$candidate/zipalign" ] &&
-               [ -x "$candidate/apksigner" ] &&
-               [ -x "$candidate/apkanalyzer" ]; then
+               [ -x "$candidate/apksigner" ]; then
               build_tools="$candidate"
               break
             fi
           done
           test -n "$build_tools"
+
+          # apkanalyzer belongs to the Android SDK command-line tools, not
+          # the Build Tools package. Resolve it independently so the APK
+          # verification gate does not reject a valid Build Tools install.
+          apkanalyzer=""
+          for candidate in             "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer"             "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"; do
+            if [ -x "$candidate" ]; then
+              apkanalyzer="$candidate"
+              break
+            fi
+          done
+          test -n "$apkanalyzer"
+
           echo "Using Android Build Tools: $build_tools"
+          echo "Using apkanalyzer: $apkanalyzer"
           "$build_tools/zipalign" -h >/dev/null
           "$build_tools/apksigner" --version
-          "$build_tools/apkanalyzer" --help >/dev/null
+          "$apkanalyzer" --help >/dev/null
           export PATH="$build_tools:$PATH"
 
           # Keep the official Android verification commands intact. Capture
