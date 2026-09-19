@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
         }
         settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT; settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
         addJavascriptInterface(AmarAndroidBridge(), "Android")
-        loadUrl("file:///android_asset/amar_ai_workspace.html")
+        loadUrl("file:///android_asset/amar_reference.html")
     }
 
     private inner class AmarAndroidBridge {
