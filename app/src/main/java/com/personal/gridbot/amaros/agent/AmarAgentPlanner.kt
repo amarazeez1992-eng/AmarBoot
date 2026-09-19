@@ -34,11 +34,13 @@ class AmarAgentPlanner {
 
     private fun classify(text: String): AgentIntent {
         val q = text.lowercase().trim()
+        val factual = listOf("الان", "الآن", "اليوم", "حاليا", "حاليًا", "سعر", "قيمة", "كم ", "ما هو", "ما هي", "من هو", "متى", "اين", "أين", "لماذا", "كيف", "حدث", "خبر", "اخبار", "أخبار", "السابق", "الماضي", "recent", "latest", "price", "news", "why", "how", "what", "when", "where").any(q::contains)
+        val market = listOf("ذهب", "xau", "دولار", "usd", "فوركس", "forex", "سوق", "تداول", "trade", "market", "سعر", "price").any(q::contains)
+        val strategy = listOf("استراتيجية", "strategy", "روبوت", "bot").any(q::contains)
         return when {
-            listOf("بحث", "مصدر", "دراسة", "research").any(q::contains) -> AgentIntent.RESEARCH
-            listOf("استراتيجية", "strategy", "روبوت", "bot").any(q::contains) &&
-                !listOf("صفقة", "تداول", "mt5", "trade").any(q::contains) -> AgentIntent.STRATEGY_DESIGN
-            listOf("تداول", "صفقة", "backtest", "mt5", "trade").any(q::contains) -> AgentIntent.TRADE_ANALYSIS
+            strategy && market -> AgentIntent.TRADE_ANALYSIS
+            market || factual -> AgentIntent.RESEARCH
+            strategy -> AgentIntent.STRATEGY_DESIGN
             else -> AgentIntent.GENERAL
         }
     }
