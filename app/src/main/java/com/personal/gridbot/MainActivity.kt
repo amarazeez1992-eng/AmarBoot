@@ -49,7 +49,9 @@ import com.personal.gridbot.ui.theme.AmarDay
 import com.personal.gridbot.ui.theme.AmarPlatinum
 import com.personal.gridbot.ui.theme.AmarTheme
 import com.personal.gridbot.ui.theme.AmarThemeMode
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -94,7 +96,7 @@ class MainActivity : ComponentActivity() {
         }
         settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT; settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
         addJavascriptInterface(AmarAndroidBridge(), "Android")
-        loadUrl("file:///android_asset/amar_ai_workspace.html")
+        loadUrl("file:///android_asset/amar_reference.html")
     }
 
     private inner class AmarAndroidBridge {
@@ -120,12 +122,13 @@ class MainActivity : ComponentActivity() {
                 onResult(local.response, "تم تنفيذ أمر الواجهة")
                 return@launch
             }
-            val result = runCatching { agentEngine.ask("", "", request) }
+            val result = runCatching {
+                withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
+            }
             result.onSuccess { onResult(it.answer, "Agent: جاهز") }
-                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: ${error.message ?: error.javaClass.simpleName}", "Agent: خطأ") }
+                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName), "Agent: خطأ") }
         }
     }
-
     private fun sendAgentStatus(status: String) {
         val script = "window.setAgentStatus && window.setAgentStatus(${org.json.JSONObject.quote(status)})"
         runOnUiThread { home?.evaluateJavascript(script, null) }
