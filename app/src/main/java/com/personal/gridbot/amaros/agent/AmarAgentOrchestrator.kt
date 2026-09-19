@@ -17,7 +17,8 @@ class AmarAgentOrchestrator(
     private val stageThreeEngine: AmarStageThreeEngine = AmarStageThreeEngine(),
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
-    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
+    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
+    private val intelligenceMatrix: AmarInternalIntelligenceMatrix = AmarInternalIntelligenceMatrix()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -31,6 +32,8 @@ class AmarAgentOrchestrator(
         val plan = planner.plan(request, safeTools)
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
+        val intelligence = intelligenceMatrix.evaluate(request, safeTools, plan)
+        session.record(AmarAgentStage.PLAN, intelligence.asContext())
 
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
@@ -75,7 +78,7 @@ class AmarAgentOrchestrator(
 
         session.record(AmarAgentStage.REASON, "DIRECTOR: final synthesis with evidence and multi-role deliberation")
         val answer = reasoningProvider.respond(AmarAgentContext(
-            userText = request.text + "\n\n" + evidenceText + buildStageTwoText(stageTwo),
+            userText = request.text + "\n\n" + intelligence.asContext() + "\n" + evidenceText + buildStageTwoText(stageTwo),
             tools = plannedTools,
             executionAllowed = false,
             brokerAccessAllowed = false,
