@@ -1,22 +1,20 @@
 package com.personal.gridbot.amaros.agent
 
-/** Deterministic planning contract: planning produces intent, never broker commands. */
+/** Deterministic intent planning: intent controls capability; it is not a question/answer table. */
 class AmarAgentPlanner {
     fun plan(request: AmarAgentRequest, availableTools: List<AmarAgentTool>): AmarAgentPlan {
         val intent = classify(request.text)
-        val tools = availableTools
-            .filter { tool ->
-                when (intent) {
-                    AgentIntent.RESEARCH -> tool.scope == AmarToolScope.RESEARCH || tool.scope == AmarToolScope.READ_ONLY
-                    AgentIntent.TRADE_ANALYSIS -> tool.scope == AmarToolScope.RESEARCH ||
-                        tool.scope == AmarToolScope.READ_ONLY || tool.scope == AmarToolScope.SIMULATION
-                    AgentIntent.STRATEGY_DESIGN -> tool.scope == AmarToolScope.READ_ONLY ||
-                        tool.scope == AmarToolScope.STRATEGY_WRITE || tool.scope == AmarToolScope.SIMULATION
-                    AgentIntent.GENERAL -> tool.scope == AmarToolScope.READ_ONLY
-                }
+        val tools = availableTools.filter { tool ->
+            when (intent) {
+                AgentIntent.RESEARCH -> tool.scope == AmarToolScope.RESEARCH || tool.scope == AmarToolScope.READ_ONLY
+                AgentIntent.TRADE_ANALYSIS -> tool.scope == AmarToolScope.RESEARCH ||
+                    tool.scope == AmarToolScope.READ_ONLY || tool.scope == AmarToolScope.SIMULATION
+                AgentIntent.STRATEGY_DESIGN -> tool.scope == AmarToolScope.READ_ONLY ||
+                    tool.scope == AmarToolScope.STRATEGY_WRITE || tool.scope == AmarToolScope.SIMULATION
+                AgentIntent.GENERAL -> tool.scope == AmarToolScope.READ_ONLY
             }
-            .map { it.id }
-            .distinct()
+        }.map { it.id }.distinct()
+
         return AmarAgentPlan(
             intent = intent,
             steps = listOf(
@@ -34,11 +32,21 @@ class AmarAgentPlanner {
 
     private fun classify(text: String): AgentIntent {
         val q = text.lowercase().trim()
+        val researchSignals = listOf(
+            "ابحث", "بحث", "مصدر", "مصادر", "خبر", "أخبار", "حدث", "الأخبار", "دراسة",
+            "سعر", "قيمة", "الآن", "حاليا", "حاليًا", "اليوم", "أمس", "الشهر السابق",
+            "last month", "today", "now", "current", "price", "value", "news", "research"
+        )
+        val tradingSignals = listOf(
+            "تداول", "صفقة", "ذهب", "فوركس", "سوق", "mt5", "trade", "trading", "gold", "forex",
+            "backtest", "شراء", "بيع", "دخول", "خروج", "وقف", "هدف"
+        )
+        val strategySignals = listOf("استراتيجية", "strategy", "روبوت", "bot")
+
         return when {
-            listOf("بحث", "مصدر", "دراسة", "research").any(q::contains) -> AgentIntent.RESEARCH
-            listOf("استراتيجية", "strategy", "روبوت", "bot").any(q::contains) &&
-                !listOf("صفقة", "تداول", "mt5", "trade").any(q::contains) -> AgentIntent.STRATEGY_DESIGN
-            listOf("تداول", "صفقة", "backtest", "mt5", "trade").any(q::contains) -> AgentIntent.TRADE_ANALYSIS
+            strategySignals.any(q::contains) && !tradingSignals.any(q::contains) -> AgentIntent.STRATEGY_DESIGN
+            tradingSignals.any(q::contains) -> AgentIntent.TRADE_ANALYSIS
+            researchSignals.any(q::contains) -> AgentIntent.RESEARCH
             else -> AgentIntent.GENERAL
         }
     }
