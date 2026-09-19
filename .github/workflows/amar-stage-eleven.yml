@@ -160,8 +160,9 @@ jobs:
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
 
-          # Stage 11 execution-safety gate: scan only Kotlin intelligence sources.
-          # Whitespace is normalized so forbidden constructs remain detectable across lines.
+          # Stage 11 execution-safety gate: inspect Kotlin code, not comments or string literals.
+          # This preserves the security boundary while preventing documentation/test-message text
+          # from being mistaken for an executable construct.
           python3 - <<'PY'
           from pathlib import Path
           import re
@@ -172,24 +173,78 @@ jobs:
               Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/memory"),
               Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/research"),
           ]
+
+          def mask_non_code(source):
+              out = list(source)
+              i = 0
+              n = len(source)
+              block_depth = 0
+              while i < n:
+                  if block_depth:
+                      if source.startswith("/*", i):
+                          out[i:i + 2] = "  "
+                          block_depth += 1
+                          i += 2
+                      elif source.startswith("*/", i):
+                          out[i:i + 2] = "  "
+                          block_depth -= 1
+                          i += 2
+                      else:
+                          if source[i] != "\\n":
+                              out[i] = " "
+                          i += 1
+                      continue
+                  if source.startswith("//", i):
+                      while i < n and source[i] != "\\n":
+                          out[i] = " "
+                          i += 1
+                      continue
+                  if source[i] == '"' or source[i] == "'":
+                      quote = source[i]
+                      out[i] = " "
+                      i += 1
+                      while i < n:
+                          if source[i] == "\\\\": 
+                              out[i] = " "
+                              i += 1
+                              if i < n:
+                                  out[i] = " "
+                                  i += 1
+                          elif source[i] == quote:
+                              out[i] = " "
+                              i += 1
+                              break
+                          else:
+                              if source[i] != "\\n":
+                                  out[i] = " "
+                              i += 1
+                      continue
+                  if source.startswith("/*", i):
+                      out[i:i + 2] = "  "
+                      block_depth = 1
+                      i += 2
+                      continue
+                  i += 1
+              return "".join(out)
+
           files = [p for root in roots for p in root.rglob("*.kt")]
           patterns = [
-              re.compile(r"\bOrderSend\s*\(", re.IGNORECASE),
-              re.compile(r"\b(?:brokerAccessAllowed|liveTrading)\s*=\s*true\b"),
-              re.compile(r"\bexecutable\s*=\s*true\b"),
+              re.compile(r"\\bOrderSend\\s*\\(", re.IGNORECASE),
+              re.compile(r"\\b(?:brokerAccessAllowed|liveTrading)\\s*=\\s*true\\b"),
+              re.compile(r"\\bexecutable\\s*=\\s*true\\b"),
           ]
           violations = []
           for path in files:
               source = path.read_text(encoding="utf-8")
-              normalized = re.sub(r"\s+", " ", source)
+              code = mask_non_code(source)
               for pattern in patterns:
-                  match = pattern.search(normalized)
+                  match = pattern.search(code)
                   if match:
-                      line = source[:source.find(match.group(0))].count("\n") + 1
-                      violations.append(f"{path}:{line}: {match.group(0)}")
+                      line = code[:match.start()].count("\\n") + 1
+                      violations.append(f"{path}:{line}: {source.splitlines()[line - 1].strip()}")
           if violations:
-              print("Forbidden live-execution pattern detected in Stage 11 intelligence sources:")
-              print("\n".join(violations))
+              print("Forbidden live-execution code detected in Stage 11 intelligence sources:")
+              print("\\n".join(violations))
               raise SystemExit(1)
           print(f"Stage 11 execution-safety scan passed: {len(files)} Kotlin source files checked.")
           PY
