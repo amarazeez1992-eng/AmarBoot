@@ -14,8 +14,6 @@ import com.personal.gridbot.amaros.broker.AmarMt5RuntimeRegistry
 import com.personal.gridbot.amaros.chart.AmarLiveTradingChartHost
 import com.personal.gridbot.amaros.chart.AmarTradingChartScreen
 import com.personal.gridbot.amaros.decision.AmarDecisionScreen
-import com.personal.gridbot.amaros.core.AmarRuntimeController
-import com.personal.gridbot.amaros.core.AmarRuntimeTicker
 import com.personal.gridbot.amaros.design.AmarAppearanceScreen
 import com.personal.gridbot.amaros.rooms.alerts.AmarAlertsModernScreen
 import com.personal.gridbot.amaros.rooms.commandcenter.CommandCenterScreen
@@ -52,22 +50,6 @@ fun AmarRoomHostScreen(
     val context = LocalContext.current
     var settingsMode by remember { mutableIntStateOf(0) }
     var accountSyncMode by remember { mutableIntStateOf(0) }
-    val decisionRuntime = remember { AmarRuntimeController() }
-    val decisionTicker = remember { AmarRuntimeTicker(decisionRuntime) }
-
-    if (room == AmarRoom.DECISION) {
-        val decisionState by decisionRuntime.state.collectAsState()
-        LaunchedEffect(Unit) {
-            decisionTicker.start(this)
-        }
-        DisposableEffect(Unit) {
-            onDispose { decisionTicker.stop() }
-        }
-        Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-            AmarDecisionScreen(decisionState)
-        }
-        return
-    }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -93,6 +75,7 @@ fun AmarRoomHostScreen(
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
                 AmarRoom.ANALYSIS -> AmarAiChatScreen(onBackHome, onSendToAgent)
+                AmarRoom.DECISION -> AmarDecisionScreen()
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
