@@ -11,7 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import com.personal.gridbot.amaros.intelligence.AmarDataSnapshot
+import com.personal.gridbot.amaros.data.AmarDataSnapshot
 import com.personal.gridbot.amaros.intelligence.MarketAnalyzer
 import com.personal.gridbot.amaros.intelligence.confidence.AmarConfidenceEngine
 import androidx.compose.ui.Modifier
@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun AmarDecisionScreen() {
     val analyzer = remember { MarketAnalyzer() }
-    val snapshot = remember { AmarDataSnapshot.sample() }
+    val snapshot = remember { AmarDataSnapshot(generatedAtEpochMs = System.currentTimeMillis()) }
     val context = remember(snapshot.generatedAtEpochMs) { analyzer.analyze(snapshot) }
     val confidence = remember(context) {
         AmarConfidenceEngine.evaluate(
