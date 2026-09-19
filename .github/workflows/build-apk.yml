@@ -76,7 +76,7 @@ jobs:
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;35.0.0"
 
       - name: Validate Gradle model
         run: gradle --version
@@ -96,7 +96,7 @@ jobs:
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
-          build_tools="$ANDROID_SDK_ROOT/build-tools/34.0.0"
+          build_tools="$ANDROID_SDK_ROOT/build-tools/35.0.0"
           if [ ! -d "$build_tools" ]; then
             build_tools="$ANDROID_HOME/build-tools/34.0.0"
           fi
@@ -110,7 +110,7 @@ jobs:
           # Do not use the deprecated -p page-alignment flag in the generic
           # verification gate; 16 KiB native-library verification is a
           # separate concern and requires -P 16 when such libraries exist.
-          zipalign -c -v 4 "$apk"
+          zipalign -c -P 16 -v 4 "$apk"
 
           apksigner verify --verbose "$apk"
           apksigner verify --print-certs "$apk"
