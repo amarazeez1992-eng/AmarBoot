@@ -1,3 +1,4 @@
+# CI validation trigger: decision-runtime wiring closure
 name: Build APK
 
 on:
