@@ -13,6 +13,7 @@ on:
       - 'build.gradle*'
       - 'settings.gradle*'
       - 'gradle.properties'
+      - '.github/workflows/final-apk-closure.yml'
 
 jobs:
   build-final-apk:
@@ -20,23 +21,65 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
           cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;35.0.0'
+          accept-android-sdk-licenses: true
+
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.7'
+
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
-      - name: Verify APK exists
-        run: test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Verify final APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$apk"
+
+          build_tools="$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          test -x "$build_tools/zipalign"
+          test -x "$build_tools/apksigner"
+
+          apkanalyzer=""
+          for candidate in \
+            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer" \
+            "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"; do
+            if [ -x "$candidate" ]; then
+              apkanalyzer="$candidate"
+              break
+            fi
+          done
+          test -n "$apkanalyzer"
+
+          echo "Using Android Build Tools: $build_tools"
+          echo "Using apkanalyzer: $apkanalyzer"
+
+          "$build_tools/zipalign" -c -P 16 -v 4 "$apk"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          "$build_tools/apksigner" verify --print-certs "$apk"
+          "$apkanalyzer" manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
+          sha256sum "$apk" | tee "$apk.sha256"
+          ls -lh "$apk" "$apk.sha256"
+
       - name: Upload final APK
         uses: actions/upload-artifact@v4
         with:
           name: AmarAI-final-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/debug/app-debug.apk.sha256
           if-no-files-found: error
