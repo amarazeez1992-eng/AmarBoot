@@ -49,7 +49,7 @@ class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
 
         val isIdentityQuestion = normalized in setOf(
             "من انت", "من تكون", "ما اسمك", "شنو اسمك", "من هو amar ai",
-            "من هو عمار اي اي"
+            "من هو عمار اي اي", "عرف نفسك", "عرفني بنفسك"
         )
 
         val isHowAreYouQuestion = normalized in setOf(
@@ -81,7 +81,7 @@ class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
 
         val answer = when {
             isGreeting ->
-                "أهلاً بك 👋 أنا AMAR AI Agent. كيف أستطيع مساعدتك؟"
+                "أهلاً بك. أنا AMAR AI Agent. كيف أستطيع مساعدتك؟"
 
             isHowAreYouQuestion ->
                 "أنا بخير وجاهز لمساعدتك. ماذا تريد أن تسألني؟"
