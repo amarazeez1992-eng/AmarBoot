@@ -93,7 +93,6 @@ fun AmarRoomHostScreen(
                 AmarRoom.POSITIONS -> AmarPositionsModernScreen()
                 AmarRoom.NEWS_SESSIONS -> AmarMarketPulse3DScreen()
                 AmarRoom.ANALYSIS -> AmarAiChatScreen(onBackHome, onSendToAgent)
-                AmarRoom.DECISION -> error("Decision room is handled by its runtime host above")
                 AmarRoom.SETTINGS -> {
                     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
