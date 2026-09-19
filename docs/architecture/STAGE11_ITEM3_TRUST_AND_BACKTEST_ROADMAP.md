@@ -14,6 +14,10 @@ Bad source -> false evidence quality -> false warning/acceptance -> unsupported 
 
 The system must fail closed at every boundary where uncertainty, invalid provenance, future data, conflict, or non-reproducible results could otherwise become a trusted input.
 
+## Evidence-to-Decision Traceability
+
+Every downstream decision input must remain traceable to the canonical evidence state, its upstream verification states, provenance, and validation boundary. Point 10 certifies evidence quality; later decision layers consume that certified state without reimplementing or weakening the evidence gates.
+
 ## New Point 10 integration contract
 
 `AmarEvidenceQualityUpstreamState` is now the explicit constitutional input contract for Point 10.
