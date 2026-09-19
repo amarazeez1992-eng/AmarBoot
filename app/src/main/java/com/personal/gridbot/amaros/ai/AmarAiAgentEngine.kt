@@ -1,10 +1,8 @@
 package com.personal.gridbot.amaros.ai
 
-import android.content.Context
 import com.personal.gridbot.amaros.agent.AmarAgentOrchestrator
 import com.personal.gridbot.amaros.agent.AmarAgentPlanner
 import com.personal.gridbot.amaros.agent.AmarAgentRequest
-import com.personal.gridbot.amaros.agent.AmarAgentTool
 import com.personal.gridbot.amaros.agent.AmarAgentToolRegistry
 import com.personal.gridbot.amaros.agent.AmarAgentPolicy
 import com.personal.gridbot.amaros.agent.AmarAgentResponse
@@ -16,18 +14,19 @@ import com.personal.gridbot.amaros.agent.AmarAgentCritic
 import com.personal.gridbot.amaros.agent.AmarAgentVerifier
 import com.personal.gridbot.amaros.agent.AmarTradingTools
 import com.personal.gridbot.amaros.agent.AmarLocalReasoning
+import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
+import com.personal.gridbot.amaros.agent.AmarSourceType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * AMAR AI Agent boundary.
- * The UI enters the canonical Agent Orchestrator; no UI-level shortcut bypasses
- * planning, research/verification gates, critique, hierarchy and final validation.
- * Broker execution remains fail-closed.
+ * Canonical AMAR AI Agent boundary.
+ * The UI enters the existing orchestrator; research is connected here without bypassing
+ * planning, verification, consensus, critique, or final validation.
  */
-class AmarAiAgentEngine(
-    private val context: Context? = null
-) {
+class AmarAiAgentEngine {
     data class Result(
         val answer: String,
         val proposedActions: List<String>,
@@ -36,9 +35,10 @@ class AmarAiAgentEngine(
 
     private val reasoningProvider: AmarReasoningProvider = AmarLocalReasoning()
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
+    private val externalResearch = AmarAiExternalResearch()
     private val orchestrator = AmarAgentOrchestrator(
         planner = AmarAgentPlanner(),
-        researchEngine = LocalResearchFallback(),
+        researchEngine = ExternalResearchAdapter(externalResearch),
         sourceVerifier = AmarSourceVerifier(),
         consensusEngine = AmarAgentEvidenceConsensus(),
         critic = AmarAgentCritic(),
@@ -50,26 +50,42 @@ class AmarAiAgentEngine(
         val response = orchestrator.run(
             request = AmarAgentRequest(
                 text = request,
-                requestedSourceCount = 40,
-                maximumSourceCount = 100,
+                requestedSourceCount = 6,
+                maximumSourceCount = 12,
                 requireCrossValidation = true,
                 requireBacktestWhenApplicable = true
             ),
             availableTools = toolRegistry.availableTools(AmarAgentPolicy())
         ).response
-        return Result(
-            answer = response.answer,
-            proposedActions = response.actions,
-            toolEvidence = emptyList()
-        )
+        return Result(response.answer, response.actions, emptyList())
     }
 
-    /**
-     * No fake evidence is fabricated when an external retrieval provider is absent.
-     * Research-dependent requests therefore remain fail-closed at the orchestrator gate.
-     */
-    private class LocalResearchFallback : AmarResearchEngine {
-        override suspend fun research(request: ResearchRequest): ResearchReport =
-            ResearchReport(findings = emptyList(), conflicts = listOf("external_research_provider_unavailable"))
+    private class ExternalResearchAdapter(
+        private val research: AmarAiExternalResearch
+    ) : AmarResearchEngine {
+        override suspend fun research(request: ResearchRequest): ResearchReport = withContext(Dispatchers.IO) {
+            val results = research.search(request.question, request.maxSources.coerceAtMost(12))
+            if (results.isEmpty()) {
+                return@withContext ResearchReport(
+                    findings = emptyList(),
+                    conflicts = listOf("external_research_no_results"),
+                    confidence = 0.0
+                )
+            }
+            val findings = results.map {
+                ResearchFinding(
+                    sourceTitle = it.title,
+                    sourceUri = it.url,
+                    evidence = it.excerpt.ifBlank { it.title },
+                    publisher = it.source,
+                    sourceType = AmarSourceType.KNOWLEDGE
+                )
+            }
+            ResearchReport(
+                findings = findings,
+                conflicts = emptyList(),
+                confidence = (findings.size / request.maxSources.toDouble()).coerceIn(0.0, 1.0)
+            )
+        }
     }
 }
