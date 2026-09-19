@@ -12,11 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.personal.gridbot.amaros.core.AmarRuntimeController
 
-/** Read-only decision room fed by the canonical demo runtime. */
+/** Decision room shell. It is intentionally read-only until the confluence engines are connected. */
 @Composable
-fun AmarDecisionScreen(state: AmarRuntimeController.RuntimeState) {
+fun AmarDecisionScreen() {
     Column(
         Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -27,11 +26,11 @@ fun AmarDecisionScreen(state: AmarRuntimeController.RuntimeState) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("القرار الحالي", style = MaterialTheme.typography.titleLarge)
-                Text(state.decision?.direction?.name ?: "بانتظار أول دورة")
+                Text("غير متاح بعد — بانتظار ربط محركات التحليل والتوافق")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("شراء: ${if (state.decision?.direction?.name == "LONG_BIAS") "مفعّل" else "—"}")
-                    Text("بيع: ${if (state.decision?.direction?.name == "SHORT_BIAS") "مفعّل" else "—"}")
-                    Text("ثقة: ${state.decision?.confidence?.let { "%.2f".format(it) } ?: "—"}")
+                    Text("شراء: —")
+                    Text("بيع: —")
+                    Text("ثقة: —")
                 }
             }
         }
@@ -47,9 +46,7 @@ fun AmarDecisionScreen(state: AmarRuntimeController.RuntimeState) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("الذاكرة المستقبلية", style = MaterialTheme.typography.titleMedium)
-                Text("الدورة: ${state.cycleNumber} • الحالة: ${state.context?.regime ?: "—"}")
-                Text("الأدلة: ${state.context?.evidence?.size ?: 0} • المخاطر: ${state.risk?.allowed?.let { if (it) "مسموح" else "محجوب" } ?: "—"}")
-                Text("التنفيذ: ${state.execution?.let { if (it.executed) "EXECUTED" else "DEMO_GUARDED" } ?: "—"}")
+                Text("هنا ستُحفظ القراءات والأدلة والتوافقات وسبب القرار وسجل تغيّره.")
             }
         }
     }
