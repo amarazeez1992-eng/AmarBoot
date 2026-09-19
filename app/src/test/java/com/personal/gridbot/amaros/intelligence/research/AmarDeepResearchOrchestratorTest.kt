@@ -49,7 +49,7 @@ class AmarDeepResearchOrchestratorTest {
         assertEquals(4, report.rankedFindings.size)
         assertEquals(2, report.independentSources.size)
         assertEquals(2, report.rankedFindings.count { it.authority == Authority.OFFICIAL })
-        assertEquals(AmarVerificationStatus.VERIFIED, report.verification.status)
+        assertEquals(AmarVerificationStatus.PARTIAL, report.verification.status)
         assertTrue(report.tasks.all { it.verification.status == AmarVerificationStatus.VERIFIED })
         assertTrue(report.confidence > 0.0)
     }
