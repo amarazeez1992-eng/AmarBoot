@@ -34,7 +34,12 @@ class AmarAiAgentEngine(
         val toolEvidence: List<String>
     )
 
-    private val reasoningProvider: AmarReasoningProvider = AmarLocalReasoning()
+    private val reasoningProvider: AmarReasoningProvider =
+        if (context != null) {
+            AmarModelReasoning(AmarGeminiNanoModelProvider())
+        } else {
+            AmarLocalReasoning()
+        }
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
     private val orchestrator = AmarAgentOrchestrator(
         planner = AmarAgentPlanner(),
