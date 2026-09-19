@@ -136,7 +136,7 @@ jobs:
 
           grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -q 'AmarEvidenceQualityUpstreamState' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
-          grep -q 'if (isFullyVerified(item))' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
+          grep -Pzoq 'if\s*\(\s*isFullyVerified\s*\(\s*item\s*\)\s*\)\s*1\.0\s*else\s*0\.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
           ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
 
           test ! -f app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityCertification.kt
