@@ -151,28 +151,46 @@ class MainActivity : ComponentActivity() {
         deliverPendingAgentResult()
     }
 
+    private var agentDeliveryAttempts = 0
+
     private fun deliverPendingAgentResult() {
         val pending = pendingAgentResult ?: return
         runOnUiThread {
             val web = home ?: return@runOnUiThread
             if (!homePageReady) return@runOnUiThread
             web.post {
-                val script = "typeof window.receiveAgent === 'function'"
-                web.evaluateJavascript(script) { available ->
-                    if (available == "true") {
-                        val (answer, status) = pending
-                        val deliver = "window.receiveAgent(${org.json.JSONObject.quote(answer)}, ${org.json.JSONObject.quote(status)})"
-                        web.evaluateJavascript(deliver) {
-                            pendingAgentResult = null
+                val quotedAnswer = org.json.JSONObject.quote(pending.first)
+                val quotedStatus = org.json.JSONObject.quote(pending.second)
+                val deliver = """
+                    (function() {
+                        try {
+                            if (typeof window.receiveAgent !== 'function') return 'NOT_READY';
+                            window.receiveAgent($quotedAnswer, $quotedStatus);
+                            return 'DELIVERED';
+                        } catch (e) {
+                            return 'ERROR:' + String(e);
                         }
-                    } else {
-                        Log.e("AMAR_AGENT_BRIDGE", "receiveAgent is not available in the loaded AMAR AI page")
+                    })()
+                """.trimIndent()
+                web.evaluateJavascript(deliver) { result ->
+                    when {
+                        result == "\"DELIVERED\"" -> {
+                            pendingAgentResult = null
+                            agentDeliveryAttempts = 0
+                        }
+                        agentDeliveryAttempts < 20 -> {
+                            agentDeliveryAttempts += 1
+                            web.postDelayed({ deliverPendingAgentResult() }, 250L)
+                        }
+                        else -> {
+                            Log.e("AMAR_AGENT_BRIDGE", "receiveAgent delivery failed after retries: $result")
+                            agentDeliveryAttempts = 0
+                        }
                     }
                 }
             }
         }
     }
-
     private fun recoverWebViewAfterRendererGone(deadView: WebView?) {
         if (isFinishing || isDestroyed) return
         if (webViewRecoveryAttempted) { showStartupError("محرك WebView", IllegalStateException("تم إنهاء محرك WebView أكثر من مرة")); return }
