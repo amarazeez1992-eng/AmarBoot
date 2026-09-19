@@ -65,6 +65,8 @@ class MainActivity : ComponentActivity() {
     private var startupFinished = false
     private var backgroundSystemsStarted = false
     private var webViewRecoveryAttempted = false
+    private var homePageReady = false
+    private var pendingAgentResult: Pair<String, String>? = null
     private val agentEngine = AmarAiAgentEngine()
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -91,8 +93,16 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun buildHomeWebView(): WebView = WebView(this).apply {
         webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView?, url: String?) { runCatching { ensureRoomHost(); ensureVisualOverlay(); startBackgroundSystemsOnce() }.onFailure { error -> Log.e("AMAR_STARTUP", "Home page initialization failed", error); showStartupError("تهيئة واجهة AMAR AI", error) } }
-            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean { Log.e("AMAR_STARTUP", "WebView renderer terminated; crashed=${detail?.didCrash()}"); runOnUiThread { recoverWebViewAfterRendererGone(view) }; return true }
+            override fun onPageFinished(view: WebView?, url: String?) {
+                homePageReady = true
+                deliverPendingAgentResult()
+                runCatching { ensureRoomHost(); ensureVisualOverlay(); startBackgroundSystemsOnce() }.onFailure { error -> Log.e("AMAR_STARTUP", "Home page initialization failed", error); showStartupError("تهيئة واجهة AMAR AI", error) } }
+            override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
+                homePageReady = false
+                Log.e("AMAR_STARTUP", "WebView renderer terminated; crashed=${detail?.didCrash()}")
+                runOnUiThread { recoverWebViewAfterRendererGone(view) }
+                return true
+            }
         }
         settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT; settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
         addJavascriptInterface(AmarAndroidBridge(), "Android")
@@ -131,18 +141,43 @@ class MainActivity : ComponentActivity() {
     }
     private fun sendAgentStatus(status: String) {
         val script = "window.setAgentStatus && window.setAgentStatus(${org.json.JSONObject.quote(status)})"
-        runOnUiThread { home?.evaluateJavascript(script, null) }
+        runOnUiThread {
+            home?.post { home?.evaluateJavascript(script, null) }
+        }
     }
 
     private fun sendAgentResult(answer: String, status: String) {
-        val script = "window.receiveAgent && window.receiveAgent(${org.json.JSONObject.quote(answer)}, ${org.json.JSONObject.quote(status)})"
-        runOnUiThread { home?.evaluateJavascript(script, null) }
+        pendingAgentResult = answer to status
+        deliverPendingAgentResult()
+    }
+
+    private fun deliverPendingAgentResult() {
+        val pending = pendingAgentResult ?: return
+        runOnUiThread {
+            val web = home ?: return@runOnUiThread
+            if (!homePageReady) return@runOnUiThread
+            web.post {
+                val script = "typeof window.receiveAgent === 'function'"
+                web.evaluateJavascript(script) { available ->
+                    if (available == "true") {
+                        val (answer, status) = pending
+                        val deliver = "window.receiveAgent(${org.json.JSONObject.quote(answer)}, ${org.json.JSONObject.quote(status)})"
+                        web.evaluateJavascript(deliver) {
+                            pendingAgentResult = null
+                        }
+                    } else {
+                        Log.e("AMAR_AGENT_BRIDGE", "receiveAgent is not available in the loaded AMAR AI page")
+                    }
+                }
+            }
+        }
     }
 
     private fun recoverWebViewAfterRendererGone(deadView: WebView?) {
         if (isFinishing || isDestroyed) return
         if (webViewRecoveryAttempted) { showStartupError("محرك WebView", IllegalStateException("تم إنهاء محرك WebView أكثر من مرة")); return }
         webViewRecoveryAttempted = true
+        homePageReady = false
         runCatching { deadView?.let { root.removeView(it); it.stopLoading(); it.removeAllViews(); it.destroy() }; home = null; val replacement = buildHomeWebView(); home = replacement; root.addView(replacement, 0, FrameLayout.LayoutParams(-1, -1)) }.onFailure { error -> Log.e("AMAR_STARTUP", "WebView recovery failed", error); showStartupError("استرداد WebView", error) }
     }
 
