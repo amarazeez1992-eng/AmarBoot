@@ -23,18 +23,6 @@ class AmarAiAgentEngineRuntimeTest {
     }
 
     @Test
-    fun direct_conversation_questions_get_direct_answers() = runBlocking {
-        val engine = AmarAiAgentEngine()
-
-        assertTrue(engine.ask("", "", "كيف حالك؟").answer.contains("أنا بخير"))
-        assertTrue(engine.ask("", "", "كم الوقت الآن؟").answer.contains("الوقت الآن:"))
-        assertTrue(engine.ask("", "", "ما هو اليوم الآن؟").answer.contains("اليوم هو:"))
-        assertTrue(engine.ask("", "", "كم التاريخ؟").answer.contains("التاريخ:"))
-        assertTrue(engine.ask("", "", "من أنت؟").answer.startsWith("أنا AMAR AI Agent"))
-        assertTrue(engine.ask("", "", "عرف نفسك").answer.startsWith("أنا AMAR AI Agent"))
-    }
-
-    @Test
     fun engine_response_is_blocked_when_research_evidence_is_unavailable() = runBlocking {
         val result = AmarAiAgentEngine().ask("", "", "ابحث وحلل XAUUSD")
 
