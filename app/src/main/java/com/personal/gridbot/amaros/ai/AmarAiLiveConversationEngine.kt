@@ -61,15 +61,16 @@ class AmarAiLiveConversationEngine(
                 requestJob?.cancel()
                 requestJob = scope.launch(Dispatchers.Main.immediate) {
                     onState(State.THINKING)
-                    val local = AmarAiActionEngine.route(text)
-                    val answer = if (local.handled) {
-                        local.response
-                    } else {
-                        runCatching { AmarAiAgentEngine(context).ask("", "", text).answer }
-                            .getOrElse { "تعذر الرد الآن: ${it.message ?: "خطأ غير معروف"}" }
+                    val result = runCatching {
+                        AmarAgentRuntimeGateway(AmarAiAgentEngine(context)).ask(text)
+                    }.getOrElse {
+                        AmarAgentRuntimeGateway.Result(
+                            answer = "تعذر الرد الآن: ${it.message ?: "خطأ غير معروف"}",
+                            status = "Agent: خطأ"
+                        )
                     }
-                    onAnswer(answer)
-                    if (active) speak(answer)
+                    onAnswer(result.answer)
+                    if (active) speak(result.answer)
                 }
             }
             override fun onError(code: Int) {
