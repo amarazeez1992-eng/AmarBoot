@@ -18,6 +18,9 @@ import com.personal.gridbot.amaros.agent.AmarTradingTools
 import com.personal.gridbot.amaros.agent.AmarLocalReasoning
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
+import com.personal.gridbot.amaros.agent.ResearchFinding
+import com.personal.gridbot.amaros.agent.Authority
+import com.personal.gridbot.amaros.agent.AmarSourceType
 
 /**
  * AMAR AI Agent boundary.
