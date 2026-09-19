@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
         }
         settings.javaScriptEnabled = true; settings.domStorageEnabled = true; settings.cacheMode = WebSettings.LOAD_DEFAULT; settings.allowFileAccess = true; settings.allowContentAccess = false; settings.builtInZoomControls = false; settings.displayZoomControls = false
         addJavascriptInterface(AmarAndroidBridge(), "Android")
-        loadUrl("file:///android_asset/amar_reference.html")
+        loadUrl("file:///android_asset/amar_ai_workspace.html")
     }
 
     private inner class AmarAndroidBridge {
@@ -197,6 +197,7 @@ class MainActivity : ComponentActivity() {
     private fun onThemeModeChanged(mode: AmarThemeMode) { themeMode = mode; renderCurrentRoom() }
     private fun showHome() { showingRoom = false; currentRoom = null; roomHost?.visibility = android.view.View.GONE; home?.visibility = android.view.View.VISIBLE }
     private fun setVisualEffectsEnabled(enabled: Boolean) { AmarVisualEffectsPreference.save(this, enabled); AmarGlobalVisualStateStore.setEnabled(enabled) }
-    private fun showStartupError(stage: String, error: Throwable) { runCatching { AmarProtectionCenter.recordFailure(this, stage, error); val message = buildString { append(error.javaClass.simpleName); if (!error.message.isNullOrBlank()) append("\n").append(error.message) }.take(260); val recovery = ComposeView(this).apply { setContent { Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) { Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) { Text("AMAR AI", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(10.dp)); Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(12.dp)); Text(stage, color = Color(0xFFFFD36A), textAlign = TextAlign.Center); Spacer(Modifier.height(8.dp)); Text(message, color = Color(0xFF9DB5BF), fontSize = 11.sp, textAlign = TextAlign.Center) } } } }; root.removeAllViews(); root.addView(recovery, FrameLayout.LayoutParams(-1, -1)) }.onFailure { Log.e("AMAR_STARTUP", "Failed to render startup error", error) } }
+    private fun showStartupError(stage: String, error: Throwable) { runCatching { AmarProtectionCenter.recordFailure(this, stage, error); val message = buildString { append(error.javaClass.simpleName); if (!error.message.isNullOrBlank()) append("
+").append(error.message) }.take(260); val recovery = ComposeView(this).apply { setContent { Surface(Modifier.fillMaxSize(), color = Color(0xFF07121B)) { Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) { Text("AMAR AI", color = Color(0xFF19E6FF), fontSize = 30.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(10.dp)); Text("تعذر تشغيل التطبيق", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold); Spacer(Modifier.height(12.dp)); Text(stage, color = Color(0xFFFFD36A), textAlign = TextAlign.Center); Spacer(Modifier.height(8.dp)); Text(message, color = Color(0xFF9DB5BF), fontSize = 11.sp, textAlign = TextAlign.Center) } } } }; root.removeAllViews(); root.addView(recovery, FrameLayout.LayoutParams(-1, -1)) }.onFailure { Log.e("AMAR_STARTUP", "Failed to render startup error", error) } }
     override fun onDestroy() { home?.let { web -> runCatching { root.removeView(web); web.stopLoading(); web.removeAllViews(); web.destroy() } }; home = null; super.onDestroy() }
 }
