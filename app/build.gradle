@@ -26,6 +26,7 @@ android {
     buildTypes {
         debug {
             // Demo build: no live-trading capability or production signing.
+            zipAlignEnabled true
         }
     }
 }
