@@ -14,7 +14,13 @@ interface AmarReasoning {
  */
 class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
     override suspend fun generate(context: AmarAgentContext): AmarAgentResponse {
-        val request = context.userText.trim()
+        // The orchestrator keeps the original user request at the beginning of the
+        // synthesis prompt and appends machine-generated evidence metadata after it.
+        // Parse the original request before inspecting that metadata so greeting and
+        // intent handling always operate on what the user actually sent.
+        val request = context.userText
+            .substringBefore("\n\nEvidence summary:")
+            .trim()
         if (request.isEmpty()) {
             return AmarAgentResponse(
                 answer = "اكتب طلبك وسأفهمه ثم أرتّب خطوات التحليل وأوضح ما يمكن إثباته وما يحتاج إلى بيانات إضافية."
