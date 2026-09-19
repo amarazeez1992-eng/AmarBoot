@@ -124,7 +124,7 @@ jobs:
 
           echo "Using Android Build Tools: $build_tools"
           echo "Using apkanalyzer: $apkanalyzer"
-          "$build_tools/zipalign" -h >/dev/null
+          # zipalign has no supported -h/version probe; the official verification below is its executable check.
           "$build_tools/apksigner" --version
           "$apkanalyzer" --help >/dev/null
           export PATH="$build_tools:$PATH"
