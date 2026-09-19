@@ -52,15 +52,45 @@ class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
             "من هو عمار اي اي"
         )
 
+        val isHowAreYouQuestion = normalized in setOf(
+            "كيف حالك", "شلونك", "شخبارك", "كيفك", "كيف انت"
+        )
+
+        val isTimeQuestion = normalized.contains("كم الوقت") ||
+            normalized.contains("الوقت الان") || normalized == "كم الساعة" ||
+            normalized == "الساعة كم" || normalized.contains("ما هو الوقت")
+
+        val isDateQuestion = normalized.contains("ما هو اليوم") ||
+            normalized.contains("ما اليوم") || normalized.contains("اي يوم") ||
+            normalized.contains("التاريخ اليوم") || normalized.contains("كم التاريخ") ||
+            normalized.contains("ما هو التاريخ") || normalized == "التاريخ"
+
         val isCapabilityQuestion = normalized in setOf(
             "ماذا تستطيع", "ماذا تستطيع ان تفعل", "ماذا يمكنك ان تفعل",
             "ما الذي تستطيع فعله", "شنو تقدر تسوي", "شنو تستطيع تسوي",
             "ما هي قدراتك", "ما هي وظيفتك", "ماذا تفعل"
         )
 
+        val now = java.time.ZonedDateTime.now()
+        val timeText = now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+        val dateText = now.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+        val dayText = now.dayOfWeek.getDisplayName(
+            java.time.format.TextStyle.FULL,
+            java.util.Locale("ar")
+        )
+
         val answer = when {
             isGreeting ->
                 "أهلاً بك 👋 أنا AMAR AI Agent. كيف أستطيع مساعدتك؟"
+
+            isHowAreYouQuestion ->
+                "أنا بخير وجاهز لمساعدتك. ماذا تريد أن تسألني؟"
+
+            isTimeQuestion ->
+                "الوقت الآن: $timeText."
+
+            isDateQuestion ->
+                "اليوم هو: $dayText، والتاريخ: $dateText."
 
             isIdentityQuestion ->
                 "أنا AMAR AI Agent، الوكيل الذكي داخل مشروع AMAR AI. أستطيع فهم طلبك، تنفيذ ما تسمح به أدوات النظام، وتحليل المعلومات المتاحة ثم إعطائك جواباً واضحاً."
