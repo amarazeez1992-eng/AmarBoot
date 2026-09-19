@@ -17,7 +17,8 @@ class AmarAgentOrchestrator(
     private val stageThreeEngine: AmarStageThreeEngine = AmarStageThreeEngine(),
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
-    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
+    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
+    private val intelligenceMatrix: AmarInternalIntelligenceMatrix = AmarInternalIntelligenceMatrix()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -29,6 +30,8 @@ class AmarAgentOrchestrator(
         val mandates = hierarchy.defaultMandates()
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
         val plan = planner.plan(request, safeTools)
+        val intelligence = intelligenceMatrix.analyze(request.text)
+        session.record(AmarAgentStage.PLAN, "INTELLIGENCE_MATRIX: parallel intent/understanding/knowledge/discovery/analysis/inspection/speed")
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
@@ -65,6 +68,7 @@ class AmarAgentOrchestrator(
                 appendLine("unknown=${consensus?.unknownSources ?: 0}")
                 report.conflicts.take(20).forEach { appendLine("conflict=$it") }
             }
+            appendLine(intelligence.asContext())
         }
 
         val decisionRelevant = plan.intent == AgentIntent.TRADE_ANALYSIS
