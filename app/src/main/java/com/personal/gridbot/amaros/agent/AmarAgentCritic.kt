@@ -27,7 +27,7 @@ class AmarAgentCritic {
         val certaintyLanguage = listOf(
             "مؤكد", "بالتأكيد", "قطعاً", "حتماً", "مضمون", "guaranteed", "certainly", "definitely", "always", "never"
         )
-        if (certaintyLanguage.any { draft.contains(it, ignoreCase = true) }) {
+        if (requireEvidence && certaintyLanguage.any { draft.contains(it, ignoreCase = true) }) {
             if (validEvidence.size < 2 || hasSupport && hasOpposition) issues += "unsupported_certainty"
         }
 
