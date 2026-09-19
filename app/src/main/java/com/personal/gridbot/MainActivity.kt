@@ -95,6 +95,10 @@ class MainActivity : ComponentActivity() {
         webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 homePageReady = true
+                Log.i("AMAR_AGENT_TRACE", "I: page ready")
+                view?.evaluateJavascript("(function(){return typeof window.receiveAgent === 'function' ? 'READY' : 'NOT_READY'})()") { result ->
+                    Log.i("AMAR_AGENT_TRACE", "I→L: receiveAgent handshake=" + result)
+                }
                 deliverPendingAgentResult()
                 runCatching { ensureRoomHost(); ensureVisualOverlay(); startBackgroundSystemsOnce() }.onFailure { error -> Log.e("AMAR_STARTUP", "Home page initialization failed", error); showStartupError("تهيئة واجهة AMAR AI", error) } }
             override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail?): Boolean {
@@ -120,8 +124,12 @@ class MainActivity : ComponentActivity() {
         fun ask(text: String?) {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
+            Log.i("AMAR_AGENT_TRACE", "A/B: Android.ask received")
             sendAgentStatus("Agent: يعالج الطلب…")
-            askAgent(request) { answer, status -> sendAgentResult(answer, status) }
+            askAgent(request) { answer, status ->
+                Log.i("AMAR_AGENT_TRACE", "G: askAgent callback received")
+                sendAgentResult(answer, status)
+            }
         }
     }
 
@@ -135,8 +143,13 @@ class MainActivity : ComponentActivity() {
             val result = runCatching {
                 withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
             }
-            result.onSuccess { onResult(it.answer, "Agent: جاهز") }
-                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName), "Agent: خطأ") }
+            result.onSuccess {
+                Log.i("AMAR_AGENT_TRACE", "D→F: AmarAiAgentEngine returned")
+                onResult(it.answer, "Agent: جاهز")
+            }.onFailure { error ->
+                Log.e("AMAR_AGENT_TRACE", "D→F: AmarAiAgentEngine failed", error)
+                onResult("تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName), "Agent: خطأ")
+            }
         }
     }
     private fun sendAgentStatus(status: String) {
@@ -148,6 +161,7 @@ class MainActivity : ComponentActivity() {
 
     private fun sendAgentResult(answer: String, status: String) {
         pendingAgentResult = answer to status
+        Log.i("AMAR_AGENT_TRACE", "H: pendingAgentResult populated pageReady=" + homePageReady)
         deliverPendingAgentResult()
     }
 
@@ -172,7 +186,9 @@ class MainActivity : ComponentActivity() {
                         }
                     })()
                 """.trimIndent()
+                Log.i("AMAR_AGENT_TRACE", "J: evaluateJavascript receiveAgent")
                 web.evaluateJavascript(deliver) { result ->
+                    Log.i("AMAR_AGENT_TRACE", "K/L: receiveAgent callback=" + result)
                     when {
                         result == "\"DELIVERED\"" -> {
                             pendingAgentResult = null
