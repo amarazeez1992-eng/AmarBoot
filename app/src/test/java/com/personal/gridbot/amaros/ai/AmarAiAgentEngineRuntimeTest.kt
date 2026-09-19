@@ -15,6 +15,14 @@ class AmarAiAgentEngineRuntimeTest {
     }
 
     @Test
+    fun greeting_survives_orchestrator_evidence_enrichment() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "Hello")
+
+        assertTrue(result.answer.startsWith("أهلاً بك. أنا AMAR AI Agent."))
+        assertFalse(result.answer.contains("Evidence summary:"))
+    }
+
+    @Test
     fun engine_response_is_blocked_when_research_evidence_is_unavailable() = runBlocking {
         val result = AmarAiAgentEngine().ask("", "", "ابحث وحلل XAUUSD")
 
