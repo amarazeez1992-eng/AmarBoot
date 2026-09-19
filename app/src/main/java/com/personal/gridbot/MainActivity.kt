@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.personal.gridbot.amaros.ai.AmarAiActionEngine
 import com.personal.gridbot.amaros.ai.AmarAiAgentEngine
 import com.personal.gridbot.amaros.ai.AmarAiAppCommandBus
 import com.personal.gridbot.amaros.ai.AmarAiSelfImprovementScheduler
@@ -116,20 +117,16 @@ class MainActivity : ComponentActivity() {
 
     private fun askAgent(request: String, onResult: (String, String) -> Unit) {
         lifecycleScope.launch {
+            val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
+            if (local?.handled == true) {
+                onResult(local.response, "تم تنفيذ أمر الواجهة")
+                return@launch
+            }
             val result = runCatching {
-                withContext(Dispatchers.Default) {
-                    AmarAgentRuntimeGateway(agentEngine).ask(request)
-                }
+                withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
             }
-            result.onSuccess {
-                onResult(it.answer, it.status)
-            }.onFailure { error ->
-                onResult(
-                    "تعذر تمرير الطلب إلى AMAR AI Agent: " +
-                        (error.message ?: error.javaClass.simpleName),
-                    "Agent: خطأ"
-                )
-            }
+            result.onSuccess { onResult(it.answer, "Agent: جاهز") }
+                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName), "Agent: خطأ") }
         }
     }
     private fun sendAgentStatus(status: String) {
