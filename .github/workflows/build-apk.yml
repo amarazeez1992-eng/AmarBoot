@@ -96,25 +96,79 @@ jobs:
           set -euo pipefail
           apk="app/build/outputs/apk/debug/app-debug.apk"
           test -s "$apk"
-          build_tools="$ANDROID_SDK_ROOT/build-tools/35.0.0"
-          if [ ! -d "$build_tools" ]; then
-            build_tools="$ANDROID_HOME/build-tools/34.0.0"
-          fi
-          test -x "$build_tools/zipalign"
-          test -x "$build_tools/apksigner"
-          test -x "$build_tools/apkanalyzer"
+
+          # Resolve a complete Android Build Tools installation instead of
+          # assuming that a version directory implies that every verifier
+          # executable is present and runnable.
+          build_tools=""
+          for candidate in             "$ANDROID_SDK_ROOT/build-tools/35.0.0"             "$ANDROID_HOME/build-tools/35.0.0"             "$ANDROID_SDK_ROOT/build-tools/34.0.0"             "$ANDROID_HOME/build-tools/34.0.0"; do
+            if [ -x "$candidate/zipalign" ] &&
+               [ -x "$candidate/apksigner" ] &&
+               [ -x "$candidate/apkanalyzer" ]; then
+              build_tools="$candidate"
+              break
+            fi
+          done
+          test -n "$build_tools"
+          echo "Using Android Build Tools: $build_tools"
+          "$build_tools/zipalign" -h >/dev/null
+          "$build_tools/apksigner" --version
+          "$build_tools/apkanalyzer" --help >/dev/null
           export PATH="$build_tools:$PATH"
 
-          # The APK currently contains no uncompressed native .so libraries.
-          # Verify the canonical 4-byte APK entry alignment directly.
-          # Do not use the deprecated -p page-alignment flag in the generic
-          # verification gate; 16 KiB native-library verification is a
-          # separate concern and requires -P 16 when such libraries exist.
-          zipalign -c -P 16 -v 4 "$apk"
+          # Keep the official Android verification commands intact. Capture
+          # each verifier's output and return code so a failed gate cannot
+          # collapse into an uninformative exit-code-only annotation.
+          set +e
 
-          apksigner verify --verbose "$apk"
-          apksigner verify --print-certs "$apk"
-          apkanalyzer manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
+          zipalign_log="$(mktemp)"
+          zipalign -c -P 16 -v 4 "$apk" >"$zipalign_log" 2>&1
+          zipalign_rc=$?
+          cat "$zipalign_log"
+          rm -f "$zipalign_log"
+          if [ "$zipalign_rc" -ne 0 ]; then
+            echo "zipalign verification failed with exit code $zipalign_rc"
+            exit "$zipalign_rc"
+          fi
+
+          apksigner_log="$(mktemp)"
+          apksigner verify --verbose "$apk" >"$apksigner_log" 2>&1
+          apksigner_rc=$?
+          cat "$apksigner_log"
+          rm -f "$apksigner_log"
+          if [ "$apksigner_rc" -ne 0 ]; then
+            echo "apksigner verification failed with exit code $apksigner_rc"
+            exit "$apksigner_rc"
+          fi
+
+          cert_log="$(mktemp)"
+          apksigner verify --print-certs "$apk" >"$cert_log" 2>&1
+          cert_rc=$?
+          cat "$cert_log"
+          rm -f "$cert_log"
+          if [ "$cert_rc" -ne 0 ]; then
+            echo "apksigner certificate verification failed with exit code $cert_rc"
+            exit "$cert_rc"
+          fi
+
+          analyzer_log="$(mktemp)"
+          apkanalyzer manifest application-id "$apk" >"$analyzer_log" 2>&1
+          analyzer_rc=$?
+          cat "$analyzer_log"
+          if [ "$analyzer_rc" -ne 0 ]; then
+            echo "apkanalyzer failed with exit code $analyzer_rc"
+            rm -f "$analyzer_log"
+            exit "$analyzer_rc"
+          fi
+          grep -Fx 'com.personal.gridbot' "$analyzer_log"
+          grep_rc=$?
+          rm -f "$analyzer_log"
+          if [ "$grep_rc" -ne 0 ]; then
+            echo "APK application-id verification failed with exit code $grep_rc"
+            exit "$grep_rc"
+          fi
+
+          set -e
           sha256sum "$apk" | tee "$apk.sha256"
           ls -lh "$apk" "$apk.sha256"
 
