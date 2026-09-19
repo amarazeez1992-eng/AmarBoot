@@ -22,17 +22,15 @@ class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
         }
 
         val lower = request.lowercase()
-        val evidenceBlock = context.supplementalContext
+        val evidenceBlock = context.userText
             .substringAfter("Evidence summary:", "")
             .substringBefore("Stage 2 deliberation:")
             .trim()
 
         val isGreeting = listOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "hello", "hi")
             .any { lower == it || lower.startsWith("$it ") }
-        val isIdentityQuestion = AmarAgentIdentity.matches(request)
 
         val answer = when {
-            isIdentityQuestion -> AmarAgentIdentity.description
             isGreeting -> "أهلاً بك. أنا AMAR AI Agent. أستطيع فهم الطلب، ترتيب خطواته، تحليل الأدلة المتاحة، التحقق منها، ثم إعطائك نتيجة واضحة مع بيان ما هو مؤكد وما يزال غير متحقق."
             evidenceBlock.isBlank() || evidenceBlock == "No external research required." ->
                 buildString {
