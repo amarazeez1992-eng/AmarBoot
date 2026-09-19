@@ -12,10 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.personal.gridbot.amaros.core.AmarRuntimeController
 
 /** Decision room shell. It is intentionally read-only until the confluence engines are connected. */
 @Composable
-fun AmarDecisionScreen() {
+fun AmarDecisionScreen(state: AmarRuntimeController.RuntimeState) {
     Column(
         Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -26,11 +27,11 @@ fun AmarDecisionScreen() {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("القرار الحالي", style = MaterialTheme.typography.titleLarge)
-                Text("غير متاح بعد — بانتظار ربط محركات التحليل والتوافق")
+                Text(state.decision?.direction?.name ?: "بانتظار أول دورة")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("شراء: —")
-                    Text("بيع: —")
-                    Text("ثقة: —")
+                    Text("شراء: ${if (state.decision?.direction?.name == "LONG_BIAS") "مفعّل" else "—"}")
+                    Text("بيع: ${if (state.decision?.direction?.name == "SHORT_BIAS") "مفعّل" else "—"}")
+                    Text("ثقة: ${state.decision?.confidence?.let { "%.2f".format(it) } ?: "—"}")
                 }
             }
         }
@@ -46,7 +47,9 @@ fun AmarDecisionScreen() {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("الذاكرة المستقبلية", style = MaterialTheme.typography.titleMedium)
-                Text("هنا ستُحفظ القراءات والأدلة والتوافقات وسبب القرار وسجل تغيّره.")
+                Text("الدورة: ${state.cycleNumber} • الحالة: ${state.context?.regime ?: "—"}")
+                Text("الأدلة: ${state.context?.evidence?.size ?: 0} • المخاطر: ${state.risk?.allowed?.let { if (it) "مسموح" else "محجوب" } ?: "—"}")
+                Text("التنفيذ: ${state.execution?.let { if (it.executed) "EXECUTED" else "DEMO_GUARDED" } ?: "—"}")
             }
         }
     }
