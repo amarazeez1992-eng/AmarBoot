@@ -48,10 +48,6 @@ data class AmarAgentResponse(
 data class AmarAgentContext(
     val userText: String,
     val tools: List<AmarAgentTool>,
-    /**
-     * Non-user context supplied by the orchestrator. User text remains immutable.
-     */
-    val supplementalContext: String = "",
     val executionAllowed: Boolean,
     val brokerAccessAllowed: Boolean,
     val requestedSourceCount: Int = 40,
