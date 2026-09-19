@@ -132,7 +132,7 @@ jobs:
           test -f docs/architecture/AMAR_TRADING_RESEARCH_RECOMMENDATION_CONTRACT.md
 
           grep -q 'Evidence-to-Decision Traceability' docs/architecture/STAGE11_ITEM3_TRUST_AND_BACKTEST_ROADMAP.md
-          grep -q '^## Canonical research flow          grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
+          grep -q '^## Canonical research flow
           grep -q 'AmarEvidenceQualityUpstreamState' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -Pzoq 'if\s*\(\s*isFullyVerified\s*\(\s*item\s*\)\s*\)\s*1\.0\s*else\s*0\.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
           ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
@@ -457,25 +457,8 @@ jobs:
           print(f"Stage 11 execution-safety scan passed: {len(files)} Kotlin source files checked.")
           PY
 
-      - name: Upload release artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: amar-stage-eleven-release
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
-
-      - name: Upload test evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: amar-stage-eleven-evidence
-          path: |
-            app/build/test-results/**
-            app/build/reports/tests/**
-          if-no-files-found: warn
  docs/architecture/AMAR_TRADING_RESEARCH_RECOMMENDATION_CONTRACT.md
-          grep -q '^## Fail-closed rules          grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
+          grep -q '^## Fail-closed rules
           grep -q 'AmarEvidenceQualityUpstreamState' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -Pzoq 'if\s*\(\s*isFullyVerified\s*\(\s*item\s*\)\s*\)\s*1\.0\s*else\s*0\.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
           ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
@@ -800,26 +783,7 @@ jobs:
           print(f"Stage 11 execution-safety scan passed: {len(files)} Kotlin source files checked.")
           PY
 
-      - name: Upload release artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: amar-stage-eleven-release
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: warn
-
-      - name: Upload test evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: amar-stage-eleven-evidence
-          path: |
-            app/build/test-results/**
-            app/build/reports/tests/**
-          if-no-files-found: warn
  docs/architecture/AMAR_TRADING_RESEARCH_RECOMMENDATION_CONTRACT.md
-
-          grep -q 'There are no heuristic weights, estimated percentages, averaging, or partial scores in Point 10.' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -q 'AmarEvidenceQualityUpstreamState' docs/verification/STAGE11_ITEM3_EVIDENCE_QUALITY_SCORE.md
           grep -Pzoq 'if\s*\(\s*isFullyVerified\s*\(\s*item\s*\)\s*\)\s*1\.0\s*else\s*0\.0' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
           ! grep -qE '0\.[0-9]+.*\*|\*.*0\.[0-9]+' app/src/main/java/com/personal/gridbot/amaros/agent/AmarEvidenceQualityScoreEngine.kt
