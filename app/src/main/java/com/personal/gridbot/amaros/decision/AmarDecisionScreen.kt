@@ -21,6 +21,7 @@ fun AmarDecisionScreen() {
     val pipeline = remember { DecisionPipeline(DemoDataProvider()) }
     val result = remember { pipeline.evaluate() }
     val proposal = result.proposal
+    val confidence = result.confidence
 
     Column(
         Modifier.fillMaxSize().padding(16.dp),
@@ -35,7 +36,7 @@ fun AmarDecisionScreen() {
                 Text("الحالة: ${proposal.direction}")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("النتيجة: ${"%.3f".format(java.util.Locale.US, proposal.score)}")
-                    Text("الثقة: ${(proposal.confidence * 100).toInt()}%")
+                    Text("الثقة: ${(confidence.score * 100).toInt()}%")
                     Text("تنفيذ: ${if (proposal.executable) "مسموح" else "مغلق"}")
                 }
             }
@@ -47,6 +48,8 @@ fun AmarDecisionScreen() {
                 Text(result.intelligence.context.explanation)
                 Text("الأدلة: ${result.intelligence.context.evidence.size}")
                 Text(proposal.rationale)
+                Text("تصنيف الثقة: ${confidence.label}")
+                Text(confidence.reasons.joinToString(" • "))
             }
         }
     }
