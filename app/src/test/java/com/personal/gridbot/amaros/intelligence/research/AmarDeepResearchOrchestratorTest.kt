@@ -20,9 +20,9 @@ class AmarDeepResearchOrchestratorTest {
             delay(2L)
             return ResearchReport(
                 findings = listOf(
-                    researchFinding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL),
-                    researchFinding("https://paper.example/${request.question}", "Peer reviewed evidence for ${request.question}", Authority.PEER_REVIEWED),
-                    researchFinding("https://official.example/${request.question}", "Official evidence for ${request.question}", Authority.OFFICIAL)
+                    researchFinding("https://official-${request.question}.example", "Official evidence for ${request.question}", Authority.OFFICIAL),
+                    researchFinding("https://paper-${request.question}.example", "Peer reviewed evidence for ${request.question}", Authority.PEER_REVIEWED),
+                    researchFinding("https://official-${request.question}-duplicate.example", "Official evidence for ${request.question}", Authority.OFFICIAL)
                 )
             )
         }
@@ -47,7 +47,7 @@ class AmarDeepResearchOrchestratorTest {
 
         assertEquals(2, report.tasks.size)
         assertEquals(4, report.rankedFindings.size)
-        assertEquals(2, report.independentSources.size)
+        assertEquals(4, report.independentSources.size)
         assertEquals(2, report.rankedFindings.count { it.authority == Authority.OFFICIAL })
         assertEquals(AmarVerificationStatus.VERIFIED, report.verification.status)
         assertTrue(report.tasks.all { it.verification.status == AmarVerificationStatus.VERIFIED })
