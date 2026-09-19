@@ -64,9 +64,6 @@ class AmarAgentOrchestrator(
                 appendLine("opposing=${consensus?.opposingSources ?: 0}")
                 appendLine("unknown=${consensus?.unknownSources ?: 0}")
                 report.conflicts.take(20).forEach { appendLine("conflict=$it") }
-                unifiedFindings.take(12).forEach { finding ->
-                    appendLine("source=${finding.sourceTitle};uri=${finding.sourceUri};evidence=${finding.evidence}")
-                }
             }
         }
 
