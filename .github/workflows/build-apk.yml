@@ -104,7 +104,14 @@ jobs:
           test -x "$build_tools/apksigner"
           test -x "$build_tools/apkanalyzer"
           export PATH="$build_tools:$PATH"
-          zipalign -c -p -v 4 "$apk"
+
+          # The APK currently contains no uncompressed native .so libraries.
+          # Verify the canonical 4-byte APK entry alignment directly.
+          # Do not use the deprecated -p page-alignment flag in the generic
+          # verification gate; 16 KiB native-library verification is a
+          # separate concern and requires -P 16 when such libraries exist.
+          zipalign -c -v 4 "$apk"
+
           apksigner verify --verbose "$apk"
           apksigner verify --print-certs "$apk"
           apkanalyzer manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
