@@ -40,11 +40,11 @@ class AmarInternalIntelligenceMatrix(
     data class ReasoningSignal(val ready: Boolean, val evidenceNeeded: Boolean)
     data class SpeedSignal(val elapsedMs: Long)
 
-    suspend fun evaluate(request: AmarAgentRequest, tools: List<AmarAgentTool>): Report = coroutineScope {
+    suspend fun evaluate(request: AmarAgentRequest, tools: List<AmarAgentTool>, plan: AmarAgentPlan): Report = coroutineScope {
         val started = System.nanoTime()
         val text = request.text.trim()
         val jobs = listOf(
-            async(Dispatchers.Default) { "intent" to planner.plan(request, tools).intent },
+            async(Dispatchers.Default) { "intent" to plan.intent },
             async(Dispatchers.Default) { "understanding" to understand(text) },
             async(Dispatchers.Default) { "knowledge" to KnowledgeSignal(knowledge.search(text).size) },
             async(Dispatchers.Default) { "discovery" to DiscoverySignal(tools.size, tools.any { it.scope == AmarToolScope.RESEARCH }) },
