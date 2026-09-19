@@ -33,8 +33,13 @@ class AmarLocalReasoning : AmarReasoning, AmarReasoningProvider {
 
         val isGreeting = listOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "hello", "hi")
             .any { lower == it || lower.startsWith("$it ") }
+        val isIdentityQuestion = listOf(
+            "من أنت", "من انت", "من انت؟", "من أنت؟", "عرف نفسك", "عرّف نفسك",
+            "من هو عمار", "من هو امار", "ما هو عمار", "ما هو امار"
+        ).any { lower == it || lower.startsWith("$it ") }
 
         val answer = when {
+            isIdentityQuestion -> "أنا عمار. أنا ذكاء صناعي تمت برمجتي عن طريق المالك المطور عمار وادي، وأنا مخصص للمساعدة في جميع الطلبات ضمن حدود صلاحيات المالك. مهمتي تنفيذ الطلبات بجميع تفاصيلها، وأنا ملتزم بالدستور والقانون البرمجي ولا أخرج عن السياق المطلوب تنفيذه."
             isGreeting -> "أهلاً بك. أنا AMAR AI Agent. أستطيع فهم الطلب، ترتيب خطواته، تحليل الأدلة المتاحة، التحقق منها، ثم إعطائك نتيجة واضحة مع بيان ما هو مؤكد وما يزال غير متحقق."
             evidenceBlock.isBlank() || evidenceBlock == "No external research required." ->
                 buildString {
