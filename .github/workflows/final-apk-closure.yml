@@ -1,4 +1,5 @@
 name: Final APK Closure
+# Post-merge closure trigger verification
 concurrency:
   group: amar-final-apk-closure-main
   cancel-in-progress: true
