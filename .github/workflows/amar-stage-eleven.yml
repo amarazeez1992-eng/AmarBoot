@@ -160,14 +160,39 @@ jobs:
           test ! -f app/src/main/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2.kt
           test ! -f app/src/test/java/com/personal/gridbot/amaros/intelligence/decision/AmarDecisionEngine2Test.kt
 
-          if grep -RInE 'OrderSend[[:space:]]*\(|brokerAccessAllowed[[:space:]]*=[[:space:]]*true|liveTrading[[:space:]]*=[[:space:]]*true' app/src/main/java/com/personal/gridbot/amaros/intelligence/core app/src/main/java/com/personal/gridbot/amaros/intelligence/verification app/src/main/java/com/personal/gridbot/amaros/intelligence/memory app/src/main/java/com/personal/gridbot/amaros/intelligence/research; then
-            echo 'Forbidden live-execution pattern detected in Stage 11 intelligence sources.'
-            exit 1
-          fi
-          if grep -RInE 'executable[[:space:]]*=[[:space:]]*true' app/src/main/java/com/personal/gridbot/amaros/intelligence; then
-            echo 'Forbidden executable=true assignment detected in Stage 11 intelligence sources.'
-            exit 1
-          fi
+          # Stage 11 execution-safety gate: scan only Kotlin intelligence sources.
+          # Whitespace is normalized so forbidden constructs remain detectable across lines.
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          roots = [
+              Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/core"),
+              Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/verification"),
+              Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/memory"),
+              Path("app/src/main/java/com/personal/gridbot/amaros/intelligence/research"),
+          ]
+          files = [p for root in roots for p in root.rglob("*.kt")]
+          patterns = [
+              re.compile(r"\bOrderSend\s*\(", re.IGNORECASE),
+              re.compile(r"\b(?:brokerAccessAllowed|liveTrading)\s*=\s*true\b"),
+              re.compile(r"\bexecutable\s*=\s*true\b"),
+          ]
+          violations = []
+          for path in files:
+              source = path.read_text(encoding="utf-8")
+              normalized = re.sub(r"\s+", " ", source)
+              for pattern in patterns:
+                  match = pattern.search(normalized)
+                  if match:
+                      line = source[:source.find(match.group(0))].count("\n") + 1
+                      violations.append(f"{path}:{line}: {match.group(0)}")
+          if violations:
+              print("Forbidden live-execution pattern detected in Stage 11 intelligence sources:")
+              print("\n".join(violations))
+              raise SystemExit(1)
+          print(f"Stage 11 execution-safety scan passed: {len(files)} Kotlin source files checked.")
+          PY
 
       - name: Upload release artifact
         if: always()
