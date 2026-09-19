@@ -1,4 +1,5 @@
 name: Build APK
+# Post-merge closure trigger verification
 
 on:
   push:
