@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.personal.gridbot.amaros.core.AmarRuntimeController
 
-/** Decision room shell. It is intentionally read-only until the confluence engines are connected. */
+/** Read-only decision room fed by the canonical demo runtime. */
 @Composable
 fun AmarDecisionScreen(state: AmarRuntimeController.RuntimeState) {
     Column(
