@@ -102,12 +102,25 @@ jobs:
           fi
           test -x "$build_tools/zipalign"
           test -x "$build_tools/apksigner"
-          test -x "$build_tools/apkanalyzer"
+
+          apkanalyzer_bin="$(command -v apkanalyzer || true)"
+          if [ -z "$apkanalyzer_bin" ]; then
+            for candidate in               "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/apkanalyzer"               "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer"               "$ANDROID_SDK_ROOT/cmdline-tools/bin/apkanalyzer"               "$ANDROID_HOME/cmdline-tools/bin/apkanalyzer"; do
+              if [ -x "$candidate" ]; then
+                apkanalyzer_bin="$candidate"
+                break
+              fi
+            done
+          fi
+          test -n "$apkanalyzer_bin"
+          test -x "$apkanalyzer_bin"
+
           export PATH="$build_tools:$PATH"
           zipalign -c -p -v 4 "$apk"
           apksigner verify --verbose "$apk"
           apksigner verify --print-certs "$apk"
-          apkanalyzer manifest application-id "$apk" | grep -Fx 'com.personal.gridbot'
+          application_id="$("$apkanalyzer_bin" manifest application-id "$apk")"
+          test "$application_id" = "com.personal.gridbot"
           sha256sum "$apk" | tee "$apk.sha256"
           ls -lh "$apk" "$apk.sha256"
 
