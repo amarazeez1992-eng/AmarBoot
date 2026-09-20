@@ -17,6 +17,7 @@ class AmarLocalReasoningTest {
         )
         assertTrue(response.answer.contains("الدليل الفعلي هنا"))
         assertTrue(response.answer.contains("Official"))
+        assertTrue(response.answer.contains("الدليل الفعلي هنا"))
     }
 
     @Test fun local_reasoning_blocks_unsupported_external_claims() = runBlocking {
