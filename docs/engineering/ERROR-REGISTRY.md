@@ -90,3 +90,29 @@ Raised the retrieval target to 80, bounded the external result set at 80, parall
 
 ### Rule for future developers
 Do not treat source count as proof of independence or authority. Missing or weak evidence must remain visible to the existing verification/evidence gates; never weaken those gates to make research appear successful.
+
+
+## ERR-RESEARCH-002 — General factual synthesis did not surface the direct verified fact
+
+**Status:** Corrected — pending fresh CI on current main  
+**Area:** External Research / Local Reasoning  
+**Detected:** 2026-09-20
+
+### Symptom
+A general factual request could retrieve evidence successfully but the final response only summarized the evidence instead of directly surfacing a matching factual sentence.
+
+### Root cause
+The local synthesis layer ranked evidence records but did not perform a final extractive sentence selection step. Arabic factual requests were also sent only to English Wikipedia, reducing cross-language evidence matching.
+
+### Correction
+1. Select Wikipedia by the request language (`ar` for Arabic, `en` otherwise).
+2. Retrieve Wikipedia extracts as evidence rather than relying only on search snippets.
+3. Add a generic direct-evidence sentence selector based on query/evidence token overlap.
+4. Return the selected sentence with its source title and URI.
+5. No question→answer mapping or hardcoded factual answer was added.
+
+### Regression protection
+`AmarLocalReasoningTest.local_reasoning_extracts_direct_fact_from_matching_evidence` verifies that a supplied Wikipedia-style evidence sentence is surfaced directly.
+
+### Rule for future developers
+Do not hardcode factual answers to make the Agent appear successful. Improve retrieval, evidence matching, and extractive synthesis instead.
