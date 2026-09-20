@@ -4,6 +4,7 @@ import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperi
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzer
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessReport
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus
 
 /**
  * Stage 11 / Item 3 composition boundary.
@@ -85,7 +86,7 @@ class AmarCanonicalEvidenceQualityAssembler(
         val point2 = quality.point2UsableEvidence == findings.size && findings.isNotEmpty()
         val point3 = findings.isNotEmpty() && findings.all { it.authority != Authority.UNKNOWN }
         val point4 = quality.items.isNotEmpty() && quality.items.all { it.freshnessVerified }
-        val point5 = verification.accepted && verification.independentSources >= 2
+        val point5 = verification.status == AmarVerificationStatus.VERIFIED && verification.sourceRegistry.independentHosts.size >= 2
         val point6 = !quality.point6Duplicates.hasDuplicates
         val point7 = quality.point7FingerprintIntegrity.intact
         val point8 = tamperingDetector.detect(findings, verification.provenance).intact
