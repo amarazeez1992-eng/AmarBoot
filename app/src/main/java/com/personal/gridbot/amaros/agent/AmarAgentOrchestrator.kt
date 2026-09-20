@@ -17,7 +17,8 @@ class AmarAgentOrchestrator(
     private val stageThreeEngine: AmarStageThreeEngine = AmarStageThreeEngine(),
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
-    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine()
+    private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
+    private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -32,8 +33,10 @@ class AmarAgentOrchestrator(
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
-        val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
-        val strictEvidence = plan.intent == AgentIntent.TRADE_ANALYSIS
+        val queryPolicyDecision = queryPolicy.classify(plan, request)
+        session.record(AmarAgentStage.PLAN, "QUERY_POLICY: mode=${queryPolicyDecision.mode}, research=${queryPolicyDecision.requiresResearch}, strictEvidence=${queryPolicyDecision.requiresStrictEvidence}")
+        val needsResearch = queryPolicyDecision.requiresResearch
+        val strictEvidence = queryPolicyDecision.requiresStrictEvidence
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
             researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
