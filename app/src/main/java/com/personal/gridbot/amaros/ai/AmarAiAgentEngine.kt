@@ -52,7 +52,7 @@ class AmarAiAgentEngine(
 
     suspend fun ask(_apiKey: String, _model: String, request: String, progress: ((com.personal.gridbot.amaros.agent.AmarAgentProgress) -> Unit)? = null): Result {
         val startedAt = System.currentTimeMillis()
-        val response = orchestrator.run(
+        val runResult = orchestrator.run(
             request = AmarAgentRequest(
                 text = request,
                 requestedSourceCount = 80,
@@ -62,13 +62,14 @@ class AmarAiAgentEngine(
             ),
             availableTools = toolRegistry.availableTools(AmarAgentPolicy()),
             progress = progress
-        ).response
+        )
+        val response = runResult.response
         return Result(
             answer = response.answer,
             proposedActions = response.actions,
             toolEvidence = emptyList(),
-            sourcesSearched = response.research?.findings?.size ?: 0,
-            sourcesAccepted = response.sourceVerification?.totalSources ?: 0,
+            sourcesSearched = runResult.research?.findings?.size ?: 0,
+            sourcesAccepted = runResult.sourceVerification?.totalSources ?: 0,
             elapsedMs = System.currentTimeMillis() - startedAt
         )
     }
