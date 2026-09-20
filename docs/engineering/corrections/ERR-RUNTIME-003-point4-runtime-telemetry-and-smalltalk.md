@@ -20,6 +20,7 @@ Stage 11 → Item 3 → Point 4 runtime evidence follow-up.
 - Accepted sources remain the canonical source-verifier count; no fabricated counts are introduced.
 - MainActivity now displays final discovered/accepted counts directly and no longer injects "النتيجة الرسمية:".
 - Final time label is now "زمن المعالجة والتحقق" to match the measured boundary.
+- Local UI actions also publish truthful final elapsed metadata with zero research-source counts because no research run occurred.
 
 ## Guardrails
 - No evidence thresholds were weakened.
