@@ -125,3 +125,27 @@ The final report MUST distinguish explicitly between:
 - **محجوز للمرحلة اللاحقة** — intentionally deferred by the approved roadmap, without falsely treating it as completed in the current stage.
 
 No percentage, success score, readiness statement, or stage-transition decision may conceal an incomplete required item. A 100% decision is permitted only when the entire applicable scope has passed the complete closure loop and the independent re-verification requirements of this Article.
+
+## Article 15 — Binding Evidence Pipeline Steps
+
+The following four steps are permanent project-law architecture for the evidence pipeline. They are mandatory, ordered, and may not be skipped, collapsed into one opaque operation, or implemented by a competing parallel subsystem.
+
+### Step 1 — Rules
+Define the authoritative admission rules and contracts that determine what an evidence item is allowed to be. Step 1 establishes the state model and invariants; it does not by itself claim runtime integration or completion.
+
+### Step 2 — Evidence Intake
+Receive and normalize the evidence candidates produced by retrieval. Step 2 separates raw/provider retrieval output from the canonical evidence pipeline so that candidates are not treated as accepted evidence merely because a provider returned them.
+
+### Step 3 — Question Relevance
+Determine whether each candidate is actually related to and answerable for the user's question. Relevance is a semantic evidence-boundary responsibility, not a source-authority, freshness, or trust substitute. Unrelated trusted sources MUST remain outside admitted evidence.
+
+### Step 4 — Evidence Selection
+Select the evidence that survives the relevance boundary for downstream quality, authority, freshness, independence, conflict, claim verification, confidence, reasoning, and final-answer processing.
+
+The constitutional flow is therefore:
+
+**User Question → Step 1 Rules → Step 2 Evidence Intake → Step 3 Question Relevance → Step 4 Evidence Selection → Downstream Verification/Reasoning → Final Answer**
+
+No later step may silently perform the responsibility of an earlier step. Existing authoritative components MUST be integrated rather than duplicated, and each step MUST receive its own implementation, tests, CI evidence, and audit before that step is considered complete.
+
+These definitions are binding even when individual implementation details evolve. Any change to their meaning requires an explicit constitutional amendment under Article 11.
