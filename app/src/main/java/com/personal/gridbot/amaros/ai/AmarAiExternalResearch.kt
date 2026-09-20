@@ -131,7 +131,7 @@ class AmarAiExternalResearch(
         if (html.isBlank()) return emptyList()
         val anchorPattern = Regex(
             "<a\\b[^>]*>(.*?)</a>",
-            RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL
+            setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
         )
         val anchors = anchorPattern.findAll(html).toList()
         val results = mutableListOf<SourceResult>()
