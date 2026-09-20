@@ -160,7 +160,19 @@ class AmarAgentOrchestrator(
         if (strictEvidence && !canonicalEvidenceApproved) finalIssues += "point10_evidence_quality_not_verified"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
         emit(AgentTaskState.RESPONDING, "إعداد النتيجة الرسمية", unifiedFindings.size, if (finalApproved) unifiedFindings.size else 0)
-        val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم أجد مصادر كافية ومرتبطة بسؤالك تسمح لي بتقديم إجابة موثوقة.")
+        val finalResponse = if (finalApproved) {
+            answer
+        } else {
+            val reasonCode = when {
+                unifiedFindings.isEmpty() -> "no_evidence"
+                verification != null && !verification.accepted -> "source_verification_failed"
+                else -> "final_validation_failed"
+            }
+            answer.copy(
+                status = AmarAgentResponse.Status.ERROR,
+                answer = "لم يتم اعتماد الإجابة بعد. لم أجد مصادر كافية ومرتبطة بسؤالك تسمح لي بتقديم إجابة موثوقة. [$reasonCode]"
+            )
+        }
 
         return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
     }
