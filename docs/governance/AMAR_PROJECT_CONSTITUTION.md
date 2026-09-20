@@ -149,3 +149,32 @@ The constitutional flow is therefore:
 No later step may silently perform the responsibility of an earlier step. Existing authoritative components MUST be integrated rather than duplicated, and each step MUST receive its own implementation, tests, CI evidence, and audit before that step is considered complete.
 
 These definitions are binding even when individual implementation details evolve. Any change to their meaning requires an explicit constitutional amendment under Article 11.
+
+
+## Article 16 — Path-Gated Workflow Verification
+
+Post-Merge Verification MUST evaluate workflow applicability from the actual changed paths and the declared trigger scope of each workflow.
+
+1. Every workflow whose configured path triggers include one or more changed files MUST be triggered and, where applicable, must complete successfully before the affected scope may be considered verified.
+
+2. A workflow whose configured path triggers do not include the changed files is classified as **NOT TRIGGERED — PATH-GATED**.
+
+3. **NOT TRIGGERED MUST NEVER be converted to SUCCESS.** It remains a distinct verification state.
+
+4. Documentation-only changes, including `docs/**` and documentation files such as `*.md`, do not require workflows whose push path allowlists are restricted to unrelated implementation paths such as `app/**` to execute.
+
+5. For implementation or release-critical changes affecting paths such as `app/**`, `bridge/**`, `gradle/**`, or other paths explicitly covered by a workflow, every applicable workflow MUST be triggered and must complete successfully according to its configured verification scope.
+
+6. The verification record MUST explicitly distinguish:
+   - SUCCESS — applicable workflow executed and completed successfully;
+   - FAILURE — applicable workflow executed and failed;
+   - NOT TRIGGERED — PATH-GATED — workflow was not applicable to the changed paths;
+   - CANCELLED / INCOMPLETE — execution did not establish successful verification.
+
+7. Path-gated applicability MUST be determined from the workflow definition and the actual changed paths on the verified commit. It MUST NOT be inferred from historical runs, assumptions, or the apparent purpose of the change.
+
+8. This Article does not weaken Articles 1–15. It defines the evidence classification required when a workflow is intentionally scoped away from the changed paths.
+
+9. A documentation-only commit may therefore pass Post-Merge Verification with applicable workflows successful and unrelated path-gated workflows explicitly recorded as NOT TRIGGERED, without treating those workflows as successful.
+
+10. Any workflow whose scope is changed, broadened, or otherwise modified remains subject to the complete verification requirements of this Constitution on the resulting implementation.
