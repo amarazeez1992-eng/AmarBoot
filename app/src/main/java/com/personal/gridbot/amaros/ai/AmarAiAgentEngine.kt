@@ -17,6 +17,7 @@ import com.personal.gridbot.amaros.agent.AmarLocalReasoning
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
+import com.personal.gridbot.amaros.agent.AmarQuestionAnswerabilityGate
 import com.personal.gridbot.amaros.agent.Authority
 
 /**
@@ -101,18 +102,21 @@ class AmarAiAgentEngine(
      * the approved keyless public-web retrieval implementation to feed the orchestrator.
      */
     private class ExternalResearchAdapter(
-        private val external: AmarAiExternalResearch
+        private val external: AmarAiExternalResearch,
+        private val answerability: AmarQuestionAnswerabilityGate = AmarQuestionAnswerabilityGate()
     ) : AmarResearchEngine {
         override suspend fun research(request: ResearchRequest): ResearchReport {
             val results = external.search(request.question, request.maxSources)
-            val findings = results.map { source ->
+            val findings = results.mapNotNull { source ->
+                val decision = answerability.decide(request.question, source.title, source.excerpt)
+                if (!decision.admitted) return@mapNotNull null
                 ResearchFinding(
                     sourceTitle = source.title.ifBlank { source.source },
                     sourceUri = source.url,
                     evidence = source.excerpt,
-                    authority = authorityFor(source),
+                    authority = authorityFor(source.url),
                     publisher = source.source,
-                    relevanceScore = source.relevanceScore
+                    relevanceScore = 1.0
                 )
             }
             val conflicts = if (findings.isEmpty()) {
