@@ -28,6 +28,12 @@ class AmarAgentStageOneTest {
         assertEquals(120_000L, AmarAgentBudget().timeoutMs)
     }
 
+    @Test fun task_state_machine_exposes_transparent_verification_states() {
+        assertEquals(AgentTaskState.RESEARCHING, AgentTaskState.RESEARCHING)
+        assertEquals(AgentTaskState.VERIFYING, AgentTaskState.VERIFYING)
+        assertEquals(AgentTaskState.TIMEOUT_REACHED, AgentTaskState.TIMEOUT_REACHED)
+    }
+
     @Test fun direction_engine_rejects_negated_buy() {
         val engine = AmarDecisionDirectionEngine()
         assertEquals(AmarDecisionDirection.UNKNOWN, engine.detect("لا أنصح بالشراء الآن"))
