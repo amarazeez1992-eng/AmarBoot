@@ -52,6 +52,7 @@ import com.personal.gridbot.ui.theme.AmarThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -120,6 +121,7 @@ class MainActivity : ComponentActivity() {
         fun ask(text: String?) {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
+            Log.i("AMAR_AGENT_BRIDGE", "ASK_RECEIVED length=${request.length}")
             sendAgentStatus("Agent: يعالج الطلب…")
             askAgent(request) { answer, status -> sendAgentResult(answer, status) }
         }
@@ -127,16 +129,31 @@ class MainActivity : ComponentActivity() {
 
     private fun askAgent(request: String, onResult: (String, String) -> Unit) {
         lifecycleScope.launch {
+            val startedAt = System.currentTimeMillis()
+            Log.i("AMAR_AGENT", "REQUEST_START")
             val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
             if (local?.handled == true) {
+                Log.i("AMAR_AGENT", "LOCAL_ACTION_HANDLED")
                 onResult(local.response, "تم تنفيذ أمر الواجهة")
                 return@launch
             }
             val result = runCatching {
-                withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
+                withTimeout(30_000L) {
+                    withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
+                }
             }
-            result.onSuccess { onResult(it.answer, "Agent: جاهز") }
-                .onFailure { error -> onResult("تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName), "Agent: خطأ") }
+            result.onSuccess {
+                Log.i("AMAR_AGENT", "REQUEST_SUCCESS elapsedMs=${System.currentTimeMillis() - startedAt}")
+                onResult(it.answer.ifBlank { "لم يُنتج الوكيل إجابة." }, "Agent: جاهز")
+            }.onFailure { error ->
+                Log.e("AMAR_AGENT", "REQUEST_FAILED elapsedMs=${System.currentTimeMillis() - startedAt}", error)
+                val message = if (error is kotlinx.coroutines.TimeoutCancellationException) {
+                    "انتهت مهلة الوكيل بعد 30 ثانية. تم إيقاف الطلب بدل إبقائه معلقاً."
+                } else {
+                    "تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName)
+                }
+                onResult(message, "Agent: خطأ")
+            }
         }
     }
     private fun sendAgentStatus(status: String) {
@@ -147,6 +164,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun sendAgentResult(answer: String, status: String) {
+        Log.i("AMAR_AGENT_BRIDGE", "RESULT_READY status=$status answerLength=${answer.length}")
         pendingAgentResult = answer to status
         deliverPendingAgentResult()
     }
@@ -175,6 +193,7 @@ class MainActivity : ComponentActivity() {
                 web.evaluateJavascript(deliver) { result ->
                     when {
                         result == "\"DELIVERED\"" -> {
+                            Log.i("AMAR_AGENT_BRIDGE", "RESULT_DELIVERED")
                             pendingAgentResult = null
                             agentDeliveryAttempts = 0
                         }
