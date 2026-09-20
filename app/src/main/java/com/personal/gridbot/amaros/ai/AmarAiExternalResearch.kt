@@ -127,7 +127,7 @@ class AmarAiExternalResearch(
     }
 
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
-        val tagPattern = Regex("""<a\\b[^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
+        val tagPattern = Regex("""<a\b[^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
         val tags = tagPattern.findAll(html).toList()
         return tags.asSequence()
             .filter { it.value.contains("result__a", ignoreCase = true) }
