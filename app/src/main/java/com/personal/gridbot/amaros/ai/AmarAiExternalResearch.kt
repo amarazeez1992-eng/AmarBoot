@@ -129,7 +129,7 @@ class AmarAiExternalResearch(
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
         if (html.isBlank()) return emptyList()
         val anchorPattern = Regex(
-            """<a\\b[^>]*>(.*?)</a>""",
+            "<a\\b[^>]*>(.*?)</a>",
             RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL
         )
         val anchors = anchorPattern.findAll(html).toList()
@@ -148,7 +148,6 @@ class AmarAiExternalResearch(
                 .drop(index + 1)
                 .firstOrNull { hasCssClass(it.value, "result__a") }
                 ?.range?.first ?: html.length
-            val segment = html.substring(match.range.last + 1, nextResultStart)
             val snippet = anchors.asSequence()
                 .drop(index + 1)
                 .firstOrNull { hasCssClass(it.value, "result__snippet") && it.range.first < nextResultStart }
@@ -172,7 +171,7 @@ class AmarAiExternalResearch(
     }
 
     private fun attribute(tag: String, name: String): String =
-        Regex("""\\b$name\\s*=\\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+        Regex("\\b$name\\s*=\\s*[\"']([^\"']*)[\"']", RegexOption.IGNORE_CASE)
             .find(tag)?.groupValues?.getOrNull(1).orEmpty()
 
     private fun resolveDuckDuckGoUrl(url: String): String {
