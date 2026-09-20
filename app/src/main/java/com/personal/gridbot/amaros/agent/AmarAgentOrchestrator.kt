@@ -147,7 +147,8 @@ class AmarAgentOrchestrator(
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
         val canonicalEvidenceApproved = !strictEvidence || canonicalEvidenceCertification?.certificationScore == 1.0
         val hardeningApproved = !needsResearch || !strictEvidence || (hardening.approved && canonicalEvidenceApproved)
-        val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
+        val evidenceBoundaryApproved = !needsResearch || unifiedFindings.isNotEmpty()
+        val hierarchyApproved = stageTwoApproved && hardeningApproved && evidenceBoundaryApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
         session.record(if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked")
 
@@ -158,6 +159,7 @@ class AmarAgentOrchestrator(
         if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
         if (strictEvidence && !canonicalEvidenceApproved) finalIssues += "point10_evidence_quality_not_verified"
+        if (!evidenceBoundaryApproved) finalIssues += "answerability_evidence_boundary_failed"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
         emit(AgentTaskState.RESPONDING, "إعداد النتيجة الرسمية", unifiedFindings.size, if (finalApproved) unifiedFindings.size else 0)
         val finalResponse = if (finalApproved) {
