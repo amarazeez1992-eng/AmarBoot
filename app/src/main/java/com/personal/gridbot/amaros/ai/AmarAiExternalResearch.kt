@@ -37,6 +37,7 @@ class AmarAiExternalResearch(
         require(query.isNotBlank()) { "Research query is required" }
         val limit = maxResults.coerceIn(1, 80)
         val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.toString())
+        val wikipediaLanguage = if (query.any { it in '\u0600'..'\u06FF' }) "ar" else "en"
 
         coroutineScope {
             val duck = async {
@@ -49,20 +50,22 @@ class AmarAiExternalResearch(
             }
             val wikipedia = async {
                 runCatching {
-                    val url = "https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&utf8=1&srlimit=$limit&srsearch=$encoded"
+                    val url = "https://$wikipediaLanguage.wikipedia.org/w/api.php?action=query&generator=search&format=json&utf8=1&gsrnamespace=0&gsrlimit=$limit&gsrsearch=$encoded&prop=extracts&exintro=1&explaintext=1&exchars=1200"
                     val raw = get(url, "application/json")
-                    val items = JSONObject(raw).getJSONObject("query").getJSONArray("search")
+                    val pages = JSONObject(raw).optJSONObject("query")?.optJSONObject("pages") ?: JSONObject()
                     buildList {
-                        for (i in 0 until minOf(items.length(), limit)) {
-                            val item = items.getJSONObject(i)
+                        val keys = pages.keys()
+                        while (keys.hasNext() && size < limit) {
+                            val item = pages.getJSONObject(keys.next())
                             val title = item.optString("title")
-                            if (title.isNotBlank()) {
+                            val excerpt = item.optString("extract").ifBlank { stripMarkup(item.optString("snippet")) }
+                            if (title.isNotBlank() && excerpt.isNotBlank()) {
                                 add(
                                     SourceResult(
                                         source = "Wikipedia",
                                         title = title,
-                                        url = "https://en.wikipedia.org/wiki/" + title.replace(' ', '_'),
-                                        excerpt = stripMarkup(item.optString("snippet"))
+                                        url = "https://$wikipediaLanguage.wikipedia.org/wiki/" + title.replace(' ', '_'),
+                                        excerpt = excerpt
                                     )
                                 )
                             }
