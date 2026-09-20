@@ -40,7 +40,6 @@ class AmarAiExternalResearch(
         val limit = maxResults.coerceIn(1, 80)
         val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.toString())
         val wikipediaLanguage = if (query.any { it in '\u0600'..'\u06FF' }) "ar" else "en"
-        val relevance = com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine()
 
         coroutineScope {
             val duck = async {
@@ -106,14 +105,8 @@ class AmarAiExternalResearch(
             }
 
             (duck.await() + wikipedia.await() + github.await())
-                .filter { it.url.startsWith("http") && it.title.isNotBlank() }
-                .map { result ->
-                    val scored = relevance.score(query, result.title, result.excerpt)
-                    result.copy(relevanceScore = scored.score)
-                }
-                .filter { it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE }
+                .filter { it.url.startsWith("http") && it.title.isNotBlank() && it.excerpt.isNotBlank() }
                 .distinctBy { canonicalKey(it.url) }
-                .sortedByDescending { it.relevanceScore }
                 .take(limit)
         }
     }
@@ -132,16 +125,22 @@ class AmarAiExternalResearch(
             """<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>""",
             RegexOption.IGNORE_CASE
         )
-        return pattern.findAll(html)
-            .take(limit)
-            .mapNotNull { match ->
-                val url = decodeHtml(match.groupValues[1])
-                val title = stripMarkup(match.groupValues[2])
-                if (url.startsWith("http") && title.isNotBlank()) {
-                    SourceResult("Public Web", title, url, title)
-                } else null
-            }
-            .toList()
+        val snippetPattern = Regex(
+            """<a[^>]+class=["']result__snippet["'][^>]*>(.*?)</a>""",
+            RegexOption.IGNORE_CASE
+        )
+        val titles = pattern.findAll(html).take(limit).map { match ->
+            decodeHtml(match.groupValues[1]) to stripMarkup(match.groupValues[2])
+        }.toList()
+        val snippets = snippetPattern.findAll(html).take(limit).map { stripMarkup(it.groupValues[1]) }.toList()
+        return titles.mapIndexedNotNull { index, pair ->
+            val url = pair.first
+            val title = pair.second
+            val excerpt = snippets.getOrNull(index).orEmpty()
+            if (url.startsWith("http") && title.isNotBlank() && excerpt.isNotBlank()) {
+                SourceResult("Public Web", title, url, excerpt)
+            } else null
+        }
     }
 
     private fun canonicalKey(url: String): String =
