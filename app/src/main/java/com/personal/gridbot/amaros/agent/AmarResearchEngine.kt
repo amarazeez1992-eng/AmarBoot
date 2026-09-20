@@ -32,6 +32,8 @@ data class ResearchFinding(
     val stance: EvidenceStance = EvidenceStance.UNKNOWN,
     val publisher: String = "",
     val sourceType: AmarSourceType = AmarSourceType.KNOWLEDGE,
+    /** Canonical question-to-evidence relevance score; 0.0 means not admitted. */
+    val relevanceScore: Double = 0.0,
     val retrievedAtEpochMs: Long = System.currentTimeMillis(),
     val fingerprint: String = AmarEvidence.fingerprintOf("$sourceUri|$evidence")
 )
