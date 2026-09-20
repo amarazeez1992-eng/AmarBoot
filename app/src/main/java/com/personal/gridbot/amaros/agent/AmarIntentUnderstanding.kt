@@ -95,8 +95,8 @@ class AmarIntentUnderstanding {
 
     companion object {
         private val GREETINGS = setOf(
-            "هلو", "مرحبا", "السلام عليكم", "اهلا", "اهلين",
-            "hello", "hi", "hey"
+            "هلو", "مرحبا", "السلام عليكم", "اهلا", "اهلين", "كيف حالك", "شلونك", "شلونج", "كيفك", "كيفج",
+            "hello", "hi", "hey", "how are you"
         )
         private val TRADE_CONCEPTS = setOf(
             "تداول", "صفقه", "mt5", "mt4", "trade", "gold", "ذهب",
