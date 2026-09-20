@@ -50,3 +50,23 @@ Fixed normalization/entity recognition inside `AmarIntentUnderstanding`; Query P
 ### Rule for future developers
 Do not compensate for intent-classification defects by weakening evidence policy or adding keyword checks to orchestration. Fix the understanding/entity layer and add a regression test.
 \n
+## ERR-PT10-001 — Point 10 upstream integration gap
+
+**Status:** Corrected — pending CI constitutional verification  
+**Area:** Stage 11 / Item 3 / Point 10  
+**Detected:** 2026-09-20
+
+### Symptom
+Point 10 certification existed but the canonical runtime path did not yet connect the owning Point 1 Evidence Intake and Point 8 Tampering outputs.
+
+### Root cause
+The fail-closed composition boundary had no runtime adapter from the existing verification report to the Point 10 upstream-state contract.
+
+### Correction
+Connected Point 1 from the verification layer's usable/invalid evidence counts and Point 8 from its recorded provenance chain through AmarEvidenceTamperingDetector. The runtime now records and, for strict financial/trading requests, gates final approval on canonical Point 10 certification.
+
+### Regression protection
+Added canonical assembler tests for successful owner-state composition and tampered provenance rejection.
+
+### Rule for future developers
+Never infer an upstream Evidence Engine state in Point 10. Source it from the owning contract and preserve fail-closed behavior.
