@@ -34,12 +34,16 @@ class AmarAgentPlanner {
 
     private fun classify(text: String): AgentIntent {
         val q = text.lowercase().trim()
+        val greeting = listOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "hello", "hi", "hey")
+            .any { q == it || q.startsWith("$it ") }
+        if (greeting) return AgentIntent.GENERAL
+
         return when {
-            listOf("بحث", "مصدر", "دراسة", "research").any(q::contains) -> AgentIntent.RESEARCH
             listOf("استراتيجية", "strategy", "روبوت", "bot").any(q::contains) &&
                 !listOf("صفقة", "تداول", "mt5", "trade").any(q::contains) -> AgentIntent.STRATEGY_DESIGN
-            listOf("تداول", "صفقة", "backtest", "mt5", "trade").any(q::contains) -> AgentIntent.TRADE_ANALYSIS
-            else -> AgentIntent.GENERAL
+            listOf("تداول", "صفقة", "backtest", "mt5", "trade", "ذهب", "gold", "forex", "سوق", "market")
+                .any(q::contains) -> AgentIntent.TRADE_ANALYSIS
+            else -> AgentIntent.RESEARCH
         }
     }
 }
