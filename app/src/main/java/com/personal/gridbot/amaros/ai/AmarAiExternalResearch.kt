@@ -76,28 +76,32 @@ class AmarAiExternalResearch(
                 }.getOrDefault(emptyList())
             }
             val github = async {
-                runCatching {
-                    val url = "https://api.github.com/search/repositories?q=$encoded&per_page=$limit"
-                    val raw = get(url, "application/json")
-                    val items = JSONObject(raw).getJSONArray("items")
-                    buildList {
-                        for (i in 0 until minOf(items.length(), limit)) {
-                            val item = items.getJSONObject(i)
-                            val title = item.optString("full_name")
-                            val repositoryUrl = item.optString("html_url")
-                            if (title.isNotBlank() && repositoryUrl.isNotBlank()) {
-                                add(
-                                    SourceResult(
-                                        source = "GitHub",
-                                        title = title,
-                                        url = repositoryUrl,
-                                        excerpt = item.optString("description")
+                if (!isCodeOrRepositoryQuery(query)) {
+                    emptyList()
+                } else {
+                    runCatching {
+                        val url = "https://api.github.com/search/repositories?q=$encoded&per_page=$limit"
+                        val raw = get(url, "application/json")
+                        val items = JSONObject(raw).getJSONArray("items")
+                        buildList {
+                            for (i in 0 until minOf(items.length(), limit)) {
+                                val item = items.getJSONObject(i)
+                                val title = item.optString("full_name")
+                                val repositoryUrl = item.optString("html_url")
+                                if (title.isNotBlank() && repositoryUrl.isNotBlank()) {
+                                    add(
+                                        SourceResult(
+                                            source = "GitHub",
+                                            title = title,
+                                            url = repositoryUrl,
+                                            excerpt = item.optString("description")
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
-                    }
-                }.getOrDefault(emptyList())
+                    }.getOrDefault(emptyList())
+                }
             }
 
             (duck.await() + wikipedia.await() + github.await())
@@ -111,6 +115,15 @@ class AmarAiExternalResearch(
                 .sortedByDescending { it.relevanceScore }
                 .take(limit)
         }
+    }
+
+    private fun isCodeOrRepositoryQuery(query: String): Boolean {
+        val q = query.lowercase()
+        return listOf(
+            "github", "repository", "repo", "code", "source code", "sdk", "api",
+            "kotlin", "android", "python", "javascript", "typescript", "pine script",
+            "مستودع", "كود", "برمجة", "برمجي", "شفرة", "github"
+        ).any { it in q }
     }
 
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
