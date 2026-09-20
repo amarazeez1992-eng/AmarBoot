@@ -127,20 +127,64 @@ class AmarAiExternalResearch(
     }
 
     private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
-        val pattern = Regex(
-            """<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>""",
-            RegexOption.IGNORE_CASE
+        if (html.isBlank()) return emptyList()
+        val anchorPattern = Regex(
+            """<a\\b[^>]*>(.*?)</a>""",
+            RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL
         )
-        return pattern.findAll(html)
-            .take(limit)
-            .mapNotNull { match ->
-                val url = decodeHtml(match.groupValues[1])
-                val title = stripMarkup(match.groupValues[2])
-                if (url.startsWith("http") && title.isNotBlank()) {
-                    SourceResult("Public Web", title, url, title)
-                } else null
+        val anchors = anchorPattern.findAll(html).toList()
+        val results = mutableListOf<SourceResult>()
+
+        anchors.forEachIndexed { index, match ->
+            if (results.size >= limit) return@forEachIndexed
+            val tag = match.value
+            if (!hasCssClass(tag, "result__a")) return@forEachIndexed
+
+            val href = attribute(tag, "href")
+            val title = stripMarkup(match.groupValues[1])
+            if (href.isBlank() || title.isBlank()) return@forEachIndexed
+
+            val nextResultStart = anchors.asSequence()
+                .drop(index + 1)
+                .firstOrNull { hasCssClass(it.value, "result__a") }
+                ?.range?.first ?: html.length
+            val segment = html.substring(match.range.last + 1, nextResultStart)
+            val snippet = anchors.asSequence()
+                .drop(index + 1)
+                .firstOrNull { hasCssClass(it.value, "result__snippet") && it.range.first < nextResultStart }
+                ?.groupValues?.getOrNull(1)
+                ?.let(::stripMarkup)
+                .orEmpty()
+
+            val evidence = snippet.ifBlank { title }
+            val url = resolveDuckDuckGoUrl(decodeHtml(href))
+            if (url.startsWith("http") && evidence.isNotBlank()) {
+                results += SourceResult("Public Web", title, url, evidence)
             }
-            .toList()
+        }
+
+        return results
+    }
+
+    private fun hasCssClass(tag: String, className: String): Boolean {
+        val classes = attribute(tag, "class")
+        return classes.split(Regex("\\s+")).any { it == className }
+    }
+
+    private fun attribute(tag: String, name: String): String =
+        Regex("""\\b$name\\s*=\\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+            .find(tag)?.groupValues?.getOrNull(1).orEmpty()
+
+    private fun resolveDuckDuckGoUrl(url: String): String {
+        if (!url.startsWith("//duckduckgo.com/l/?uddg=")) return url
+        val query = url.substringAfter("?")
+        val encodedTarget = query.split("&")
+            .firstOrNull { it.startsWith("uddg=") }
+            ?.substringAfter("=")
+            ?: return url
+        return runCatching {
+            java.net.URLDecoder.decode(encodedTarget, StandardCharsets.UTF_8.name())
+        }.getOrDefault(url)
     }
 
     private fun canonicalKey(url: String): String =
