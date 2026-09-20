@@ -21,8 +21,6 @@ class AmarEvidenceQualityEngine(
         val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
         val hostCounts = valid.mapNotNull { hostOf(it.sourceUri) }.groupingBy { it }.eachCount()
 
-        // Compatibility adapter: consume the established Point 6 and Point 9 contracts;
-        // do not recreate their detection algorithms here.
         val duplicateReport = AmarDuplicateEvidenceDetector().detect(valid)
         val uniquenessReport = AmarEvidenceUniquenessAnalyzer().analyze(findings)
 
@@ -36,8 +34,6 @@ class AmarEvidenceQualityEngine(
                 authorityScore = authority,
                 freshnessScore = freshness.score,
                 independentSource = independent,
-                // Point 9 is the canonical uniqueness gate. A collision therefore
-                // fails the aggregate certification closed rather than being averaged away.
                 uniqueEvidence = uniquenessReport.unique,
                 authorityVerified = finding.authority != Authority.UNKNOWN,
                 freshnessVerified = freshness.status != FreshnessStatus.FUTURE
@@ -67,9 +63,7 @@ data class AmarEvidenceQualityItem(
     val freshnessScore: Double,
     val independentSource: Boolean,
     val uniqueEvidence: Boolean,
-    /** Verification state owned by the upstream Authority contract. */
     val authorityVerified: Boolean,
-    /** Verification state owned by the upstream Freshness contract. */
     val freshnessVerified: Boolean
 ) {
     fun score(): Double = AmarEvidenceQualityScoreEngine().score(this)
@@ -84,27 +78,45 @@ data class AmarEvidenceQualityReport(
 
 class AmarClaimVerificationEngine {
     fun verify(answer: String, findings: List<ResearchFinding>): AmarClaimVerificationReport {
-        val claims = answer.split(Regex("(?<=[.!?؟])\\s+|\\n+")).map { it.trim() }.filter { it.length >= 20 }
+        val claims = answer.split(Regex("(?<=[.!?؟])\s+|\n+")).map { it.trim() }.filter { it.length >= 20 }
         val evidence = findings.filter { it.evidence.isNotBlank() }
         val results = claims.map { claim ->
             val claimTokens = tokens(claim)
             val matches = evidence.filter { overlap(claimTokens, tokens(it.evidence)) >= .25 }
-            val support = matches.filter { it.stance == EvidenceStance.SUPPORTS || it.stance == EvidenceStance.MIXED }
-            val opposition = matches.filter { it.stance == EvidenceStance.OPPOSES }
-            AmarClaimVerification(claim, support.size, opposition.size, support.isNotEmpty() && opposition.isEmpty())
+            val opposition = matches.count { it.stance == EvidenceStance.OPPOSES }
+            val support = matches.count { it.stance == EvidenceStance.SUPPORTS || it.stance == EvidenceStance.MIXED }
+            val neutralMatches = matches.count { it.stance == EvidenceStance.UNKNOWN }
+            // Unknown stance is not treated as positive proof, but it is valid matched
+            // evidence. Only an explicit opposing match blocks a factual claim.
+            val accepted = matches.isNotEmpty() && opposition == 0
+            AmarClaimVerification(
+                claim = claim,
+                supportingEvidence = support,
+                opposingEvidence = opposition,
+                matchedEvidence = matches.size,
+                neutralEvidence = neutralMatches,
+                accepted = accepted
+            )
         }
         val accepted = results.isNotEmpty() && results.all { it.accepted }
         return AmarClaimVerificationReport(results, accepted)
     }
 
     private fun tokens(text: String): Set<String> =
-        text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= 4 }.toSet()
+        text.lowercase().split(Regex("[^\p{L}\p{N}]+")).filter { it.length >= 4 }.toSet()
 
     private fun overlap(a: Set<String>, b: Set<String>): Double =
         if (a.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
 }
 
-data class AmarClaimVerification(val claim: String, val supportingEvidence: Int, val opposingEvidence: Int, val accepted: Boolean)
+data class AmarClaimVerification(
+    val claim: String,
+    val supportingEvidence: Int,
+    val opposingEvidence: Int,
+    val matchedEvidence: Int = 0,
+    val neutralEvidence: Int = 0,
+    val accepted: Boolean
+)
 data class AmarClaimVerificationReport(val claims: List<AmarClaimVerification>, val accepted: Boolean)
 
 class AmarConfidenceCalibrationEngine {
