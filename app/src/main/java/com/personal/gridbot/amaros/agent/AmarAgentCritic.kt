@@ -39,7 +39,7 @@ class AmarAgentCritic {
             issues += "guarantee_language"
         }
 
-        val numericClaim = Regex("(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)").containsMatchIn(draft)
+        val numericClaim = Regex("""(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)""").containsMatchIn(draft)
         if (numericClaim && requireEvidence && validEvidence.isEmpty()) issues += "unsupported_numeric_claim"
 
         val distinctIssues = issues.distinct()
