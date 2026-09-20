@@ -18,7 +18,8 @@ class AmarAgentOrchestrator(
     private val evidenceQualityEngine: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
-    private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy()
+    private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy(),
+    private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -53,6 +54,16 @@ class AmarAgentOrchestrator(
             sourceVerifier.verify(unifiedFindings)
         }
         val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
+        val canonicalEvidenceCertification = verification?.let {
+            canonicalEvidenceQuality.certify(
+                findings = unifiedFindings,
+                nowEpochMs = System.currentTimeMillis(),
+                verification = buildVerificationReportForPoint10(unifiedFindings, it)
+            )
+        }
+        if (canonicalEvidenceCertification != null) {
+            session.record(AmarAgentStage.VERIFY, "POINT10_EVIDENCE_QUALITY: certification=${canonicalEvidenceCertification.certificationScore}")
+        }
         val evidenceText = buildString {
             appendLine("Evidence summary:")
             if (report == null) appendLine("No external research required.") else {
@@ -113,7 +124,8 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${answerDirection.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
         val decisionVerification = verifier.verify(answer.answer, consensus, critique, if (strictEvidence) verification else null)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
-        val hardeningApproved = !needsResearch || !strictEvidence || hardening.approved
+        val canonicalEvidenceApproved = !strictEvidence || canonicalEvidenceCertification?.certificationScore == 1.0
+        val hardeningApproved = !needsResearch || !strictEvidence || (hardening.approved && canonicalEvidenceApproved)
         val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
         session.record(if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked")
@@ -124,10 +136,16 @@ class AmarAgentOrchestrator(
         finalIssues += councilReview.conflicts
         if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
+        if (strictEvidence && !canonicalEvidenceApproved) finalIssues += "point10_evidence_quality_not_verified"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
         val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}")
 
-        return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, sessionEvents = session.events())
+        return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
+    }
+
+    private fun buildVerificationReportForPoint10(findings: List<ResearchFinding>, verification: AmarSourceVerification): com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport {
+        val layer = com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer()
+        return layer.verifyEvidenceOnly(findings)
     }
 
     private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
@@ -169,5 +187,6 @@ data class AmarAgentRunResult(
     val stageTwo: AmarStageTwoResult? = null,
     val stageThree: AmarStageThreeResult? = null,
     val hardening: AmarStageTwoHardeningReport? = null,
+    val canonicalEvidenceCertification: AmarCanonicalEvidenceQualityCertificationReport? = null,
     val sessionEvents: List<AmarAgentEvent>
 )
