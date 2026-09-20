@@ -15,6 +15,15 @@ class AmarAiAgentEngineRuntimeTest {
     }
 
     @Test
+    fun arabic_conversational_greeting_stays_local_and_returns_answer() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "كيف حالك")
+
+        assertFalse(result.answer.isBlank())
+        assertTrue(result.answer.startsWith("أهلاً بك. أنا AMAR AI Agent."))
+        assertFalse(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+    }
+
+    @Test
     fun greeting_survives_orchestrator_evidence_enrichment() = runBlocking {
         val result = AmarAiAgentEngine().ask("", "", "Hello")
 
