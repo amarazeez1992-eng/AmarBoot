@@ -1,103 +1,191 @@
 package com.personal.gridbot.amaros.agent
 
 /**
- * Query-aware retrieval gate.
+ * Canonical question-to-evidence admission gate.
  *
- * Retrieval relevance is a pre-verification boundary: evidence that does not
- * materially match the user's question must not enter authority/consensus
- * scoring merely because its publisher is trustworthy.
- *
- * This is a deterministic lexical/entity-aware gate, not the final intelligence
- * layer. It is deliberately conservative: when relevance cannot be established,
- * the result is rejected rather than promoted as evidence.
+ * This gate runs before source authority/consensus processing and again before
+ * final synthesis. Authority proves trustworthiness; this class proves that
+ * the evidence is about the question actually asked.
  */
 class AmarRetrievalRelevanceEngine {
 
     data class ScoredResult(
         val score: Double,
-        val matchedTerms: Set<String>
+        val matchedTerms: Set<String>,
+        val questionForm: QuestionForm,
+        val requiredFacetsSatisfied: Boolean
     )
 
+    enum class QuestionForm {
+        CAPITAL, AGE, QUANTITY, CURRENT_VALUE, DEFINITION, WHO, WHEN, WHY, HOW, YES_NO, OPEN
+    }
+
     fun score(question: String, title: String, excerpt: String): ScoredResult {
-        val expanded = expandTerms(tokenize(question))
-        if (expanded.isEmpty()) return ScoredResult(0.0, emptySet())
+        val q = normalize(question)
+        val titleText = normalize(title)
+        val bodyText = normalize(excerpt)
+        val questionTokens = tokenize(q)
+        val evidenceTokens = tokenize("$titleText $bodyText")
 
-        val titleTerms = tokenize(title)
-        val bodyTerms = tokenize(excerpt)
-        val matched = expanded.filter { it in titleTerms || it in bodyTerms }.toSet()
-
-        val coverage = matched.size.toDouble() / expanded.size.toDouble()
-        val titleCoverage = matched.count { it in titleTerms }.toDouble() / expanded.size.toDouble()
-        val exactPhrase = normalized(question).let { q ->
-            q.length >= 5 && (
-                normalized(title).contains(q) ||
-                    normalized(excerpt).contains(q)
-                )
+        if (questionTokens.isEmpty() || evidenceTokens.isEmpty()) {
+            return ScoredResult(0.0, emptySet(), QuestionForm.OPEN, false)
         }
 
-        val entityTerms = tokenize(question).filter { it.length >= 4 }.toSet()
-        val entityMatched = entityTerms.count { it in titleTerms || it in bodyTerms }
-        val entityCoverage = if (entityTerms.isEmpty()) 0.0 else
-            entityMatched.toDouble() / entityTerms.size.toDouble()
+        val form = detectQuestionForm(q)
+        val requiredFacets = requiredFacets(form, questionTokens)
+        val satisfied = requiredFacets.all { facet ->
+            facet.any { it in evidenceTokens }
+        }
+
+        val matched = questionTokens.filter { it in evidenceTokens }.toSet()
+        val lexicalCoverage = matched.size.toDouble() / questionTokens.size.toDouble()
+        val titleTokens = tokenize(titleText)
+        val titleCoverage = matched.count { it in titleTokens }.toDouble() /
+            questionTokens.size.toDouble()
+        val facetCoverage = if (requiredFacets.isEmpty()) 1.0 else
+            requiredFacets.count { facet -> facet.any { it in evidenceTokens } }.toDouble() /
+                requiredFacets.size.toDouble()
+
+        val entityAnchor = entityAnchorSatisfied(questionTokens, evidenceTokens)
+        val phrase = normalizedPhraseMatch(q, titleText) || normalizedPhraseMatch(q, bodyText)
 
         val score = (
-            coverage * 0.45 +
-                titleCoverage * 0.25 +
-                entityCoverage * 0.25 +
-                if (exactPhrase) 0.05 else 0.0
+            lexicalCoverage * 0.30 +
+                titleCoverage * 0.15 +
+                facetCoverage * 0.30 +
+                if (entityAnchor) 0.15 else 0.0 +
+                if (phrase) 0.10 else 0.0
             ).coerceIn(0.0, 1.0)
 
-        return ScoredResult(score, matched)
+        val admitted = satisfied && entityAnchor && score >= MIN_RELEVANCE_SCORE
+        return ScoredResult(
+            score = if (admitted) score else 0.0,
+            matchedTerms = matched,
+            questionForm = form,
+            requiredFacetsSatisfied = satisfied && entityAnchor
+        )
     }
 
     fun accept(question: String, title: String, excerpt: String): Boolean =
         score(question, title, excerpt).score >= MIN_RELEVANCE_SCORE
 
-    private fun expandTerms(tokens: Set<String>): Set<String> {
-        val result = tokens.toMutableSet()
-        tokens.forEach { token ->
-            when (token) {
-                "عاصمة" -> result += setOf("capital", "عاصمه")
-                "امريكا", "أمريكا" -> result += setOf("america", "united", "states", "usa")
-                "الفنانه", "الفنانة" -> result += setOf("artist", "actress", "singer")
-                "عمر" -> result += setOf("age", "born", "birth")
-                "احرف", "الأحرف", "الحروف" -> result += setOf("letters", "alphabet")
-                "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية" ->
-                    result += setOf("english")
-                "عربيه", "العربيه", "العربية" -> result += setOf("arabic")
-                "عدد", "كم" -> result += setOf("number", "count", "how")
+    private fun detectQuestionForm(q: String): QuestionForm = when {
+        containsAny(q, "عاصمة", "عاصمه", "capital") -> QuestionForm.CAPITAL
+        containsAny(q, "سعر", "price", "الان", "حاليا", "today", "current", "latest") ->
+            QuestionForm.CURRENT_VALUE
+        containsAny(q, "عمر", "age", "born", "birth", "مواليد") -> QuestionForm.AGE
+        containsAny(q, "كم", "عدد", "number", "count", "how many", "how much") ->
+            QuestionForm.QUANTITY
+        containsAny(q, "من هو", "من هي", "who") -> QuestionForm.WHO
+        containsAny(q, "متى", "when") -> QuestionForm.WHEN
+        containsAny(q, "لماذا", "ليش", "why") -> QuestionForm.WHY
+        containsAny(q, "كيف", "شلون", "how") -> QuestionForm.HOW
+        containsAny(q, "هل", "is", "are", "can", "do") -> QuestionForm.YES_NO
+        containsAny(q, "ما هو", "ما هي", "ما معنى", "what is", "define") ->
+            QuestionForm.DEFINITION
+        else -> QuestionForm.OPEN
+    }
+
+    private fun requiredFacets(form: QuestionForm, tokens: Set<String>): List<Set<String>> =
+        when (form) {
+            QuestionForm.CAPITAL -> listOf(
+                setOf("capital", "عاصمة", "عاصمه"),
+                entityFacet(tokens)
+            )
+            QuestionForm.AGE -> listOf(
+                setOf("age", "born", "birth", "مواليد", "عمر"),
+                entityFacet(tokens)
+            )
+            QuestionForm.QUANTITY -> {
+                val groups = mutableListOf<Set<String>>()
+                if (containsAny(tokens, "احرف", "الحروف", "الأحرف", "letters", "alphabet")) {
+                    groups += setOf("letters", "alphabet", "احرف", "الحروف", "الأحرف")
+                }
+                if (containsAny(tokens, "عربيه", "العربيه", "العربية", "arabic")) {
+                    groups += setOf("arabic", "عربيه", "العربيه", "العربية")
+                }
+                if (containsAny(tokens, "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english")) {
+                    groups += setOf("english", "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية")
+                }
+                if (groups.isEmpty()) groups += entityFacet(tokens)
+                groups
             }
+            QuestionForm.CURRENT_VALUE -> listOf(
+                setOf("price", "سعر", "current", "latest", "today", "الان", "حاليا"),
+                entityFacet(tokens)
+            )
+            else -> listOf(entityFacet(tokens))
+        }.filter { it.isNotEmpty() }
+
+    private fun entityFacet(tokens: Set<String>): Set<String> {
+        val salient = tokens.filter { it.length >= 3 && it !in QUESTION_WORDS }.toSet()
+        val result = salient.toMutableSet()
+
+        when {
+            salient.any { it in setOf("امريكا", "america", "usa") } ->
+                result += setOf("امريكا", "america", "usa", "united", "states")
+            salient.any { it in setOf("عربيه", "العربيه", "العربية", "arabic") } ->
+                result += setOf("عربيه", "العربيه", "العربية", "arabic")
+            salient.any { it in setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english") } ->
+                result += setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english")
         }
-        return result.filter { it.length >= 2 && it !in STOP_WORDS }.toSet()
+
+        return result
+    }
+
+    private fun entityAnchorSatisfied(questionTokens: Set<String>, evidenceTokens: Set<String>): Boolean {
+        val salient = questionTokens.filter { it.length >= 3 && it !in QUESTION_WORDS }
+        if (salient.isEmpty()) return false
+
+        if (salient.any { it in evidenceTokens }) return true
+
+        if (salient.any { it in setOf("امريكا", "america", "usa") }) {
+            return evidenceTokens.any { it in setOf("america", "usa", "united", "states") }
+        }
+        if (salient.any { it in setOf("عربيه", "العربيه", "العربية", "arabic") }) {
+            return evidenceTokens.any { it in setOf("arabic", "عربيه", "العربيه", "العربية") }
+        }
+        if (salient.any { it in setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english") }) {
+            return evidenceTokens.any { it in setOf("english", "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية") }
+        }
+
+        return false
     }
 
     private fun tokenize(value: String): Set<String> =
-        normalized(value)
-            .split(Regex("[^\p{L}\p{N}]+"))
+        value.split(Regex("[^\\p{L}\\p{N}]+"))
             .map { it.trim() }
-            .filter { it.length >= 2 && it !in STOP_WORDS }
+            .filter { it.length >= 2 && it !in QUESTION_WORDS }
             .toSet()
 
-    private fun normalized(value: String): String =
+    private fun normalizedPhraseMatch(question: String, candidate: String): Boolean =
+        question.length >= 6 && candidate.contains(question)
+
+    private fun containsAny(text: String, vararg terms: String): Boolean =
+        terms.any { text.contains(normalize(it)) }
+
+    private fun containsAny(tokens: Set<String>, vararg terms: String): Boolean =
+        terms.any { normalize(it) in tokens }
+
+    private fun normalize(value: String): String =
         value.lowercase()
+            .replace(Regex("[\\u064B-\\u065F\\u0670]"), "")
             .replace('أ', 'ا')
             .replace('إ', 'ا')
             .replace('آ', 'ا')
             .replace('ى', 'ي')
-            .replace('ة', 'ه')
-            .replace('ؤ', 'و')
-            .replace('ئ', 'ي')
-            .replace(Regex("\s+"), " ")
+            .replace(Regex("\\s+"), " ")
             .trim()
 
     companion object {
-        const val MIN_RELEVANCE_SCORE = 0.45
+        const val MIN_RELEVANCE_SCORE = 0.60
 
-        private val STOP_WORDS = setOf(
+        private val QUESTION_WORDS = setOf(
             "اريد", "أريد", "معرفه", "معرفة", "عن", "ما", "هو", "هي", "هل",
             "من", "في", "الى", "إلى", "على", "هذا", "هذه", "ذلك", "تلك",
-            "the", "a", "an", "is", "are", "of", "to", "in", "on", "what",
-            "who", "how", "many", "please", "tell", "me", "about"
+            "كم", "كيف", "متى", "لماذا", "ليش", "the", "a", "an", "is",
+            "are", "of", "to", "in", "on", "what", "who", "how", "many",
+            "please", "tell", "me", "about"
         )
     }
 }
