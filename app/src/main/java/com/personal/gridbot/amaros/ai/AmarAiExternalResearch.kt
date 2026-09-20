@@ -1,3 +1,34 @@
+    private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
+        val tagPattern = Regex("""<a\\b[^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
+        val tags = tagPattern.findAll(html).toList()
+        return tags.asSequence()
+            .filter { it.value.contains("result__a", ignoreCase = true) }
+            .take(limit)
+            .mapNotNull { match ->
+                val tag = match.value
+                val href = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+                    .find(tag)?.groupValues?.getOrNull(1).orEmpty()
+                val title = stripMarkup(match.groupValues[1])
+                val nextStart = match.range.last + 1
+                val nextResult = tags.asSequence()
+                    .dropWhile { it.range.first <= nextStart }
+                    .firstOrNull { it.value.contains("result__a", ignoreCase = true) }
+                    ?.range?.first ?: html.length
+                val segment = html.substring(nextStart, nextResult)
+                val snippet = Regex("""class=["'][^"']*result__snippet[^"']*["'][^>]*>(.*?)</(?:a|div|span|p)>""",
+                    RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
+                    .find(segment)?.groupValues?.getOrNull(1)
+                    ?.let(::stripMarkup)
+                    .orEmpty()
+                val evidence = snippet.ifBlank { title }
+                val url = decodeHtml(href)
+                if (url.startsWith("http") && title.isNotBlank() && evidence.isNotBlank()) {
+                    SourceResult("Public Web", title, url, evidence)
+                } else null
+            }
+            .toList()
+    }
+
 package com.personal.gridbot.amaros.ai
 
 import java.net.URLEncoder
