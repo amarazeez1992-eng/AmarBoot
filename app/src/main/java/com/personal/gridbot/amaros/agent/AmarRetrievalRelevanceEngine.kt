@@ -24,10 +24,19 @@ class AmarRetrievalRelevanceEngine {
 
         val titleTerms = tokenize(title)
         val bodyTerms = tokenize(excerpt)
-        val matched = expanded.filter { it in titleTerms || it in bodyTerms }.toSet()
+        val evidenceTerms = titleTerms + bodyTerms
 
-        val coverage = matched.size.toDouble() / expanded.size.toDouble()
-        val titleCoverage = matched.count { it in titleTerms }.toDouble() / expanded.size.toDouble()
+        fun termMatches(term: String, terms: Set<String>): Boolean =
+            term == term && (
+                term in terms ||
+                    aliasesFor(term).any { it in terms }
+                )
+
+        val matched = tokensForMatching(question).filter { termMatches(it, evidenceTerms) }.toSet()
+        val titleMatched = tokensForMatching(question).filter { termMatches(it, titleTerms) }.toSet()
+
+        val coverage = matched.size.toDouble() / tokensForMatching(question).size.toDouble()
+        val titleCoverage = titleMatched.size.toDouble() / tokensForMatching(question).size.toDouble()
         val exactPhrase = normalized(question).let { q ->
             q.length >= 5 && (
                 normalized(title).contains(q) ||
@@ -35,8 +44,8 @@ class AmarRetrievalRelevanceEngine {
                 )
         }
 
-        val entityTerms = tokenize(question).filter { it.length >= 4 }.toSet()
-        val entityMatched = entityTerms.count { it in titleTerms || it in bodyTerms }
+        val entityTerms = tokensForMatching(question).filter { it.length >= 4 }.toSet()
+        val entityMatched = entityTerms.count { termMatches(it, evidenceTerms) }
         val entityCoverage = if (entityTerms.isEmpty()) 0.0 else
             entityMatched.toDouble() / entityTerms.size.toDouble()
 
@@ -53,10 +62,28 @@ class AmarRetrievalRelevanceEngine {
     fun accept(question: String, title: String, excerpt: String): Boolean =
         score(question, title, excerpt).score >= MIN_RELEVANCE_SCORE
 
+    private fun tokensForMatching(question: String): Set<String> =
+        tokenize(question)
+
+    private fun aliasesFor(token: String): Set<String> =
+        when (token) {
+            "عاصمه" -> setOf("capital")
+            "امريكا" -> setOf("america", "united", "states", "usa")
+            "الفنانه" -> setOf("artist", "actress", "singer")
+            "عمر" -> setOf("age", "born", "birth")
+            "شيرين" -> setOf("sherine", "sherin")
+            "احرف", "الاحرف", "الحروف" -> setOf("letters", "alphabet")
+            "انكليزيه", "الانكليزيه", "الانجليزية", "انجليزية" -> setOf("english")
+            "عربيه", "العربيه", "العربية" -> setOf("arabic")
+            "عدد", "كم" -> setOf("number", "count", "how")
+            else -> emptySet()
+        }
+
     private fun expandTerms(tokens: Set<String>): Set<String> {
         val result = tokens.toMutableSet()
         tokens.forEach { token ->
             when (token) {
+                "عاصمه" -> result += setOf("capital")
                 "عاصمة" -> result += setOf("capital", "عاصمه")
                 "امريكا", "أمريكا" -> result += setOf("america", "united", "states", "usa")
                 "الفنانه", "الفنانة" -> result += setOf("artist", "actress", "singer")
