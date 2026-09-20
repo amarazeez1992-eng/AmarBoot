@@ -49,7 +49,15 @@ class AmarIntentUnderstanding {
     }
 
     private fun score(text: String, concepts: Set<String>): Double {
-        val hits = concepts.count { text.contains(it) }
+        val tokens = text.split(" ").filter { it.isNotBlank() }.toSet()
+        val hits = concepts.count { concept ->
+            val normalizedConcept = concept.lowercase().trim()
+            if (normalizedConcept.contains(" ")) {
+                text.contains(normalizedConcept)
+            } else {
+                normalizedConcept in tokens
+            }
+        }
         val questionBoost = if (text.contains("?") || text.contains("؟")) 0.10 else 0.0
         return hits * 0.35 + questionBoost
     }
