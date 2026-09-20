@@ -93,9 +93,9 @@ class AmarClaimVerificationEngine {
                 claim = claim,
                 supportingEvidence = support,
                 opposingEvidence = opposition,
+                accepted = accepted,
                 matchedEvidence = matches.size,
-                neutralEvidence = neutralMatches,
-                accepted = accepted
+                neutralEvidence = neutralMatches
             )
         }
         val accepted = results.isNotEmpty() && results.all { it.accepted }
@@ -113,9 +113,9 @@ data class AmarClaimVerification(
     val claim: String,
     val supportingEvidence: Int,
     val opposingEvidence: Int,
+    val accepted: Boolean,
     val matchedEvidence: Int = 0,
-    val neutralEvidence: Int = 0,
-    val accepted: Boolean
+    val neutralEvidence: Int = 0
 )
 data class AmarClaimVerificationReport(val claims: List<AmarClaimVerification>, val accepted: Boolean)
 
