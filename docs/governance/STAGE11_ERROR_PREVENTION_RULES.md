@@ -19,3 +19,4 @@ These are mandatory regression-prevention rules for every future Stage 11 item.
 
 <!-- Final verification trigger: current Stage 11 implementation must pass fresh CI before closure. -->
 <!-- Verification retry: current head must receive fresh CI evidence. -->
+<!-- Fresh post-merge CI trigger: 2026-09-20. -->
