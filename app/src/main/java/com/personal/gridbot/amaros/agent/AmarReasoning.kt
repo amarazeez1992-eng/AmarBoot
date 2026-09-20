@@ -22,6 +22,11 @@ class AmarLocalReasoning(
             return AmarAgentResponse("اكتب طلبك وسأحلله عبر محرك AMAR الداخلي.")
         }
 
+        val intent = understanding.understand(request).intent
+        if (intent == AgentIntent.SYSTEM_IDENTITY) return AmarAgentResponse(identityResponse(), context.tools.map { it.id })
+        if (intent == AgentIntent.SYSTEM_TIME) return AmarAgentResponse(timeResponse(), context.tools.map { it.id })
+        if (intent == AgentIntent.SYSTEM_DATE) return AmarAgentResponse(dateResponse(), context.tools.map { it.id })
+
         val evidenceBlock = context.userText
             .substringAfter("Evidence summary:", "")
             .substringBefore("Stage 2 deliberation:")
@@ -150,6 +155,20 @@ class AmarLocalReasoning(
     private fun isGreeting(text: String): Boolean {
         val analysis = understanding.understand(text.trim())
         return analysis.intent == AgentIntent.GENERAL && analysis.questionForm == "GREETING"
+    }
+
+    private fun identityResponse(): String =
+        "أنا AMAR AI Agent. أنا وكيل ذكاء اصطناعي محلي ضمن منظومة AMAR: أفهم الطلب، أحدد مساره، أستخدم الأدلة عندما تكون مطلوبة، وأفصل بين المعلومات العادية والتحليل المالي الصارم. لا أملك صلاحية تنفيذ صفقات أو الوصول المباشر إلى حساب الوساطة."
+
+    private fun timeResponse(): String {
+        val now = java.time.LocalDateTime.now()
+        return "الوقت الآن حسب ساعة الجهاز: " + now.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+    }
+
+    private fun dateResponse(): String {
+        val now = java.time.LocalDate.now()
+        val weekday = now.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale("ar"))
+        return "اليوم هو $weekday، والتاريخ هو " + now.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
     }
 
     private fun greeting(): String =
