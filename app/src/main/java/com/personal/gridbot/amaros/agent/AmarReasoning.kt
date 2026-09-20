@@ -72,6 +72,9 @@ class AmarLocalReasoning(
                 append("\n")
                 append(if (looksArabic(request)) "المصدر: " else "Source: ")
                 append(direct.second.title.ifBlank { direct.second.publisher })
+                if (direct.second.publisher.isNotBlank() && direct.second.publisher != direct.second.title) {
+                    append(" (").append(direct.second.publisher).append(")")
+                }
                 if (direct.second.uri.isNotBlank()) append(" — ").append(direct.second.uri)
                 return@buildString
             }
