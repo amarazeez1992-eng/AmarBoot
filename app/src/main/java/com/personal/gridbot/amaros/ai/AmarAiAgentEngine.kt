@@ -18,6 +18,7 @@ import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.Authority
+import com.personal.gridbot.amaros.agent.AmarEvidenceAdmissionLayer
 
 /**
  * AMAR AI Agent boundary.
@@ -101,7 +102,8 @@ class AmarAiAgentEngine(
      * the approved keyless public-web retrieval implementation to feed the orchestrator.
      */
     private class ExternalResearchAdapter(
-        private val external: AmarAiExternalResearch
+        private val external: AmarAiExternalResearch,
+        private val admission: AmarEvidenceAdmissionLayer = AmarEvidenceAdmissionLayer()
     ) : AmarResearchEngine {
         override suspend fun research(request: ResearchRequest): ResearchReport {
             val results = external.search(request.question, request.maxSources)
@@ -115,17 +117,21 @@ class AmarAiAgentEngine(
                     relevanceScore = source.relevanceScore
                 )
             }
-            val conflicts = if (findings.isEmpty()) {
-                listOf("external_research_returned_no_findings")
-            } else emptyList()
-            val distinctPublishers = findings.map { it.publisher }.filter { it.isNotBlank() }.distinct().size
-            val evidenceCoverage = findings.count { it.evidence.isNotBlank() }.toDouble() / findings.size.coerceAtLeast(1)
-            val authorityCoverage = findings.count { it.authority != Authority.UNKNOWN }.toDouble() / findings.size.coerceAtLeast(1)
-            val independenceCoverage = (distinctPublishers.toDouble() / findings.size.coerceAtLeast(1)).coerceIn(0.0, 1.0)
-            val confidence = if (findings.isEmpty()) 0.0 else
+            val admissionResult = admission.admit(request.question, findings)
+            val admitted = admissionResult.admitted.map { it.finding }
+            val rejectedCount = admissionResult.rejected.size
+            val conflicts = buildList {
+                if (admitted.isEmpty()) add("no_question_relevant_evidence_admitted")
+                if (rejectedCount > 0) add("retrieval_candidates_rejected_by_admission=$rejectedCount")
+            }
+            val distinctPublishers = admitted.map { it.publisher }.filter { it.isNotBlank() }.distinct().size
+            val evidenceCoverage = admitted.count { it.evidence.isNotBlank() }.toDouble() / admitted.size.coerceAtLeast(1)
+            val authorityCoverage = admitted.count { it.authority != Authority.UNKNOWN }.toDouble() / admitted.size.coerceAtLeast(1)
+            val independenceCoverage = (distinctPublishers.toDouble() / admitted.size.coerceAtLeast(1)).coerceIn(0.0, 1.0)
+            val confidence = if (admitted.isEmpty()) 0.0 else
                 (0.40 * evidenceCoverage + 0.35 * authorityCoverage + 0.25 * independenceCoverage).coerceIn(0.0, 1.0)
             return ResearchReport(
-                findings = findings,
+                findings = admitted,
                 conflicts = conflicts,
                 confidence = confidence
             )
