@@ -15,7 +15,10 @@ class AmarAgentPlanner(
                         tool.scope == AmarToolScope.READ_ONLY || tool.scope == AmarToolScope.SIMULATION
                     AgentIntent.STRATEGY_DESIGN -> tool.scope == AmarToolScope.READ_ONLY ||
                         tool.scope == AmarToolScope.STRATEGY_WRITE || tool.scope == AmarToolScope.SIMULATION
-                    AgentIntent.GENERAL -> tool.scope == AmarToolScope.READ_ONLY
+                    AgentIntent.GENERAL,
+                    AgentIntent.SYSTEM_IDENTITY,
+                    AgentIntent.SYSTEM_TIME,
+                    AgentIntent.SYSTEM_DATE -> tool.scope == AmarToolScope.READ_ONLY
                 }
             }
             .map { it.id }
@@ -63,4 +66,4 @@ data class AmarAgentPlan(
     val stopConditions: List<String>
 )
 
-enum class AgentIntent { GENERAL, RESEARCH, TRADE_ANALYSIS, STRATEGY_DESIGN }
+enum class AgentIntent { GENERAL, RESEARCH, TRADE_ANALYSIS, STRATEGY_DESIGN, SYSTEM_IDENTITY, SYSTEM_TIME, SYSTEM_DATE }
