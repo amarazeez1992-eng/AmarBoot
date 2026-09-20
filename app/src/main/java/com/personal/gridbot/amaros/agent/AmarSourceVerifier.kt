@@ -3,7 +3,11 @@ package com.personal.gridbot.amaros.agent
 /** Evidence quality gate. It does not treat model confidence as truth. */
 class AmarSourceVerifier {
     fun verify(findings: List<ResearchFinding>): AmarSourceVerification {
-        val valid = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
+        val valid = findings.filter {
+            it.sourceUri.isNotBlank() &&
+                it.evidence.isNotBlank() &&
+                it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE
+        }
         if (valid.isEmpty()) return AmarSourceVerification(false, 0.0, 0, 0, 0.0, "No usable evidence")
 
         val independent = valid.map { independentKey(it.sourceUri) }.distinct().size
@@ -22,9 +26,17 @@ class AmarSourceVerifier {
 
     /** Point 5 owner-level per-finding state; uses the same canonical host rule as verify(). */
     fun isIndependent(finding: ResearchFinding, findings: List<ResearchFinding>): Boolean {
-        if (finding.sourceUri.isBlank() || finding.evidence.isBlank()) return false
+        if (
+            finding.sourceUri.isBlank() ||
+            finding.evidence.isBlank() ||
+            finding.relevanceScore < AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE
+        ) return false
         val host = independentKey(finding.sourceUri)
-        val usable = findings.filter { it.sourceUri.isNotBlank() && it.evidence.isNotBlank() }
+        val usable = findings.filter {
+            it.sourceUri.isNotBlank() &&
+                it.evidence.isNotBlank() &&
+                it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE
+        }
         return usable.count { independentKey(it.sourceUri) == host } == 1
     }
 
