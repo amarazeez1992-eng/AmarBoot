@@ -21,7 +21,7 @@ class AmarStageThreeEngine(
 
         // Retrieve only evidence that was already in memory before this synchronization.
         // Newly supplied findings must not be counted as retrieved memory in the same pass.
-        val retrieved = memory.search(safeQuestion, nowEpochMs).take(maxRetrievedMemories)
+        val retrieved = memory.searchExactQuestion(safeQuestion, nowEpochMs).take(maxRetrievedMemories)
 
         valid.forEach { finding ->
             memory.remember(
@@ -94,6 +94,16 @@ class AmarAgentMemoryStore(
     }
 
     @Synchronized
+    fun searchExactQuestion(query: String, nowEpochMs: Long = System.currentTimeMillis()): List<AmarMemoryRecord> {
+        purgeExpired(nowEpochMs)
+        val canonical = canonicalQuestion(query)
+        if (canonical.isBlank()) return emptyList()
+        return records.values
+            .filter { canonicalQuestion(it.query) == canonical }
+            .sortedByDescending { it.createdAtEpochMs }
+    }
+
+    @Synchronized
     fun size(nowEpochMs: Long = System.currentTimeMillis()): Int {
         purgeExpired(nowEpochMs)
         return records.size
@@ -104,6 +114,15 @@ class AmarAgentMemoryStore(
         purgeExpired(nowEpochMs)
         return records.values.toList()
     }
+
+    private fun canonicalQuestion(text: String): String =
+        text.lowercase()
+            .replace(Regex("[\\u064B-\\u065F\\u0670]"), "")
+            .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
+            .replace('ة', 'ه')
+            .replace(Regex("[^\\p{L}\\p{N}]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     private fun purgeExpired(nowEpochMs: Long) {
         records.entries.removeIf { it.value.expiresAtEpochMs <= nowEpochMs }
