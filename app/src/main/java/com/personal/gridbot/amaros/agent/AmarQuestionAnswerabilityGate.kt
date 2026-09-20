@@ -1,68 +1,68 @@
 package com.personal.gridbot.amaros.agent
 
 /**
- * Canonical candidate -> answerable-evidence boundary.
- *
- * This gate is binary by contract: a candidate is admitted only when the
- * requested subject and requested answer facet are both represented by the
- * same candidate. It never ranks or upgrades source authority.
+ * Single candidate-to-answerability boundary.
+ * It does not rank sources and does not decide authority.
  */
 class AmarQuestionAnswerabilityGate {
-
-    data class Decision(
-        val admitted: Boolean,
-        val reason: String
-    )
+    data class Decision(val admitted: Boolean, val reason: String)
 
     fun decide(question: String, title: String, evidence: String): Decision {
         if (question.isBlank() || title.isBlank() || evidence.isBlank()) {
             return Decision(false, "missing_question_or_candidate_content")
         }
-
         val profile = profile(question)
-        val candidate = tokens(title + " " + evidence)
+        var candidate = tokens(title + " " + evidence).toMutableSet()
+        if ("united" in candidate && "states" in candidate) candidate += "america"
+        if ("usa" in candidate) candidate += "america"
+        if ("sherin" in candidate) candidate += "sherine"
+        if ("arabic" in candidate) candidate += "عربيه"
+        if ("english" in candidate) candidate += "انكليزيه"
 
-        if (profile.subject.isNotEmpty()) {
-            val subjectHits = profile.subject.count { it in candidate }
-            if (subjectHits < profile.subject.size) {
-                return Decision(false, "candidate_subject_mismatch")
-            }
+        if (profile.subject.any { it !in candidate }) {
+            return Decision(false, "candidate_subject_mismatch")
         }
-
-        if (profile.facets.isNotEmpty()) {
-            val facetHits = profile.facets.count { it in candidate }
-            if (facetHits < profile.facets.size) {
-                return Decision(false, "requested_facet_not_answered")
-            }
+        if (profile.facets.any { facet -> !facetSatisfied(facet, candidate) }) {
+            return Decision(false, "requested_facet_not_answered")
         }
-
         if (profile.subject.isEmpty() && profile.facets.isEmpty()) {
             return Decision(false, "question_profile_not_answerable")
         }
-
         return Decision(true, "subject_and_requested_facet_same_candidate")
+    }
+
+    private fun facetSatisfied(facet: String, candidate: Set<String>): Boolean = when (facet) {
+        "capital" -> "capital" in candidate
+        "age" -> "age" in candidate || "born" in candidate || "birth" in candidate
+        "letters" -> "letters" in candidate || "alphabet" in candidate
+        "number" -> "number" in candidate || "count" in candidate || "how" in candidate
+        "when" -> candidate.any { it in setOf("when", "date", "year", "born") }
+        "why" -> candidate.any { it in setOf("why", "because", "reason") }
+        "how" -> candidate.any { it in setOf("how", "method", "process") }
+        else -> facet in candidate
     }
 
     private fun profile(question: String): Profile {
         val q = tokens(question)
         val facets = linkedSetOf<String>()
-
-        when {
-            q.any { it in setOf("كم", "عدد", "many", "much", "number", "count") } ->
-                facets += setOf("number", "count", "age", "price", "value", "rate", "letters", "alphabet", "born")
-            q.any { it in setOf("متى", "when") } -> facets += setOf("when", "date", "year", "born")
-            q.any { it in setOf("لماذا", "ليش", "why") } -> facets += setOf("because", "reason", "why")
-            q.any { it in setOf("كيف", "شلون", "how") } -> facets += setOf("how", "method", "process")
+        if (q.any { it in QUANTITY_WORDS }) {
+            when {
+                "عمر" in q -> facets += "age"
+                "احرف" in q || "حروف" in q -> facets += "letters"
+                else -> facets += "number"
+            }
         }
+        if (q.any { it in setOf("عاصمه", "capital") }) facets += "capital"
+        if (q.any { it in setOf("متى", "when") }) facets += "when"
+        if (q.any { it in setOf("لماذا", "ليش", "why") }) facets += "why"
+        if (q.any { it in setOf("كيف", "شلون", "how") }) facets += "how"
 
-        val directFacets = q.filter { it in FACETS }
-        facets += directFacets
+        val subject = q.filter {
+            it !in STOP_WORDS && it !in FACETS && it !in QUANTITY_WORDS &&
+                it !in SUBJECT_TYPE_WORDS
+        }.map { normalizeAlias(it) }.toSet()
 
-        val subject = q
-            .filter { it !in STOP_WORDS && it !in FACETS && it !in QUANTITY_WORDS }
-            .toCollection(linkedSetOf())
-
-        return Profile(subject = subject, facets = facets)
+        return Profile(subject, facets)
     }
 
     private fun tokens(value: String): Set<String> =
@@ -78,11 +78,11 @@ class AmarQuestionAnswerabilityGate {
     private fun normalizeAlias(token: String): String = when (token) {
         "عاصمه", "عاصمة" -> "capital"
         "امريكا", "أمريكا" -> "america"
-        "العربيه", "عربيه", "العربية" -> "arabic"
-        "الانكليزيه", "انكليزيه", "الانجليزية", "انجليزية" -> "english"
-        "احرف", "الأحرف", "الحروف" -> "letters"
-        "شيرين" -> "sherine"
+        "شيرين", "شيرن" -> "sherine"
         "عمر" -> "age"
+        "احرف", "الأحرف", "الحروف", "حروف" -> "letters"
+        "عربيه", "العربيه", "العربية" -> "arabic"
+        "انكليزيه", "الانكليزيه", "الانجليزية", "انجليزية" -> "english"
         else -> token
     }
 
@@ -94,9 +94,12 @@ class AmarQuestionAnswerabilityGate {
             "ما","ماذا","هو","هي","هل","من","في","عن","الى","إلى","على","مع",
             "the","a","an","is","are","of","to","in","on","what","who","please","tell","me"
         )
+        private val SUBJECT_TYPE_WORDS = setOf(
+            "فنان","الفنان","فنانة","الفنانه","artist","actress","singer"
+        )
         private val FACETS = setOf(
             "capital","عاصمه","عاصمة","age","عمر","born","birth",
-            "letters","alphabet","احرف","الأحرف","الحروف",
+            "letters","alphabet","احرف","الأحرف","الحروف","حروف",
             "price","value","rate","time","date","year",
             "reason","why","because","method","process","how"
         )
