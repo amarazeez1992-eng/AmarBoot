@@ -19,32 +19,27 @@ class AmarRetrievalRelevanceEngine {
     )
 
     fun score(question: String, title: String, excerpt: String): ScoredResult {
-        val expanded = expandTerms(tokenize(question))
-        if (expanded.isEmpty()) return ScoredResult(0.0, emptySet())
+        val questionTerms = tokensForMatching(question)
+        if (questionTerms.isEmpty()) return ScoredResult(0.0, emptySet())
 
         val titleTerms = tokenize(title)
         val bodyTerms = tokenize(excerpt)
         val evidenceTerms = titleTerms + bodyTerms
 
         fun termMatches(term: String, terms: Set<String>): Boolean =
-            term == term && (
-                term in terms ||
-                    aliasesFor(term).any { it in terms }
-                )
+            term in terms || aliasesFor(term).any { it in terms }
 
-        val matched = tokensForMatching(question).filter { termMatches(it, evidenceTerms) }.toSet()
-        val titleMatched = tokensForMatching(question).filter { termMatches(it, titleTerms) }.toSet()
+        val matched = questionTerms.filter { termMatches(it, evidenceTerms) }.toSet()
+        val titleMatched = questionTerms.filter { termMatches(it, titleTerms) }.toSet()
 
-        val coverage = matched.size.toDouble() / tokensForMatching(question).size.toDouble()
-        val titleCoverage = titleMatched.size.toDouble() / tokensForMatching(question).size.toDouble()
+        val coverage = matched.size.toDouble() / questionTerms.size.toDouble()
+        val titleCoverage = titleMatched.size.toDouble() / questionTerms.size.toDouble()
         val exactPhrase = normalized(question).let { q ->
-            q.length >= 5 && (
-                normalized(title).contains(q) ||
-                    normalized(excerpt).contains(q)
-                )
+            q.length >= 5 &&
+                (normalized(title).contains(q) || normalized(excerpt).contains(q))
         }
 
-        val entityTerms = tokensForMatching(question).filter { it.length >= 4 }.toSet()
+        val entityTerms = questionTerms.filter { it.length >= 4 }.toSet()
         val entityMatched = entityTerms.count { termMatches(it, evidenceTerms) }
         val entityCoverage = if (entityTerms.isEmpty()) 0.0 else
             entityMatched.toDouble() / entityTerms.size.toDouble()
@@ -59,8 +54,18 @@ class AmarRetrievalRelevanceEngine {
         return ScoredResult(score, matched)
     }
 
-    fun accept(question: String, title: String, excerpt: String): Boolean =
-        score(question, title, excerpt).score >= MIN_RELEVANCE_SCORE
+    fun accept(question: String, title: String, excerpt: String): Boolean {
+        val result = score(question, title, excerpt)
+        if (result.score < MIN_RELEVANCE_SCORE) return false
+
+        val questionTerms = tokensForMatching(question)
+        if (questionTerms.size <= 1) return result.matchedTerms.size == 1
+
+        // A multi-facet question cannot be admitted merely because one broad
+        // entity token matched. At least two independent question terms must
+        // be represented in the evidence before source verification.
+        return result.matchedTerms.size >= minOf(2, questionTerms.size)
+    }
 
     private fun tokensForMatching(question: String): Set<String> =
         tokenize(question)
@@ -79,28 +84,9 @@ class AmarRetrievalRelevanceEngine {
             else -> emptySet()
         }
 
-    private fun expandTerms(tokens: Set<String>): Set<String> {
-        val result = tokens.toMutableSet()
-        tokens.forEach { token ->
-            when (token) {
-                "عاصمه" -> result += setOf("capital")
-                "عاصمة" -> result += setOf("capital", "عاصمه")
-                "امريكا", "أمريكا" -> result += setOf("america", "united", "states", "usa")
-                "الفنانه", "الفنانة" -> result += setOf("artist", "actress", "singer")
-                "عمر" -> result += setOf("age", "born", "birth")
-                "احرف", "الأحرف", "الحروف" -> result += setOf("letters", "alphabet")
-                "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية" ->
-                    result += setOf("english")
-                "عربيه", "العربيه", "العربية" -> result += setOf("arabic")
-                "عدد", "كم" -> result += setOf("number", "count", "how")
-            }
-        }
-        return result.filter { it.length >= 2 && it !in STOP_WORDS }.toSet()
-    }
-
     private fun tokenize(value: String): Set<String> =
         normalized(value)
-            .split(Regex("[^\\p{L}\\p{N}]+"))
+            .split(Regex("[^\p{L}\p{N}]+"))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in STOP_WORDS }
             .toSet()
@@ -114,7 +100,7 @@ class AmarRetrievalRelevanceEngine {
             .replace('ة', 'ه')
             .replace('ؤ', 'و')
             .replace('ئ', 'ي')
-            .replace(Regex("\\s+"), " ")
+            .replace(Regex("\s+"), " ")
             .trim()
 
     companion object {
