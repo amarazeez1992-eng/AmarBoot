@@ -49,10 +49,11 @@ Fixed normalization/entity recognition inside `AmarIntentUnderstanding`; Query P
 
 ### Rule for future developers
 Do not compensate for intent-classification defects by weakening evidence policy or adding keyword checks to orchestration. Fix the understanding/entity layer and add a regression test.
-\n
+
+
 ## ERR-PT10-001 — Point 10 upstream integration gap
 
-**Status:** Corrected — pending CI constitutional verification  
+**Status:** Corrected — CI verified on implementation commit 1a13bf99a4ed0c247cbb5f2c92c3c7cead256944  
 **Area:** Stage 11 / Item 3 / Point 10  
 **Detected:** 2026-09-20
 
@@ -69,4 +70,23 @@ Connected Point 1 from the verification layer's usable/invalid evidence counts a
 Added canonical assembler tests for successful owner-state composition and tampered provenance rejection.
 
 ### Rule for future developers
-Never infer an upstream Evidence Engine state in Point 10. Source it from the owning contract and preserve fail-closed behavior.\n\n## ERR-RESEARCH-001 — External research retrieval ceiling and provider fragility\n\n**Status:** Corrected — pending CI verification  \n**Area:** External Research  \n**Stage alignment:** Research foundation following Stage 0 → 10 closure  \n**Detected:** 2026-09-20\n\n### Symptom\nThe Agent requested 40 sources while the research contract and budget support an 80-source target, and provider retrieval was serialized.\n\n### Root cause\nThe engine boundary was not consuming the available 80-source target and network provider calls could consume the Agent timeout sequentially.\n\n### Correction\nRaised the retrieval target to 80, bounded the external result set at 80, parallelized the three approved public providers, added bounded network timeouts, and canonical URL deduplication.\n\n### Rule for future developers\nDo not treat source count as proof of independence or authority. Missing or weak evidence must remain visible to the existing verification/evidence gates; never weaken those gates to make research appear successful.\n
+Never infer an upstream Evidence Engine state in Point 10. Source it from the owning contract and preserve fail-closed behavior.
+
+## ERR-RESEARCH-001 — External research retrieval ceiling and provider fragility
+
+**Status:** Corrected — CI verified on implementation commit 1a13bf99a4ed0c247cbb5f2c92c3c7cead256944  
+**Area:** External Research  
+**Stage alignment:** Research foundation following Stage 0 → 10 closure  
+**Detected:** 2026-09-20
+
+### Symptom
+The Agent requested 40 sources while the research contract and budget support an 80-source target, and provider retrieval was serialized.
+
+### Root cause
+The engine boundary was not consuming the available 80-source target and network provider calls could consume the Agent timeout sequentially.
+
+### Correction
+Raised the retrieval target to 80, bounded the external result set at 80, parallelized the three approved public providers, added bounded network timeouts, and canonical URL deduplication.
+
+### Rule for future developers
+Do not treat source count as proof of independence or authority. Missing or weak evidence must remain visible to the existing verification/evidence gates; never weaken those gates to make research appear successful.
