@@ -1,9 +1,12 @@
 package com.personal.gridbot.amaros.agent
 
 /** Deterministic planning contract: planning produces intent, never broker commands. */
-class AmarAgentPlanner {
+class AmarAgentPlanner(
+    private val understanding: AmarIntentUnderstanding = AmarIntentUnderstanding()
+) {
     fun plan(request: AmarAgentRequest, availableTools: List<AmarAgentTool>): AmarAgentPlan {
-        val intent = classify(request.text)
+        val analysis = understanding.understand(request.text)
+        val intent = analysis.intent
         val tools = availableTools
             .filter { tool ->
                 when (intent) {
@@ -21,6 +24,8 @@ class AmarAgentPlanner {
             intent = intent,
             steps = listOf(
                 "normalize_request",
+                "understand_intent:" + analysis.questionForm + ":confidence=" +
+                    String.format(java.util.Locale.US, "%.2f", analysis.confidence),
                 if (intent == AgentIntent.RESEARCH || intent == AgentIntent.TRADE_ANALYSIS) "retrieve_and_verify_evidence" else "inspect_local_context",
                 "reason_with_constraints",
                 "challenge_assumptions",
@@ -32,20 +37,6 @@ class AmarAgentPlanner {
         )
     }
 
-    private fun classify(text: String): AgentIntent {
-        val q = text.lowercase().trim()
-        val greeting = listOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "hello", "hi", "hey")
-            .any { q == it || q.startsWith("$it ") }
-        if (greeting) return AgentIntent.GENERAL
-
-        return when {
-            listOf("استراتيجية", "strategy", "روبوت", "bot").any(q::contains) &&
-                !listOf("صفقة", "تداول", "mt5", "trade").any(q::contains) -> AgentIntent.STRATEGY_DESIGN
-            listOf("تداول", "صفقة", "backtest", "mt5", "trade", "ذهب", "gold", "forex", "سوق", "market")
-                .any(q::contains) -> AgentIntent.TRADE_ANALYSIS
-            else -> AgentIntent.RESEARCH
-        }
-    }
 }
 
 data class AmarAgentPlan(
