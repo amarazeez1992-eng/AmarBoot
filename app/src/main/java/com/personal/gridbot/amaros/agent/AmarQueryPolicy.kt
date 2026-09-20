@@ -13,7 +13,8 @@ class AmarQueryPolicy {
             AgentIntent.SYSTEM_IDENTITY,
             AgentIntent.SYSTEM_TIME,
             AgentIntent.SYSTEM_DATE,
-            AgentIntent.GENERAL -> AmarQueryPolicyDecision(
+            AgentIntent.GENERAL,
+            AgentIntent.SMALL_TALK -> AmarQueryPolicyDecision(
                 mode = AmarQueryPolicyMode.LOCAL_CONVERSATIONAL,
                 requiresResearch = false,
                 requiresStrictEvidence = false
