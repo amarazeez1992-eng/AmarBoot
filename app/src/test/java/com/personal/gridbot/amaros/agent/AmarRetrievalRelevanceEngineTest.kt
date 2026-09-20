@@ -15,7 +15,6 @@ class AmarRetrievalRelevanceEngineTest {
             "Emma Goldman",
             "Biography and historical activism in the United States."
         )
-
         assertFalse(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
@@ -26,7 +25,6 @@ class AmarRetrievalRelevanceEngineTest {
             "Washington, D.C. — Capital of the United States",
             "Washington, D.C. is the capital city of the United States."
         )
-
         assertTrue(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
@@ -37,7 +35,6 @@ class AmarRetrievalRelevanceEngineTest {
             "Estonia",
             "Estonia is a country in Northern Europe."
         )
-
         assertFalse(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
@@ -45,10 +42,30 @@ class AmarRetrievalRelevanceEngineTest {
     fun relevant_age_result_is_accepted() {
         val result = engine.score(
             "كم عمر الفنانة شيرين",
-            "Sherine — age and biography",
-            "Sherine was born in 1980 and is an Egyptian singer."
+            "شيرين عبد الوهاب — السيرة الذاتية",
+            "شيرين عبد الوهاب مغنية مصرية، ولدت عام 1980."
         )
-
         assertTrue(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
+    }
+
+    @Test
+    fun iraq_capital_result_is_accepted() {
+        val result = engine.score(
+            "ما عاصمة العراق",
+            "عاصمة العراق",
+            "بغداد هي عاصمة العراق."
+        )
+        assertTrue(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
+    }
+
+    @Test
+    fun mixed_unrelated_evidence_is_rejected() {
+        val result = engine.score(
+            "ما عاصمة العراق",
+            "Estonia",
+            "Estonia is a country in Northern Europe."
+        )
+        assertFalse(engine.accept("ما عاصمة العراق", "Estonia", "Estonia is a country in Northern Europe."))
+        assertFalse(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 }
