@@ -34,6 +34,24 @@ class AmarIntentUnderstandingTest {
         assertEquals("GREETING", result.questionForm)
     }
 
+    @Test fun identity_question_uses_local_system_intent() {
+        val result = parser.understand("من أنت")
+        assertEquals(AgentIntent.SYSTEM_IDENTITY, result.intent)
+        assertEquals("SYSTEM_IDENTITY", result.questionForm)
+    }
+
+    @Test fun time_question_uses_local_system_intent() {
+        val result = parser.understand("كم الوقت الآن")
+        assertEquals(AgentIntent.SYSTEM_TIME, result.intent)
+        assertEquals("SYSTEM_TIME", result.questionForm)
+    }
+
+    @Test fun date_question_uses_local_system_intent() {
+        val result = parser.understand("ما هو اليوم")
+        assertEquals(AgentIntent.SYSTEM_DATE, result.intent)
+        assertEquals("SYSTEM_DATE", result.questionForm)
+    }
+
     @Test fun mixed_request_exposes_multiple_signals() {
         val result = parser.understand("اشرح استراتيجية الذهب ولماذا يتحرك السوق؟")
         assertTrue(result.signals.size >= 2)
