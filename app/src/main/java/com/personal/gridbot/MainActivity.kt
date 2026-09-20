@@ -139,12 +139,18 @@ class MainActivity : ComponentActivity() {
             }
             val result = runCatching {
                 withTimeout(120_000L) {
-                    withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
+                    withContext(Dispatchers.Default) { agentEngine.ask("", "", request) { progress ->
+                        val elapsed = progress.elapsedMs / 1000
+                        val sourceText = if (progress.sourcesSearched > 0) " | المصادر: ${progress.sourcesSearched}" else ""
+                        sendAgentStatus("Agent: ${progress.message} | الزمن: ${elapsed}ث${sourceText}")
+                    } }
                 }
             }
             result.onSuccess {
                 Log.i("AMAR_AGENT", "REQUEST_SUCCESS elapsedMs=${System.currentTimeMillis() - startedAt}")
-                onResult(it.answer.ifBlank { "لم يُنتج الوكيل إجابة." }, "Agent: جاهز")
+                val answer = it.answer.ifBlank { "لم يُنتج الوكيل إجابة." }
+                val formatted = if (answer.contains("التحليل") || answer.contains("النتيجة الرسمية")) answer else "التحليل:\n$answer\n\nالنتيجة الرسمية:\n$answer"
+                onResult(formatted, "Agent: جاهز | زمن البحث: ${it.elapsedMs / 1000}ث | المصادر المفحوصة: ${it.sourcesSearched} | المصادر المعتمدة: ${it.sourcesAccepted}")
             }.onFailure { error ->
                 Log.e("AMAR_AGENT", "REQUEST_FAILED elapsedMs=${System.currentTimeMillis() - startedAt}", error)
                 val message = if (error is kotlinx.coroutines.TimeoutCancellationException) {
