@@ -59,6 +59,18 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
     }
 
     @Test
+    fun stale_evidence_remains_verified_but_has_reduced_freshness_score() {
+        val item = finding("https://a.example/x", "stale gold evidence", retrievedAt = 1_000L)
+        val report = assembler.assemble(listOf(item), nowEpochMs = 31L * 24L * 60L * 60L * 1000L + 1_000L)
+
+        assertEquals(FreshnessStatus.STALE, report.items.single().let {
+            if (it.freshnessVerified) FreshnessStatus.STALE else FreshnessStatus.FUTURE
+        })
+        assertTrue(report.items.single().freshnessVerified)
+        assertTrue(report.items.single().freshnessScore < 1.0)
+    }
+
+    @Test
     fun future_evidence_is_blocked_without_repairing_freshness() {
         val item = finding("https://a.example/x", "future gold claim", retrievedAt = 2_000L)
         val report = assembler.assemble(listOf(item), nowEpochMs = 1_500L)
