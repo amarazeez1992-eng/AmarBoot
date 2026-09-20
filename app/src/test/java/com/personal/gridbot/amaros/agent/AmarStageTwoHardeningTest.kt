@@ -52,6 +52,25 @@ class AmarStageTwoHardeningTest {
     }
 
     @Test
+    fun neutral_evidence_can_verify_a_factual_match_without_being_called_support() {
+        val engine = AmarClaimVerificationEngine()
+        val result = engine.verify(
+            "Gold is a precious metal traded in financial markets.",
+            listOf(
+                finding(
+                    "https://a.example/x",
+                    "Gold is a precious metal commonly traded in financial markets.",
+                    stance = EvidenceStance.UNKNOWN
+                )
+            )
+        )
+        assertTrue(result.accepted)
+        assertEquals(0, result.claims.single().supportingEvidence)
+        assertEquals(1, result.claims.single().matchedEvidence)
+        assertEquals(1, result.claims.single().neutralEvidence)
+    }
+
+    @Test
     fun calibrated_confidence_drops_with_conflicts() {
         val engine = AmarConfidenceCalibrationEngine()
         val claims = AmarClaimVerificationReport(
