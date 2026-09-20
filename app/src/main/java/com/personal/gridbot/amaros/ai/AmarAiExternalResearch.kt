@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.ai
 
-import com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
@@ -40,8 +39,6 @@ class AmarAiExternalResearch(
         val limit = maxResults.coerceIn(1, 80)
         val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.toString())
         val wikipediaLanguage = if (query.any { it in '\u0600'..'\u06FF' }) "ar" else "en"
-        val relevance = com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine()
-
         coroutineScope {
             val duck = async {
                 runCatching {
@@ -106,14 +103,8 @@ class AmarAiExternalResearch(
             }
 
             (duck.await() + wikipedia.await() + github.await())
-                .filter { it.url.startsWith("http") && it.title.isNotBlank() }
-                .map { result ->
-                    val scored = relevance.score(query, result.title, result.excerpt)
-                    result.copy(relevanceScore = scored.score)
-                }
-                .filter { it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE }
+                .filter { it.url.startsWith("http") && it.title.isNotBlank() && it.excerpt.isNotBlank() }
                 .distinctBy { canonicalKey(it.url) }
-                .sortedByDescending { it.relevanceScore }
                 .take(limit)
         }
     }
