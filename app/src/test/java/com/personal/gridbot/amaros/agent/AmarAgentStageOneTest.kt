@@ -28,10 +28,34 @@ class AmarAgentStageOneTest {
         assertEquals(120_000L, AmarAgentBudget().timeoutMs)
     }
 
-    @Test fun task_state_machine_exposes_transparent_verification_states() {
-        assertEquals(AgentTaskState.RESEARCHING, AgentTaskState.RESEARCHING)
-        assertEquals(AgentTaskState.VERIFYING, AgentTaskState.VERIFYING)
-        assertEquals(AgentTaskState.TIMEOUT_REACHED, AgentTaskState.TIMEOUT_REACHED)
+    @Test fun task_state_machine_exposes_expected_operational_states_and_progress_metadata() {
+        val expected = setOf(
+            AgentTaskState.IDLE,
+            AgentTaskState.UNDERSTANDING,
+            AgentTaskState.PLANNING,
+            AgentTaskState.RESEARCHING,
+            AgentTaskState.VERIFYING,
+            AgentTaskState.REASONING,
+            AgentTaskState.RESPONDING,
+            AgentTaskState.TIMEOUT_REACHED,
+            AgentTaskState.INSUFFICIENT_DATA,
+            AgentTaskState.ERROR
+        )
+        assertEquals(expected, AgentTaskState.values().toSet())
+
+        val progress = AmarAgentProgress(
+            state = AgentTaskState.VERIFYING,
+            message = "التحقق من جودة المصادر",
+            sourcesSearched = 12,
+            sourcesAccepted = 7,
+            elapsedMs = 34_000L
+        )
+        assertEquals(AgentTaskState.VERIFYING, progress.state)
+        assertEquals(12, progress.sourcesSearched)
+        assertEquals(7, progress.sourcesAccepted)
+        assertEquals(34_000L, progress.elapsedMs)
+        assertTrue(progress.sourcesSearched >= progress.sourcesAccepted)
+        assertTrue(progress.elapsedMs >= 0L)
     }
 
     @Test fun direction_engine_rejects_negated_buy() {
