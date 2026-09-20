@@ -53,13 +53,14 @@ class AmarLocalReasoning(
         val records = parseEvidence(block)
         if (records.isEmpty()) return synthesizeWithoutEvidence(request)
 
+        val relevanceEngine = AmarRetrievalRelevanceEngine()
         val ranked = records
-            .map { it to relevance(request, it.evidence + " " + it.title) }
-            .sortedByDescending { it.second }
+            .map { it to relevanceEngine.score(request, it.title, it.evidence) }
+            .filter { it.second.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE }
+            .sortedByDescending { it.second.score }
 
-        val best = ranked.filter { it.second > 0.0 }.take(4).map { it.first }
-        if (best.isEmpty()) return synthesizeWithoutEvidence(request)
-        val selected = best
+        val selected = ranked.take(4).map { it.first }
+        if (selected.isEmpty()) return synthesizeWithoutEvidence(request)
         val direct = directEvidenceSentence(request, selected)
 
         val supporting = selected.count { it.stance.equals("SUPPORTS", true) }
