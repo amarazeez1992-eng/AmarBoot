@@ -89,7 +89,7 @@ class AmarLocalReasoning(
     private fun synthesizeWithoutEvidence(request: String): String =
         if (looksArabic(request)) {
             "الطلب: $request\n\n" +
-                "AMAR لم يجد دليلًا موثوقًا كافيًا داخل هذه الدورة. لن أخترع إجابة أو أقدّم حقيقة غير متحققة. " +
+                "AMAR لم يجد دليلًا موثوقًا كافيًا داخل هذه الدورة. لا سأخترع إجابة أو أقدّم حقيقة غير متحققة. " +
                 "يمكنني تقديم تحليل منطقي محلي عندما تكون المعطيات موجودة، لكن الادعاء الواقعي يحتاج دليلًا داخل منظومة AMAR."
         } else {
             "Request: $request\n\n" +
@@ -147,9 +147,10 @@ class AmarLocalReasoning(
     private fun looksArabic(text: String): Boolean =
         text.any { it in '\u0600'..'\u06FF' }
 
-    private fun isGreeting(text: String): Boolean =
-        setOf("هلو", "مرحبا", "مرحباً", "السلام عليكم", "اهلا", "اهلين", "hello", "hi", "hey")
-            .any { text.trim().lowercase() == it || text.trim().lowercase().startsWith("$it ") }
+    private fun isGreeting(text: String): Boolean {
+        val analysis = understanding.understand(text.trim())
+        return analysis.intent == AgentIntent.GENERAL && analysis.questionForm == "GREETING"
+    }
 
     private fun greeting(): String =
         "أهلاً بك. أنا AMAR AI Agent. أستقبل الطلب، أفهمه، وأبني الإجابة من المعطيات والأدلة التي يسمح بها نظام AMAR."
