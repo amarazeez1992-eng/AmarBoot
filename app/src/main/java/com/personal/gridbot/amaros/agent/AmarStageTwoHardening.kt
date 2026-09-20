@@ -103,7 +103,7 @@ class AmarClaimVerificationEngine {
     }
 
     private fun tokens(text: String): Set<String> =
-        text.lowercase().split(Regex("[^\p{L}\p{N}]+")).filter { it.length >= 4 }.toSet()
+        text.lowercase().split(Regex("""[^\p{L}\p{N}]+""")).filter { it.length >= 4 }.toSet()
 
     private fun overlap(a: Set<String>, b: Set<String>): Double =
         if (a.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
