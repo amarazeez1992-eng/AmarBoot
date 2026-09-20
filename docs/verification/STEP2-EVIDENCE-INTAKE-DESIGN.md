@@ -97,11 +97,35 @@ data class EvidenceIntakeResult(
 
 The result separates technically usable candidates from technically rejected candidates. Neither collection is an evidence-acceptance decision.
 
+The contract implementation must be:
+- Stateless (no retained state between calls).
+- Deterministic (same input → same output, including rejection reasons).
+- Free of external dependencies (no network, no time, no randomness).
+
 ## 5. Current-state analysis
 
 The current retrieval implementation performs relevance scoring and applies `MIN_RELEVANCE_SCORE` before returning results. This means the current runtime boundary still combines retrieval with part of constitutional Step 3.
 
 This document does **not** move that logic into Step 2.
+
+### 5.2 Secondary Relevance Gates (Current State)
+
+The current state contains additional relevance gates in `AmarSourceVerifier`.
+Specifically:
+
+- `AmarSourceVerifier.verify()` filters findings with:
+  `relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE`.
+- `AmarSourceVerifier.isIndependent()` applies the same threshold to the individual finding before independence evaluation.
+- `AmarSourceVerifier.isIndependent()` also applies the same threshold when constructing its internally usable finding set.
+
+This means relevance decisions are currently distributed across:
+1. Retrieval (`AmarAiExternalResearch`)
+2. SourceVerifier (`verify()` and `isIndependent()`)
+3. Reasoning (independent relevance ranking and fallback)
+
+Step 2 does not address these. They are explicitly the concern of Step 3 (Question Relevance) and later migration. They are documented here only so that the current-state analysis remains complete and non-misleading.
+
+No change to `AmarSourceVerifier` or Reasoning is authorized in Step 2.
 
 The migration decision is:
 
