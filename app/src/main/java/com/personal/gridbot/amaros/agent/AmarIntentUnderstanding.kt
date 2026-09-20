@@ -60,11 +60,31 @@ class AmarIntentUnderstanding {
             if (normalizedConcept.contains(" ")) {
                 text.contains(normalizedConcept)
             } else {
-                normalizedConcept in tokens
+                normalizedConcept in tokens || stripArabicArticle(normalizedConcept) in tokens
             }
         }
+        val tradeInstrumentBoost = if (concepts === TRADE_CONCEPTS && containsTradingInstrument(tokens)) 1.0 else 0.0
         val questionBoost = if (text.contains("?") || text.contains("؟")) 0.10 else 0.0
-        return hits * 0.35 + questionBoost
+        return (hits + tradeInstrumentBoost) * 0.35 + questionBoost
+    }
+
+    private fun stripArabicArticle(token: String): String =
+        if (token.startsWith("ال") && token.length > 3) token.removePrefix("ال") else token
+
+    private fun containsTradingInstrument(tokens: Set<String>): Boolean {
+        val currencies = setOf(
+            "usd", "eur", "gbp", "jpy", "aud", "nzd", "cad", "chf",
+            "sek", "nok", "dkk", "sgd", "hkd"
+        )
+        return tokens.any { token ->
+            token == "xauusd" || token == "xagusd" ||
+                (token.length == 7 && token[3] == '/' &&
+                    token.substring(0, 3) in currencies &&
+                    token.substring(4, 7) in currencies) ||
+                (token.length == 6 &&
+                    token.substring(0, 3) in currencies &&
+                    token.substring(3, 6) in currencies)
+        }
     }
 
     private fun questionForm(text: String): String = when {
@@ -88,7 +108,8 @@ class AmarIntentUnderstanding {
             "يورو" to "EUR", "eur" to "EUR",
             "باوند" to "GBP", "gbp" to "GBP",
             "مؤشر" to "INDICATOR", "indicator" to "INDICATOR",
-            "روبوت" to "BOT", "bot" to "BOT"
+            "روبوت" to "BOT", "bot" to "BOT",
+            "xauusd" to "XAUUSD", "xagusd" to "XAGUSD"
         )
         entityConcepts.forEach { (needle, value) -> if (text.contains(needle)) entities += value }
         return entities.toList()
@@ -136,7 +157,7 @@ class AmarIntentUnderstanding {
         )
         private val RESEARCH_CONCEPTS = setOf(
             "ابحث", "بحث", "research", "مصادر", "دليل", "دراسه",
-            "اشرح", "ما هو", "لماذا", "كيف", "تحقق", "verify",
+            "اشرح", "ما هو", "ما هي", "لماذا", "كيف", "تحقق", "verify",
             "معلومه", "اعطني", "ما معنى", "شرح"
         )
     }
