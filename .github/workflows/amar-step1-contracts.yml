@@ -6,11 +6,13 @@ on:
     paths:
       - 'app/src/main/java/com/personal/gridbot/amaros/agent/admission/**'
       - 'app/src/test/java/com/personal/gridbot/amaros/agent/admission/**'
+      - '.github/workflows/amar-step1-contracts.yml'
   pull_request:
     branches: [ main ]
     paths:
       - 'app/src/main/java/com/personal/gridbot/amaros/agent/admission/**'
       - 'app/src/test/java/com/personal/gridbot/amaros/agent/admission/**'
+      - '.github/workflows/amar-step1-contracts.yml'
   workflow_dispatch:
 
 jobs:
