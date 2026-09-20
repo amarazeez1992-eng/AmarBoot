@@ -24,6 +24,10 @@ class AmarAgentStageOneTest {
         assertEquals(300_000L, budget.timeoutMs)
     }
 
+    @Test fun accuracy_first_default_budget_allows_120_seconds() {
+        assertEquals(120_000L, AmarAgentBudget().timeoutMs)
+    }
+
     @Test fun direction_engine_rejects_negated_buy() {
         val engine = AmarDecisionDirectionEngine()
         assertEquals(AmarDecisionDirection.UNKNOWN, engine.detect("لا أنصح بالشراء الآن"))
