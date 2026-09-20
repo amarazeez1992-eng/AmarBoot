@@ -60,16 +60,15 @@ class AmarAiAgentEngine(
                 requireCrossValidation = true,
                 requireBacktestWhenApplicable = true
             ),
+            availableTools = toolRegistry.availableTools(AmarAgentPolicy()),
             progress = progress
-        ),
-            availableTools = toolRegistry.availableTools(AmarAgentPolicy())
         ).response
         return Result(
             answer = response.answer,
             proposedActions = response.actions,
             toolEvidence = emptyList(),
             sourcesSearched = response.research?.findings?.size ?: 0,
-            sourcesAccepted = if (response.finalVerification.approved) response.research?.findings?.size ?: 0 else 0,
+            sourcesAccepted = response.sourceVerification?.totalSources ?: 0,
             elapsedMs = System.currentTimeMillis() - startedAt
         )
     }
