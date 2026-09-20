@@ -57,6 +57,6 @@ data class AmarAgentBudget(
 
         private const val MIN_TIMEOUT_MS = 1_000L
         private const val MAX_TIMEOUT_MS = 300_000L
-        private const val DEFAULT_TIMEOUT_MS = 60_000L
+        private const val DEFAULT_TIMEOUT_MS = 120_000L
     }
 }
