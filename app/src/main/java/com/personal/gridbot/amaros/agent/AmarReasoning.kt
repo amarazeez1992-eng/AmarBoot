@@ -58,7 +58,8 @@ class AmarLocalReasoning(
             .sortedByDescending { it.second }
 
         val best = ranked.filter { it.second > 0.0 }.take(4).map { it.first }
-        val selected = if (best.isEmpty()) records.take(3) else best
+        if (best.isEmpty()) return synthesizeWithoutEvidence(request)
+        val selected = best
         val direct = directEvidenceSentence(request, selected)
 
         val supporting = selected.count { it.stance.equals("SUPPORTS", true) }
