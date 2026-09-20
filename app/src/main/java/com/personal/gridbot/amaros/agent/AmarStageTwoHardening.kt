@@ -78,7 +78,7 @@ data class AmarEvidenceQualityReport(
 
 class AmarClaimVerificationEngine {
     fun verify(answer: String, findings: List<ResearchFinding>): AmarClaimVerificationReport {
-        val claims = answer.split(Regex("(?<=[.!?؟])\s+|\n+")).map { it.trim() }.filter { it.length >= 20 }
+        val claims = answer.split(Regex("""(?<=[.!?؟])\s+|\n+""")).map { it.trim() }.filter { it.length >= 20 }
         val evidence = findings.filter { it.evidence.isNotBlank() }
         val results = claims.map { claim ->
             val claimTokens = tokens(claim)
