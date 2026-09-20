@@ -128,7 +128,7 @@ class AmarAgentOrchestrator(
         }
 
         session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${answerDirection.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
-        val decisionVerification = verifier.verify(answer.answer, consensus, critique, if (strictEvidence) verification else null)
+        // General factual research may use a single authoritative source (such as Wikipedia) without\n        // inheriting the multi-source consensus threshold reserved for strict evidence/trading.\n        // Financial/trading paths still pass the full consensus and source-verification gates.\n        val finalConsensus = if (strictEvidence) consensus else null\n        val decisionVerification = verifier.verify(answer.answer, finalConsensus, critique, if (strictEvidence) verification else null)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
         val canonicalEvidenceApproved = !strictEvidence || canonicalEvidenceCertification?.certificationScore == 1.0
         val hardeningApproved = !needsResearch || !strictEvidence || (hardening.approved && canonicalEvidenceApproved)
