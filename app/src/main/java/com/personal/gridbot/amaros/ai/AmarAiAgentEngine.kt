@@ -30,7 +30,10 @@ class AmarAiAgentEngine(
     data class Result(
         val answer: String,
         val proposedActions: List<String>,
-        val toolEvidence: List<String>
+        val toolEvidence: List<String>,
+        val sourcesSearched: Int = 0,
+        val sourcesAccepted: Int = 0,
+        val elapsedMs: Long = 0L
     )
 
     private val reasoningProvider: AmarReasoningProvider = AmarLocalReasoning()
@@ -47,7 +50,8 @@ class AmarAiAgentEngine(
         reasoningProvider = reasoningProvider
     )
 
-    suspend fun ask(_apiKey: String, _model: String, request: String): Result {
+    suspend fun ask(_apiKey: String, _model: String, request: String, progress: ((com.personal.gridbot.amaros.agent.AmarAgentProgress) -> Unit)? = null): Result {
+        val startedAt = System.currentTimeMillis()
         val response = orchestrator.run(
             request = AmarAgentRequest(
                 text = request,
@@ -56,12 +60,17 @@ class AmarAiAgentEngine(
                 requireCrossValidation = true,
                 requireBacktestWhenApplicable = true
             ),
+            progress = progress
+        ),
             availableTools = toolRegistry.availableTools(AmarAgentPolicy())
         ).response
         return Result(
             answer = response.answer,
             proposedActions = response.actions,
-            toolEvidence = emptyList()
+            toolEvidence = emptyList(),
+            sourcesSearched = response.research?.findings?.size ?: 0,
+            sourcesAccepted = if (response.finalVerification.approved) response.research?.findings?.size ?: 0 else 0,
+            elapsedMs = System.currentTimeMillis() - startedAt
         )
     }
 
