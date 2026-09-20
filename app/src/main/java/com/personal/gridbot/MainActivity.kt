@@ -134,7 +134,7 @@ class MainActivity : ComponentActivity() {
             val local = runCatching { AmarAiActionEngine.route(request) }.getOrNull()
             if (local?.handled == true) {
                 val elapsedMs = System.currentTimeMillis() - startedAt
-                Log.i("AMAR_AGENT", "LOCAL_ACTION_HANDLED elapsedMs=$" + "elapsedMs")
+                Log.i("AMAR_AGENT", "LOCAL_ACTION_HANDLED elapsedMs=" + elapsedMs)
                 onResult(
                     local.response,
                     "Agent: جاهز | زمن المعالجة والتحقق: " + (elapsedMs / 1000) + "ث | المصادر المكتشفة: 0 | المصادر المعتمدة: 0"
