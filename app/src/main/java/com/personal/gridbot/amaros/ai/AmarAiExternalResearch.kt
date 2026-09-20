@@ -61,7 +61,7 @@ class AmarAiExternalResearch(
                                     SourceResult(
                                         source = "Wikipedia",
                                         title = title,
-                                        url = "https://en.wikipedia.org/wiki/\${title.replace(' ', '_')}",
+                                        url = "https://en.wikipedia.org/wiki/" + title.replace(' ', '_'),
                                         excerpt = stripMarkup(item.optString("snippet"))
                                     )
                                 )
@@ -122,7 +122,7 @@ class AmarAiExternalResearch(
     private fun canonicalKey(url: String): String =
         runCatching {
             val uri = java.net.URI(url)
-            "\${uri.host.orEmpty().lowercase()}\${uri.path.orEmpty()}".trimEnd('/')
+            (uri.host.orEmpty().lowercase() + uri.path.orEmpty()).trimEnd('/')
         }.getOrDefault(url.trim())
 
     private fun stripMarkup(value: String): String =
@@ -144,7 +144,7 @@ class AmarAiExternalResearch(
             .addHeader("User-Agent", "AmarBoot-PublicResearch/2.0")
             .build()
         http.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Research HTTP \${response.code}")
+            if (!response.isSuccessful) error("Research HTTP " + response.code)
             return response.body?.string().orEmpty()
         }
     }
