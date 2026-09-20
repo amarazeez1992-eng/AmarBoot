@@ -26,6 +26,7 @@ class AmarLocalReasoning(
         if (intent == AgentIntent.SYSTEM_IDENTITY) return AmarAgentResponse(answer = identityResponse(), actions = context.tools.map { it.id })
         if (intent == AgentIntent.SYSTEM_TIME) return AmarAgentResponse(answer = timeResponse(), actions = context.tools.map { it.id })
         if (intent == AgentIntent.SYSTEM_DATE) return AmarAgentResponse(answer = dateResponse(), actions = context.tools.map { it.id })
+        if (intent == AgentIntent.SMALL_TALK) return AmarAgentResponse(answer = smallTalkResponse(), actions = context.tools.map { it.id })
 
         val evidenceBlock = context.userText
             .substringAfter("Evidence summary:", "")
@@ -193,6 +194,9 @@ class AmarLocalReasoning(
         val analysis = understanding.understand(text.trim())
         return analysis.intent == AgentIntent.GENERAL && analysis.questionForm == "GREETING"
     }
+
+    private fun smallTalkResponse(): String =
+        "أنا بخير، شكرًا لسؤالك. كيف يمكنني مساعدتك؟"
 
     private fun identityResponse(): String =
         "أنا AMAR AI Agent. أنا وكيل ذكاء اصطناعي محلي ضمن منظومة AMAR: أفهم الطلب، أحدد مساره، أستخدم الأدلة عندما تكون مطلوبة، وأفصل بين المعلومات العادية والتحليل المالي الصارم. لا أملك صلاحية تنفيذ صفقات أو الوصول المباشر إلى حساب الوساطة."
