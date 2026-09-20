@@ -118,7 +118,7 @@ class AmarAiAgentEngine(
                 )
             }
             val admissionResult = admission.admit(request.question, findings)
-            val admitted = admissionResult.admitted.map { it.finding }
+            val admitted = admissionResult.admitted.map { it.finding.copy(relevanceScore = it.relevanceScore) }
             val rejectedCount = admissionResult.rejected.size
             val conflicts = buildList {
                 if (admitted.isEmpty()) add("no_question_relevant_evidence_admitted")
