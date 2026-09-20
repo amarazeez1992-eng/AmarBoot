@@ -122,7 +122,7 @@ class MainActivity : ComponentActivity() {
             val request = text?.trim().orEmpty()
             if (request.isEmpty()) return
             Log.i("AMAR_AGENT_BRIDGE", "ASK_RECEIVED length=${request.length}")
-            sendAgentStatus("Agent: يعالج الطلب…")
+            sendAgentStatus("Agent: يبحث ويتحقق… قد يستغرق وقتًا إضافيًا لضمان الدقة")
             askAgent(request) { answer, status -> sendAgentResult(answer, status) }
         }
     }
@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                 return@launch
             }
             val result = runCatching {
-                withTimeout(30_000L) {
+                withTimeout(120_000L) {
                     withContext(Dispatchers.Default) { agentEngine.ask("", "", request) }
                 }
             }
@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
             }.onFailure { error ->
                 Log.e("AMAR_AGENT", "REQUEST_FAILED elapsedMs=${System.currentTimeMillis() - startedAt}", error)
                 val message = if (error is kotlinx.coroutines.TimeoutCancellationException) {
-                    "انتهت مهلة الوكيل بعد 30 ثانية. تم إيقاف الطلب بدل إبقائه معلقاً."
+                    "انتهت مهلة التحقق بعد 120 ثانية. لم يتم اختلاق إجابة أو تجاوز طبقات التحقق."
                 } else {
                     "تعذر تمرير الطلب إلى AMAR AI Agent: " + (error.message ?: error.javaClass.simpleName)
                 }
