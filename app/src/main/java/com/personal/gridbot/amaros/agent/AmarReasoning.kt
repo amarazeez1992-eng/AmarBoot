@@ -58,6 +58,7 @@ class AmarLocalReasoning(
 
         val best = ranked.filter { it.second > 0.0 }.take(4).map { it.first }
         val selected = if (best.isEmpty()) records.take(3) else best
+        val direct = directEvidenceSentence(request, selected)
 
         val supporting = selected.count { it.stance.equals("SUPPORTS", true) }
         val opposing = selected.count { it.stance.equals("OPPOSES", true) }
@@ -65,6 +66,16 @@ class AmarLocalReasoning(
             .firstOrNull { it.startsWith("confidence=", true) }
 
         return buildString {
+            if (direct != null) {
+                append(if (looksArabic(request)) "الإجابة حسب الدليل الموثق: " else "Answer from the verified evidence: ")
+                append(direct.first)
+                append("\n")
+                append(if (looksArabic(request)) "المصدر: " else "Source: ")
+                append(direct.second.title.ifBlank { direct.second.publisher })
+                if (direct.second.uri.isNotBlank()) append(" — ").append(direct.second.uri)
+                return@buildString
+            }
+
             append(if (looksArabic(request)) "الإجابة حسب الأدلة المتاحة: " else "Answer from available evidence: ")
             append(if (supporting > opposing) {
                 if (looksArabic(request)) "الأدلة المختارة تميل إلى دعم النتيجة." else "The selected evidence leans toward the supported conclusion."
@@ -136,6 +147,29 @@ class AmarLocalReasoning(
         val overlap = q.intersect(e).size.toDouble() / q.size.toDouble()
         val exactPhrase = if (normalize(evidence).contains(normalize(query))) 0.35 else 0.0
         return (overlap + exactPhrase).coerceIn(0.0, 1.0)
+    }
+
+    private fun directEvidenceSentence(
+        query: String,
+        records: List<EvidenceRecord>
+    ): Pair<String, EvidenceRecord>? {
+        val queryTokens = tokens(query)
+        if (queryTokens.isEmpty()) return null
+        val requiredOverlap = if (queryTokens.size >= 2) 2 else 1
+        return records.asSequence()
+            .flatMap { record ->
+                record.evidence
+                    .split(Regex("(?<=[.!؟])\\s+"))
+                    .asSequence()
+                    .map { sentence -> sentence.trim() to record }
+            }
+            .map { (sentence, record) ->
+                val overlap = queryTokens.intersect(tokens(sentence)).size
+                Triple(sentence, record, overlap)
+            }
+            .filter { it.first.isNotBlank() && it.third >= requiredOverlap }
+            .maxByOrNull { it.third }
+            ?.let { it.first to it.second }
     }
 
     private fun tokens(text: String): Set<String> =
