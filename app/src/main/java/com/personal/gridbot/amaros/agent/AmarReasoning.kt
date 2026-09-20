@@ -115,7 +115,7 @@ class AmarLocalReasoning(
                 current.evidence = line.removePrefix("evidence=").trim()
             }
         }
-        current?.let { if (it.evidence.isNotBlank()) records += it.build() }
+        current?.let { builder -> if (builder.evidence.isNotBlank()) records += builder.build() }
         return records
     }
 
