@@ -32,6 +32,27 @@ class AmarAiAgentEngineRuntimeTest {
     }
 
     @Test
+    fun identity_question_returns_local_answer_without_evidence_gate() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "من أنت")
+        assertTrue(result.answer.startsWith("أنا AMAR AI Agent."))
+        assertFalse(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+    }
+
+    @Test
+    fun time_question_returns_device_time_without_evidence_gate() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "كم الوقت الآن")
+        assertTrue(result.answer.contains("الوقت الآن حسب ساعة الجهاز:"))
+        assertFalse(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+    }
+
+    @Test
+    fun ordinary_research_can_return_an_uncertain_answer_without_trading_strict_gate() = runBlocking {
+        val result = AmarAiAgentEngine().ask("", "", "ما هو مفهوم الانزلاق السعري؟")
+        assertFalse(result.answer.isBlank())
+        assertFalse(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+    }
+
+    @Test
     fun engine_response_is_blocked_when_research_evidence_is_unavailable() = runBlocking {
         val result = AmarAiAgentEngine().ask("", "", "ابحث وحلل XAUUSD")
 
