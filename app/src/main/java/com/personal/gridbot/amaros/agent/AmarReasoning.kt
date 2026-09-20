@@ -103,7 +103,7 @@ class AmarLocalReasoning(
         block.lineSequence().forEach { raw ->
             val line = raw.trim()
             if (line.startsWith("source=")) {
-                current?.let { if (it.evidence.isNotBlank()) records += it.build() }
+                current?.let { builder -> if (builder.evidence.isNotBlank()) records += builder.build() }
                 current = EvidenceRecordBuilder(
                     title = field(line, "title"),
                     authority = field(line, "authority"),
