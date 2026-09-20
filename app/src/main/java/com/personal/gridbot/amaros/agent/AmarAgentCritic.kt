@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
+import java.net.URI
+
 /**
  * Challenges a draft before it can become the agent's final answer.
  * Stage 11 Item 6 extends the existing critic instead of introducing a second critique engine.
@@ -17,7 +19,9 @@ class AmarAgentCritic {
         if (requireEvidence && validEvidence.isEmpty()) issues += "no_evidence"
         if (requireEvidence && evidence.isNotEmpty() && validEvidence.size != evidence.size) issues += "invalid_evidence"
 
-        val independentSources = validEvidence.map { it.sourceUri.trim() }.distinct().size
+        // Independence is publisher/host based, not raw-URL based. Multiple pages on one
+        // domain are one source family and must not satisfy cross-validation by themselves.
+        val independentSources = validEvidence.mapNotNull { hostOf(it.sourceUri) }.distinct().size
         if (requireEvidence && independentSources < 2) issues += "insufficient_independent_sources"
 
         val hasSupport = validEvidence.any { it.stance == EvidenceStance.SUPPORTS }
@@ -31,13 +35,11 @@ class AmarAgentCritic {
             if (validEvidence.size < 2 || hasSupport && hasOpposition) issues += "unsupported_certainty"
         }
 
-        // Preserve the existing critic's guarantee-language guard: these claims remain blocked
-        // even when evidence happens to be present.
         if (draft.contains("مضمون", ignoreCase = true) || draft.contains("guaranteed", ignoreCase = true)) {
             issues += "guarantee_language"
         }
 
-        val numericClaim = Regex("(?<!\\w)\\d+(?:[.,]\\d+)?%?(?!\\w)").containsMatchIn(draft)
+        val numericClaim = Regex("(?<!\w)\d+(?:[.,]\d+)?%?(?!\w)").containsMatchIn(draft)
         if (numericClaim && requireEvidence && validEvidence.isEmpty()) issues += "unsupported_numeric_claim"
 
         val distinctIssues = issues.distinct()
@@ -69,6 +71,10 @@ class AmarAgentCritic {
         if (issues.contains("unsupported_numeric_claim")) value -= 0.20
         return value.coerceIn(0.0, 1.0)
     }
+
+    private fun hostOf(uri: String): String? = runCatching {
+        URI(uri).host?.lowercase()?.removePrefix("www.")
+    }.getOrNull()
 }
 
 data class AmarCritique(
