@@ -4,10 +4,8 @@ import android.content.Context
 import com.personal.gridbot.amaros.agent.AmarAgentOrchestrator
 import com.personal.gridbot.amaros.agent.AmarAgentPlanner
 import com.personal.gridbot.amaros.agent.AmarAgentRequest
-import com.personal.gridbot.amaros.agent.AmarAgentTool
 import com.personal.gridbot.amaros.agent.AmarAgentToolRegistry
 import com.personal.gridbot.amaros.agent.AmarAgentPolicy
-import com.personal.gridbot.amaros.agent.AmarAgentResponse
 import com.personal.gridbot.amaros.agent.AmarReasoningProvider
 import com.personal.gridbot.amaros.agent.AmarResearchEngine
 import com.personal.gridbot.amaros.agent.AmarSourceVerifier
@@ -53,7 +51,7 @@ class AmarAiAgentEngine(
         val response = orchestrator.run(
             request = AmarAgentRequest(
                 text = request,
-                requestedSourceCount = 40,
+                requestedSourceCount = 80,
                 maximumSourceCount = 100,
                 requireCrossValidation = true,
                 requireBacktestWhenApplicable = true
@@ -82,7 +80,6 @@ class AmarAiAgentEngine(
                     sourceUri = source.url,
                     evidence = source.excerpt,
                     authority = authorityFor(source),
-
                     publisher = source.source
                 )
             }
