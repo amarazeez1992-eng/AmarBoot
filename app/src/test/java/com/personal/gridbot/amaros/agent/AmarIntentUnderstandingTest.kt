@@ -28,6 +28,13 @@ class AmarIntentUnderstandingTest {
         assertEquals("OPEN", result.questionForm)
     }
 
+    @Test fun small_talk_is_not_classified_as_greeting() {
+        val result = parser.understand("كيف حالك")
+        assertEquals(AgentIntent.SMALL_TALK, result.intent)
+        assertEquals("SMALL_TALK", result.questionForm)
+        assertTrue(result.signals.contains("SMALL_TALK:1.00"))
+    }
+
     @Test fun greeting_normalization_handles_arabic_diacritics() {
         val result = parser.understand("مرحباً")
         assertEquals(AgentIntent.GENERAL, result.intent)
