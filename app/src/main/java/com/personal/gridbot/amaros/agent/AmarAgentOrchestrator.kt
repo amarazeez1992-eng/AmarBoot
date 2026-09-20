@@ -33,6 +33,7 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
         val needsResearch = plan.intent == AgentIntent.RESEARCH || plan.intent == AgentIntent.TRADE_ANALYSIS
+        val strictEvidence = plan.intent == AgentIntent.TRADE_ANALYSIS
         val report = if (needsResearch) {
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
             researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
@@ -90,7 +91,7 @@ class AmarAgentOrchestrator(
         ))
 
         session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
-        val critique = critic.review(answer.answer, unifiedFindings, requireEvidence = needsResearch)
+        val critique = critic.review(answer.answer, unifiedFindings, requireEvidence = strictEvidence)
         val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
         val answerDirection = directionEngine.detect(answer.answer)
         val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
@@ -107,9 +108,9 @@ class AmarAgentOrchestrator(
         }
 
         session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${answerDirection.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
-        val decisionVerification = verifier.verify(answer.answer, consensus, critique, verification)
+        val decisionVerification = verifier.verify(answer.answer, consensus, critique, if (strictEvidence) verification else null)
         val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
-        val hardeningApproved = !needsResearch || hardening.approved
+        val hardeningApproved = !needsResearch || !strictEvidence || hardening.approved
         val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
         val finalApproved = decisionVerification.approved && hierarchyApproved
         session.record(if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked")
