@@ -30,7 +30,8 @@ class AmarAiExternalResearch(
         val source: String,
         val title: String,
         val url: String,
-        val excerpt: String
+        val excerpt: String,
+        val relevanceScore: Double = 0.0
     )
 
     suspend fun search(query: String, maxResults: Int = 80): List<SourceResult> = withContext(Dispatchers.IO) {
