@@ -73,7 +73,7 @@ class AmarRetrievalRelevanceEngine {
 
     private fun tokenize(value: String): Set<String> =
         normalized(value)
-            .split(Regex("[^\p{L}\p{N}]+"))
+            .split(Regex("[^\\p{L}\\p{N}]+"))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in STOP_WORDS }
             .toSet()
@@ -87,7 +87,7 @@ class AmarRetrievalRelevanceEngine {
             .replace('ة', 'ه')
             .replace('ؤ', 'و')
             .replace('ئ', 'ي')
-            .replace(Regex("\s+"), " ")
+            .replace(Regex("\\s+"), " ")
             .trim()
 
     companion object {
