@@ -23,9 +23,9 @@ class AmarLocalReasoning(
         }
 
         val intent = understanding.understand(request).intent
-        if (intent == AgentIntent.SYSTEM_IDENTITY) return AmarAgentResponse(identityResponse(), context.tools.map { it.id })
-        if (intent == AgentIntent.SYSTEM_TIME) return AmarAgentResponse(timeResponse(), context.tools.map { it.id })
-        if (intent == AgentIntent.SYSTEM_DATE) return AmarAgentResponse(dateResponse(), context.tools.map { it.id })
+        if (intent == AgentIntent.SYSTEM_IDENTITY) return AmarAgentResponse(answer = identityResponse(), actions = context.tools.map { it.id })
+        if (intent == AgentIntent.SYSTEM_TIME) return AmarAgentResponse(answer = timeResponse(), actions = context.tools.map { it.id })
+        if (intent == AgentIntent.SYSTEM_DATE) return AmarAgentResponse(answer = dateResponse(), actions = context.tools.map { it.id })
 
         val evidenceBlock = context.userText
             .substringAfter("Evidence summary:", "")
