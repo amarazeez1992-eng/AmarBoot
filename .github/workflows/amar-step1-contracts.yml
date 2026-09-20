@@ -29,10 +29,12 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.7'
 
       - name: Run AdmissionContractsTest
-        run: ./gradlew :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest' --stacktrace
+        run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest' --stacktrace
 
       - name: Upload Test Results
         if: always()
