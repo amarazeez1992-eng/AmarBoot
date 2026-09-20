@@ -18,12 +18,13 @@ import com.personal.gridbot.amaros.agent.AmarTradingTools
 import com.personal.gridbot.amaros.agent.AmarLocalReasoning
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
+import com.personal.gridbot.amaros.agent.ResearchFinding
+import com.personal.gridbot.amaros.agent.Authority
 
 /**
  * AMAR AI Agent boundary.
  * The UI enters the canonical Agent Orchestrator; no UI-level shortcut bypasses
  * planning, research/verification gates, critique, hierarchy and final validation.
- * Broker execution remains fail-closed.
  */
 class AmarAiAgentEngine(
     private val context: Context? = null
@@ -36,9 +37,11 @@ class AmarAiAgentEngine(
 
     private val reasoningProvider: AmarReasoningProvider = AmarLocalReasoning()
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
+    private val externalResearch = AmarAiExternalResearch()
+
     private val orchestrator = AmarAgentOrchestrator(
         planner = AmarAgentPlanner(),
-        researchEngine = LocalResearchFallback(),
+        researchEngine = ExternalResearchAdapter(externalResearch),
         sourceVerifier = AmarSourceVerifier(),
         consensusEngine = AmarAgentEvidenceConsensus(),
         critic = AmarAgentCritic(),
@@ -65,11 +68,35 @@ class AmarAiAgentEngine(
     }
 
     /**
-     * No fake evidence is fabricated when an external retrieval provider is absent.
-     * Research-dependent requests therefore remain fail-closed at the orchestrator gate.
+     * Adapter keeps the canonical AmarResearchEngine contract intact while allowing
+     * the approved keyless public-web retrieval implementation to feed the orchestrator.
      */
-    private class LocalResearchFallback : AmarResearchEngine {
-        override suspend fun research(request: ResearchRequest): ResearchReport =
-            ResearchReport(findings = emptyList(), conflicts = listOf("external_research_provider_unavailable"))
+    private class ExternalResearchAdapter(
+        private val external: AmarAiExternalResearch
+    ) : AmarResearchEngine {
+        override suspend fun research(request: ResearchRequest): ResearchReport {
+            val results = external.search(request.question, request.maxSources)
+            val findings = results.map { source ->
+                ResearchFinding(
+                    sourceTitle = source.title.ifBlank { source.source },
+                    sourceUri = source.url,
+                    evidence = source.excerpt,
+                    authority = when (source.source) {
+                        "Wikipedia" -> Authority.REPUTABLE
+                        "GitHub" -> Authority.COMMUNITY
+                        else -> Authority.UNKNOWN
+                    },
+                    publisher = source.source
+                )
+            }
+            val conflicts = if (findings.isEmpty()) {
+                listOf("external_research_returned_no_findings")
+            } else emptyList()
+            return ResearchReport(
+                findings = findings,
+                conflicts = conflicts,
+                confidence = if (findings.isEmpty()) 0.0 else 0.50
+            )
+        }
     }
 }
