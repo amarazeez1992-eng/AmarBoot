@@ -1,6 +1,6 @@
 # ERR-RESEARCH-001 — External research retrieval ceiling and provider fragility
 
-**Status:** Corrected / CI verification required  
+**Status:** Corrected — CI verified on implementation commit 1a13bf99a4ed0c247cbb5f2c92c3c7cead256944  
 **Detected:** 2026-09-20  
 **Area:** External Research  
 **Stage alignment:** Research foundation following Stage 0 → 10 closure
