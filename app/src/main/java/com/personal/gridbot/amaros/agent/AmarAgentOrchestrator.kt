@@ -22,7 +22,8 @@ class AmarAgentOrchestrator(
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
     private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy(),
     private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
-    private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
+    private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer(),
+    private val answerabilityGate: AmarQuestionAnswerabilityGate = AmarQuestionAnswerabilityGate()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -58,7 +59,12 @@ class AmarAgentOrchestrator(
             session.record(AmarAgentStage.RETRIEVE, "STAGE_3: memory + unified evidence + freshness")
             stageThreeEngine.synchronize(request.text, report?.findings.orEmpty())
         } else null
-        val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
+        val rawUnifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
+        val unifiedFindings = if (needsResearch) {
+            rawUnifiedFindings.filter {
+                answerabilityGate.decide(request.text, it.sourceTitle, it.evidence).admitted
+            }
+        } else rawUnifiedFindings
 
         val verification = report?.let {
             emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
