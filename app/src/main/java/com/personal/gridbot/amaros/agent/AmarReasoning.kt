@@ -111,8 +111,10 @@ class AmarLocalReasoning(
                     publisher = field(line, "publisher"),
                     uri = field(line, "uri")
                 )
-            } else if (line.startsWith("evidence=") && current != null) {
-                current.evidence = line.removePrefix("evidence=").trim()
+            } else if (line.startsWith("evidence=")) {
+                current?.let { builder ->
+                    builder.evidence = line.removePrefix("evidence=").trim()
+                }
             }
         }
         current?.let { builder -> if (builder.evidence.isNotBlank()) records += builder.build() }
