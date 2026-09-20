@@ -1,14 +1,15 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetector
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzer
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessReport
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
 
 /**
  * Stage 11 / Item 3 composition boundary.
  *
- * This adapter connects the existing Point 2-9 analyzers to auditable Point 10
- * inputs. It never invents Point 1 or Point 8 state: those states must be
- * supplied by their owning upstream contracts before constitutional certification.
+ * This adapter connects the existing Point 1-9 owner outputs to auditable Point 10
+ * inputs. It never invents upstream state and never creates a second evidence methodology.
  */
 class AmarCanonicalEvidenceQualityAssembler(
     private val sourceQuality: AmarSourceQualityAnalyzer = AmarSourceQualityAnalyzer(),
@@ -17,6 +18,7 @@ class AmarCanonicalEvidenceQualityAssembler(
     private val duplicateDetector: AmarDuplicateEvidenceDetector = AmarDuplicateEvidenceDetector(),
     private val fingerprintVerifier: AmarFingerprintIntegrityVerifier = AmarFingerprintIntegrityVerifier(),
     private val uniquenessAnalyzer: AmarEvidenceUniquenessAnalyzer = AmarEvidenceUniquenessAnalyzer(),
+    private val tamperingDetector: AmarEvidenceTamperingDetector = AmarEvidenceTamperingDetector(),
     private val scoreEngine: AmarEvidenceQualityScoreEngine = AmarEvidenceQualityScoreEngine()
 ) {
     fun assemble(
@@ -59,10 +61,61 @@ class AmarCanonicalEvidenceQualityAssembler(
     }
 
     /**
-     * Constitutional Point 10 certification.
+     * Constitutional Point 10 certification from the real upstream verification boundary.
      *
-     * The caller must provide one canonical upstream state for every finding.
-     * Missing/mismatched state fails closed; no default-success state is created here.
+     * Point 1 and Point 8 are sourced from AmarVerificationReport:
+     * - Point 1: the owning verification layer's usable/invalid evidence counts.
+     * - Point 8: the owning verification layer's recorded provenance chain, rechecked
+     *   by AmarEvidenceTamperingDetector.
+     *
+     * Points 2-7 and 9 remain owned by their existing analyzers. No heuristic score is
+     * introduced here; this method only composes their boolean verification states.
+     */
+    fun certify(
+        findings: List<ResearchFinding>,
+        nowEpochMs: Long,
+        verification: AmarVerificationReport
+    ): AmarCanonicalEvidenceQualityCertificationReport {
+        require(verification.provenance.size == findings.size)
+
+        val quality = assemble(findings, nowEpochMs)
+        val point1 = findings.isNotEmpty() &&
+            verification.usableEvidenceCount == findings.size &&
+            verification.invalidEvidenceCount == 0
+        val point2 = quality.point2UsableEvidence == findings.size && findings.isNotEmpty()
+        val point3 = findings.isNotEmpty() && findings.all { it.authority != Authority.UNKNOWN }
+        val point4 = quality.items.isNotEmpty() && quality.items.all { it.freshnessVerified }
+        val point5 = verification.accepted && verification.independentSources >= 2
+        val point6 = !quality.point6Duplicates.hasDuplicates
+        val point7 = quality.point7FingerprintIntegrity.intact
+        val point8 = tamperingDetector.detect(findings, verification.provenance).intact
+        val point9 = quality.point9Uniqueness.unique
+
+        val upstreamState = AmarEvidenceQualityUpstreamState(
+            point1EvidenceIntakeVerified = point1,
+            point2SourceQualityVerified = point2,
+            point3AuthorityVerified = point3,
+            point4FreshnessVerified = point4,
+            point5SourceIndependenceVerified = point5,
+            point6DuplicateFreeVerified = point6,
+            point7FingerprintIntegrityVerified = point7,
+            point8TamperingIntegrityVerified = point8,
+            point9EvidenceUniquenessVerified = point9
+        )
+
+        val certificationScore = scoreEngine.aggregate(
+            quality.items,
+            List(findings.size) { upstreamState }
+        )
+        return AmarCanonicalEvidenceQualityCertificationReport(
+            quality = quality,
+            upstreamStates = List(findings.size) { upstreamState },
+            certificationScore = certificationScore
+        )
+    }
+
+    /**
+     * Compatibility overload for isolated contract tests and fail-closed callers.
      */
     fun certify(
         findings: List<ResearchFinding>,
