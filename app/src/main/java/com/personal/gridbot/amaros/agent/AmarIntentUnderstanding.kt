@@ -16,6 +16,16 @@ class AmarIntentUnderstanding {
             isTimeQuestion(normalized) -> return systemAnalysis(AgentIntent.SYSTEM_TIME, "SYSTEM_TIME", normalized)
             isDateQuestion(normalized) -> return systemAnalysis(AgentIntent.SYSTEM_DATE, "SYSTEM_DATE", normalized)
         }
+        if (isSmallTalk(normalized)) {
+            return AmarIntentAnalysis(
+                intent = AgentIntent.SMALL_TALK,
+                confidence = 1.0,
+                signals = listOf("SMALL_TALK:1.00"),
+                questionForm = "SMALL_TALK",
+                entities = emptyList(),
+                ambiguous = false
+            )
+        }
         if (isGreeting(normalized)) {
             return AmarIntentAnalysis(
                 intent = AgentIntent.GENERAL,
@@ -139,13 +149,19 @@ class AmarIntentUnderstanding {
         listOf("التاريخ", "اليوم", "شنو التاريخ", "ما هو اليوم", "ما اليوم", "what date", "what day")
             .any { text == it || text.contains(it) }
 
+    private fun isSmallTalk(text: String): Boolean =
+        SMALL_TALK.any { text == it || text.startsWith("$it ") }
+
     private fun isGreeting(text: String): Boolean =
         GREETINGS.any { text == it || text.startsWith("$it ") }
 
     companion object {
         private val GREETINGS = setOf(
-            "هلو", "مرحبا", "السلام عليكم", "اهلا", "اهلين", "كيف حالك", "شلونك", "شلونج", "كيفك", "كيفج",
-            "hello", "hi", "hey", "how are you"
+            "هلو", "مرحبا", "السلام عليكم", "اهلا", "اهلين",
+            "hello", "hi", "hey"
+        )
+        private val SMALL_TALK = setOf(
+            "كيف حالك", "شلونك", "شلونج", "كيفك", "كيفج", "how are you"
         )
         private val TRADE_CONCEPTS = setOf(
             "تداول", "صفقه", "mt5", "mt4", "trade", "gold", "ذهب",
