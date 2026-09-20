@@ -111,7 +111,8 @@ class AmarAiAgentEngine(
                     sourceUri = source.url,
                     evidence = source.excerpt,
                     authority = authorityFor(source),
-                    publisher = source.source
+                    publisher = source.source,
+                    relevanceScore = source.relevanceScore
                 )
             }
             val conflicts = if (findings.isEmpty()) {
