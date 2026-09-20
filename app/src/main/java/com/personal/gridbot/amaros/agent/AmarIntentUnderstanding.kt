@@ -11,6 +11,11 @@ class AmarIntentUnderstanding {
     fun understand(text: String): AmarIntentAnalysis {
         require(text.isNotBlank())
         val normalized = normalize(text)
+        when {
+            isIdentityQuestion(normalized) -> return systemAnalysis(AgentIntent.SYSTEM_IDENTITY, "SYSTEM_IDENTITY", normalized)
+            isTimeQuestion(normalized) -> return systemAnalysis(AgentIntent.SYSTEM_TIME, "SYSTEM_TIME", normalized)
+            isDateQuestion(normalized) -> return systemAnalysis(AgentIntent.SYSTEM_DATE, "SYSTEM_DATE", normalized)
+        }
         if (isGreeting(normalized)) {
             return AmarIntentAnalysis(
                 intent = AgentIntent.GENERAL,
@@ -97,6 +102,21 @@ class AmarIntentUnderstanding {
             .replace(Regex("""[،؛,:!\.()\[\]{}"']"""), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
+
+    private fun systemAnalysis(intent: AgentIntent, form: String, text: String): AmarIntentAnalysis =
+        AmarIntentAnalysis(intent, 1.0, listOf(intent.name + ":1.00"), form, extractEntities(text), false)
+
+    private fun isIdentityQuestion(text: String): Boolean =
+        listOf("من انت", "من انتي", "عرف نفسك", "ما اسمك", "شنو اسمك", "ماذا تفعل", "شنو تسوي", "ما هي قدراتك", "شنو قدراتك", "منو انت")
+            .any { text == it || text.startsWith("$it ") }
+
+    private fun isTimeQuestion(text: String): Boolean =
+        listOf("الوقت", "الساعه", "كم الساعه", "كم الوقت", "الان شكد الوقت", "هسه شكد الوقت", "what time")
+            .any { text == it || text.contains(it) }
+
+    private fun isDateQuestion(text: String): Boolean =
+        listOf("التاريخ", "اليوم", "شنو التاريخ", "ما هو اليوم", "ما اليوم", "what date", "what day")
+            .any { text == it || text.contains(it) }
 
     private fun isGreeting(text: String): Boolean =
         GREETINGS.any { text == it || text.startsWith("$it ") }
