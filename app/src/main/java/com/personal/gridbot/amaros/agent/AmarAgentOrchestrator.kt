@@ -24,16 +24,23 @@ class AmarAgentOrchestrator(
     private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
     private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
 ) {
-    suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
+    suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
         val safeBudget = budget.normalized()
         val safeMaximumSources = request.maximumSourceCount.coerceIn(1, safeBudget.maxSources.coerceAtLeast(1))
         val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
         val safeTools = availableTools.filter { it.scope != AmarToolScope.EXECUTION_FUTURE }.distinctBy { it.id }
         val session = AmarAgentSession(budget = safeBudget)
+        val startedAt = System.currentTimeMillis()
+        fun emit(state: AgentTaskState, message: String, searched: Int = 0, accepted: Int = 0) {
+            session.state(state, message)
+            progress?.invoke(AmarAgentProgress(state, message, searched, accepted, System.currentTimeMillis() - startedAt))
+        }
+        emit(AgentTaskState.UNDERSTANDING, "فهم الطلب")
         session.record(AmarAgentStage.INTAKE, request.text)
         val mandates = hierarchy.defaultMandates()
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
         val plan = planner.plan(request, safeTools)
+        emit(AgentTaskState.PLANNING, "تخطيط مسار التحقق")
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
@@ -42,6 +49,7 @@ class AmarAgentOrchestrator(
         val needsResearch = queryPolicyDecision.requiresResearch
         val strictEvidence = queryPolicyDecision.requiresStrictEvidence
         val report = if (needsResearch) {
+            emit(AgentTaskState.RESEARCHING, "البحث في المصادر")
             session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
             researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
         } else null
@@ -53,6 +61,7 @@ class AmarAgentOrchestrator(
         val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
 
         val verification = report?.let {
+            emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
             sourceVerifier.verify(unifiedFindings)
         }
@@ -98,6 +107,7 @@ class AmarAgentOrchestrator(
             stageTwoEngine.deliberate(request.text, unifiedFindings)
         } else null
 
+        emit(AgentTaskState.REASONING, "تحليل الأدلة ومقارنتها", unifiedFindings.size, verification?.accepted?.let { if (it) unifiedFindings.size else 0 } ?: 0)
         session.record(AmarAgentStage.REASON, "DIRECTOR: final synthesis with evidence and multi-role deliberation")
         val answer = reasoningProvider.respond(AmarAgentContext(
             userText = request.text + "\n\n" + evidenceText + buildStageTwoText(stageTwo),
@@ -148,6 +158,7 @@ class AmarAgentOrchestrator(
         if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
         if (strictEvidence && !canonicalEvidenceApproved) finalIssues += "point10_evidence_quality_not_verified"
         if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
+        emit(AgentTaskState.RESPONDING, "إعداد النتيجة الرسمية", unifiedFindings.size, if (finalApproved) unifiedFindings.size else 0)
         val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}")
 
         return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
