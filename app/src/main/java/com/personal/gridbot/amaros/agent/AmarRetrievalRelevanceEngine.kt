@@ -127,7 +127,7 @@ class AmarRetrievalRelevanceEngine {
     }
 
     private fun tokenize(value: String): Set<String> =
-        value.split(Regex("""[^\\p{L}\\p{N}]+"""))
+        value.split(Regex("""[^\p{L}\p{N}]+"""))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in QUESTION_WORDS }
             .toSet()
@@ -140,10 +140,10 @@ class AmarRetrievalRelevanceEngine {
 
     private fun normalize(value: String): String =
         value.lowercase()
-            .replace(Regex("""[\\u064B-\\u065F\\u0670]"""), "")
+            .replace(Regex("""[\u064B-\u065F\u0670]"""), "")
             .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
             .replace('ى', 'ي')
-            .replace(Regex("""\\s+"""), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
 
     companion object {
