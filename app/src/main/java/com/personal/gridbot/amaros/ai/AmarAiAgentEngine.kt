@@ -81,22 +81,39 @@ class AmarAiAgentEngine(
                     sourceTitle = source.title.ifBlank { source.source },
                     sourceUri = source.url,
                     evidence = source.excerpt,
-                    authority = when (source.source) {
-                        "Wikipedia" -> Authority.REPUTABLE
-                        "GitHub" -> Authority.COMMUNITY
-                        else -> Authority.UNKNOWN
-                    },
+                    authority = authorityFor(source),
+
                     publisher = source.source
                 )
             }
             val conflicts = if (findings.isEmpty()) {
                 listOf("external_research_returned_no_findings")
             } else emptyList()
+            val distinctPublishers = findings.map { it.publisher }.filter { it.isNotBlank() }.distinct().size
+            val evidenceCoverage = findings.count { it.evidence.isNotBlank() }.toDouble() / findings.size.coerceAtLeast(1)
+            val authorityCoverage = findings.count { it.authority != Authority.UNKNOWN }.toDouble() / findings.size.coerceAtLeast(1)
+            val independenceCoverage = (distinctPublishers.toDouble() / findings.size.coerceAtLeast(1)).coerceIn(0.0, 1.0)
+            val confidence = if (findings.isEmpty()) 0.0 else
+                (0.40 * evidenceCoverage + 0.35 * authorityCoverage + 0.25 * independenceCoverage).coerceIn(0.0, 1.0)
             return ResearchReport(
                 findings = findings,
                 conflicts = conflicts,
-                confidence = if (findings.isEmpty()) 0.0 else 0.50
+                confidence = confidence
             )
+        }
+
+        private fun authorityFor(source: AmarAiExternalResearch.SourceResult): Authority {
+            val host = runCatching { java.net.URI(source.url).host.orEmpty().lowercase() }.getOrDefault("")
+            return when {
+                host.endsWith(".gov") || host.contains(".gov.") -> Authority.OFFICIAL
+                host.endsWith(".edu") || host.contains(".edu.") -> Authority.PEER_REVIEWED
+                source.source == "Wikipedia" -> Authority.REPUTABLE
+                source.source == "GitHub" -> Authority.COMMUNITY
+                host.contains("reuters.com") || host.contains("apnews.com") ||
+                    host.contains("bbc.com") || host.contains("nature.com") ||
+                    host.contains("arxiv.org") -> Authority.REPUTABLE
+                else -> Authority.UNKNOWN
+            }
         }
     }
 }
