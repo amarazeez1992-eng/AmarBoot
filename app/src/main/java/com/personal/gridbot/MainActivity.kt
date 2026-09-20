@@ -141,16 +141,14 @@ class MainActivity : ComponentActivity() {
                 withTimeout(120_000L) {
                     withContext(Dispatchers.Default) { agentEngine.ask("", "", request) { progress ->
                         val elapsed = progress.elapsedMs / 1000
-                        val sourceText = if (progress.sourcesSearched > 0) " | المصادر: ${progress.sourcesSearched}" else ""
-                        sendAgentStatus("Agent: ${progress.message} | الزمن: ${elapsed}ث${sourceText}")
+                        sendAgentStatus("Agent: ${progress.message} | الزمن: ${elapsed}ث | المصادر المكتشفة: ${progress.sourcesSearched} | المصادر المعتمدة: ${progress.sourcesAccepted}")
                     } }
                 }
             }
             result.onSuccess {
                 Log.i("AMAR_AGENT", "REQUEST_SUCCESS elapsedMs=${System.currentTimeMillis() - startedAt}")
                 val answer = it.answer.ifBlank { "لم يُنتج الوكيل إجابة." }
-                val formatted = if (answer.contains("النتيجة الرسمية")) answer else "النتيجة الرسمية:\n$answer"
-                onResult(formatted, "Agent: جاهز | زمن البحث: ${it.elapsedMs / 1000}ث | المصادر المفحوصة: ${it.sourcesSearched} | المصادر المعتمدة: ${it.sourcesAccepted}")
+                onResult(answer, "Agent: جاهز | زمن المعالجة والتحقق: ${it.elapsedMs / 1000}ث | المصادر المكتشفة: ${it.sourcesSearched} | المصادر المعتمدة: ${it.sourcesAccepted}")
             }.onFailure { error ->
                 Log.e("AMAR_AGENT", "REQUEST_FAILED elapsedMs=${System.currentTimeMillis() - startedAt}", error)
                 val message = if (error is kotlinx.coroutines.TimeoutCancellationException) {
