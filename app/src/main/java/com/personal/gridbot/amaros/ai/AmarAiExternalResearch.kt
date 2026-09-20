@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.ai
 
+import com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
