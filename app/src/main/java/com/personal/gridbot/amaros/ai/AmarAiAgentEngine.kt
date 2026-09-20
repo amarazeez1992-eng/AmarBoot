@@ -64,13 +64,35 @@ class AmarAiAgentEngine(
             progress = progress
         )
         val response = runResult.response
+        val elapsedMs = System.currentTimeMillis() - startedAt
+        val discoveredSources = runResult.research?.findings
+            ?.asSequence()
+            ?.map { it.sourceUri.trim() }
+            ?.filter { it.isNotBlank() }
+            ?.distinct()
+            ?.count()
+            ?: 0
+        val acceptedSources = runResult.sourceVerification?.totalSources ?: 0
+
+        // Final telemetry is emitted from the canonical run result, not from
+        // UI defaults. Counts are factual records returned/accepted by AMAR.
+        progress?.invoke(
+            com.personal.gridbot.amaros.agent.AmarAgentProgress(
+                state = com.personal.gridbot.amaros.agent.AgentTaskState.RESPONDING,
+                message = "اكتمل التحقق وإعداد النتيجة",
+                sourcesSearched = discoveredSources,
+                sourcesAccepted = acceptedSources,
+                elapsedMs = elapsedMs
+            )
+        )
+
         return Result(
             answer = response.answer,
             proposedActions = response.actions,
             toolEvidence = emptyList(),
-            sourcesSearched = runResult.research?.findings?.size ?: 0,
-            sourcesAccepted = runResult.sourceVerification?.totalSources ?: 0,
-            elapsedMs = System.currentTimeMillis() - startedAt
+            sourcesSearched = discoveredSources,
+            sourcesAccepted = acceptedSources,
+            elapsedMs = elapsedMs
         )
     }
 
