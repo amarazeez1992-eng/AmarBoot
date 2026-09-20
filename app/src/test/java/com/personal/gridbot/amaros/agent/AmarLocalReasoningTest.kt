@@ -31,4 +31,18 @@ class AmarLocalReasoningTest {
         )
         assertTrue(response.answer.contains("لا سأخترع"))
     }
+
+    @Test fun local_reasoning_extracts_direct_fact_from_matching_evidence() = runBlocking {
+        val response = AmarLocalReasoning().respond(
+            AmarAgentContext(
+                userText = "من هيه عاصمة فرنسا؟\n\nEvidence summary:\nsource=0|title=باريس|authority=REPUTABLE|stance=SUPPORTS|publisher=Wikipedia|uri=https://ar.wikipedia.org/wiki/باريس\nevidence=باريس هي عاصمة فرنسا وأكبر مدنها.",
+                tools = emptyList(),
+                executionAllowed = false,
+                brokerAccessAllowed = false
+            )
+        )
+        assertTrue(response.answer.contains("باريس هي عاصمة فرنسا"))
+        assertTrue(response.answer.contains("Wikipedia"))
+    }
+
 }
