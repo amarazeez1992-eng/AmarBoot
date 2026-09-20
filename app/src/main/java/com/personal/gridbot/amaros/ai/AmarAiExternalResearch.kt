@@ -30,7 +30,8 @@ class AmarAiExternalResearch(
         val source: String,
         val title: String,
         val url: String,
-        val excerpt: String
+        val excerpt: String,
+        val relevanceScore: Double = 0.0
     )
 
     suspend fun search(query: String, maxResults: Int = 80): List<SourceResult> = withContext(Dispatchers.IO) {
@@ -38,6 +39,7 @@ class AmarAiExternalResearch(
         val limit = maxResults.coerceIn(1, 80)
         val encoded = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.toString())
         val wikipediaLanguage = if (query.any { it in '\u0600'..'\u06FF' }) "ar" else "en"
+        val relevance = com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine()
 
         coroutineScope {
             val duck = async {
@@ -100,7 +102,13 @@ class AmarAiExternalResearch(
 
             (duck.await() + wikipedia.await() + github.await())
                 .filter { it.url.startsWith("http") && it.title.isNotBlank() }
+                .map { result ->
+                    val scored = relevance.score(query, result.title, result.excerpt)
+                    result.copy(relevanceScore = scored.score)
+                }
+                .filter { it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE }
                 .distinctBy { canonicalKey(it.url) }
+                .sortedByDescending { it.relevanceScore }
                 .take(limit)
         }
     }
