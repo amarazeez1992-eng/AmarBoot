@@ -7,9 +7,11 @@ package com.personal.gridbot.amaros.agent
  * materially match the user's question must not enter authority/consensus
  * scoring merely because its publisher is trustworthy.
  *
- * This is a deterministic lexical/entity-aware gate, not the final intelligence
- * layer. It is deliberately conservative: when relevance cannot be established,
- * the result is rejected rather than promoted as evidence.
+ * Matching is measured against the original query tokens. Aliases may satisfy
+ * one query token, but an alias expansion never creates additional matched
+ * query terms. This prevents one entity alias such as "United States" from
+ * inflating relevance for a question that also requires a specific property
+ * such as "capital".
  */
 class AmarRetrievalRelevanceEngine {
 
@@ -19,35 +21,32 @@ class AmarRetrievalRelevanceEngine {
     )
 
     fun score(question: String, title: String, excerpt: String): ScoredResult {
-        val expanded = expandTerms(tokenize(question))
-        if (expanded.isEmpty()) return ScoredResult(0.0, emptySet())
+        val queryTerms = tokenize(question)
+        if (queryTerms.isEmpty()) return ScoredResult(0.0, emptySet())
 
         val titleTerms = tokenize(title)
         val bodyTerms = tokenize(excerpt)
         val evidenceTerms = titleTerms + bodyTerms
 
         fun termMatches(term: String, terms: Set<String>): Boolean =
-            term == term && (
-                term in terms ||
-                    aliasesFor(term).any { it in terms }
-                )
+            term in terms || aliasesFor(term).any { it in terms }
 
-        val matched = tokensForMatching(question).filter { termMatches(it, evidenceTerms) }.toSet()
-        val titleMatched = tokensForMatching(question).filter { termMatches(it, titleTerms) }.toSet()
+        val matched = queryTerms.filter { termMatches(it, evidenceTerms) }.toSet()
+        val titleMatched = queryTerms.filter { termMatches(it, titleTerms) }.toSet()
 
-        val coverage = matched.size.toDouble() / tokensForMatching(question).size.toDouble()
-        val titleCoverage = titleMatched.size.toDouble() / tokensForMatching(question).size.toDouble()
-        val exactPhrase = normalized(question).let { q ->
-            q.length >= 5 && (
-                normalized(title).contains(q) ||
-                    normalized(excerpt).contains(q)
-                )
-        }
+        val coverage = matched.size.toDouble() / queryTerms.size.toDouble()
+        val titleCoverage = titleMatched.size.toDouble() / queryTerms.size.toDouble()
 
-        val entityTerms = tokensForMatching(question).filter { it.length >= 4 }.toSet()
+        val normalizedQuestion = normalized(question)
+        val exactPhrase = normalizedQuestion.length >= 5 &&
+            (normalized(title).contains(normalizedQuestion) ||
+                normalized(excerpt).contains(normalizedQuestion))
+
+        val entityTerms = queryTerms.filter { it.length >= 4 }.toSet()
         val entityMatched = entityTerms.count { termMatches(it, evidenceTerms) }
-        val entityCoverage = if (entityTerms.isEmpty()) 0.0 else
+        val entityCoverage = if (entityTerms.isEmpty()) 0.0 else {
             entityMatched.toDouble() / entityTerms.size.toDouble()
+        }
 
         val score = (
             coverage * 0.45 +
@@ -62,9 +61,6 @@ class AmarRetrievalRelevanceEngine {
     fun accept(question: String, title: String, excerpt: String): Boolean =
         score(question, title, excerpt).score >= MIN_RELEVANCE_SCORE
 
-    private fun tokensForMatching(question: String): Set<String> =
-        tokenize(question)
-
     private fun aliasesFor(token: String): Set<String> =
         when (token) {
             "عاصمه" -> setOf("capital")
@@ -78,25 +74,6 @@ class AmarRetrievalRelevanceEngine {
             "عدد", "كم" -> setOf("number", "count", "how")
             else -> emptySet()
         }
-
-    private fun expandTerms(tokens: Set<String>): Set<String> {
-        val result = tokens.toMutableSet()
-        tokens.forEach { token ->
-            when (token) {
-                "عاصمه" -> result += setOf("capital")
-                "عاصمة" -> result += setOf("capital", "عاصمه")
-                "امريكا", "أمريكا" -> result += setOf("america", "united", "states", "usa")
-                "الفنانه", "الفنانة" -> result += setOf("artist", "actress", "singer")
-                "عمر" -> result += setOf("age", "born", "birth")
-                "احرف", "الأحرف", "الحروف" -> result += setOf("letters", "alphabet")
-                "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية" ->
-                    result += setOf("english")
-                "عربيه", "العربيه", "العربية" -> result += setOf("arabic")
-                "عدد", "كم" -> result += setOf("number", "count", "how")
-            }
-        }
-        return result.filter { it.length >= 2 && it !in STOP_WORDS }.toSet()
-    }
 
     private fun tokenize(value: String): Set<String> =
         normalized(value)
