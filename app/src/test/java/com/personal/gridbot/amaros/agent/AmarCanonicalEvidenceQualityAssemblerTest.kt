@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -82,6 +83,44 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         assertEquals(1, report.point6Duplicates.duplicateGroupCount)
         assertFalse(report.point7FingerprintIntegrity.intact)
         assertTrue(report.point9Uniqueness.unique)
+    }
+
+    @Test
+    fun owner_verification_outputs_feed_point10_without_local_point1_or_point8_reimplementation() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+
+        assertEquals(2, verification.usableEvidenceCount)
+        assertEquals(0, verification.invalidEvidenceCount)
+        assertEquals(2, verification.provenance.size)
+
+        val certified = assembler.certify(
+            findings = listOf(a, b),
+            nowEpochMs = 1_500L,
+            verification = verification
+        )
+
+        assertEquals(1.0, certified.certificationScore, 0.0)
+        assertTrue(certified.upstreamStates.all { it.fullyVerified })
+    }
+
+    @Test
+    fun owner_tampering_state_blocks_point10_certification() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+        val tampered = listOf(verification.provenance.first().copy(chainHash = "tampered")) + verification.provenance.drop(1)
+
+        val tamperedVerification = verification.copy(provenance = tampered)
+        val certified = assembler.certify(
+            findings = listOf(a, b),
+            nowEpochMs = 1_500L,
+            verification = tamperedVerification
+        )
+
+        assertEquals(0.0, certified.certificationScore, 0.0)
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
     }
 
     @Test
