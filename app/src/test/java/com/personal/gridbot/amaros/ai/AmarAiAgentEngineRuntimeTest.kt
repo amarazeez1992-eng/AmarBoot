@@ -66,6 +66,8 @@ class AmarAiAgentEngineRuntimeTest {
         val result = AmarAiAgentEngine().ask("", "", "ما هو مفهوم الانزلاق السعري؟")
         assertFalse(result.answer.isBlank())
         assertFalse(result.answer.contains("لم يتم اعتماد الإجابة بعد"))
+        assertFalse(Regex("confidence=0\\.\\d+").containsMatchIn(result.answer))
+        assertFalse(Regex("confidence=0\\.\\d{4,}").containsMatchIn(result.answer))
     }
 
     @Test
