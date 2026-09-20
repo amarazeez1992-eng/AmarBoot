@@ -86,7 +86,7 @@ class AmarIntentUnderstanding {
             .replace(Regex("[\\u064B-\\u065F\\u0670]"), "")
             .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
             .replace('ة', 'ه')
-.replace(Regex("[،؛,:!\\.\\(\\)\\[\\]{}\"']"), " ")
+            .replace(Regex("""[،؛,:!\.()\[\]{}"']"""), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
 
