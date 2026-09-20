@@ -61,8 +61,9 @@ class AmarAgentOrchestrator(
         } else null
         val rawUnifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
         val unifiedFindings = if (needsResearch) {
-            rawUnifiedFindings.filter {
-                answerabilityGate.decide(request.text, it.sourceTitle, it.evidence).admitted
+            rawUnifiedFindings.mapNotNull {
+                if (!answerabilityGate.decide(request.text, it.sourceTitle, it.evidence).admitted) null
+                else it.copy(relevanceScore = 1.0)
             }
         } else rawUnifiedFindings
 
