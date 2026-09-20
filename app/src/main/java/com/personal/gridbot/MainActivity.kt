@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
             result.onSuccess {
                 Log.i("AMAR_AGENT", "REQUEST_SUCCESS elapsedMs=${System.currentTimeMillis() - startedAt}")
                 val answer = it.answer.ifBlank { "لم يُنتج الوكيل إجابة." }
-                val formatted = if (answer.contains("التحليل") || answer.contains("النتيجة الرسمية")) answer else "التحليل:\n$answer\n\nالنتيجة الرسمية:\n$answer"
+                val formatted = if (answer.contains("النتيجة الرسمية")) answer else "النتيجة الرسمية:\n$answer"
                 onResult(formatted, "Agent: جاهز | زمن البحث: ${it.elapsedMs / 1000}ث | المصادر المفحوصة: ${it.sourcesSearched} | المصادر المعتمدة: ${it.sourcesAccepted}")
             }.onFailure { error ->
                 Log.e("AMAR_AGENT", "REQUEST_FAILED elapsedMs=${System.currentTimeMillis() - startedAt}", error)
