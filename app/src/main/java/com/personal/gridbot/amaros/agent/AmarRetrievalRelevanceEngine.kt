@@ -51,8 +51,8 @@ class AmarRetrievalRelevanceEngine {
             lexicalCoverage * 0.30 +
                 titleCoverage * 0.20 +
                 groupCoverage * 0.25 +
-                if (entityAnchor) 0.15 else 0.0 +
-                if (phrase) 0.10 else 0.0
+                (if (entityAnchor) 0.15 else 0.0) +
+                (if (phrase) 0.10 else 0.0)
             ).coerceIn(0.0, 1.0)
 
         val accepted = satisfied && entityAnchor && score >= MIN_RELEVANCE_SCORE
@@ -65,8 +65,8 @@ class AmarRetrievalRelevanceEngine {
     private fun questionForm(q: String): QuestionForm = when {
         containsAny(q, "عاصمه", "عاصمة", "capital") -> QuestionForm.CAPITAL
         containsAny(q, "عمر", "age", "born", "birth") -> QuestionForm.AGE
-        containsAny(q, "كم", "عدد", "number", "count", "how many", "how much") -> QuestionForm.QUANTITY
         containsAny(q, "سعر", "price", "الان", "حاليا", "today", "current", "latest") -> QuestionForm.CURRENT_VALUE
+        containsAny(q, "كم", "عدد", "number", "count", "how many", "how much") -> QuestionForm.QUANTITY
         containsAny(q, "من هو", "من هي", "who") -> QuestionForm.WHO
         containsAny(q, "متى", "when") -> QuestionForm.WHEN
         containsAny(q, "لماذا", "ليش", "why") -> QuestionForm.WHY
@@ -79,11 +79,11 @@ class AmarRetrievalRelevanceEngine {
     private fun semanticGroups(form: QuestionForm, tokens: Set<String>): List<Set<String>> = when (form) {
         QuestionForm.CAPITAL -> listOf(
             setOf("capital", "عاصمه", "عاصمة"),
-            tokens.filter { it.length >= 4 && it !in QUESTION_WORDS }.toSet()
+            entityFacet(tokens)
         )
         QuestionForm.AGE -> listOf(
             setOf("age", "born", "birth", "مواليد", "عمر"),
-            tokens.filter { it.length >= 4 && it !in QUESTION_WORDS && it !in setOf("فنانه", "فنانة") }.toSet()
+            entityFacet(tokens)
         )
         QuestionForm.QUANTITY -> {
             val groups = mutableListOf<Set<String>>()
@@ -96,7 +96,7 @@ class AmarRetrievalRelevanceEngine {
             if (tokens.any { it in setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english") }) {
                 groups += setOf("english", "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية")
             }
-            if (groups.isEmpty()) groups += tokens.filter { it.length >= 4 && it !in QUESTION_WORDS }.toSet()
+            if (groups.isEmpty()) groups += entityFacet(tokens)
             groups
         }
         QuestionForm.CURRENT_VALUE -> listOf(
@@ -105,6 +105,14 @@ class AmarRetrievalRelevanceEngine {
         )
         else -> listOf(tokens.filter { it.length >= 4 && it !in QUESTION_WORDS }.toSet())
     }.filter { it.isNotEmpty() }
+
+    private fun entityFacet(tokens: Set<String>): Set<String> {
+        val salient = tokens.filter { it.length >= 4 && it !in QUESTION_WORDS && it !in setOf("فنانه", "فنانة") }.toSet()
+        if (salient.any { it in setOf("امريكا", "america", "usa") }) return salient + setOf("امريكا", "america", "usa", "united", "states")
+        if (salient.any { it in setOf("عربيه", "العربيه", "العربية", "arabic") }) return salient + setOf("عربيه", "العربيه", "العربية", "arabic")
+        if (salient.any { it in setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english") }) return salient + setOf("انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية", "english")
+        return salient
+    }
 
     private fun entityAnchorSatisfied(questionTokens: Set<String>, evidenceTokens: Set<String>): Boolean {
         val salient = questionTokens.filter { it.length >= 4 && it !in QUESTION_WORDS }
