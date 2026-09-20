@@ -1,3 +1,34 @@
+    private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
+        val tagPattern = Regex("""<a\\b[^>]*>(.*?)</a>""", RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
+        val tags = tagPattern.findAll(html).toList()
+        return tags.asSequence()
+            .filter { it.value.contains("result__a", ignoreCase = true) }
+            .take(limit)
+            .mapNotNull { match ->
+                val tag = match.value
+                val href = Regex("""href=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+                    .find(tag)?.groupValues?.getOrNull(1).orEmpty()
+                val title = stripMarkup(match.groupValues[1])
+                val nextStart = match.range.last + 1
+                val nextResult = tags.asSequence()
+                    .dropWhile { it.range.first <= nextStart }
+                    .firstOrNull { it.value.contains("result__a", ignoreCase = true) }
+                    ?.range?.first ?: html.length
+                val segment = html.substring(nextStart, nextResult)
+                val snippet = Regex("""class=["'][^"']*result__snippet[^"']*["'][^>]*>(.*?)</(?:a|div|span|p)>""",
+                    RegexOption.IGNORE_CASE or RegexOption.DOT_MATCHES_ALL)
+                    .find(segment)?.groupValues?.getOrNull(1)
+                    ?.let(::stripMarkup)
+                    .orEmpty()
+                val evidence = snippet.ifBlank { title }
+                val url = decodeHtml(href)
+                if (url.startsWith("http") && title.isNotBlank() && evidence.isNotBlank()) {
+                    SourceResult("Public Web", title, url, evidence)
+                } else null
+            }
+            .toList()
+    }
+
 package com.personal.gridbot.amaros.ai
 
 import java.net.URLEncoder
@@ -62,114 +93,45 @@ class AmarAiExternalResearch(
                             val title = item.optString("title")
                             val excerpt = item.optString("extract").ifBlank { stripMarkup(item.optString("snippet")) }
                             if (title.isNotBlank() && excerpt.isNotBlank()) {
-                                add(
-                                    SourceResult(
-                                        source = "Wikipedia",
-                                        title = title,
-                                        url = "https://$wikipediaLanguage.wikipedia.org/wiki/" + title.replace(' ', '_'),
-                                        excerpt = excerpt
-                                    )
-                                )
+                                add(SourceResult("Wikipedia", title, "https://$wikipediaLanguage.wikipedia.org/wiki/" + title.replace(' ', '_'), excerpt))
                             }
                         }
                     }
                 }.getOrDefault(emptyList())
             }
             val github = async {
-                if (!isCodeOrRepositoryQuery(query)) {
-                    emptyList()
-                } else {
-                    runCatching {
-                        val url = "https://api.github.com/search/repositories?q=$encoded&per_page=$limit"
-                        val raw = get(url, "application/json")
-                        val items = JSONObject(raw).getJSONArray("items")
-                        buildList {
-                            for (i in 0 until minOf(items.length(), limit)) {
-                                val item = items.getJSONObject(i)
-                                val title = item.optString("full_name")
-                                val repositoryUrl = item.optString("html_url")
-                                if (title.isNotBlank() && repositoryUrl.isNotBlank()) {
-                                    add(
-                                        SourceResult(
-                                            source = "GitHub",
-                                            title = title,
-                                            url = repositoryUrl,
-                                            excerpt = item.optString("description")
-                                        )
-                                    )
-                                }
+                if (!isCodeOrRepositoryQuery(query)) emptyList()
+                else runCatching {
+                    val url = "https://api.github.com/search/repositories?q=$encoded&per_page=$limit"
+                    val raw = get(url, "application/json")
+                    val items = JSONObject(raw).getJSONArray("items")
+                    buildList {
+                        for (i in 0 until minOf(items.length(), limit)) {
+                            val item = items.getJSONObject(i)
+                            val title = item.optString("full_name")
+                            val repositoryUrl = item.optString("html_url")
+                            val excerpt = item.optString("description")
+                            if (title.isNotBlank() && repositoryUrl.isNotBlank() && excerpt.isNotBlank()) {
+                                add(SourceResult("GitHub", title, repositoryUrl, excerpt))
                             }
                         }
-                    }.getOrDefault(emptyList())
-                }
+                    }
+                }.getOrDefault(emptyList())
             }
 
             (duck.await() + wikipedia.await() + github.await())
-                .filter { it.url.startsWith("http") && it.title.isNotBlank() }
-                .map { result ->
+                .filter { it.url.startsWith("http") && it.title.isNotBlank() && it.excerpt.isNotBlank() }
+                .mapNotNull { result ->
                     val scored = relevance.score(query, result.title, result.excerpt)
-                    result.copy(relevanceScore = scored.score)
+                    if (scored.score >= com.personal.gridbot.amaros.agent.AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE) {
+                        result to scored.score
+                    } else null
                 }
-                .filter { it.relevanceScore >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE }
-                .distinctBy { canonicalKey(it.url) }
-                .sortedByDescending { it.relevanceScore }
+                .distinctBy { canonicalKey(it.first.url) }
+                .sortedByDescending { it.second }
                 .take(limit)
+                .map { it.first.copy(relevanceScore = it.second) }
         }
     }
 
-    private fun isCodeOrRepositoryQuery(query: String): Boolean {
-        val q = query.lowercase()
-        return listOf(
-            "github", "repository", "repo", "code", "source code", "sdk", "api",
-            "kotlin", "android", "python", "javascript", "typescript", "pine script",
-            "مستودع", "كود", "برمجة", "برمجي", "شفرة", "github"
-        ).any { it in q }
-    }
 
-    private fun parseDuckDuckGo(html: String, limit: Int): List<SourceResult> {
-        val pattern = Regex(
-            """<a[^>]+class=["']result__a["'][^>]+href=["']([^"']+)["'][^>]*>(.*?)</a>""",
-            RegexOption.IGNORE_CASE
-        )
-        return pattern.findAll(html)
-            .take(limit)
-            .mapNotNull { match ->
-                val url = decodeHtml(match.groupValues[1])
-                val title = stripMarkup(match.groupValues[2])
-                if (url.startsWith("http") && title.isNotBlank()) {
-                    SourceResult("Public Web", title, url, title)
-                } else null
-            }
-            .toList()
-    }
-
-    private fun canonicalKey(url: String): String =
-        runCatching {
-            val uri = java.net.URI(url)
-            (uri.host.orEmpty().lowercase() + uri.path.orEmpty()).trimEnd('/')
-        }.getOrDefault(url.trim())
-
-    private fun stripMarkup(value: String): String =
-        decodeHtml(value.replace(Regex("<[^>]*>"), "")).trim()
-
-    private fun decodeHtml(value: String): String = value
-        .replace("&amp;", "&")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&#39;", "'")
-
-    private fun get(url: String, accept: String): String {
-        val request = Request.Builder()
-            .url(url)
-            .get()
-            .addHeader("Accept", accept)
-            .addHeader("User-Agent", "AmarBoot-PublicResearch/2.0")
-            .build()
-        http.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) error("Research HTTP " + response.code)
-            return response.body?.string().orEmpty()
-        }
-    }
-}
