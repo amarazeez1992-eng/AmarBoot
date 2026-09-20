@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
+
 /** Central pipeline for high-confidence answers without execution authority. */
 class AmarAgentOrchestrator(
     private val planner: AmarAgentPlanner,
@@ -19,7 +21,8 @@ class AmarAgentOrchestrator(
     private val claimVerificationEngine: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
     private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy(),
-    private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler()
+    private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
+    private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget()): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -53,12 +56,15 @@ class AmarAgentOrchestrator(
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
             sourceVerifier.verify(unifiedFindings)
         }
+        val verificationReport = report?.let {
+            verificationLayer.verifyEvidenceOnly(unifiedFindings)
+        }
         val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
         val canonicalEvidenceCertification = verification?.let {
             canonicalEvidenceQuality.certify(
                 findings = unifiedFindings,
                 nowEpochMs = System.currentTimeMillis(),
-                verification = buildVerificationReportForPoint10(unifiedFindings, it)
+                verification = verificationReport!!
             )
         }
         if (canonicalEvidenceCertification != null) {
@@ -141,11 +147,6 @@ class AmarAgentOrchestrator(
         val finalResponse = if (finalApproved) answer else answer.copy(status = AmarAgentResponse.Status.ERROR, answer = "لم يتم اعتماد الإجابة بعد: ${finalIssues.distinct().joinToString(", ")}")
 
         return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
-    }
-
-    private fun buildVerificationReportForPoint10(findings: List<ResearchFinding>, verification: AmarSourceVerification): com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport {
-        val layer = com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer()
-        return layer.verifyEvidenceOnly(findings)
     }
 
     private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
