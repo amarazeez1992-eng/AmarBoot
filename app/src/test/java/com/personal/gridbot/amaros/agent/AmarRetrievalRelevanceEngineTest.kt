@@ -63,7 +63,7 @@ class AmarRetrievalRelevanceEngineTest {
     fun score_below_threshold_rejects() {
         // Entity anchor and capital facet both pass, but many question terms remain unmatched.
         val question = "ما هي عاصمة امريكا وما هو تاريخها وما هو عدد سكانها وما هي عملتها"
-        val title = "عملتها"
+        val title = "تاريخها"
         val excerpt = "capital"
 
         val scored = engine.score(question, title, excerpt)
