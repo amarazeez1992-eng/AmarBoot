@@ -37,6 +37,45 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
     )
 
     @Test
+    fun point8_intact_provenance_is_accepted_by_owner_binding() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+        val certified = assembler.certify(listOf(a, b), 1_500L, verification, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertTrue(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_chain_hash_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = listOf(verification.provenance.single().copy(chainHash = "tampered")))
+        val certified = assembler.certify(listOf(a), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_previous_hash_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = verification.provenance.mapIndexed { index, node ->
+            if (index == 1) node.copy(previousHash = "tampered") else node
+        })
+        val certified = assembler.certify(listOf(a, b), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_evidence_fingerprint_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = listOf(verification.provenance.single().copy(evidenceFingerprint = "tampered")))
+        val certified = assembler.certify(listOf(a), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
     fun assembler_consumes_existing_point_contracts_without_reimplementing_them() {
         val a = finding("https://a.example/x", "gold trend rising")
         val b = finding("https://b.example/x", "gold momentum rising")
