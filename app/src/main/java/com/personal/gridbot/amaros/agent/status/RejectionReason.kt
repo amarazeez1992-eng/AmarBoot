@@ -1,0 +1,11 @@
+package com.personal.gridbot.amaros.agent.status
+
+enum class RejectionReason {
+    UNVERIFIED_ADMISSION,
+    INSUFFICIENT_EVIDENCE,
+    CONFLICT_DETECTED,
+    STALE_EVIDENCE,
+    PARTIAL_UPSTREAM_VERIFICATION,
+    ADMISSION_MISSING,
+    FRESHNESS_MISSING
+}
