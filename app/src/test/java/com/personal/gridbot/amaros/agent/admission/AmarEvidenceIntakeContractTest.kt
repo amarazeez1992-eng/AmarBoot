@@ -2,6 +2,7 @@ package com.personal.gridbot.amaros.agent.admission
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class AmarEvidenceIntakeContractTest {
@@ -64,14 +65,16 @@ class AmarEvidenceIntakeContractTest {
 
     @Test
     fun normalized_candidate_rejects_short_fingerprint() {
-        val shortFingerprint = "a".repeat(63)
-        assertTrue(shortFingerprint.length < 64)
-    }
-
-    @Test
-    fun evidence_intake_result_accepts_empty_lists() {
-        val result = EvidenceIntakeResult(emptyList(), emptyList())
-        assertTrue(result.candidates.isEmpty())
-        assertTrue(result.rejectedCandidates.isEmpty())
+        assertThrows(IllegalArgumentException::class.java) {
+            NormalizedCandidate(
+                provider = "provider",
+                title = "Title",
+                canonicalUrl = "https://example.com",
+                normalizedExcerpt = "Evidence",
+                retrievedAtEpochMs = 1L,
+                fingerprint = "a".repeat(63),
+                normalizationFlags = emptySet()
+            )
+        }
     }
 }
