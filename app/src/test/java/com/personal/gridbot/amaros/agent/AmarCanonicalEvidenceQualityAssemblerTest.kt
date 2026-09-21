@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -149,7 +150,8 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val certified = assembler.certify(
             findings = listOf(a, b),
             nowEpochMs = 1_500L,
-            verification = verification
+            verification = verification,
+            intakeResult = EvidenceIntakeResult.empty()
         )
 
         assertEquals(1.0, certified.certificationScore, 0.0)
@@ -167,7 +169,8 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val certified = assembler.certify(
             findings = listOf(a, b),
             nowEpochMs = 1_500L,
-            verification = tamperedVerification
+            verification = tamperedVerification,
+            intakeResult = EvidenceIntakeResult.empty()
         )
 
         assertEquals(0.0, certified.certificationScore, 0.0)
