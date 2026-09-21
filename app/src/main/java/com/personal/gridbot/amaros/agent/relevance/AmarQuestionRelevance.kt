@@ -14,13 +14,22 @@ class AmarQuestionRelevance(
         val rejected = mutableListOf<RelevanceRejectedCandidate>()
 
         for (candidate in candidates) {
-            val result = engine.score(question, candidate.title, candidate.normalizedExcerpt)
-            val score = result.score
+            val decision = engine.accept(
+                question,
+                candidate.title,
+                candidate.normalizedExcerpt
+            )
 
-            if (score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE) {
-                admitted.add(RelevantCandidate(candidate, score, "RELEVANCE_ACCEPTED"))
+            if (decision.accepted) {
+                admitted.add(RelevantCandidate(candidate, decision.score, "RELEVANCE_ACCEPTED"))
             } else {
-                rejected.add(RelevanceRejectedCandidate(candidate, score, "RELEVANCE_REJECTED"))
+                rejected.add(
+                    RelevanceRejectedCandidate(
+                        candidate,
+                        decision.score,
+                        "RELEVANCE_REJECTED"
+                    )
+                )
             }
         }
 

@@ -15,28 +15,49 @@ class AmarRetrievalRelevanceEngine {
 
     data class ScoredResult(
         val score: Double,
-        val matchedTerms: Set<String>
+        val matchedTerms: Set<String>,
+    )
+
+    data class QuestionProfile(
+        val entity: String?,
+        val questionForm: QuestionForm,
+        val requiredFacets: Set<RequiredFacet>
+    )
+
+    enum class QuestionForm { CAPITAL, AGE, CURRENT_VALUE, QUANTITY, GENERAL }
+
+    enum class RequiredFacet { CAPITAL_OF, AGE, CURRENT, VALUE, QUANTITY }
+
+    enum class RejectionReason {
+        SCORE_BELOW_THRESHOLD,
+        REQUIRED_FACET_MISSING,
+        ENTITY_ANCHOR_MISMATCH
+    }
+
+    data class AcceptanceDecision(
+        val accepted: Boolean,
+        val score: Double,
+        val reason: RejectionReason?
     )
 
     fun score(question: String, title: String, excerpt: String): ScoredResult {
-        val expanded = expandTerms(tokenize(question))
-        if (expanded.isEmpty()) return ScoredResult(0.0, emptySet())
+        val questionTerms = tokensForMatching(question)
+        if (questionTerms.isEmpty()) {
+            return ScoredResult(0.0, emptySet())
+        }
 
         val titleTerms = tokenize(title)
         val bodyTerms = tokenize(excerpt)
         val evidenceTerms = titleTerms + bodyTerms
 
         fun termMatches(term: String, terms: Set<String>): Boolean =
-            term == term && (
-                term in terms ||
-                    aliasesFor(term).any { it in terms }
-                )
+            term in terms || aliasesFor(term).any { it in terms }
 
-        val matched = tokensForMatching(question).filter { termMatches(it, evidenceTerms) }.toSet()
-        val titleMatched = tokensForMatching(question).filter { termMatches(it, titleTerms) }.toSet()
+        val matched = questionTerms.filter { termMatches(it, evidenceTerms) }.toSet()
+        val titleMatched = questionTerms.filter { termMatches(it, titleTerms) }.toSet()
 
-        val coverage = matched.size.toDouble() / tokensForMatching(question).size.toDouble()
-        val titleCoverage = titleMatched.size.toDouble() / tokensForMatching(question).size.toDouble()
+        val coverage = matched.size.toDouble() / questionTerms.size.toDouble()
+        val titleCoverage = titleMatched.size.toDouble() / questionTerms.size.toDouble()
         val exactPhrase = normalized(question).let { q ->
             q.length >= 5 && (
                 normalized(title).contains(q) ||
@@ -44,7 +65,7 @@ class AmarRetrievalRelevanceEngine {
                 )
         }
 
-        val entityTerms = tokensForMatching(question).filter { it.length >= 4 }.toSet()
+        val entityTerms = questionTerms.filter { it.length >= 4 }.toSet()
         val entityMatched = entityTerms.count { termMatches(it, evidenceTerms) }
         val entityCoverage = if (entityTerms.isEmpty()) 0.0 else
             entityMatched.toDouble() / entityTerms.size.toDouble()
@@ -56,14 +77,98 @@ class AmarRetrievalRelevanceEngine {
                 if (exactPhrase) 0.05 else 0.0
             ).coerceIn(0.0, 1.0)
 
-        return ScoredResult(score, matched)
+        return ScoredResult(
+            score = score,
+            matchedTerms = matched
+        )
     }
 
-    fun accept(question: String, title: String, excerpt: String): Boolean =
-        score(question, title, excerpt).score >= MIN_RELEVANCE_SCORE
+    fun accept(question: String, title: String, excerpt: String): AcceptanceDecision {
+        val scored = score(question, title, excerpt)
+        val profile = extractProfile(question)
 
-    private fun tokensForMatching(question: String): Set<String> =
-        tokenize(question)
+        // Gate 1: Entity Anchor
+        if (!entityAnchorGate(profile, title, excerpt)) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.ENTITY_ANCHOR_MISMATCH)
+        }
+
+        // Gate 2: Required Facets
+        if (!facetGate(profile, title, excerpt)) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.REQUIRED_FACET_MISSING)
+        }
+
+        // Gate 3: Score Threshold
+        if (scored.score < MIN_RELEVANCE_SCORE) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.SCORE_BELOW_THRESHOLD)
+        }
+
+        return AcceptanceDecision(true, scored.score, null)
+    }
+
+    private fun extractProfile(question: String): QuestionProfile {
+        val normalizedQuestion = normalized(question)
+        val form = when {
+            containsAny(normalizedQuestion, AGE_PATTERNS) -> QuestionForm.AGE
+            containsAny(normalizedQuestion, CAPITAL_PATTERNS) -> QuestionForm.CAPITAL
+            containsAny(normalizedQuestion, CURRENT_PATTERNS) -> QuestionForm.CURRENT_VALUE
+            containsAny(normalizedQuestion, QUANTITY_PATTERNS) -> QuestionForm.QUANTITY
+            else -> QuestionForm.GENERAL
+        }
+
+        val requiredFacets = when (form) {
+            QuestionForm.CAPITAL -> setOf(RequiredFacet.CAPITAL_OF)
+            QuestionForm.AGE -> setOf(RequiredFacet.AGE)
+            QuestionForm.CURRENT_VALUE -> setOf(RequiredFacet.CURRENT, RequiredFacet.VALUE)
+            QuestionForm.QUANTITY -> setOf(RequiredFacet.QUANTITY)
+            QuestionForm.GENERAL -> emptySet()
+        }
+
+        val entity = extractEntity(normalizedQuestion, form)
+        return QuestionProfile(entity, form, requiredFacets)
+    }
+
+    private fun facetGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
+        val terms = tokenize("$title $excerpt")
+        return profile.requiredFacets.all { facet ->
+            when (facet) {
+                RequiredFacet.CAPITAL_OF -> containsAny(terms, CAPITAL_EVIDENCE_TERMS)
+                RequiredFacet.AGE -> containsAny(terms, AGE_EVIDENCE_TERMS)
+                RequiredFacet.CURRENT -> containsAny(terms, CURRENT_EVIDENCE_TERMS)
+                RequiredFacet.VALUE -> containsAny(terms, VALUE_EVIDENCE_TERMS)
+                RequiredFacet.QUANTITY -> containsAny(terms, QUANTITY_EVIDENCE_TERMS)
+            }
+        }
+    }
+
+    private fun entityAnchorGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
+        val entity = profile.entity ?: return true
+        val evidenceTerms = tokenize("$title $excerpt")
+        return entity in evidenceTerms || aliasesFor(entity).any { it in evidenceTerms }
+    }
+
+    private fun extractEntity(question: String, form: QuestionForm): String? {
+        val excluded = STOP_WORDS + QUESTION_WORDS + FACET_WORDS + FORM_WORDS
+        val formSpecific = when (form) {
+            QuestionForm.CAPITAL -> setOf("عاصمه", "capital")
+            QuestionForm.AGE -> setOf("عمر", "age", "born", "birth")
+            QuestionForm.CURRENT_VALUE -> setOf("حالي", "الحالي", "الان", "current", "latest")
+            QuestionForm.QUANTITY -> setOf("عدد", "كم", "number", "count")
+            QuestionForm.GENERAL -> emptySet()
+        }
+        return question
+            .split(Regex("""[^\p{L}\p{N}]+"""))
+            .map { it.trim() }
+            .filter { it.length >= 2 && it !in excluded && it !in formSpecific }
+            .maxByOrNull { it.length }
+    }
+
+    private fun tokensForMatching(question: String): Set<String> = tokenize(question)
+
+    private fun containsAny(value: String, patterns: Set<String>): Boolean =
+        patterns.any { value.contains(it) }
+
+    private fun containsAny(value: Set<String>, terms: Set<String>): Boolean =
+        value.any { it in terms }
 
     private fun aliasesFor(token: String): Set<String> =
         when (token) {
@@ -79,28 +184,9 @@ class AmarRetrievalRelevanceEngine {
             else -> emptySet()
         }
 
-    private fun expandTerms(tokens: Set<String>): Set<String> {
-        val result = tokens.toMutableSet()
-        tokens.forEach { token ->
-            when (token) {
-                "عاصمه" -> result += setOf("capital")
-                "عاصمة" -> result += setOf("capital", "عاصمه")
-                "امريكا", "أمريكا" -> result += setOf("america", "united", "states", "usa")
-                "الفنانه", "الفنانة" -> result += setOf("artist", "actress", "singer")
-                "عمر" -> result += setOf("age", "born", "birth")
-                "احرف", "الأحرف", "الحروف" -> result += setOf("letters", "alphabet")
-                "انكليزيه", "الانكليزيه", "الإنجليزية", "انجليزية" ->
-                    result += setOf("english")
-                "عربيه", "العربيه", "العربية" -> result += setOf("arabic")
-                "عدد", "كم" -> result += setOf("number", "count", "how")
-            }
-        }
-        return result.filter { it.length >= 2 && it !in STOP_WORDS }.toSet()
-    }
-
     private fun tokenize(value: String): Set<String> =
         normalized(value)
-            .split(Regex("[^\\p{L}\\p{N}]+"))
+            .split(Regex("""[^\p{L}\p{N}]+"""))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in STOP_WORDS }
             .toSet()
@@ -114,11 +200,38 @@ class AmarRetrievalRelevanceEngine {
             .replace('ة', 'ه')
             .replace('ؤ', 'و')
             .replace('ئ', 'ي')
-            .replace(Regex("\\s+"), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
 
     companion object {
         const val MIN_RELEVANCE_SCORE = 0.45
+
+        private val AGE_PATTERNS = setOf("عمر", "age", "born", "birth")
+        private val CAPITAL_PATTERNS = setOf("عاصمه", "capital")
+        private val CURRENT_PATTERNS = setOf("حالي", "الحالي", "الان", "current", "latest")
+        private val QUANTITY_PATTERNS = setOf("كم عدد", "عدد", "how many", "number", "count")
+
+        private val CAPITAL_EVIDENCE_TERMS = setOf("capital", "عاصمه")
+        private val AGE_EVIDENCE_TERMS = setOf("age", "born", "birth", "عمر")
+        private val CURRENT_EVIDENCE_TERMS = setOf("current", "latest", "now", "today", "حالي", "الان")
+        private val VALUE_EVIDENCE_TERMS = setOf("price", "value", "سعر", "قيمه", "القيمه")
+        private val QUANTITY_EVIDENCE_TERMS = setOf("number", "count", "quantity", "how", "عدد", "كم")
+
+        private val QUESTION_WORDS = setOf(
+            "ما", "ماذا", "من", "هل", "كيف", "كم", "what", "who", "how", "many",
+            "which", "where", "when", "why", "please", "tell", "me", "about"
+        )
+
+        private val FACET_WORDS = setOf(
+            "عاصمه", "عاصمة", "capital", "عمر", "age", "born", "birth",
+            "عدد", "كم", "number", "count", "quantity",
+            "سعر", "قيمه", "القيمه", "price", "value",
+            "الفنانه", "الفنانة", "artist", "actress", "singer"
+        )
+
+        private val FORM_WORDS = setOf(
+            "حالي", "الحالي", "الان", "الآن", "current", "latest", "now", "today"
+        )
 
         private val STOP_WORDS = setOf(
             "اريد", "أريد", "معرفه", "معرفة", "عن", "ما", "هو", "هي", "هل",
