@@ -40,6 +40,10 @@ class AmarSourceVerifier {
         return usable.count { independentKey(it.sourceUri) == host } == 1
     }
 
+    /** Point 3 owner-level explicit boolean state; no new scoring methodology is introduced. */
+    fun authorityVerified(findings: List<ResearchFinding>): Boolean =
+        findings.isNotEmpty() && findings.all { it.authority != Authority.UNKNOWN }
+
     /** Point 3 owner-level numeric audit attribute; no new scoring methodology is introduced. */
     fun authorityScore(authority: Authority): Double = authority.weight()
 
