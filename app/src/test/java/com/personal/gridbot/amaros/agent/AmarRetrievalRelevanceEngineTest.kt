@@ -30,8 +30,8 @@ class AmarRetrievalRelevanceEngineTest {
             "اريد معرفة عاصمة امريكا",
             "Washington, D.C. — Capital of the United States",
             "Washington, D.C. is the capital city of the United States."
-        ))
-        assertEquals(null, result.rejectionReason)
+        ).accepted)
+        assertTrue(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
     @Test
@@ -55,89 +55,110 @@ class AmarRetrievalRelevanceEngineTest {
             "كم عمر الفنانة شيرين",
             "Sherine — age and biography",
             "Sherine was born in 1980 and is an Egyptian singer."
-        ))
-        assertEquals(null, result.rejectionReason)
+        ).accepted)
+        assertTrue(result.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
     @Test
-    fun capital_question_form_matches_capital_evidence() {
-        val r = engine.score("ما عاصمة امريكا", "Washington capital", "Capital of the United States.")
-        assertTrue(r.formMatched)
+    fun score_below_threshold_rejects() {
+        val decision = engine.accept("ما عاصمة امريكا", "Unrelated", "Unrelated text")
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.SCORE_BELOW_THRESHOLD, decision.reason)
     }
 
     @Test
-    fun capital_question_rejects_age_evidence_by_form() {
-        val r = engine.score("ما عاصمة امريكا", "America", "America was born in a historical account.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.QUESTION_FORM_MISMATCH, r.rejectionReason)
+    fun score_above_threshold_accepts() {
+        val decision = engine.accept(
+            "ما عاصمة امريكا",
+            "Washington capital of the United States",
+            "Washington is the capital of the United States."
+        )
+        assertTrue(decision.accepted)
+        assertEquals(null, decision.reason)
+        assertTrue(decision.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
     }
 
     @Test
-    fun age_question_form_matches_age_evidence() {
-        val r = engine.score("كم عمر شيرين", "Sherine age", "Age and biography.")
-        assertTrue(r.formMatched)
+    fun facet_missing_rejects_with_required_facet_missing() {
+        val decision = engine.accept(
+            "السعر الحالي للذهب",
+            "السعر الحالي الذهب",
+            "Gold information without a value term."
+        )
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 
     @Test
-    fun age_question_rejects_capital_evidence_by_form() {
-        val r = engine.score("كم عمر شيرين", "Sherine", "The capital city is discussed here.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.QUESTION_FORM_MISMATCH, r.rejectionReason)
+    fun entity_anchor_mismatch_rejects() {
+        val decision = engine.accept(
+            "كم عمر شيرين",
+            "Adele age how",
+            "Adele was born in 1988."
+        )
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.ENTITY_ANCHOR_MISMATCH, decision.reason)
     }
 
     @Test
-    fun quantity_question_passes_quantity_facet() {
-        val r = engine.score("كم عدد الاحرف", "Number of letters", "The count is 26.")
-        assertTrue(r.facetsMatched)
+    fun current_value_requires_current_facet() {
+        val decision = engine.accept(
+            "السعر الحالي للذهب",
+            "السعر الذهب price",
+            "Gold price information."
+        )
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 
     @Test
-    fun current_value_question_rejects_when_value_facet_is_missing() {
-        val r = engine.score("السعر الحالي للذهب", "السعر الذهب current", "Current gold information.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, r.rejectionReason)
+    fun age_question_requires_age_facet() {
+        val decision = engine.accept(
+            "كم عمر شيرين",
+            "Sherine number",
+            "Sherine how many details."
+        )
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 
     @Test
-    fun entity_anchor_matches_exact_entity() {
-        val r = engine.score("كم عمر شيرين", "Sherine age", "Sherine was born in 1980.")
-        assertTrue(r.entityAnchorMatched)
+    fun capital_question_requires_capital_facet() {
+        val decision = engine.accept(
+            "ما عاصمة امريكا",
+            "America USA",
+            "Information about the United States."
+        )
+        assertFalse(decision.accepted)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 
     @Test
-    fun entity_anchor_rejects_unrelated_entity() {
-        val r = engine.score("كم عمر شيرين", "Adele age", "Adele was born in 1988.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.ENTITY_ANCHOR_MISMATCH, r.rejectionReason)
-    }
-
-    @Test
-    fun entity_anchor_uses_existing_aliases() {
-        val r = engine.score("ما عاصمة امريكا", "Capital of the USA", "The capital is Washington.")
-        assertTrue(r.entityAnchorMatched)
-    }
-
-    @Test
-    fun temporal_gate_accepts_current_evidence() {
-        val r = engine.score("السعر الحالي للذهب", "Gold current price", "The current price is updated now.")
-        assertTrue(r.temporalMatched)
-        assertTrue(engine.accept("السعر الحالي للذهب", "Gold current price", "The current price is updated now."))
-    }
-
-    @Test
-    fun temporal_gate_rejects_non_current_evidence_without_overriding_facet_priority() {
-        val r = engine.score("السعر الحالي للذهب", "السعر الذهب price", "Historical gold price data.")
-        assertFalse(r.temporalMatched)
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, r.rejectionReason)
-    }
-
-    @Test
-    fun scoring_remains_deterministic() {
+    fun accept_is_deterministic() {
         val q = "ما عاصمة امريكا"
         val t = "Washington capital of the United States"
         val e = "Washington is the capital of the United States."
-        assertEquals(engine.score(q, t, e), engine.score(q, t, e))
+        assertEquals(engine.accept(q, t, e), engine.accept(q, t, e))
     }
 
     @Test
-    fun rejection_reason_priority_prefers_score_threshold() {
-        val r = engine.score("كم عمر شيرين", "Unrelated", "Unrelated text.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.SCORE_BELOW_THRESHOLD, r.rejectionReason)
+    fun accept_returns_score_alongside_decision() {
+        val q = "ما عاصمة امريكا"
+        val t = "Washington capital of the United States"
+        val e = "Washington is the capital of the United States."
+        val decision = engine.accept(q, t, e)
+        assertEquals(engine.score(q, t, e).score, decision.score, 0.0)
+    }
+
+    @Test
+    fun score_is_independent_of_gates() {
+        val q = "السعر الحالي للذهب"
+        val t = "السعر الذهب price"
+        val e = "Gold price information."
+        val scored = engine.score(q, t, e)
+        val decision = engine.accept(q, t, e)
+        assertTrue(scored.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
+        assertEquals(scored.score, decision.score, 0.0)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 }
