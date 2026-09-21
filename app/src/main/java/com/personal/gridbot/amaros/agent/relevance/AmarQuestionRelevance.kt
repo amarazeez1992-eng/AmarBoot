@@ -21,13 +21,13 @@ class AmarQuestionRelevance(
             )
 
             if (decision.accepted) {
-                admitted.add(RelevantCandidate(candidate, decision.score, "ACCEPTED"))
+                admitted.add(RelevantCandidate(candidate, decision.score, "RELEVANCE_ACCEPTED"))
             } else {
                 rejected.add(
                     RelevanceRejectedCandidate(
                         candidate,
                         decision.score,
-                        decision.reason.toString()
+                        "RELEVANCE_REJECTED"
                     )
                 )
             }
