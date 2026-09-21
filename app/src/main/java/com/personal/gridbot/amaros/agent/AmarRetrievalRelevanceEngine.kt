@@ -86,17 +86,21 @@ class AmarRetrievalRelevanceEngine {
 
     fun accept(question: String, title: String, excerpt: String): AcceptanceDecision {
         val scored = score(question, title, excerpt)
-        if (scored.score < MIN_RELEVANCE_SCORE) {
-            return AcceptanceDecision(false, scored.score, RejectionReason.SCORE_BELOW_THRESHOLD)
+        val profile = extractProfile(question)
+
+        // Gate 1: Entity Anchor
+        if (!entityAnchorGate(profile, title, excerpt)) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.ENTITY_ANCHOR_MISMATCH)
         }
 
-        val profile = extractProfile(question)
+        // Gate 2: Required Facets
         if (!facetGate(profile, title, excerpt)) {
             return AcceptanceDecision(false, scored.score, RejectionReason.REQUIRED_FACET_MISSING)
         }
 
-        if (!entityAnchorGate(profile, title, excerpt)) {
-            return AcceptanceDecision(false, scored.score, RejectionReason.ENTITY_ANCHOR_MISMATCH)
+        // Gate 3: Score Threshold
+        if (scored.score < MIN_RELEVANCE_SCORE) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.SCORE_BELOW_THRESHOLD)
         }
 
         return AcceptanceDecision(true, scored.score, null)
