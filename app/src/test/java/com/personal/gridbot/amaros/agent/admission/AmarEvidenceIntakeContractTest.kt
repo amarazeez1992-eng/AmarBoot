@@ -50,20 +50,6 @@ class AmarEvidenceIntakeContractTest {
     }
 
     @Test
-    fun fingerprint_is_deterministic_for_same_input() {
-        val first = "provider\nhttps://example.com\nTitle\nEvidence"
-        val second = "provider\nhttps://example.com\nTitle\nEvidence"
-        assertEquals(first, second)
-    }
-
-    @Test
-    fun different_urls_produce_different_fingerprints() {
-        val first = "provider\nhttps://example.com\nTitle\nEvidence"
-        val second = "provider\nhttps://example.org\nTitle\nEvidence"
-        assertTrue(first != second)
-    }
-
-    @Test
     fun normalized_candidate_rejects_short_fingerprint() {
         assertThrows(IllegalArgumentException::class.java) {
             NormalizedCandidate(
