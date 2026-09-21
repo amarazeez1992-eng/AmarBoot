@@ -73,16 +73,16 @@ class AmarEvidenceIntakeContractTest {
     }
 
     @Test
-    fun different_urls_produce_different_fingerprints() {
+    fun different_urls_with_same_content_produce_same_fingerprint() {
         val first = intake.intake(
             "question",
-            listOf(candidate(url = "https://example.com/a", title = "Title A", excerpt = "Evidence A"))
+            listOf(candidate(url = "https://example.com/a", title = "Same Title", excerpt = "Same excerpt"))
         ).candidates.single().fingerprint
         val second = intake.intake(
             "question",
-            listOf(candidate(url = "https://example.com/b", title = "Title B", excerpt = "Evidence B"))
+            listOf(candidate(url = "https://example.com/b", title = "Same Title", excerpt = "Same excerpt"))
         ).candidates.single().fingerprint
-        assertTrue(first != second)
+        assertEquals(first, second)
     }
 
     @Test
