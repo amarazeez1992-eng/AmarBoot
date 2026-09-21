@@ -163,7 +163,7 @@ class AmarRetrievalRelevanceEngine {
 
     private fun temporalGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
         if (!profile.temporalFlag) return true
-        return containsAny(tokenize("$title $excerpt"), TEMPORAL_EVIDENCE_TERMS)
+        return containsAny(tokenize("$title $excerpt"), CURRENT_EVIDENCE_TERMS)
     }
 
     private fun extractEntity(question: String, form: QuestionForm): String? {
@@ -182,7 +182,7 @@ class AmarRetrievalRelevanceEngine {
             .maxByOrNull { it.length }
     }
 
-    private fun containsAny(value: String, patterns: Set<String>): Boolean =
+    private fun tokensForMatching(question: String): Set<String> = tokenize(question)\n\n    private fun containsAny(value: String, patterns: Set<String>): Boolean =
         patterns.any { value.contains(it) }
 
     private fun containsAny(value: Set<String>, terms: Set<String>): Boolean =
