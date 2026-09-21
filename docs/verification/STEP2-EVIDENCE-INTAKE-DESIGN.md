@@ -1,6 +1,6 @@
 # AMAR AI — STEP 2: EVIDENCE INTAKE DESIGN
 
-**Status:** DESIGN DOCUMENT — IMPLEMENTATION NOT STARTED  
+**Status:** DESIGN DOCUMENT — STEP 2.1 IMPLEMENTED — STEP 2.2 IMPLEMENTED — CLOSURE PENDING  
 **Base:** main @ b02e181b199c171955dd9605ba18da9dcc097253  
 **Branch:** feat/step2-evidence-intake
 
@@ -21,7 +21,7 @@ Step 2 does not make an evidence-quality or answerability judgment.
 - Source normalization.
 - Title normalization.
 - Evidence/text normalization while preserving meaning.
-- Deterministic technical fingerprint generation.
+- Deterministic technical fingerprint generation representing content identity.
 - Technical duplicate detection/deduplication.
 - Structural validation of candidate shape.
 - Rejection of technically malformed/unusable candidates.
@@ -180,6 +180,16 @@ The implementation must include deterministic tests for:
 
 Tests must also prove that `ResearchFinding` is not modified by Step 2.
 
+### Fingerprint identity rule
+
+The Step 2 technical fingerprint represents **content identity, not source identity**. The canonical fingerprint input is:
+
+```text
+provider + "\n" + normalizedTitle + "\n" + normalizedExcerpt
+```
+
+The fingerprint is the lowercase hexadecimal SHA-256 digest of that UTF-8 input, exactly 64 hexadecimal characters. `canonicalUrl`, retrieval timestamp, and normalization flags are excluded from the fingerprint. This permits technical detection of the same normalized content appearing at different URLs while URL deduplication remains a separate source-identity check.
+
 ## 8. Explicit non-touch list
 
 Step 2 implementation MUST NOT modify:
@@ -222,12 +232,38 @@ If implementation introduces a regression, revert the Step 2 implementation bran
 
 ## 11. Constitutional status
 
-This document records the approved boundary and migration plan only.
+This document records the approved boundary, implementation status, and closure prerequisites.
 
 **Current status:**
 - Step 1: COMPLETE on main.
-- Step 2: DESIGN APPROVED; implementation pending.
-- Step 3: BLOCKED pending Step 2 implementation/integration evidence.
+- Step 2.1: IMPLEMENTED — Data Structures + Contract.
+- Step 2.2: IMPLEMENTED — Full Normalization + Dedup.
+- Step 2: CLOSURE PENDING — awaiting final audit + re-verification.
+- Step 3: BLOCKED pending Step 2 closure.
 - Step 4: BLOCKED pending Step 3.
 
 No closure claim is made by this document.
+
+## 12. Implementation Evidence
+
+### Step 2.1 — Data Structures
+
+- Commit: `f3920204762909e40568c457c42ea63a53d13b19`
+- Files: 6 (5 Production + 1 Test)
+- Tests: 6
+- CI: All green
+
+### Step 2.2 — Full Normalization
+
+- Commit: `810b2a18c2a8ae41d545cf7b399b2e23cc65117c`
+- Files: 3 (2 Production + 1 Test)
+- Tests: 12
+- CI: Stage One / Two / 11 / 10 / CodeQL — All green
+
+### Fingerprint Algorithm (Corrected)
+
+```text
+fingerprint = SHA-256(provider + "\\n" + normalizedTitle + "\\n" + normalizedExcerpt)
+```
+
+Rationale: Content identity, not source identity.
