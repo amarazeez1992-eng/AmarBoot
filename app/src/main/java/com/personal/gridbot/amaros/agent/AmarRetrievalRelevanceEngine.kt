@@ -182,7 +182,9 @@ class AmarRetrievalRelevanceEngine {
             .maxByOrNull { it.length }
     }
 
-    private fun tokensForMatching(question: String): Set<String> = tokenize(question)\n\n    private fun containsAny(value: String, patterns: Set<String>): Boolean =
+    private fun tokensForMatching(question: String): Set<String> = tokenize(question)
+
+    private fun containsAny(value: String, patterns: Set<String>): Boolean =
         patterns.any { value.contains(it) }
 
     private fun containsAny(value: Set<String>, terms: Set<String>): Boolean =
