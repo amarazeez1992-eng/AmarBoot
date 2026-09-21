@@ -218,7 +218,7 @@ class AmarRetrievalRelevanceEngine {
             .replace('ة', 'ه')
             .replace('ؤ', 'و')
             .replace('ئ', 'ي')
-            .replace(Regex("\s+"), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
 
     companion object {
