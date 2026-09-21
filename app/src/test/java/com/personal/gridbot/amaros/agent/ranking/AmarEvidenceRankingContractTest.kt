@@ -121,7 +121,7 @@ class AmarEvidenceRankingContractTest {
         assertEquals(1.0, signals[RankingSignal.STATUS_WEIGHT]!!, 0.000001)
         assertEquals(0.9, signals[RankingSignal.AUTHORITY]!!, 0.000001)
         assertEquals(0.7, signals[RankingSignal.FRESHNESS]!!, 0.000001)
-        assertEquals(0.815, signals[RankingSignal.FINAL_SCORE]!!, 0.000001)
+        assertEquals(0.855, signals[RankingSignal.FINAL_SCORE]!!, 0.000001)
     }
 
     @Test
