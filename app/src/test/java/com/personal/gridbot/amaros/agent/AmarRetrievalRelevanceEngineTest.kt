@@ -61,11 +61,19 @@ class AmarRetrievalRelevanceEngineTest {
 
     @Test
     fun score_below_threshold_rejects() {
-        val decision = engine.accept(
-            "ما عاصمة امريكا",
-            "America",
-            "capital of"
+        // Entity anchor and capital facet both pass, but many question terms remain unmatched.
+        val question = "ما هي عاصمة امريكا وما هو تاريخها وما هو عدد سكانها وما هي عملتها"
+        val title = "عملتها"
+        val excerpt = "capital"
+
+        val scored = engine.score(question, title, excerpt)
+        assertTrue(
+            scored.score < AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE,
+            "Premise failed: score = ${scored.score}, expected < 0.45"
         )
+
+        val decision = engine.accept(question, title, excerpt)
+
         assertFalse(decision.accepted)
         assertEquals(
             AmarRetrievalRelevanceEngine.RejectionReason.SCORE_BELOW_THRESHOLD,
