@@ -90,8 +90,8 @@ class AmarRetrievalRelevanceEngineTest {
     }
 
     @Test
-    fun quantity_question_rejects_missing_quantity_facet() {
-        val r = engine.score("كم عدد الاحرف العربية والانكليزية", "Alphabet", "English and Arabic letters.")
+    fun current_value_question_rejects_when_value_facet_is_missing() {
+        val r = engine.score("السعر الحالي للذهب", "السعر الذهب current", "Current gold information.")
         assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, r.rejectionReason)
     }
 
@@ -121,9 +121,10 @@ class AmarRetrievalRelevanceEngineTest {
     }
 
     @Test
-    fun temporal_gate_rejects_non_current_evidence() {
-        val r = engine.score("السعر الحالي للذهب", "Gold price in 2020", "Historical gold price data.")
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.TEMPORAL_MISMATCH, r.rejectionReason)
+    fun temporal_gate_rejects_non_current_evidence_without_overriding_facet_priority() {
+        val r = engine.score("السعر الحالي للذهب", "السعر الذهب price", "Historical gold price data.")
+        assertFalse(r.temporalMatched)
+        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, r.rejectionReason)
     }
 
     @Test
