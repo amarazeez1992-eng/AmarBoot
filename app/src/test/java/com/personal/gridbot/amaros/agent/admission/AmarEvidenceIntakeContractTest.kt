@@ -8,6 +8,35 @@ class AmarEvidenceIntakeContractTest {
     private val intake = AmarEvidenceIntake()
 
     @Test
+    fun intake_verified_is_true_when_candidates_are_accepted_without_rejections() {
+        val result = intake.intake("question", listOf(candidate()))
+        assertTrue(result.intakeVerified)
+    }
+
+    @Test
+    fun intake_verified_is_false_when_no_candidates_are_accepted() {
+        val result = intake.intake("question", emptyList())
+        assertTrue(!result.intakeVerified)
+    }
+
+    @Test
+    fun intake_verified_is_false_when_a_candidate_is_rejected() {
+        val result = intake.intake("question", listOf(candidate(url = "not-a-url")))
+        assertTrue(!result.intakeVerified)
+    }
+
+    @Test
+    fun intake_verified_is_false_for_mixed_accepted_and_rejected_candidates() {
+        val result = intake.intake(
+            "question",
+            listOf(candidate(url = "https://example.com/a"), candidate(url = "not-a-url"))
+        )
+        assertTrue(result.candidates.isNotEmpty())
+        assertTrue(result.rejectedCandidates.isNotEmpty())
+        assertTrue(!result.intakeVerified)
+    }
+
+    @Test
     fun url_canonicalization_lowercases_scheme_and_host() {
         val result = intake.intake("question", listOf(candidate(url = "HTTPS://Example.COM/Page")))
         assertEquals("https://example.com/Page", result.candidates.single().canonicalUrl)

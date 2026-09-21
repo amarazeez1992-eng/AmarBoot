@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
+import com.personal.gridbot.amaros.agent.admission.NormalizedCandidate
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,6 +37,45 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         point8TamperingIntegrityVerified = true,
         point9EvidenceUniquenessVerified = true
     )
+
+    @Test
+    fun point8_intact_provenance_is_accepted_by_owner_binding() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+        val certified = assembler.certify(listOf(a, b), 1_500L, verification, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertTrue(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_chain_hash_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = listOf(verification.provenance.single().copy(chainHash = "tampered")))
+        val certified = assembler.certify(listOf(a), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_previous_hash_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val b = finding("https://b.example/x", "gold momentum rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a, b), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = verification.provenance.mapIndexed { index, node ->
+            if (index == 1) node.copy(previousHash = "tampered") else node
+        })
+        val certified = assembler.certify(listOf(a, b), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
+
+    @Test
+    fun point8_modified_evidence_fingerprint_is_rejected() {
+        val a = finding("https://a.example/x", "gold trend rising")
+        val verification = AmarVerificationLayer().verifyEvidenceOnly(listOf(a), nowEpochMs = 1_500L)
+        val tampered = verification.copy(provenance = listOf(verification.provenance.single().copy(evidenceFingerprint = "tampered")))
+        val certified = assembler.certify(listOf(a), 1_500L, tampered, com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult.empty())
+        assertFalse(certified.upstreamStates.first().point8TamperingIntegrityVerified)
+    }
 
     @Test
     fun assembler_consumes_existing_point_contracts_without_reimplementing_them() {
@@ -110,7 +151,30 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val certified = assembler.certify(
             findings = listOf(a, b),
             nowEpochMs = 1_500L,
-            verification = verification
+            verification = verification,
+            intakeResult = EvidenceIntakeResult(
+                candidates = listOf(
+                    NormalizedCandidate(
+                        provider = "test",
+                        title = "gold",
+                        canonicalUrl = "https://a.example/x",
+                        normalizedExcerpt = "gold trend rising",
+                        retrievedAtEpochMs = 1_500L,
+                        fingerprint = "a".repeat(64),
+                        normalizationFlags = emptySet()
+                    ),
+                    NormalizedCandidate(
+                        provider = "test",
+                        title = "gold",
+                        canonicalUrl = "https://b.example/x",
+                        normalizedExcerpt = "gold momentum rising",
+                        retrievedAtEpochMs = 1_500L,
+                        fingerprint = "b".repeat(64),
+                        normalizationFlags = emptySet()
+                    )
+                ),
+                rejectedCandidates = emptyList()
+            )
         )
 
         assertEquals(1.0, certified.certificationScore, 0.0)
@@ -128,7 +192,8 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
         val certified = assembler.certify(
             findings = listOf(a, b),
             nowEpochMs = 1_500L,
-            verification = tamperedVerification
+            verification = tamperedVerification,
+            intakeResult = EvidenceIntakeResult.empty()
         )
 
         assertEquals(0.0, certified.certificationScore, 0.0)

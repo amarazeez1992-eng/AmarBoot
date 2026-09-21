@@ -5,6 +5,7 @@ import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquen
 import com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessReport
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationReport
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationStatus
+import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 
 /**
  * Stage 11 / Item 3 composition boundary.
@@ -75,16 +76,15 @@ class AmarCanonicalEvidenceQualityAssembler(
     fun certify(
         findings: List<ResearchFinding>,
         nowEpochMs: Long,
-        verification: AmarVerificationReport
+        verification: AmarVerificationReport,
+        intakeResult: EvidenceIntakeResult
     ): AmarCanonicalEvidenceQualityCertificationReport {
         require(verification.provenance.size == findings.size)
 
         val quality = assemble(findings, nowEpochMs)
-        val point1 = findings.isNotEmpty() &&
-            verification.usableEvidenceCount == findings.size &&
-            verification.invalidEvidenceCount == 0
+        val point1 = intakeResult.intakeVerified
         val point2 = quality.point2UsableEvidence == findings.size && findings.isNotEmpty()
-        val point3 = findings.isNotEmpty() && findings.all { it.authority != Authority.UNKNOWN }
+        val point3 = sourceVerifier.authorityVerified(findings)
         val point4 = quality.items.isNotEmpty() && quality.items.all { it.freshnessVerified }
         val point5 = verification.status == AmarVerificationStatus.VERIFIED && verification.sourceRegistry.independentHosts.size >= 2
         val point6 = !quality.point6Duplicates.hasDuplicates
