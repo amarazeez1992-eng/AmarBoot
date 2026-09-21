@@ -16,11 +16,6 @@ class AmarRetrievalRelevanceEngine {
     data class ScoredResult(
         val score: Double,
         val matchedTerms: Set<String>,
-        val formMatched: Boolean = true,
-        val facetsMatched: Boolean = true,
-        val entityAnchorMatched: Boolean = true,
-        val temporalMatched: Boolean = true,
-        val rejectionReason: RejectionReason? = null
     )
 
     data class QuestionProfile(
@@ -36,16 +31,20 @@ class AmarRetrievalRelevanceEngine {
 
     enum class RejectionReason {
         SCORE_BELOW_THRESHOLD,
-        QUESTION_FORM_MISMATCH,
         REQUIRED_FACET_MISSING,
-        ENTITY_ANCHOR_MISMATCH,
-        TEMPORAL_MISMATCH
+        ENTITY_ANCHOR_MISMATCH
     }
+
+    data class AcceptanceDecision(
+        val accepted: Boolean,
+        val score: Double,
+        val reason: RejectionReason?
+    )
 
     fun score(question: String, title: String, excerpt: String): ScoredResult {
         val questionTerms = tokensForMatching(question)
         if (questionTerms.isEmpty()) {
-            return ScoredResult(0.0, emptySet(), rejectionReason = RejectionReason.SCORE_BELOW_THRESHOLD)
+            return ScoredResult(0.0, emptySet())
         }
 
         val titleTerms = tokenize(title)
@@ -79,34 +78,29 @@ class AmarRetrievalRelevanceEngine {
                 if (exactPhrase) 0.05 else 0.0
             ).coerceIn(0.0, 1.0)
 
-        val profile = extractProfile(question)
-        val formMatched = formGate(profile, title, excerpt)
-        val facetsMatched = facetGate(profile, title, excerpt)
-        val entityAnchorMatched = entityAnchorGate(profile, title, excerpt)
-        val temporalMatched = temporalGate(profile, title, excerpt)
-
-        val rejectionReason = when {
-            score < MIN_RELEVANCE_SCORE -> RejectionReason.SCORE_BELOW_THRESHOLD
-            !formMatched -> RejectionReason.QUESTION_FORM_MISMATCH
-            !facetsMatched -> RejectionReason.REQUIRED_FACET_MISSING
-            !entityAnchorMatched -> RejectionReason.ENTITY_ANCHOR_MISMATCH
-            !temporalMatched -> RejectionReason.TEMPORAL_MISMATCH
-            else -> null
-        }
-
         return ScoredResult(
             score = score,
-            matchedTerms = matched,
-            formMatched = formMatched,
-            facetsMatched = facetsMatched,
-            entityAnchorMatched = entityAnchorMatched,
-            temporalMatched = temporalMatched,
-            rejectionReason = rejectionReason
+            matchedTerms = matched
         )
     }
 
-    fun accept(question: String, title: String, excerpt: String): Boolean =
-        score(question, title, excerpt).rejectionReason == null
+    fun accept(question: String, title: String, excerpt: String): AcceptanceDecision {
+        val scored = score(question, title, excerpt)
+        if (scored.score < MIN_RELEVANCE_SCORE) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.SCORE_BELOW_THRESHOLD)
+        }
+
+        val profile = extractProfile(question)
+        if (!facetGate(profile, title, excerpt)) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.REQUIRED_FACET_MISSING)
+        }
+
+        if (!entityAnchorGate(profile, title, excerpt)) {
+            return AcceptanceDecision(false, scored.score, RejectionReason.ENTITY_ANCHOR_MISMATCH)
+        }
+
+        return AcceptanceDecision(true, scored.score, null)
+    }
 
     private fun extractProfile(question: String): QuestionProfile {
         val normalizedQuestion = normalized(question)
@@ -131,17 +125,6 @@ class AmarRetrievalRelevanceEngine {
         return QuestionProfile(entity, form, requiredFacets, temporalFlag)
     }
 
-    private fun formGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
-        val terms = tokenize("$title $excerpt")
-        return when (profile.questionForm) {
-            QuestionForm.CAPITAL -> containsAny(terms, CAPITAL_EVIDENCE_TERMS)
-            QuestionForm.AGE -> containsAny(terms, AGE_EVIDENCE_TERMS)
-            QuestionForm.CURRENT_VALUE -> containsAny(terms, CURRENT_EVIDENCE_TERMS + VALUE_EVIDENCE_TERMS)
-            QuestionForm.QUANTITY -> containsAny(terms, QUANTITY_EVIDENCE_TERMS)
-            QuestionForm.GENERAL -> true
-        }
-    }
-
     private fun facetGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
         val terms = tokenize("$title $excerpt")
         return profile.requiredFacets.all { facet ->
@@ -159,11 +142,6 @@ class AmarRetrievalRelevanceEngine {
         val entity = profile.entity ?: return true
         val evidenceTerms = tokenize("$title $excerpt")
         return entity in evidenceTerms || aliasesFor(entity).any { it in evidenceTerms }
-    }
-
-    private fun temporalGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
-        if (!profile.temporalFlag) return true
-        return containsAny(tokenize("$title $excerpt"), CURRENT_EVIDENCE_TERMS)
     }
 
     private fun extractEntity(question: String, form: QuestionForm): String? {
