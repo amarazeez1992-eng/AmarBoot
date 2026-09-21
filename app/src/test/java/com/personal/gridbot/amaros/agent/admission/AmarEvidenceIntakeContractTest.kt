@@ -2,7 +2,6 @@ package com.personal.gridbot.amaros.agent.admission
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class AmarEvidenceIntakeContractTest {
@@ -51,14 +50,8 @@ class AmarEvidenceIntakeContractTest {
 
     @Test
     fun fingerprint_is_deterministic() {
-        val first = "provider
-https://example.com
-Title
-Evidence"
-        val second = "provider
-https://example.com
-Title
-Evidence"
+        val first = "provider\nhttps://example.com\nTitle\nEvidence"
+        val second = "provider\nhttps://example.com\nTitle\nEvidence"
         assertEquals(first, second)
     }
 
