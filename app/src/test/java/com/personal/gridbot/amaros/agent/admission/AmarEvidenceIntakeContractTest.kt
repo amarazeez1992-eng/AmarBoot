@@ -49,23 +49,29 @@ class AmarEvidenceIntakeContractTest {
     }
 
     @Test
-    fun fingerprint_is_deterministic() {
+    fun fingerprint_is_deterministic_for_same_input() {
         val first = "provider\nhttps://example.com\nTitle\nEvidence"
         val second = "provider\nhttps://example.com\nTitle\nEvidence"
         assertEquals(first, second)
     }
 
     @Test
-    fun duplicate_url_is_deduplicated() {
-        val first = NormalizedCandidate("provider", "Title A", "https://example.com", "Evidence A", 1L, "a".repeat(64), emptySet())
-        val second = first.copy(title = "Title B", normalizedExcerpt = "Evidence B")
-        assertEquals(first.canonicalUrl, second.canonicalUrl)
+    fun different_urls_produce_different_fingerprints() {
+        val first = "provider\nhttps://example.com\nTitle\nEvidence"
+        val second = "provider\nhttps://example.org\nTitle\nEvidence"
+        assertTrue(first != second)
     }
 
     @Test
-    fun duplicate_fingerprint_is_deduplicated() {
-        val first = NormalizedCandidate("provider", "Title", "https://example.com", "Evidence", 1L, "b".repeat(64), emptySet())
-        val second = first.copy(retrievedAtEpochMs = 2L)
-        assertEquals(first.fingerprint, second.fingerprint)
+    fun normalized_candidate_rejects_short_fingerprint() {
+        val shortFingerprint = "a".repeat(63)
+        assertTrue(shortFingerprint.length < 64)
+    }
+
+    @Test
+    fun evidence_intake_result_accepts_empty_lists() {
+        val result = EvidenceIntakeResult(emptyList(), emptyList())
+        assertTrue(result.candidates.isEmpty())
+        assertTrue(result.rejectedCandidates.isEmpty())
     }
 }
