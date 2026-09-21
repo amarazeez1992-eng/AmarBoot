@@ -176,7 +176,7 @@ class AmarRetrievalRelevanceEngine {
             QuestionForm.GENERAL -> emptySet()
         }
         return question
-            .split(Regex("[^\p{L}\p{N}]+"))
+            .split(Regex("""[^\p{L}\p{N}]+"""))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in excluded && it !in formSpecific }
             .maxByOrNull { it.length }
@@ -206,7 +206,7 @@ class AmarRetrievalRelevanceEngine {
 
     private fun tokenize(value: String): Set<String> =
         normalized(value)
-            .split(Regex("[^\p{L}\p{N}]+"))
+            .split(Regex("""[^\p{L}\p{N}]+"""))
             .map { it.trim() }
             .filter { it.length >= 2 && it !in STOP_WORDS }
             .toSet()
