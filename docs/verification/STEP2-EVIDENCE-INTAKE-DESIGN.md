@@ -21,7 +21,7 @@ Step 2 does not make an evidence-quality or answerability judgment.
 - Source normalization.
 - Title normalization.
 - Evidence/text normalization while preserving meaning.
-- Deterministic technical fingerprint generation.
+- Deterministic technical fingerprint generation representing content identity.
 - Technical duplicate detection/deduplication.
 - Structural validation of candidate shape.
 - Rejection of technically malformed/unusable candidates.
@@ -179,6 +179,16 @@ The implementation must include deterministic tests for:
 14. Repeated identical input produces identical normalized output and rejection reasons.
 
 Tests must also prove that `ResearchFinding` is not modified by Step 2.
+
+### Fingerprint identity rule
+
+The Step 2 technical fingerprint represents **content identity, not source identity**. The canonical fingerprint input is:
+
+```text
+provider + "\n" + normalizedTitle + "\n" + normalizedExcerpt
+```
+
+The fingerprint is the lowercase hexadecimal SHA-256 digest of that UTF-8 input, exactly 64 hexadecimal characters. `canonicalUrl`, retrieval timestamp, and normalization flags are excluded from the fingerprint. This permits technical detection of the same normalized content appearing at different URLs while URL deduplication remains a separate source-identity check.
 
 ## 8. Explicit non-touch list
 
