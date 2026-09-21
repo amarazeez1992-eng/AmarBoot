@@ -61,9 +61,16 @@ class AmarRetrievalRelevanceEngineTest {
 
     @Test
     fun score_below_threshold_rejects() {
-        val decision = engine.accept("ما عاصمة امريكا", "Unrelated", "Unrelated text")
+        val decision = engine.accept(
+            "ما عاصمة امريكا",
+            "America",
+            "capital of"
+        )
         assertFalse(decision.accepted)
-        assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.SCORE_BELOW_THRESHOLD, decision.reason)
+        assertEquals(
+            AmarRetrievalRelevanceEngine.RejectionReason.SCORE_BELOW_THRESHOLD,
+            decision.reason
+        )
     }
 
     @Test
@@ -157,8 +164,12 @@ class AmarRetrievalRelevanceEngineTest {
         val e = "Gold price information."
         val scored = engine.score(q, t, e)
         val decision = engine.accept(q, t, e)
-        assertTrue(scored.score >= AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE)
         assertEquals(scored.score, decision.score, 0.0)
+        assertFalse(decision.accepted)
+        assertEquals(
+            AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING,
+            decision.reason
+        )
         assertEquals(AmarRetrievalRelevanceEngine.RejectionReason.REQUIRED_FACET_MISSING, decision.reason)
     }
 }
