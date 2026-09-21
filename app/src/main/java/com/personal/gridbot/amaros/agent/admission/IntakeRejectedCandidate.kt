@@ -10,5 +10,7 @@ enum class IntakeRejectionReason {
     BLANK_PROVIDER,
     BLANK_TITLE,
     BLANK_EVIDENCE,
-    INVALID_URL
+    INVALID_URL,
+    DUPLICATE_URL,
+    DUPLICATE_FINGERPRINT
 }
