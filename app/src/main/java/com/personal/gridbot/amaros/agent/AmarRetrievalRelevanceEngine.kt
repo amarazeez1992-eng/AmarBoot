@@ -21,8 +21,7 @@ class AmarRetrievalRelevanceEngine {
     data class QuestionProfile(
         val entity: String?,
         val questionForm: QuestionForm,
-        val requiredFacets: Set<RequiredFacet>,
-        val temporalFlag: Boolean
+        val requiredFacets: Set<RequiredFacet>
     )
 
     enum class QuestionForm { CAPITAL, AGE, CURRENT_VALUE, QUANTITY, GENERAL }
@@ -124,9 +123,8 @@ class AmarRetrievalRelevanceEngine {
             QuestionForm.GENERAL -> emptySet()
         }
 
-        val temporalFlag = containsAny(normalizedQuestion, TEMPORAL_PATTERNS)
         val entity = extractEntity(normalizedQuestion, form)
-        return QuestionProfile(entity, form, requiredFacets, temporalFlag)
+        return QuestionProfile(entity, form, requiredFacets)
     }
 
     private fun facetGate(profile: QuestionProfile, title: String, excerpt: String): Boolean {
@@ -212,7 +210,6 @@ class AmarRetrievalRelevanceEngine {
         private val CAPITAL_PATTERNS = setOf("عاصمه", "capital")
         private val CURRENT_PATTERNS = setOf("حالي", "الحالي", "الان", "current", "latest")
         private val QUANTITY_PATTERNS = setOf("كم عدد", "عدد", "how many", "number", "count")
-        private val TEMPORAL_PATTERNS = CURRENT_PATTERNS
 
         private val CAPITAL_EVIDENCE_TERMS = setOf("capital", "عاصمه")
         private val AGE_EVIDENCE_TERMS = setOf("age", "born", "birth", "عمر")
