@@ -68,8 +68,8 @@ class AmarRetrievalRelevanceEngineTest {
 
         val scored = engine.score(question, title, excerpt)
         assertTrue(
-            scored.score < AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE,
-            "Premise failed: score = ${scored.score}, expected < 0.45"
+            "Premise failed: score = ${scored.score}, expected < 0.45",
+            scored.score < AmarRetrievalRelevanceEngine.MIN_RELEVANCE_SCORE
         )
 
         val decision = engine.accept(question, title, excerpt)
