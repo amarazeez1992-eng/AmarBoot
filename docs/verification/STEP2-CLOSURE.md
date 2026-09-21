@@ -45,13 +45,19 @@
 
 ### Post-Merge Verification
 
-- Merge SHA: c0e56fccd2575dd975f3659bb1b089c3b115d133
-- Stage 8: ✅ success
-- Stage 10: ✅ success
-- Stage 11: ✅ success
-- CodeQL: ✅ success
-- Stage One: NOT TRIGGERED — PATH-GATED
-- Stage Two: NOT TRIGGERED — PATH-GATED
+- Merge SHA: 1adcc78aaa42ced7cb9d7faec1c3578aa3853996
+
+### Post-Merge Verification (Final)
+
+| Workflow | Run ID | Conclusion |
+|----------|--------|------------|
+| Stage One | — | NOT TRIGGERED — PATH-GATED |
+| Stage Two | 35550671639 | ✅ success |
+| Stage 11 | 35550671655 | ✅ success |
+| Stage 10 | 35550671664 | ✅ success |
+| CodeQL | 35550671758 | ✅ success |
+
+**Step 2 implementation is now on `main` at `1adcc78`.**
 
 ## Signatures
 
