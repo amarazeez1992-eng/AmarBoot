@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
+import com.personal.gridbot.amaros.agent.admission.NormalizedCandidate
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -151,7 +152,29 @@ class AmarCanonicalEvidenceQualityAssemblerTest {
             findings = listOf(a, b),
             nowEpochMs = 1_500L,
             verification = verification,
-            intakeResult = EvidenceIntakeResult.empty()
+            intakeResult = EvidenceIntakeResult(
+                candidates = listOf(
+                    NormalizedCandidate(
+                        provider = "test",
+                        title = "gold",
+                        canonicalUrl = "https://a.example/x",
+                        normalizedExcerpt = "gold trend rising",
+                        retrievedAtEpochMs = 1_500L,
+                        fingerprint = "a".repeat(64),
+                        normalizationFlags = emptySet()
+                    ),
+                    NormalizedCandidate(
+                        provider = "test",
+                        title = "gold",
+                        canonicalUrl = "https://b.example/x",
+                        normalizedExcerpt = "gold momentum rising",
+                        retrievedAtEpochMs = 1_500L,
+                        fingerprint = "b".repeat(64),
+                        normalizationFlags = emptySet()
+                    )
+                ),
+                rejectedCandidates = emptyList()
+            )
         )
 
         assertEquals(1.0, certified.certificationScore, 0.0)
