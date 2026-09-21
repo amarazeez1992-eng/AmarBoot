@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
 /** Central pipeline for high-confidence answers without execution authority. */
@@ -73,7 +74,8 @@ class AmarAgentOrchestrator(
             canonicalEvidenceQuality.certify(
                 findings = unifiedFindings,
                 nowEpochMs = System.currentTimeMillis(),
-                verification = verificationReport!!
+                verification = verificationReport!!,
+                intakeResult = EvidenceIntakeResult.empty()
             )
         }
         if (canonicalEvidenceCertification != null) {
