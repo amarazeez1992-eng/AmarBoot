@@ -4,6 +4,7 @@ import com.personal.gridbot.amaros.agent.AmarEvidenceQualityUpstreamState
 import com.personal.gridbot.amaros.agent.admission.NormalizedCandidate
 import com.personal.gridbot.amaros.agent.relevance.RelevantCandidate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,10 +15,11 @@ class AmarEvidenceStatusContractTest {
     @Test
     fun complete_status_when_all_verified() {
         val candidate = candidate("a".repeat(64))
-        val result = classify(listOf(candidate), mapOf(candidate.fp() to true), mapOf(candidate.fp() to true))
+        val result = classify(listOf(candidate))
 
         assertEquals(EvidenceStatus.COMPLETE, result.classified.single().status)
         assertNull(result.classified.single().reason)
+        assertTrue(result.classified.single().explanation.isNotBlank())
     }
 
     @Test
@@ -25,27 +27,27 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to true),
-            mapOf(candidate.fp() to true),
             upstream = verified().copy(point5SourceIndependenceVerified = false)
         )
 
         assertEquals(EvidenceStatus.PARTIAL, result.classified.single().status)
         assertEquals(RejectionReason.PARTIAL_UPSTREAM_VERIFICATION, result.classified.single().reason)
+        assertEquals(EvidenceStatus.PARTIAL, result.overallStatus)
+        assertTrue(result.isDownstreamReady)
     }
 
     @Test
-    fun insufficient_status_when_below_minimum() {
+    fun insufficient_status_when_below_context_minimum() {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to true),
-            mapOf(candidate.fp() to true),
-            minimumCount = 2
+            queryContext = QueryContext.FINANCIAL_LIVE
         )
 
         assertEquals(EvidenceStatus.INSUFFICIENT, result.classified.single().status)
         assertEquals(RejectionReason.INSUFFICIENT_EVIDENCE, result.classified.single().reason)
+        assertEquals(EvidenceStatus.INSUFFICIENT, result.overallStatus)
+        assertFalse(result.isDownstreamReady)
     }
 
     @Test
@@ -53,13 +55,13 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to true),
-            mapOf(candidate.fp() to true),
             conflict = ConflictState.CONFLICTED
         )
 
         assertEquals(EvidenceStatus.CONFLICTED, result.classified.single().status)
         assertEquals(RejectionReason.CONFLICT_DETECTED, result.classified.single().reason)
+        assertEquals(EvidenceStatus.CONFLICTED, result.overallStatus)
+        assertFalse(result.isDownstreamReady)
     }
 
     @Test
@@ -67,12 +69,13 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to true),
-            mapOf(candidate.fp() to false)
+            freshnessStates = mapOf(candidate.fp() to false)
         )
 
         assertEquals(EvidenceStatus.STALE, result.classified.single().status)
         assertEquals(RejectionReason.STALE_EVIDENCE, result.classified.single().reason)
+        assertEquals(EvidenceStatus.PARTIAL, result.overallStatus)
+        assertTrue(result.isDownstreamReady)
     }
 
     @Test
@@ -80,13 +83,14 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to false),
-            mapOf(candidate.fp() to true),
+            admissionStates = mapOf(candidate.fp() to false),
             conflict = ConflictState.CONFLICTED
         )
 
         assertEquals(EvidenceStatus.UNVERIFIED, result.classified.single().status)
         assertEquals(RejectionReason.UNVERIFIED_ADMISSION, result.classified.single().reason)
+        assertEquals(EvidenceStatus.UNVERIFIED, result.overallStatus)
+        assertFalse(result.isDownstreamReady)
     }
 
     @Test
@@ -94,10 +98,10 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to false),
-            mapOf(candidate.fp() to false),
+            admissionStates = mapOf(candidate.fp() to false),
+            freshnessStates = mapOf(candidate.fp() to false),
             conflict = ConflictState.CONFLICTED,
-            minimumCount = 2
+            queryContext = QueryContext.FINANCIAL_LIVE
         )
 
         assertEquals(EvidenceStatus.UNVERIFIED, result.classified.single().status)
@@ -108,10 +112,8 @@ class AmarEvidenceStatusContractTest {
         val candidate = candidate("a".repeat(64))
         val result = classify(
             listOf(candidate),
-            mapOf(candidate.fp() to true),
-            mapOf(candidate.fp() to true),
             upstream = verified().copy(point9EvidenceUniquenessVerified = false),
-            minimumCount = 2
+            queryContext = QueryContext.FINANCIAL_LIVE
         )
 
         assertEquals(EvidenceStatus.INSUFFICIENT, result.classified.single().status)
@@ -133,7 +135,7 @@ class AmarEvidenceStatusContractTest {
     @Test
     fun status_preserves_evidence() {
         val candidate = candidate("a".repeat(64))
-        val result = classify(listOf(candidate), mapOf(candidate.fp() to true), mapOf(candidate.fp() to true))
+        val result = classify(listOf(candidate))
 
         assertEquals(candidate, result.classified.single().candidate)
     }
@@ -152,37 +154,74 @@ class AmarEvidenceStatusContractTest {
         assertEquals(1, result.unclassified.size)
         assertEquals(complete, result.classified.single().candidate)
         assertEquals(missingState, result.unclassified.single())
+        assertEquals(EvidenceStatus.UNVERIFIED, result.overallStatus)
+        assertFalse(result.isDownstreamReady)
     }
 
     @Test
     fun fingerprint_canonical_order_is_deterministic() {
         val high = candidate("f".repeat(64))
         val low = candidate("0".repeat(64))
-        val resultA = classify(
-            listOf(high, low),
-            admissionStates = mapOf(high.fp() to true, low.fp() to true),
-            freshnessStates = mapOf(high.fp() to true, low.fp() to true)
-        )
-        val resultB = classify(
-            listOf(low, high),
-            admissionStates = mapOf(high.fp() to true, low.fp() to true),
-            freshnessStates = mapOf(high.fp() to true, low.fp() to true)
-        )
+        val resultA = classify(listOf(high, low))
+        val resultB = classify(listOf(low, high))
 
         assertEquals(
             resultA.classified.map { it.candidate.candidate.fingerprint },
             resultB.classified.map { it.candidate.candidate.fingerprint }
         )
-        assertTrue(resultA.classified.first().candidate.candidate.fingerprint < resultA.classified.last().candidate.candidate.fingerprint)
+        assertTrue(
+            resultA.classified.first().candidate.candidate.fingerprint <
+                resultA.classified.last().candidate.candidate.fingerprint
+        )
+    }
+
+    @Test
+    fun overall_status_complete_when_all_complete() {
+        val first = candidate("a".repeat(64))
+        val second = candidate("b".repeat(64))
+        val result = classify(listOf(first, second))
+
+        assertEquals(EvidenceStatus.COMPLETE, result.overallStatus)
+        assertEquals(2, result.distribution[EvidenceStatus.COMPLETE])
+        assertTrue(result.isDownstreamReady)
+    }
+
+    @Test
+    fun overall_status_conflicted_when_any_conflicted() {
+        val first = candidate("a".repeat(64))
+        val second = candidate("b".repeat(64))
+        val result = classify(
+            listOf(first, second),
+            conflict = ConflictState.CONFLICTED
+        )
+
+        assertEquals(EvidenceStatus.CONFLICTED, result.overallStatus)
+        assertEquals(2, result.distribution[EvidenceStatus.CONFLICTED])
+        assertFalse(result.isDownstreamReady)
+    }
+
+    @Test
+    fun is_downstream_ready_false_when_unclassified_present() {
+        val classified = candidate("a".repeat(64))
+        val unclassified = candidate("b".repeat(64))
+        val result = classify(
+            listOf(classified, unclassified),
+            admissionStates = mapOf(classified.fp() to true),
+            freshnessStates = mapOf(classified.fp() to true)
+        )
+
+        assertEquals(EvidenceStatus.UNVERIFIED, result.overallStatus)
+        assertFalse(result.isDownstreamReady)
+        assertEquals(0, result.distribution[EvidenceStatus.UNVERIFIED])
     }
 
     private fun classify(
         candidates: List<RelevantCandidate>,
-        admissionStates: Map<String, Boolean>,
-        freshnessStates: Map<String, Boolean>,
+        admissionStates: Map<String, Boolean> = candidates.associate { it.fp() to true },
+        freshnessStates: Map<String, Boolean> = candidates.associate { it.fp() to true },
         upstream: AmarEvidenceQualityUpstreamState = verified(),
         conflict: ConflictState = ConflictState.NOT_AVAILABLE,
-        minimumCount: Int = 1
+        queryContext: QueryContext = QueryContext.GENERAL
     ) = classifier.classify(
         AmarEvidenceStatusInput(
             candidates = candidates,
@@ -190,7 +229,7 @@ class AmarEvidenceStatusContractTest {
             admissionStates = admissionStates,
             freshnessStates = freshnessStates,
             conflictState = conflict,
-            minimumCount = minimumCount
+            queryContext = queryContext
         )
     )
 

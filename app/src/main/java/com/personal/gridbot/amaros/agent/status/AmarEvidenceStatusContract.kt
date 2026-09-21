@@ -3,6 +3,15 @@ package com.personal.gridbot.amaros.agent.status
 import com.personal.gridbot.amaros.agent.AmarEvidenceQualityUpstreamState
 import com.personal.gridbot.amaros.agent.relevance.RelevantCandidate
 
+enum class QueryContext(
+    val minimumEvidenceCount: Int
+) {
+    GENERAL(1),
+    FINANCIAL_LIVE(3),
+    FINANCIAL_HIST(2),
+    CRITICAL(5)
+}
+
 enum class ConflictState {
     NOT_AVAILABLE,
     NO_CONFLICT,
@@ -15,12 +24,8 @@ data class AmarEvidenceStatusInput(
     val admissionStates: Map<String, Boolean>,
     val freshnessStates: Map<String, Boolean>,
     val conflictState: ConflictState = ConflictState.NOT_AVAILABLE,
-    val minimumCount: Int = DEFAULT_MIN_EVIDENCE_COUNT
-) {
-    companion object {
-        const val DEFAULT_MIN_EVIDENCE_COUNT = 1
-    }
-}
+    val queryContext: QueryContext = QueryContext.GENERAL
+)
 
 interface AmarEvidenceStatusContract {
     fun classify(input: AmarEvidenceStatusInput): EvidenceStatusResult
