@@ -39,7 +39,7 @@ class AmarCrossSourceCorrelator : AmarCrossSourceCorrelationContract {
             )
         }
 
-        val fingerprints = canonical.map { it.evidence.evidence.candidate.fingerprint }.toSet()
+        val fingerprints = canonical.map { it.evidence.evidence.candidate.candidate.fingerprint }.toSet()
         val missingState = fingerprints.any { it !in input.independenceStates }
         if (missingState) {
             return CrossSourceCorrelationResult(
@@ -75,14 +75,14 @@ class AmarCrossSourceCorrelator : AmarCrossSourceCorrelationContract {
             )
         }
 
-        val byFingerprint = canonical.groupBy { it.evidence.evidence.candidate.fingerprint }
+        val byFingerprint = canonical.groupBy { it.evidence.evidence.candidate.candidate.fingerprint }
         val groups = byFingerprint.values.mapNotNull { entries ->
             if (entries.size < 2) return@mapNotNull null
 
-            val providers = entries.map { it.evidence.evidence.candidate.provider }.toSet()
+            val providers = entries.map { it.evidence.evidence.candidate.candidate.provider }.toSet()
             if (providers.size < 2) return@mapNotNull null
 
-            val keys = entries.map { it.evidence.evidence.candidate.fingerprint }
+            val keys = entries.map { it.evidence.evidence.candidate.candidate.fingerprint }
             val independent = keys.all { input.independenceStates.getValue(it) }
 
             CorrelatedGroup(
