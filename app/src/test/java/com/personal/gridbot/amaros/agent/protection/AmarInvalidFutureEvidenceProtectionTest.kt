@@ -47,7 +47,7 @@ class AmarInvalidFutureEvidenceProtectionTest {
         conflictingFingerprints = emptySet(),
         conflictDetails = emptyList<AmarConflict>(),
         isDownstreamReady = state == ConflictState.NO_CONFLICT,
-        reason = com.personal.gridbot.amaros.agent.conflict.ConflictAwarenessReason.NO_CONFLICT
+        reason = com.personal.gridbot.amaros.agent.conflict.ConflictAwarenessReason.NO_CONFLICTS_DETECTED
     )
 
     private fun input(
