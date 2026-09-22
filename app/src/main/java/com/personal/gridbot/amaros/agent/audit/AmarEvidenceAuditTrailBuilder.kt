@@ -13,6 +13,14 @@ class AmarEvidenceAuditTrailBuilder : AmarEvidenceAuditTrailContract {
             return failed(AuditReason.INVALID_INPUT)
         }
 
+        if (isEmptyInput(input)) {
+            return EvidenceAuditTrailResult.immutable(
+                entries = emptyList(),
+                isDownstreamReady = true,
+                reason = AuditReason.VALID_AUDIT
+            )
+        }
+
         if (!upstreamReady(input)) {
             return failed(AuditReason.MISSING_UPSTREAM)
         }
@@ -142,6 +150,18 @@ class AmarEvidenceAuditTrailBuilder : AmarEvidenceAuditTrailContract {
             failed(AuditReason.AUDIT_FAILED)
         }
     }
+
+    private fun isEmptyInput(input: EvidenceAuditTrailInput): Boolean =
+        input.currentEvidence.chainLinks.isEmpty() &&
+            input.lifecycleResult.currentStates.isEmpty() &&
+            input.lifecycleResult.transitions.isEmpty() &&
+            input.provenanceNodes.isEmpty() &&
+            input.historicalValidation.comparableCases.isEmpty() &&
+            input.crossSourceCorrelation.correlatedGroups.isEmpty() &&
+            input.currentEvidence.isDownstreamReady &&
+            input.lifecycleResult.isDownstreamReady &&
+            input.historicalValidation.isDownstreamReady &&
+            input.crossSourceCorrelation.isDownstreamReady
 
     private fun upstreamReady(input: EvidenceAuditTrailInput): Boolean =
         input.currentEvidence.isDownstreamReady &&
