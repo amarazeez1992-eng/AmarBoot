@@ -199,7 +199,7 @@ class AmarCrossSourceCorrelationTest {
         )
         return ClassifiedEvidence(
             candidate = RelevantCandidate(candidate, 1.0, "test"),
-            status = EvidenceStatus.VERIFIED,
+            status = EvidenceStatus.COMPLETE,
             reason = null,
             explanation = "test"
         )
