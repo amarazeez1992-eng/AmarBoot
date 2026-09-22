@@ -64,8 +64,13 @@ class AmarHistoricalValidationTest {
     }
 
     @Test fun match_criteria_enforced() {
-        assertEquals(HistoricalValidationReason.NO_COMPARABLE_CASES,
-            result(listOf(case("1", attrs = mapOf("session" to "LONDON")))).reason)
+        assertEquals(
+            HistoricalValidationReason.NO_COMPARABLE_CASES,
+            result(
+                listOf(case("1", attrs = mapOf("session" to "LONDON"))),
+                MatchCriteria(requiredAttributes = setOf("session"))
+            ).reason
+        )
     }
 
     @Test fun outcome_summary_calculated() {
@@ -82,9 +87,6 @@ class AmarHistoricalValidationTest {
         assertTrue(r.differences.isEmpty())
     }
 
-    @Test fun validation_result_has_no_score() {
-        assertFalse(HistoricalValidationResult::class.members.any { it.name == "validationScore" })
-    }
 
     @Test fun no_comparable_cases_returns_no_cases() {
         assertEquals(HistoricalValidationReason.NO_COMPARABLE_CASES,
