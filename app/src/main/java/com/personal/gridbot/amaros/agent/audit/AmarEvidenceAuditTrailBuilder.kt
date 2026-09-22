@@ -66,10 +66,15 @@ class AmarEvidenceAuditTrailBuilder : AmarEvidenceAuditTrailContract {
                 )
             }
 
+            val knownFingerprints = (
+                input.provenanceNodes.map { it.evidenceFingerprint } +
+                    input.currentEvidence.chainLinks.flatMap { listOf(it.fromFingerprint, it.toFingerprint) }
+            ).filter { it.isNotBlank() && it != "GENESIS" }.toSet()
+
             input.currentEvidence.chainLinks.forEach { link ->
                 val fingerprint = link.toFingerprint.ifBlank { link.fromFingerprint }
-                if (fingerprint.isBlank()) {
-                    throw IllegalArgumentException("Missing chain-link fingerprint")
+                if (fingerprint.isBlank() || fingerprint == "GENESIS") {
+                    throw IllegalArgumentException("Missing chain-link evidence fingerprint")
                 }
                 entries += entry(
                     evidenceFingerprint = fingerprint,
@@ -83,37 +88,43 @@ class AmarEvidenceAuditTrailBuilder : AmarEvidenceAuditTrailContract {
                         "reason" to link.reason
                     )
                 )
+            }
 
-                when (link.linkType) {
-                    ChainLinkType.HISTORICAL -> {
-                        entries += entry(
-                            evidenceFingerprint = fingerprint,
-                            eventType = AuditEventType.HISTORICAL_VALIDATED,
-                            timestamp = input.currentTimeMs,
-                            actor = "HistoricalValidation",
-                            details = mapOf(
-                                "fromFingerprint" to link.fromFingerprint,
-                                "toFingerprint" to link.toFingerprint,
-                                "reason" to link.reason
-                            )
+            input.historicalValidation.comparableCases.forEach { comparableCase ->
+                val fingerprint = comparableCase.historicalCase.id
+                if (fingerprint.isBlank() || fingerprint !in knownFingerprints) {
+                    throw IllegalArgumentException("Historical validation fingerprint is not represented upstream")
+                }
+                entries += entry(
+                    evidenceFingerprint = fingerprint,
+                    eventType = AuditEventType.HISTORICAL_VALIDATED,
+                    timestamp = input.currentTimeMs,
+                    actor = "HistoricalValidation",
+                    details = mapOf(
+                        "historicalCaseId" to comparableCase.historicalCase.id,
+                        "decisionTimeMs" to comparableCase.historicalCase.decisionTimeMs.toString(),
+                        "differences" to comparableCase.differences.sorted().joinToString(";")
+                    )
+                )
+            }
+
+            input.crossSourceCorrelation.correlatedGroups.forEach { group ->
+                val fingerprints = group.evidenceFingerprints.filter { it.isNotBlank() }.sorted()
+                if (fingerprints.size != group.evidenceFingerprints.size || !fingerprints.all { it in knownFingerprints }) {
+                    throw IllegalArgumentException("Cross-source correlation fingerprint is not represented upstream")
+                }
+                fingerprints.forEach { fingerprint ->
+                    entries += entry(
+                        evidenceFingerprint = fingerprint,
+                        eventType = AuditEventType.CROSS_SOURCE_CORRELATED,
+                        timestamp = input.currentTimeMs,
+                        actor = "CrossSourceCorrelation",
+                        details = mapOf(
+                            "correlationType" to group.correlationType.name,
+                            "groupFingerprints" to fingerprints.joinToString(","),
+                            "sharedClaims" to group.sharedClaims.sorted().joinToString(";")
                         )
-                    }
-
-                    ChainLinkType.CROSS_SOURCE -> {
-                        entries += entry(
-                            evidenceFingerprint = fingerprint,
-                            eventType = AuditEventType.CROSS_SOURCE_CORRELATED,
-                            timestamp = input.currentTimeMs,
-                            actor = "CrossSourceCorrelation",
-                            details = mapOf(
-                                "fromFingerprint" to link.fromFingerprint,
-                                "toFingerprint" to link.toFingerprint,
-                                "reason" to link.reason
-                            )
-                        )
-                    }
-
-                    else -> Unit
+                    )
                 }
             }
 
