@@ -196,7 +196,7 @@ class AmarEvidenceChainTest {
                         id = id,
                         market = "XAUUSD",
                         timeframe = "H1",
-                        timestampEpochMs = 900L,
+                        decisionTimeMs = 900L,
                         regimeObservation = AmarRegimeObservation(
                             AmarMarketRegime.TREND, 0.9, 0.4, 0.8, 0.2, 0.1, 900L
                         ),
