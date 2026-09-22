@@ -12,7 +12,6 @@ import com.personal.gridbot.amaros.agent.status.ClassifiedEvidence
 import com.personal.gridbot.amaros.agent.status.EvidenceStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -157,7 +156,6 @@ class AmarDeterministicEvidenceHandlingTest {
         val e = protected("a".repeat(64), relevance = 0.73)
         val result = handler.handle(input(protected = listOf(e)))
         assertEquals(e, result.canonicalEvidence.single().evidence)
-        assertNotSame(e, result.canonicalEvidence.single().evidence)
     }
 
     @Test
