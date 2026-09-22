@@ -3,11 +3,11 @@ package com.personal.gridbot.amaros.agent.conflict
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.status.ConflictState
 import com.personal.gridbot.amaros.intelligence.verification.AmarConflict
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotSame
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarEvidenceConflictAwarenessTest {
     private val awareness = AmarEvidenceConflictAwareness()
