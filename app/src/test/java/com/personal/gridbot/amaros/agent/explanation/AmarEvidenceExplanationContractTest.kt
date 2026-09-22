@@ -6,11 +6,11 @@ import com.personal.gridbot.amaros.agent.ranking.RankingSignal
 import com.personal.gridbot.amaros.agent.relevance.RelevantCandidate
 import com.personal.gridbot.amaros.agent.status.ClassifiedEvidence
 import com.personal.gridbot.amaros.agent.status.EvidenceStatus
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarEvidenceExplanationContractTest {
     private val explainer = AmarEvidenceExplainer()
@@ -55,7 +55,7 @@ class AmarEvidenceExplanationContractTest {
 
     @Test fun explanation_is_not_blank() {
         val e = explainer.explain(listOf(ranked())).explained.single().explanation
-        assertNotNull(e)
+        requireNotNull(e)
         assertTrue(e.summary.isNotBlank())
     }
 
