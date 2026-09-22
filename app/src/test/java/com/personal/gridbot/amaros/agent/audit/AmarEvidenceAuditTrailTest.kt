@@ -176,9 +176,10 @@ class AmarEvidenceAuditTrailTest {
 
     @Test
     fun fail_closed_on_missing_upstream() {
-        val value = input(nodes = listOf(node("a", 10L))).copy(
+        val base = input(nodes = listOf(node("a", 10L)))
+        val value = base.copy(
             currentEvidence = EvidenceChainResult(
-                chainLinks = value.currentEvidence.chainLinks,
+                chainLinks = base.currentEvidence.chainLinks,
                 chainIntegrity = ChainIntegrity.INTACT,
                 isDownstreamReady = false,
                 reason = EvidenceChainReason.INVALID_INPUT
