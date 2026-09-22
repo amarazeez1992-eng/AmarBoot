@@ -1,0 +1,21 @@
+# POINT 23 — AUDIT
+
+- Date: 2026-09-23
+- Base: main @ f7f503eb
+- Scope: Evidence Lifecycle
+- Files: 9 (8 Production + 1 Test)
+- Design Locks:
+  - No Entity ID
+  - Identity = evidenceFingerprint
+  - States: ACTIVE, AGED, EXPIRED
+  - No ARCHIVED
+  - Time-based aging
+  - Configurable LifecyclePolicy
+  - Flag-only
+  - Fail-Closed
+  - Look-ahead protection
+- Tests: 15
+- Protected: Points 1-21 unchanged
+- Pre-Merge CI: 5/5
+- Post-Merge CI: 8/8
+- Result: PASS
