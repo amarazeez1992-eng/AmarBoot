@@ -201,9 +201,9 @@ This baseline must remain downstream of the canonical Evidence Engine boundaries
 - Point 15: claim/evidence verification.
 - Point 16: structured confidence-calibration input.
 - Point 17: invalid/future evidence protection.
-- Point 18: deterministic evidence policy.
-- Point 19: fail-closed evidence boundary.
-- Point 20: canonical evidence authority.
+- Point 18: deterministic evidence handling.
+- Point 19: historical validation.
+- Point 20: cross-source correlation.
 - Point 21: security/execution boundary.
 - Point 22: focused regression over Points 1–21.
 - Point 23: architecture integrity gate.
