@@ -5,11 +5,17 @@ import com.personal.gridbot.amaros.agent.chain.ChainLinkType
 import com.personal.gridbot.amaros.agent.chain.EvidenceChainLink
 import com.personal.gridbot.amaros.agent.chain.EvidenceChainReason
 import com.personal.gridbot.amaros.agent.chain.EvidenceChainResult
+import com.personal.gridbot.amaros.agent.correlation.CorrelatedGroup
 import com.personal.gridbot.amaros.agent.correlation.CorrelationReason
+import com.personal.gridbot.amaros.agent.correlation.CorrelationType
 import com.personal.gridbot.amaros.agent.correlation.CrossSourceCorrelationResult
+import com.personal.gridbot.amaros.agent.historical.ComparableCase
+import com.personal.gridbot.amaros.agent.historical.HistoricalCase
 import com.personal.gridbot.amaros.agent.historical.HistoricalValidationReason
 import com.personal.gridbot.amaros.agent.historical.HistoricalValidationResult
 import com.personal.gridbot.amaros.agent.historical.OutcomeSummary
+import com.personal.gridbot.amaros.intelligence.advanced.AmarMarketRegime
+import com.personal.gridbot.amaros.intelligence.advanced.AmarRegimeObservation
 import com.personal.gridbot.amaros.agent.lifecycle.EvidenceLifecycleResult
 import com.personal.gridbot.amaros.agent.lifecycle.EvidenceLifecycleSnapshot
 import com.personal.gridbot.amaros.agent.lifecycle.EvidenceLifecycleState
@@ -103,18 +109,28 @@ class AmarEvidenceAuditTrailTest {
     fun chain_link_recorded() {
         val result = builder.build(
             input(
-                nodes = listOf(node("a", 10L)),
+                nodes = listOf(node("a", 10L), node("b", 20L)),
                 links = listOf(
                     EvidenceChainLink(
                         fromFingerprint = "GENESIS",
                         toFingerprint = fp("a"),
                         linkType = ChainLinkType.PROVENANCE,
                         reason = "existing provenance relationship"
+                    ),
+                    EvidenceChainLink(
+                        fromFingerprint = fp("a"),
+                        toFingerprint = fp("b"),
+                        linkType = ChainLinkType.CROSS_SOURCE,
+                        reason = "existing cross-source relationship"
                     )
-                )
+                ),
+                historical = historical("a"),
+                correlation = correlation("a", "b")
             )
         )
         assertTrue(result.entries.any { it.eventType == AuditEventType.CHAIN_LINK_CREATED })
+        assertTrue(result.entries.any { it.eventType == AuditEventType.HISTORICAL_VALIDATED })
+        assertTrue(result.entries.any { it.eventType == AuditEventType.CROSS_SOURCE_CORRELATED })
     }
 
     @Test
@@ -208,6 +224,8 @@ class AmarEvidenceAuditTrailTest {
         nodes: List<AmarProvenanceNode>,
         links: List<EvidenceChainLink> = emptyList(),
         lifecycle: EvidenceLifecycleResult = lifecycle(),
+        historical: HistoricalValidationResult = historical(),
+        correlation: CrossSourceCorrelationResult = correlation(),
         currentTimeMs: Long = 100L
     ) = EvidenceAuditTrailInput(
         currentEvidence = EvidenceChainResult(
@@ -218,19 +236,8 @@ class AmarEvidenceAuditTrailTest {
         ),
         lifecycleResult = lifecycle,
         provenanceNodes = nodes,
-        historicalValidation = HistoricalValidationResult(
-            comparableCases = emptyList(),
-            observedOutcomes = OutcomeSummary(0, emptyMap()),
-            frequency = 0,
-            differences = emptyList(),
-            isDownstreamReady = true,
-            reason = HistoricalValidationReason.NO_COMPARABLE_CASES
-        ),
-        crossSourceCorrelation = CrossSourceCorrelationResult(
-            correlatedGroups = emptyList(),
-            isDownstreamReady = true,
-            reason = CorrelationReason.INSUFFICIENT_DATA
-        ),
+        historicalValidation = historical,
+        crossSourceCorrelation = correlation,
         currentTimeMs = currentTimeMs
     )
 
@@ -258,6 +265,66 @@ class AmarEvidenceAuditTrailTest {
         ),
         currentTimeMs = 100L
     )
+
+
+
+    private fun historical(seed: String? = null): HistoricalValidationResult {
+        val cases = seed?.let {
+            listOf(
+                ComparableCase(
+                    historicalCase = HistoricalCase(
+                        id = fp(it),
+                        market = "XAUUSD",
+                        timeframe = "H1",
+                        decisionTimeMs = 50L,
+                        regimeObservation = AmarRegimeObservation(
+                            AmarMarketRegime.TREND, 0.9, 0.4, 0.8, 0.2, 0.1, 50L
+                        ),
+                        hypothesisId = "h1",
+                        outcome = "UP",
+                        attributes = emptyMap()
+                    ),
+                    differences = listOf("test-difference")
+                )
+            )
+        } ?: emptyList()
+        return HistoricalValidationResult(
+            comparableCases = cases,
+            observedOutcomes = OutcomeSummary(
+                cases.size,
+                if (cases.isEmpty()) emptyMap() else mapOf("UP" to cases.size)
+            ),
+            frequency = cases.size,
+            differences = emptyList(),
+            isDownstreamReady = true,
+            reason = if (cases.isEmpty()) {
+                HistoricalValidationReason.NO_COMPARABLE_CASES
+            } else {
+                HistoricalValidationReason.VALID_COMPARABLE_CASES
+            }
+        )
+    }
+
+    private fun correlation(vararg seeds: String): CrossSourceCorrelationResult =
+        CrossSourceCorrelationResult(
+            correlatedGroups = if (seeds.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(
+                    CorrelatedGroup(
+                        evidenceFingerprints = seeds.map { fp(it) }.toSet(),
+                        correlationType = CorrelationType.AGREEMENT,
+                        sharedClaims = listOf("test-claim")
+                    )
+                )
+            },
+            isDownstreamReady = true,
+            reason = if (seeds.isEmpty()) {
+                CorrelationReason.INSUFFICIENT_DATA
+            } else {
+                CorrelationReason.VALID_CORRELATION
+            }
+        )
 
     private fun lifecycle() = EvidenceLifecycleResult(
         currentStates = emptyList(),
