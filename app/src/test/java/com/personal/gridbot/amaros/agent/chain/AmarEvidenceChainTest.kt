@@ -50,7 +50,7 @@ class AmarEvidenceChainTest {
     @Test fun provenance_consumed_not_rebuilt() {
         val nodes = listOf(node(fp("a"), "GENESIS", "chain-a"))
         val result = builder.build(input(listOf("a"), nodes))
-        assertEquals(nodes.single().chainHash, result.chainLinks.single().fromFingerprint)
+        assertEquals(nodes.single().previousHash, result.chainLinks.single().fromFingerprint)
         assertEquals(nodes.single().evidenceFingerprint, result.chainLinks.single().toFingerprint)
     }
 
@@ -125,7 +125,7 @@ class AmarEvidenceChainTest {
         val nodes = nodesFor(listOf("a", "b"))
         val result = builder.build(input(listOf("a", "b"), nodes))
         assertEquals(
-            nodes.map { it.chainHash },
+            nodes.map { it.previousHash },
             result.chainLinks.filter { it.linkType == ChainLinkType.PROVENANCE }.map { it.fromFingerprint }
         )
     }
