@@ -142,7 +142,7 @@ class AmarEvidenceAuditTrailTest {
     fun is_stateless() {
         val value = input(nodes = listOf(node("a", 10L)))
         val first = builder.build(value)
-        builder.build(input(nodes = listOf(node("b", 10L)))
+        builder.build(input(nodes = listOf(node("b", 10L))))
         val second = builder.build(value)
         assertEquals(first, second)
     }
