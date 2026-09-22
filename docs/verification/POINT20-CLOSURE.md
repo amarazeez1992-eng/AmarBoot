@@ -9,7 +9,16 @@ Date: 2026-09-22
 
 ## Evidence Summary
 - Pre-Merge CI: 5/5 PASS
-- Post-Merge CI: 8/8 PASS
+- Post-Merge CI:
+  - Stage Two: ✅ success (35779491025)
+  - Stage 11: ✅ success (35779491083)
+  - Stage 10: ✅ success (35779491151)
+  - CodeQL: ✅ success (35779491070)
+  - Stage 8: ✅ success (35779491127)
+  - Build APK: ✅ success (35779491017)
+  - Final APK Closure: ✅ success (35779491187)
+  - Stage One: NOT TRIGGERED — PATH-GATED
+  - Total: 7/7 applicable success + 1 PATH-GATED
 - Protected Points 1-19 unchanged
 - Design locks reverified: PASS
 
