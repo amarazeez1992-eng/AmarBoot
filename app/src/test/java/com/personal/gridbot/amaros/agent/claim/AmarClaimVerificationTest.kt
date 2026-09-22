@@ -102,8 +102,8 @@ class AmarClaimVerificationTest {
     }
 
     @Test fun multiple_claims_partition_correctly() {
-        val a = claim("Gold prices are rising today according to the market report.", "a")
-        val b = claim("Silver prices are falling today according to the official report.", "b")
+        val a = claim("Gold prices are rising sharply today in New York trading session.", "a")
+        val b = claim("Silver is falling in London exchange during European hours.", "b")
         val r = AmarClaimVerifier().verify(input(
             claims = listOf(a, b),
             findings = listOf(finding(a.text), finding(b.text, EvidenceStance.OPPOSES))
