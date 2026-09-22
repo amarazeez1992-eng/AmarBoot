@@ -12,10 +12,10 @@ import com.personal.gridbot.amaros.agent.status.EvidenceStatus
 import com.personal.gridbot.amaros.agent.relevance.RelevantCandidate
 import com.personal.gridbot.amaros.agent.admission.NormalizedCandidate
 import com.personal.gridbot.amaros.intelligence.verification.AmarConflict
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarInvalidFutureEvidenceProtectionTest {
 
