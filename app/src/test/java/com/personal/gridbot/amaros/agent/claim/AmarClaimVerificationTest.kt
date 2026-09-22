@@ -13,10 +13,10 @@ import com.personal.gridbot.amaros.agent.status.ConflictState
 import com.personal.gridbot.amaros.agent.status.EvidenceStatus
 import com.personal.gridbot.amaros.agent.status.RejectionReason
 import com.personal.gridbot.amaros.agent.AmarSourceType
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 class AmarClaimVerificationTest {
     private fun finding(text: String, stance: EvidenceStance = EvidenceStance.SUPPORTS) =
@@ -25,7 +25,7 @@ class AmarClaimVerificationTest {
 
     private fun awareness(conflicts: Set<String> = emptySet()) =
         EvidenceConflictAwarenessResult(
-            ConflictState.NONE, conflicts, emptyList(), true,
+            ConflictState.NO_CONFLICT, conflicts, emptyList(), true,
             ConflictAwarenessReason.NO_CONFLICTS_DETECTED
         )
 
