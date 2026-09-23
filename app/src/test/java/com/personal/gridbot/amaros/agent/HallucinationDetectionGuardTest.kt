@@ -32,49 +32,35 @@ class HallucinationDetectionGuardTest {
 
     @Test
     fun no_hallucination_when_clean() {
-        val result = evaluate(
-            AmarClaimVerification("The market report has supporting evidence.", 3, 0, true, 3, 0)
-        )
+        val result = evaluate(AmarClaimVerification("The market report has supporting evidence.", 3, 0, true, 3, 0))
         assertFalse(result.hallucinationDetected)
         assertEquals(HallucinationSeverity.NONE, result.severity)
     }
 
     @Test
     fun certainty_language_mismatch_detected() {
-        val result = evaluate(
-            AmarClaimVerification("Gold will definitely rise tomorrow.", 1, 0, true, 1, 0)
-        )
+        val result = evaluate(AmarClaimVerification("Gold will definitely rise tomorrow.", 1, 0, true, 1, 0))
         assertTrue(result.reasons.contains(HallucinationIndicator.CERTAINTY_LANGUAGE_MISMATCH))
         assertEquals(HallucinationSeverity.HIGH, result.severity)
     }
 
     @Test
     fun numeric_claim_without_evidence_detected() {
-        val result = evaluate(
-            AmarClaimVerification("The price is 2500 dollars.", 0, 0, false, 0, 0)
-        )
-        System.err.println("TEST_DEBUG: reasons=${result.reasons} severity=${result.severity} detected=${result.hallucinationDetected}")
-        assertTrue(
-            "Actual reasons: ${result.reasons}, severity: ${result.severity}",
-            result.reasons.contains(HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE)
-        )
+        val result = evaluate(AmarClaimVerification("The price is 2500 dollars.", 0, 0, false, 0, 0))
+        assertTrue(result.reasons.contains(HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE))
         assertEquals(HallucinationSeverity.MEDIUM, result.severity)
     }
 
     @Test
     fun entity_mention_mismatch_detected() {
-        val result = evaluate(
-            AmarClaimVerification("The broker Apple changed its policy.", 0, 0, false, 0, 0)
-        )
+        val result = evaluate(AmarClaimVerification("The broker Apple changed its policy.", 0, 0, false, 0, 0))
         assertTrue(result.reasons.contains(HallucinationIndicator.ENTITY_MENTION_MISMATCH))
         assertEquals(HallucinationSeverity.MEDIUM, result.severity)
     }
 
     @Test
     fun confidence_inflation_detected() {
-        val result = evaluate(
-            AmarClaimVerification("The verified claim is supported.", 1, 0, true, 1, 0)
-        )
+        val result = evaluate(AmarClaimVerification("The verified claim is supported.", 1, 0, true, 1, 0))
         assertTrue(result.reasons.contains(HallucinationIndicator.CONFIDENCE_INFLATION))
         assertEquals(HallucinationSeverity.MEDIUM, result.severity)
     }
