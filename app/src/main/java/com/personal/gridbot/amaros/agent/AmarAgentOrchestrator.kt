@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntake
+import com.personal.gridbot.amaros.agent.admission.AmarFindingToCandidateConverter
 import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
@@ -23,6 +25,8 @@ class AmarAgentOrchestrator(
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
     private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy(),
     private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
+    private val evidenceIntake: AmarEvidenceIntake = AmarEvidenceIntake(),
+    private val findingToCandidateConverter: AmarFindingToCandidateConverter = AmarFindingToCandidateConverter(),
     private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
@@ -61,6 +65,11 @@ class AmarAgentOrchestrator(
         } else null
         val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
 
+        val intakeResult = if (needsResearch) {
+            val candidates = unifiedFindings.map { findingToCandidateConverter.toCandidate(it) }
+            evidenceIntake.intake(request.text, candidates)
+        } else EvidenceIntakeResult.empty()
+
         val verification = report?.let {
             emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
@@ -75,7 +84,7 @@ class AmarAgentOrchestrator(
                 findings = unifiedFindings,
                 nowEpochMs = System.currentTimeMillis(),
                 verification = verificationReport!!,
-                intakeResult = EvidenceIntakeResult.empty()
+                intakeResult = intakeResult
             )
         }
         if (canonicalEvidenceCertification != null) {
