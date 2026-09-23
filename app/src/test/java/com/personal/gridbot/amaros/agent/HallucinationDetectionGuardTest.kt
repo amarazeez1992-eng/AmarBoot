@@ -53,7 +53,7 @@ class HallucinationDetectionGuardTest {
         val result = evaluate(
             AmarClaimVerification("The price is 2500 dollars.", 0, 0, false, 0, 0)
         )
-        assertTrue(result.reasons.contains(HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE))
+        assertTrue(\n            "Actual reasons: ${result.reasons}, severity: ${result.severity}",\n            result.reasons.contains(HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE)\n        )
         assertEquals(HallucinationSeverity.MEDIUM, result.severity)
     }
 
