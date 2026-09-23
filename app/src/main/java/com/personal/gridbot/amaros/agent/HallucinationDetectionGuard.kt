@@ -16,12 +16,7 @@ enum class HallucinationIndicator {
     REPETITION_SUSPICION
 }
 
-enum class HallucinationSeverity {
-    NONE,
-    LOW,
-    MEDIUM,
-    HIGH
-}
+enum class HallucinationSeverity { NONE, LOW, MEDIUM, HIGH }
 
 object HallucinationDetectionGuard {
     private val certaintyTerms = listOf(
@@ -43,13 +38,7 @@ object HallucinationDetectionGuard {
             reasons += HallucinationIndicator.CERTAINTY_LANGUAGE_MISMATCH
         }
         if (hasNumericClaimWithoutEvidence(claims)) {
-            System.err.println("AMAR_DEBUG: NUMERIC triggered")
             reasons += HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE
-        } else {
-            System.err.println("AMAR_DEBUG: NUMERIC NOT triggered")
-            claims.forEach { c ->
-                System.err.println("AMAR_DEBUG: claim='${c.claim}' matched=${c.matchedEvidence} hasDigit=${c.claim.contains(Regex("\\d"))}")
-            }
         }
         if (hasEntityMentionMismatch(claims)) {
             reasons += HallucinationIndicator.ENTITY_MENTION_MISMATCH
@@ -64,7 +53,6 @@ object HallucinationDetectionGuard {
             reasons += HallucinationIndicator.REPETITION_SUSPICION
         }
 
-        // Consume upstream signals only. No verification or attribution is recalculated here.
         @Suppress("UNUSED_VARIABLE")
         val upstreamSignals = blockingResult.blocked to attributionResult.attributed
 
@@ -76,10 +64,7 @@ object HallucinationDetectionGuard {
         )
     }
 
-    private fun hasCertaintyMismatch(
-        claims: List<AmarClaimVerification>,
-        finalAnswer: String
-    ): Boolean {
+    private fun hasCertaintyMismatch(claims: List<AmarClaimVerification>, finalAnswer: String): Boolean {
         if (finalAnswer.isBlank()) return false
         return claims.any { claim ->
             containsCertaintyLanguage(claim.claim) && claim.matchedEvidence < MINIMUM_SOURCE_COUNT
@@ -90,34 +75,24 @@ object HallucinationDetectionGuard {
         claims.any { it.claim.contains(Regex("\\d")) && it.matchedEvidence == 0 }
 
     private fun hasEntityMentionMismatch(claims: List<AmarClaimVerification>): Boolean =
-        claims.any { claim ->
-            claim.matchedEvidence == 0 && containsEntityCandidate(claim.claim)
-        }
+        claims.any { claim -> claim.matchedEvidence == 0 && containsEntityCandidate(claim.claim) }
 
     private fun containsCertaintyLanguage(text: String): Boolean {
         val normalized = normalize(text)
-        return certaintyTerms.any { term ->
-            normalized.contains(normalize(term))
-        }
+        return certaintyTerms.any { term -> normalized.contains(normalize(term)) }
     }
 
     private fun containsEntityCandidate(text: String): Boolean {
         val tokens = text.split(Regex("[^\\p{L}\\p{N}@._-]+"))
+            .map { it.trim('.', ',', ';', ':', '!', '?', '؟', '،') }
             .filter { it.length >= 3 }
         return tokens.withIndex().any { (index, token) ->
-            index > 0 && (
-                token.startsWith("@") ||
-                    token.contains(".") ||
-                    token.firstOrNull()?.isUpperCase() == true
-                )
+            index > 0 && (token.startsWith("@") || token.contains(".") || token.firstOrNull()?.isUpperCase() == true)
         }
     }
 
     private fun normalize(text: String): String =
-        text.trim()
-            .replace(Regex("\\s+"), " ")
-            .trimEnd('.', '!', '?', '؟')
-            .lowercase()
+        text.trim().replace(Regex("\\s+"), " ").trimEnd('.', '!', '?', '؟').lowercase()
 
     private fun severityOf(reasons: List<HallucinationIndicator>): HallucinationSeverity {
         if (reasons.isEmpty()) return HallucinationSeverity.NONE
