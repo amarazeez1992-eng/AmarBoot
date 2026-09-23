@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
-import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
+import com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntake
+import com.personal.gridbot.amaros.agent.admission.AmarFindingToCandidateConverter
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
 /** Central pipeline for high-confidence answers without execution authority. */
@@ -23,6 +24,8 @@ class AmarAgentOrchestrator(
     private val confidenceCalibrationEngine: AmarConfidenceCalibrationEngine = AmarConfidenceCalibrationEngine(),
     private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy(),
     private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
+    private val evidenceIntake: AmarEvidenceIntake = AmarEvidenceIntake(),
+    private val findingToCandidateConverter: AmarFindingToCandidateConverter = AmarFindingToCandidateConverter(),
     private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
@@ -61,6 +64,11 @@ class AmarAgentOrchestrator(
         } else null
         val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
 
+        val intakeResult = if (needsResearch) {
+            val candidates = unifiedFindings.map { findingToCandidateConverter.toCandidate(it) }
+            evidenceIntake.intake(request.text, candidates)
+        } else null
+
         val verification = report?.let {
             emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
             session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
@@ -70,13 +78,15 @@ class AmarAgentOrchestrator(
             verificationLayer.verifyEvidenceOnly(unifiedFindings)
         }
         val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
-        val canonicalEvidenceCertification = verification?.let {
-            canonicalEvidenceQuality.certify(
-                findings = unifiedFindings,
-                nowEpochMs = System.currentTimeMillis(),
-                verification = verificationReport!!,
-                intakeResult = EvidenceIntakeResult.empty()
-            )
+        val canonicalEvidenceCertification = verification?.let { verificationResult ->
+            intakeResult?.let { actualIntakeResult ->
+                canonicalEvidenceQuality.certify(
+                    findings = unifiedFindings,
+                    nowEpochMs = System.currentTimeMillis(),
+                    verification = verificationReport!!,
+                    intakeResult = actualIntakeResult
+                )
+            }
         }
         if (canonicalEvidenceCertification != null) {
             session.record(AmarAgentStage.VERIFY, "POINT10_EVIDENCE_QUALITY: certification=${canonicalEvidenceCertification.certificationScore}")
