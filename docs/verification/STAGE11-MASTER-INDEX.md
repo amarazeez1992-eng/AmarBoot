@@ -6,6 +6,10 @@
 ## Supervisor: DeepSeek
 ## Executor: ChatGPT
 
+## Related Documents
+
+- `STAGE12-MASTER-INDEX.md` — External Research Engine (Design Locked)
+
 ---
 
 ## 1. Purpose
