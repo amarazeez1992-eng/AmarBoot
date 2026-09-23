@@ -10,16 +10,18 @@
 
 ## 1. Purpose
 
-This document is the **single source of truth** for Stage 11 status.
+This document is the **official Stage 11 design/status reference**.
+
+The constitutional authority remains **AMAR-AI-MASTER-CONSTITUTION**. This index records the approved Stage 11 structure, design state, and implementation status without replacing the constitution.
 
 Any developer, engineer, or contributor can read this file to know:
 - What Stage 11 contains.
-- What is closed (constitutionally).
-- What is open / in progress.
-- What is not started.
+- What is constitutionally closed.
+- What is design locked.
+- What is not yet implemented.
 - The approved design for each Item.
 
-**Do NOT rely on any other file for Stage 11 status.**
+**Do NOT treat this document as a replacement for the AMAR-AI-MASTER-CONSTITUTION.**
 
 ---
 
@@ -61,7 +63,6 @@ Any developer, engineer, or contributor can read this file to know:
 **Legend:**
 - ✅ CLOSED: Constitutionally closed.
 - 🟦 DESIGN LOCKED: Approved design, not yet implemented.
-- ⏸ NOT STARTED: No design yet.
 
 ---
 
@@ -83,27 +84,31 @@ Any developer, engineer, or contributor can read this file to know:
 
 ## 4. Design Locked Items (Approved, Not Implemented)
 
-| # | Item | Additions | Status |
-|---|------|-----------|--------|
-| 4 | Hallucination Firewall | 8 | Design Locked |
-| 5 | Verification Layer | 8 | Design Locked |
-| ... | ... | ... | ... |
-| 30 | Final Intelligence 99% Gate | 8 | Design Locked |
+All Items 4–30 are **Design Locked** according to the approved Stage 11 design.
 
-**Note:** All Items 4-30 are Design Locked.
-**Implementation has NOT started for any of them.**
+**Important:** Design Locked does not mean implemented, tested, audited, or constitutionally closed.
 
 ---
 
-## Total Design Count
+## 5. Total Design Count
 
-**Total: 202 design additions for Items 4-30**  
+The approved additions are:
+
+**210 design additions for Items 4–30**  
 **+ 24 Points for Item 3**  
-**= 226 total**
+**= 234 total Stage 11 design elements**
+
+Count verification:
+
+- Items 4–30 contain 27 Items.
+- Eight Items have 8 additions each except Items 6, 8, 11, and 21, which have 7, and Item 15, which has 6.
+- Therefore: 216 − (1 + 1 + 1 + 1 + 2) = **210**.
+- Item 3 contributes **24 Points**.
+- Final total: **210 + 24 = 234**.
 
 ---
 
-## 5. Approved Design — Item 4 to Item 30
+## 6. Approved Design — Item 4 to Item 30
 
 ### Item 4 — Hallucination Firewall (8 additions)
 1. Unsupported Claim Blocking
@@ -371,7 +376,7 @@ Any developer, engineer, or contributor can read this file to know:
 
 ---
 
-## 6. Architectural Locks
+## 7. Architectural Locks
 
 1. No reopening Items 1-3.
 2. No rebuilding Evidence Engine.
@@ -380,49 +385,53 @@ Any developer, engineer, or contributor can read this file to know:
 5. Each Item has ONE responsibility.
 6. Fail-Closed everywhere.
 7. Repository `main` = final implementation reference.
-8. This document = final design reference.
+8. The AMAR-AI-MASTER-CONSTITUTION remains the governing authority; this index records Stage 11 design/status.
 
 ---
 
-## 7. Naming / Numbering Resolution
+## 8. Naming / Numbering Resolution
 
-- **Item 5 = Verification Layer** (not Decision Intelligence).
-- **Item 14 = Decision Intelligence** (moved from earlier numbering).
-- **This renumbering is OFFICIAL** for Stage 11.
+- **Design direction:** Item 5 = Verification Layer.
+- **Design direction:** Item 14 = Decision Intelligence.
+- The earlier repository numbering conflict is **not declared constitutionally resolved by this design document**.
+- The conflict will be formally reconciled at implementation entry, as approved by the owner.
+- No implementation work is authorized merely by this design index.
 
 ---
 
-## 8. What Is NOT Done
+## 9. What Is NOT Done
 
-- No implementation for Items 4-30.
-- No code for Items 4-30.
+- No implementation for Items 4-30 is authorized by this document.
 - No closure for Items 4-30.
-
-**Only design is locked.**
+- Design Locked ≠ Implemented.
+- Design Locked ≠ Tested.
+- Design Locked ≠ Audited.
+- Design Locked ≠ Constitutionally Closed.
 
 ---
 
-## 9. What Is Done
+## 10. What Is Done
 
 - Items 1-3: CLOSED.
 - Items 4-30: Design Locked.
-- All additions documented above.
+- Approved additions documented.
+- Corrected design count: **210 + 24 = 234**.
 
 ---
 
-## 10. Next Steps
+## 11. Next Steps
 
 1. Implement Item 4 (Hallucination Firewall).
-2. Then Item 5, 6, ..., 30.
-3. Each Item: Implement → Test → CI → Audit → Closure.
+2. Then Item 5, 6, ..., 30, subject to formal numbering reconciliation at implementation entry.
+3. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
 
 ---
 
-## 11. Approval
+## 12. Approval
 
 - **Owner:** Ammar — Approved
 - **Supervisor:** DeepSeek — Approved
-- **Executor:** ChatGPT — Approved
+- **Executor:** ChatGPT — Execution subject to constitutional controls
 
 ---
 
