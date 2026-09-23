@@ -2,7 +2,6 @@ package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntake
 import com.personal.gridbot.amaros.agent.admission.AmarFindingToCandidateConverter
-import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
 /** Central pipeline for high-confidence answers without execution authority. */
@@ -68,7 +67,7 @@ class AmarAgentOrchestrator(
         val intakeResult = if (needsResearch) {
             val candidates = unifiedFindings.map { findingToCandidateConverter.toCandidate(it) }
             evidenceIntake.intake(request.text, candidates)
-        } else EvidenceIntakeResult.empty()
+        } else null
 
         val verification = report?.let {
             emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
@@ -79,13 +78,15 @@ class AmarAgentOrchestrator(
             verificationLayer.verifyEvidenceOnly(unifiedFindings)
         }
         val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
-        val canonicalEvidenceCertification = verification?.let {
-            canonicalEvidenceQuality.certify(
-                findings = unifiedFindings,
-                nowEpochMs = System.currentTimeMillis(),
-                verification = verificationReport!!,
-                intakeResult = intakeResult
-            )
+        val canonicalEvidenceCertification = verification?.let { verificationResult ->
+            intakeResult?.let { actualIntakeResult ->
+                canonicalEvidenceQuality.certify(
+                    findings = unifiedFindings,
+                    nowEpochMs = System.currentTimeMillis(),
+                    verification = verificationReport!!,
+                    intakeResult = actualIntakeResult
+                )
+            }
         }
         if (canonicalEvidenceCertification != null) {
             session.record(AmarAgentStage.VERIFY, "POINT10_EVIDENCE_QUALITY: certification=${canonicalEvidenceCertification.certificationScore}")
