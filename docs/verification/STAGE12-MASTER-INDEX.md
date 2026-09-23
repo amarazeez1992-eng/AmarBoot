@@ -61,6 +61,7 @@ The constitutional authority remains **AMAR-AI-MASTER-CONSTITUTION**. This docum
 
 Stage 14 consumes the approved recommendation/decision outputs from the preceding stages and owns execution/broker integration boundaries. It does not rebuild Stage 11 evidence/verification/decision authority or Stage 12 research acquisition authority.
 
+
 Stage 12 = Search + Sources + Content + Normalization + Research Preparation.
 
 Stage 11 = Evidence + Verification + Reasoning + Decision.

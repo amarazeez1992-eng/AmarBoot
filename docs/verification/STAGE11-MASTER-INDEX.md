@@ -9,6 +9,7 @@
 ## Related Documents
 
 - `STAGE12-MASTER-INDEX.md` — External Research Engine (Design Locked)
+- `STAGE13-MASTER-INDEX.md` — Decision & Reasoning Engine (Design Locked; boundary corrections applied)
 - `STAGE14-MASTER-INDEX.md` — Execution & Broker Integration (Design Approved; 27 Items, 257 Additions)
 
 ---
