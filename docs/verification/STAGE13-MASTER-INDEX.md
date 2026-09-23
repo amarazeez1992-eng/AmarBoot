@@ -505,4 +505,13 @@ Stage 13 must follow the project lifecycle when implementation begins:
 
 ---
 
+---
+
+## Stage 15 Cross-Reference
+
+- **Stage 15 — Market Intelligence & Signal Processing:** `docs/verification/STAGE15-MASTER-INDEX.md`
+- Stage 15 produces processed/validated signal intelligence for Stage 13.
+- **Signal Strength ≠ Decision Confidence.**
+- **Signal ≠ Decision ≠ Execution.** Stage 13 remains responsible for Reasoning + Decision + Recommendation.
+
 **END OF STAGE 13 MASTER INDEX**

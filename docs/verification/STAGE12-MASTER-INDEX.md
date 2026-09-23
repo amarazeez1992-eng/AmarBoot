@@ -105,4 +105,13 @@ Stage 12: Items 1–30 DESIGN LOCKED; 212 design additions.
 
 ---
 
+---
+
+## Stage 15 Cross-Reference
+
+- **Stage 15 — Market Intelligence & Signal Processing:** `docs/verification/STAGE15-MASTER-INDEX.md`
+- Stage 12 remains responsible for External Research acquisition and preparation.
+- Stage 15 consumes authorized/live signal inputs and performs Signal + Market Intelligence Processing.
+- Boundary: **Stage 12 Research ≠ Stage 15 Signal Processing**.
+
 **END OF STAGE 12 MASTER INDEX**

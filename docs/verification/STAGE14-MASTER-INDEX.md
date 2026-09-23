@@ -529,4 +529,13 @@ Stage 14 does not move execution authority backward into Stage 13 and does not r
 
 ---
 
+
+## Stage 15 Cross-Reference
+
+- **Stage 15 — Market Intelligence & Signal Processing:** `docs/verification/STAGE15-MASTER-INDEX.md`
+- Stage 15 outputs signals to the decision layer; it does not issue orders.
+- Required boundary: **Stage 15 Signal → Stage 13 Decision/Recommendation → Stage 14 Authorization/Execution**.
+- Stage 14 remains the execution and broker-integration authority.
+
+
 **END OF STAGE 14 MASTER INDEX**
