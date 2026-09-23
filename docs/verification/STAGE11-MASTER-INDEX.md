@@ -440,4 +440,13 @@ Count verification:
 
 ---
 
+---
+
+## Stage 15 Cross-Reference
+
+- **Stage 15 — Market Intelligence & Signal Processing:** `docs/verification/STAGE15-MASTER-INDEX.md`
+- Stage 15 is the Signal + Market Intelligence Processing Layer.
+- Boundary: **Signal ≠ Decision ≠ Execution**.
+- Stage 15 does not rebuild Stage 11 Evidence/Verification/Confidence authority.
+
 **END OF STAGE 11 MASTER INDEX**
