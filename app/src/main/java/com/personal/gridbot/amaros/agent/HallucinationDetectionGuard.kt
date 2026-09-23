@@ -43,7 +43,13 @@ object HallucinationDetectionGuard {
             reasons += HallucinationIndicator.CERTAINTY_LANGUAGE_MISMATCH
         }
         if (hasNumericClaimWithoutEvidence(claims)) {
+            println("AMAR_DEBUG: NUMERIC triggered")
             reasons += HallucinationIndicator.NUMERIC_CLAIM_WITHOUT_EVIDENCE
+        } else {
+            println("AMAR_DEBUG: NUMERIC NOT triggered")
+            claims.forEach { c ->
+                println("AMAR_DEBUG: claim='${c.claim}' matched=${c.matchedEvidence} hasDigit=${c.claim.contains(Regex("\\d"))}")
+            }
         }
         if (hasEntityMentionMismatch(claims)) {
             reasons += HallucinationIndicator.ENTITY_MENTION_MISMATCH
