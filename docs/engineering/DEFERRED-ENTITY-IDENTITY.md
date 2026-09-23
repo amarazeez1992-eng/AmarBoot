@@ -1,32 +1,30 @@
 # AMAR AI — Deferred Entity Identity
 
 ## Status
-Entity Identity Design is inspected and deferred. No Entity Identity contract is introduced by Point 22 at this stage.
+Entity Identity Re-Assessment is closed for Point 22. Point 22 uses the existing Trading Symbol as its stable comparison context and does not introduce a new Entity Identity contract.
 
-## Problem
-The current architecture contains multiple entity/symbol representations but no single constitutional Entity ID contract:
-
-- AmarMarketState contains `symbol`.
-- AmarMarketSnapshot contains `symbol`.
-- ResearchFinding has no explicit Entity Identity field.
-- A QuestionProfile representation contains `entity: String?`, while another QuestionProfile representation does not.
-- Evidence identity is represented by `evidenceFingerprint`, which is not an Entity ID.
-
-## Impact
-Point 22 (Evidence Change Detection) remains deferred because its generic entity identity prerequisite is not yet established as a canonical contract.
+## Observed architecture
+The repository contains multiple entity/symbol representations but no single constitutional Entity ID contract:
+- AmarMarketState.symbol
+- AmarMarketSnapshot.symbol
+- ResearchFinding without an explicit Entity Identity field
+- two QuestionProfile representations with different entity fields
+- AmarIntentUnderstanding.entities
+- AmarTradingSymbol.id
+- broker-facing brokerSymbol
 
 ## Decision
-Do not invent a new Entity Identity contract in Point 22. Do not designate `symbol` as the Entity ID. Do not modify ResearchFinding or QuestionProfile for this purpose.
+For Point 22 only, do not introduce a new Entity ID or Entity Identity Contract. Use the existing Trading Symbol context as the stable comparison key.
+- AmarMarketState.symbol is the accepted market-state source.
+- AmarTradingSymbol.id may be consumed when that context is already available.
+- brokerSymbol is not the identity key.
+- No symbol is extracted from free text to compensate for missing context.
 
-## Recommendation
-Complete the Migration Design and implementation first. After the actual evidence path is established, reassess whether a canonical Entity Identity is required and, if required, define it from the observed architecture rather than introducing a parallel authority.
+## Point 22 fail-closed rule
+If the symbol is missing, Point 22 returns NO_BASELINE_AVAILABLE and does not perform change detection.
 
-## Constraints
-- No new Entity ID.
-- No use of `symbol` as Entity ID.
-- No modification of ResearchFinding.
-- No modification of QuestionProfile.
-- No Point 22 implementation before Migration and Entity Identity Re-Assessment.
+## Scope boundary
+This closure does not establish that Entity and Trading Symbol are globally identical concepts. It establishes only the Point 22 comparison context.
 
-## Scope
-Documentation only. No production-code changes are made by this document.
+## Next step
+Proceed with Point 22 implementation under AGENT-DUAL-MODE.md. No Entity ID is created by this implementation.
