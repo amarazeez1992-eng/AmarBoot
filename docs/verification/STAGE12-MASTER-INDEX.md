@@ -57,11 +57,6 @@ The constitutional authority remains **AMAR-AI-MASTER-CONSTITUTION**. This docum
 
 ## 3. Relationship with Stage 11
 
-- `STAGE14-MASTER-INDEX.md` — Execution & Broker Integration (Design Approved; 27 Items, 257 Additions)
-
-Stage 14 consumes the approved recommendation/decision outputs from the preceding stages and owns execution/broker integration boundaries. It does not rebuild Stage 11 evidence/verification/decision authority or Stage 12 research acquisition authority.
-
-
 Stage 12 = Search + Sources + Content + Normalization + Research Preparation.
 
 Stage 11 = Evidence + Verification + Reasoning + Decision.
