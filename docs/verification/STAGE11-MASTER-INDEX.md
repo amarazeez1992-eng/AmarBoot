@@ -37,7 +37,7 @@ Any developer, engineer, or contributor can read this file to know:
 | 1 | Intelligence Core | — | ✅ CLOSED |
 | 2 | Confidence Engine | — | ✅ CLOSED |
 | 3 | Evidence Engine | 24 Points | ✅ CLOSED |
-| 4 | Hallucination Firewall | 8 | 🟦 READY FOR MAIN MERGE — Closure Pending |
+| 4 | Hallucination Firewall | 8 | ✅ CLOSED |
 | 5 | Verification Layer | 8 | 🟦 DESIGN LOCKED |
 | 6 | Reasoning Consistency | 7 | 🟦 DESIGN LOCKED |
 | 7 | Agent Orchestration 2.0 | 8 | 🟦 DESIGN LOCKED |
@@ -87,7 +87,7 @@ Any developer, engineer, or contributor can read this file to know:
 - Reference: `ITEM3-CONSTITUTIONAL-CLOSURE.md`
 
 ### Item 4 — Hallucination Firewall
-- Status: 🟦 READY FOR MAIN MERGE — Closure Pending
+- Status: ✅ CLOSED
 - References:
   - `docs/verification/STAGE11_ITEM4_HALLUCINATION_FIREWALL.md`
   - `docs/verification/ITEM4-TEST-EVIDENCE.md`
@@ -97,7 +97,7 @@ Any developer, engineer, or contributor can read this file to know:
 
 ## 4. Design Locked Items (Approved, Not Implemented)
 
-Items 5–30 remain **Design Locked** according to the approved Stage 11 design. Item 4 is implemented and verified, and is currently **READY FOR MAIN MERGE — Closure Pending**.
+Items 5–30 remain **Design Locked** according to the approved Stage 11 design. Item 4 is implemented, verified, Main Re-checked, and **CLOSED (Constitutionally)**.
 
 **Important:** Design Locked does not mean implemented, tested, audited, or constitutionally closed.
 
@@ -426,7 +426,7 @@ Count verification:
 ## 10. What Is Done
 
 - Items 1-3: CLOSED.
-- Item 4: READY FOR MAIN MERGE — Closure Pending.
+- Item 4: ✅ CLOSED.
 - Items 5-30: Design Locked.
 - Approved additions documented.
 - Corrected design count: **210 + 24 = 234**.
@@ -435,8 +435,8 @@ Count verification:
 
 ## 11. Next Steps
 
-1. Merge Item 4 and perform the required Main Re-check, then apply constitutional closure.
-2. Then Item 5, 6, ..., 30, subject to formal numbering reconciliation at implementation entry.
+1. Item 4: CLOSED (Constitutionally). Main Re-check completed 7/7.
+2. Next: Item 5, subject to formal numbering reconciliation at implementation entry.
 3. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
 
 ---
