@@ -67,12 +67,7 @@ interface MetaApiService {
     ): SymbolPrice
 }
 
-interface AmarNetworkClient {
-    override val isConfigured: Boolean
-    val service: MetaApiService
-}
-
-object MetaApiClient : AmarNetworkClient {
+object MetaApiClient {
     private const val BASE_URL = "https://mt-client-api-v1.new-york.agiliumtrade.ai/"
 
     // لا توجد أسرار حقيقية داخل المستودع.
@@ -88,5 +83,5 @@ object MetaApiClient : AmarNetworkClient {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
-    override val service: MetaApiService = retrofit.create(MetaApiService::class.java)
+    val service: MetaApiService = retrofit.create(MetaApiService::class.java)
 }
