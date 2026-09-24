@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.version
 
+import com.personal.gridbot.BuildConfig
+
 object AmarVersion {
     const val APP_VERSION: String = BuildConfig.VERSION_NAME
     const val SCHEMA_VERSION: Int = 1
