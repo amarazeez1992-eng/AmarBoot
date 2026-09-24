@@ -60,7 +60,8 @@ class AmarResilienceTest {
         assertFalse(security.snapshot().executionAuthorized)
         assertFalse(security.canExecuteLive())
     }
-}\n\n    @Test fun credentialAccess_remainsFalse_inAllSecurityModes() {
+
+    @Test fun credentialAccess_remainsFalse_inAllSecurityModes() {
         val security = AmarSecurityRuntime()
         assertFalse(security.snapshot().credentialAccessAllowed)
         security.authorizeReadOnly()
@@ -68,3 +69,4 @@ class AmarResilienceTest {
         security.lock()
         assertFalse(security.snapshot().credentialAccessAllowed)
     }
+}
