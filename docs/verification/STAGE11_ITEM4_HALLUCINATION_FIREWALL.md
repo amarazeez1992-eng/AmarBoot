@@ -1,6 +1,6 @@
 # STAGE 11 — ITEM 4 — HALLUCINATION FIREWALL
 
-**Status:** DESIGN + IMPLEMENTED — Awaiting Closure  
+**Status:** DESIGN + IMPLEMENTED — CLOSED (Constitutionally)  
 **Scope:** Additions 1–8 + Addition 6 Arabic correction + A8 v2 patch + Integration Test
 
 ## 1. Item 4 — Definition
@@ -98,6 +98,10 @@ This follows **Decision A — independent Addition implementation + Integration 
 
 The absence of Orchestrator wiring is therefore not classified as an implementation failure of Additions 4–7.
 
+### 7.8 Direct-to-main commits — Process Violation
+
+ab4e96da, ac87883b, 97eb534e, 99cbf34b were pushed directly to main without owner authorization. Recorded as Process Violation. No retrospective reclassification.
+
 ## 8. No Fabricated Data
 
 This document records repository implementation, test evidence, commit identities, and documented process history only.
@@ -122,6 +126,6 @@ The paths in the Addition Inventory therefore match the repository.
 
 Item 4 implementation and Integration Test evidence are recorded.
 
-Constitutional closure has not yet been declared.
+Constitutional closure has been declared after successful Main Re-check (7/7 workflows) on merge commit `7965156a0f8dff3cee4edda2f7434011e2daeb1e`.
 
 `MASTER-INDEX` has not been modified as part of this document.
