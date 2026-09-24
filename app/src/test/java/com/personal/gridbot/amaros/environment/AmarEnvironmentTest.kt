@@ -2,7 +2,7 @@ package com.personal.gridbot.amaros.environment
 
 import com.personal.gridbot.BuildConfig
 import org.junit.Assert.assertEquals
-import kotlin.test.assertFailsWith
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -15,7 +15,7 @@ class AmarEnvironmentTest {
 
     @Test
     fun productionEnvironmentIsRejectedInDebugToPreventCredentialMixing() {
-        assertFailsWith<IllegalStateException> {
+        assertThrows(IllegalStateException::class.java) {
             AmarEnvironmentGuard.requireEnvironment(AmarEnvironment.PROD)
         }
     }
