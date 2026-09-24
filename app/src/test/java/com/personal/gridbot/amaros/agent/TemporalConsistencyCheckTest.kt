@@ -74,14 +74,14 @@ class TemporalConsistencyCheckTest {
     }
 
     @Test
-    fun invalid_temporal_data_is_insufficient() {
+    fun negative_timestamp_is_not_revalidated_here() {
         val result = TemporalConsistencyCheck.evaluate(
             report("The claim is temporally grounded."),
             listOf(record(eventTime = -1L)),
             cleanHallucination,
             2_000L
         )
-        assertEquals(TemporalConsistencyStatus.INSUFFICIENT_TEMPORAL_DATA, result.status)
+        assertEquals(TemporalConsistencyStatus.TEMPORALLY_CONSISTENT, result.status)
     }
 
     @Test
