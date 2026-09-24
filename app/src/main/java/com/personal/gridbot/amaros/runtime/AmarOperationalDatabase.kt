@@ -69,6 +69,10 @@ data class AmarRuntimeCommandRecord(
     val error: String? = null
 )
 
+interface AmarStorage {
+    fun dao(): AmarOperationalDao
+}
+
 @Dao
 interface AmarOperationalDao {
     @Query("SELECT * FROM amar_bot_runtime ORDER BY botNumber ASC")
@@ -116,8 +120,8 @@ interface AmarOperationalDao {
     version = 1,
     exportSchema = false
 )
-abstract class AmarOperationalDatabase : RoomDatabase() {
-    abstract fun dao(): AmarOperationalDao
+abstract class AmarOperationalDatabase : RoomDatabase(), AmarStorage {
+    override abstract fun dao(): AmarOperationalDao
 
     companion object {
         @Volatile private var instance: AmarOperationalDatabase? = null
