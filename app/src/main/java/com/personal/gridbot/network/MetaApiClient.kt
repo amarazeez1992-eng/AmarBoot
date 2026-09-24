@@ -1,6 +1,8 @@
 package com.personal.gridbot.network
 
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
+import java.util.concurrent.TimeUnit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 
@@ -78,7 +80,14 @@ object MetaApiClient {
     val isConfigured: Boolean
         get() = authToken.isNotBlank() && accountId.isNotBlank()
 
+    private val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
+        .build()
+
     private val retrofit = Retrofit.Builder()
+        .client(okHttpClient)
         .baseUrl(BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
