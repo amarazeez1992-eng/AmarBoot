@@ -2,7 +2,7 @@ package com.personal.gridbot.amaros.environment
 
 import com.personal.gridbot.BuildConfig
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFailsWith
+import kotlin.test.assertFailsWith
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
