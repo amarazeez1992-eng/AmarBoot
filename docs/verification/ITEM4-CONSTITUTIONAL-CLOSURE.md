@@ -5,7 +5,7 @@
 
 **Item ID:** 4  
 **Name:** Hallucination Firewall  
-**Status:** **READY FOR MAIN MERGE — Closure Pending Main Re-check**
+**Status:** **CLOSED (Constitutionally)**
 
 Item 4 establishes the Hallucination Firewall verification boundary. Additions 1–7 provide independent verification signals, while Addition 8 is the sole final aggregation gate for Item 4.
 
@@ -127,24 +127,32 @@ All recorded runs in this evidence set were successful at their respective accep
 | Audit | ✅ |
 | Build | ✅ |
 | Runtime/CI | ✅ |
-| Main Re-check | ⏳ Pending |
-| Constitutional Closure | ⏳ Pending |
+| Main Re-check | ✅ |
+| Constitutional Closure | ✅ |
 
 ### Main Re-check
 
-**Status: ⏳ Pending**
+**Status: ✅ Complete**
 
-Main-branch re-check cannot be declared complete before the accepted Item 4 changes are merged to `main` and the required post-merge repository verification succeeds.
+**Merge commit:** `7965156a0f8dff3cee4edda2f7434011e2daeb1e`
 
-No Main Re-check completion is fabricated in this document.
+| Workflow | Run ID | Conclusion |
+|---|---:|---|
+| Amar Stage 8 — Central Command Plane | `36007229999` | `success` |
+| CodeQL | `36007230005` | `success` |
+| Final APK Closure | `36007230007` | `success` |
+| AMAR AI Stage Two Verification | `36007230042` | `success` |
+| Amar Stage 10 — Final 100% Audit and Release Gate | `36007230052` | `success` |
+| Amar Stage Eleven | `36007230137` | `success` |
+| Build APK | `36007230027` | `success` |
+
+**Main Re-check result: 7/7 workflows completed successfully.**
 
 ### Constitutional Closure
 
-**Status: ⏳ Pending**
+**Status: ✅ Complete**
 
-Constitutional Closure is the final step and will be applied only after successful Main Re-check.
-
-**Closure signature will be applied in a follow-up commit after merge + Main Re-check success.**
+The Main Re-check completed successfully on the merged Item 4 state. Constitutional Closure is now signed and Item 4 is constitutionally closed.
 
 ## 8. Parking Lot / Open Items
 
@@ -186,20 +194,13 @@ The absence of Orchestrator wiring is therefore not classified as an implementat
 
 ## 9. Constitutional Closure Status
 
-**READY FOR MAIN MERGE — Closure Pending Main Re-check**
+**CLOSED (Constitutionally)**
 
 The Item 4 implementation, verification, evidence, audit, build, and CI requirements have been completed and accepted.
 
-The following remain pending:
+The accepted Item 4 implementation, verification, evidence, audit, build, CI, Main Re-check, and constitutional closure requirements are complete.
 
-1. Merge the accepted Item 4 implementation to `main`.
-2. Perform the required Main Re-check against the resulting `main`.
-3. Confirm Main Re-check success.
-4. Apply the constitutional closure signature in a follow-up commit.
-
-Therefore, Item 4 is **not yet constitutionally closed** at this stage.
-
-**Closure signature will be applied in a follow-up commit after merge + Main Re-check success.**
+Item 4 is **CLOSED (Constitutionally)**.
 
 ## 10. Next
 
