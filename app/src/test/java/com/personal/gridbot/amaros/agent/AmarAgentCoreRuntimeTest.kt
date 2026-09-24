@@ -58,7 +58,7 @@ class AmarAgentCoreRuntimeTest {
     }
 
     @Test
-    fun reasoning_provider_failure_propagates_exception() = runBlocking {
+    fun reasoning_provider_failure_propagates_exception(): Unit = runBlocking {
         val provider = object : AmarReasoningProvider {
             override suspend fun respond(context: AmarAgentContext): AmarAgentResponse {
                 throw IllegalStateException("provider failure")
