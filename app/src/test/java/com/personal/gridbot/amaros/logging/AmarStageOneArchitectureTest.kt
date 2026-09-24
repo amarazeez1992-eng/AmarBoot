@@ -49,11 +49,18 @@ class AmarStageOneArchitectureTest {
         )
     }
 
-    private fun kotlinFiles(directory: Path): List<Path> =
-        if (!Files.exists(directory)) emptyList()
-        else Files.walk(directory).use { stream ->
-            stream.filter { Files.isRegularFile(it) && it.toString().endsWith(".kt") }.toList()
+    private fun kotlinFiles(directory: Path): List<Path> {
+        if (!Files.exists(directory)) return emptyList()
+        val result = mutableListOf<Path>()
+        Files.walk(directory).use { stream ->
+            stream.forEach { path ->
+                if (Files.isRegularFile(path) && path.toString().endsWith(".kt")) {
+                    result.add(path)
+                }
+            }
         }
+        return result
+    }
 
     private fun criticalBoundaryFromImport(line: String): String? {
         val name = line.substringAfter("import ").trim()
