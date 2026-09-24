@@ -4,14 +4,20 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'app/build.gradle'
       - 'app/src/main/java/com/personal/gridbot/amaros/agent/AmarAgentCore*'
       - 'app/src/main/java/com/personal/gridbot/amaros/ai/**'
       - 'app/src/main/java/com/personal/gridbot/amaros/logging/**'
+      - 'app/src/main/java/com/personal/gridbot/amaros/runtime/AmarOperationalDatabase.kt'
+      - 'app/src/main/java/com/personal/gridbot/data/AppDatabase.kt'
       - 'app/src/test/java/com/personal/gridbot/amaros/agent/AmarAgentCore*'
       - 'app/src/test/java/com/personal/gridbot/amaros/ai/**'
       - 'app/src/test/java/com/personal/gridbot/amaros/logging/**'
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 concurrency:
   group: amar-amar-stage-one-${{ github.ref }}
@@ -35,6 +41,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.7'
+
+      - name: Generate Room schemas
+        run: gradle :app:kspDebugKotlin --stacktrace
+
+      - name: Commit Room schemas if changed
+        run: |
+          if [ -d app/schemas ] && [ -n "$(git status --porcelain app/schemas)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add app/schemas
+            git commit -m "chore: auto-commit Room schemas [skip ci]"
+            git push
+          fi
 
       - name: Run Stage 1 core tests
         run: gradle :app:testDebugUnitTest --tests 'com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest' --stacktrace
