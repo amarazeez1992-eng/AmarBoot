@@ -62,7 +62,7 @@ class FinalHallucinationDecisionGateTest {
         val result = gate.evaluate(
             input(
                 addition1 = BlockingResult(true, BlockingReason.UNSUPPORTED_CLAIM, listOf(
-                    BlockedClaim("claim-1", "unsupported")
+                    BlockedClaim("claim-1", 0, 0, 0)
                 )),
                 addition2 = AttributionResult(false, AttributionReason.MISSING_SOURCE_URI, listOf("fp-1")),
                 addition3 = HallucinationDetectionResult(true, emptyList(), HallucinationSeverity.HIGH),
