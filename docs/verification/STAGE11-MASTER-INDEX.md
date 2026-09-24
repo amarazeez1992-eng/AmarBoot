@@ -37,7 +37,7 @@ Any developer, engineer, or contributor can read this file to know:
 | 1 | Intelligence Core | — | ✅ CLOSED |
 | 2 | Confidence Engine | — | ✅ CLOSED |
 | 3 | Evidence Engine | 24 Points | ✅ CLOSED |
-| 4 | Hallucination Firewall | 8 | 🟦 DESIGN LOCKED |
+| 4 | Hallucination Firewall | 8 | 🟦 READY FOR MAIN MERGE — Closure Pending |
 | 5 | Verification Layer | 8 | 🟦 DESIGN LOCKED |
 | 6 | Reasoning Consistency | 7 | 🟦 DESIGN LOCKED |
 | 7 | Agent Orchestration 2.0 | 8 | 🟦 DESIGN LOCKED |
@@ -68,6 +68,7 @@ Any developer, engineer, or contributor can read this file to know:
 **Legend:**
 - ✅ CLOSED: Constitutionally closed.
 - 🟦 DESIGN LOCKED: Approved design, not yet implemented.
+- 🟦 READY FOR MAIN MERGE — Closure Pending: Implemented and verified; awaiting merge and Main Re-check before constitutional closure.
 
 ---
 
@@ -85,11 +86,18 @@ Any developer, engineer, or contributor can read this file to know:
 - Status: CLOSED (24/24 Points)
 - Reference: `ITEM3-CONSTITUTIONAL-CLOSURE.md`
 
+### Item 4 — Hallucination Firewall
+- Status: 🟦 READY FOR MAIN MERGE — Closure Pending
+- References:
+  - `docs/verification/STAGE11_ITEM4_HALLUCINATION_FIREWALL.md`
+  - `docs/verification/ITEM4-TEST-EVIDENCE.md`
+  - `docs/verification/ITEM4-CONSTITUTIONAL-CLOSURE.md`
+
 ---
 
 ## 4. Design Locked Items (Approved, Not Implemented)
 
-All Items 4–30 are **Design Locked** according to the approved Stage 11 design.
+Items 5–30 remain **Design Locked** according to the approved Stage 11 design. Item 4 is implemented and verified, and is currently **READY FOR MAIN MERGE — Closure Pending**.
 
 **Important:** Design Locked does not mean implemented, tested, audited, or constitutionally closed.
 
@@ -406,7 +414,7 @@ Count verification:
 
 ## 9. What Is NOT Done
 
-- No implementation for Items 4-30 is authorized by this document.
+- No implementation for Items 5-30 is authorized by this document.
 - No closure for Items 4-30.
 - Design Locked ≠ Implemented.
 - Design Locked ≠ Tested.
@@ -418,7 +426,8 @@ Count verification:
 ## 10. What Is Done
 
 - Items 1-3: CLOSED.
-- Items 4-30: Design Locked.
+- Item 4: READY FOR MAIN MERGE — Closure Pending.
+- Items 5-30: Design Locked.
 - Approved additions documented.
 - Corrected design count: **210 + 24 = 234**.
 
@@ -426,7 +435,7 @@ Count verification:
 
 ## 11. Next Steps
 
-1. Implement Item 4 (Hallucination Firewall).
+1. Merge Item 4 and perform the required Main Re-check, then apply constitutional closure.
 2. Then Item 5, 6, ..., 30, subject to formal numbering reconciliation at implementation entry.
 3. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
 
