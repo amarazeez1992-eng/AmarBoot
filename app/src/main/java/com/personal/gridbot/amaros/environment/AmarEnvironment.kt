@@ -3,7 +3,6 @@ package com.personal.gridbot.amaros.environment
 import com.personal.gridbot.BuildConfig
 
 enum class AmarEnvironment {
-    DEV,
     DEBUG,
     PROD;
 
