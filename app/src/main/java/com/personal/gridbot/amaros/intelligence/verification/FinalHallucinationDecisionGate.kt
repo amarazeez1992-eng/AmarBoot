@@ -15,21 +15,29 @@ import com.personal.gridbot.amaros.agent.correlation.CrossSourceAgreementResult
 class FinalHallucinationDecisionGate {
 
     fun evaluate(input: FinalHallucinationDecisionInput): FinalDecisionResult {
-        input.addition1.let {
+        val missingAdditions = input.missingAdditionNumbers()
+        if (missingAdditions.isNotEmpty()) {
+            return block(
+                reason = FinalDecisionReason.INSUFFICIENT_ADDITION_N_DATA,
+                missingAdditionNumbers = missingAdditions
+            )
+        }
+
+        input.addition1!!.let {
             if (it.blocked) {
                 return block(FinalDecisionReason.ADDITION_1_BLOCKED)
             }
         }
 
-        if (!input.addition2.attributed) {
+        if (!input.addition2!!.attributed) {
             return block(FinalDecisionReason.ADDITION_2_ATTRIBUTION_FAILED)
         }
 
-        if (input.addition3.hallucinationDetected) {
+        if (input.addition3!!.hallucinationDetected) {
             return block(FinalDecisionReason.ADDITION_3_HALLUCINATION_DETECTED)
         }
 
-        when (input.addition4.status) {
+        when (input.addition4!!.status) {
             com.personal.gridbot.amaros.agent.TemporalConsistencyStatus.INSUFFICIENT_TEMPORAL_DATA ->
                 return block(FinalDecisionReason.ADDITION_4_INSUFFICIENT_TEMPORAL_DATA)
             com.personal.gridbot.amaros.agent.TemporalConsistencyStatus.FUTURE_TIMESTAMP ->
@@ -39,14 +47,14 @@ class FinalHallucinationDecisionGate {
             com.personal.gridbot.amaros.agent.TemporalConsistencyStatus.TEMPORALLY_CONSISTENT -> Unit
         }
 
-        if (input.addition5.status == com.personal.gridbot.amaros.agent.correlation.CrossSourceAgreementStatus.INSUFFICIENT_AGREEMENT_DATA) {
+        if (input.addition5!!.status == com.personal.gridbot.amaros.agent.correlation.CrossSourceAgreementStatus.INSUFFICIENT_AGREEMENT_DATA) {
             return block(FinalDecisionReason.ADDITION_5_INSUFFICIENT_AGREEMENT_DATA)
         }
         if (input.addition5.disagreementGroups.isNotEmpty()) {
             return block(FinalDecisionReason.ADDITION_5_DISAGREEMENT)
         }
 
-        when (input.addition6.status) {
+        when (input.addition6!!.status) {
             SelfContradictionStatus.INSUFFICIENT_SELF_CONTRADICTION_DATA ->
                 return block(FinalDecisionReason.ADDITION_6_INSUFFICIENT_SELF_CONTRADICTION_DATA)
             SelfContradictionStatus.SELF_CONTRADICTION_DETECTED ->
@@ -54,7 +62,7 @@ class FinalHallucinationDecisionGate {
             SelfContradictionStatus.NO_SELF_CONTRADICTION -> Unit
         }
 
-        when (input.addition7.status) {
+        when (input.addition7!!.status) {
             FinalAnswerClaimCoverageStatus.INSUFFICIENT_COVERAGE_DATA ->
                 return block(FinalDecisionReason.ADDITION_7_INSUFFICIENT_COVERAGE_DATA)
             FinalAnswerClaimCoverageStatus.COVERAGE_INCOMPLETE ->
@@ -65,19 +73,36 @@ class FinalHallucinationDecisionGate {
         return FinalDecisionResult(FinalDecision.PASS, FinalDecisionReason.NO_BLOCKING_SIGNAL)
     }
 
-    private fun block(reason: FinalDecisionReason): FinalDecisionResult =
-        FinalDecisionResult(FinalDecision.BLOCK, reason)
+    private fun block(
+        reason: FinalDecisionReason,
+        missingAdditionNumbers: List<Int> = emptyList()
+    ): FinalDecisionResult =
+        FinalDecisionResult(
+            decision = FinalDecision.BLOCK,
+            reason = reason,
+            missingAdditionNumbers = missingAdditionNumbers
+        )
 }
 
 data class FinalHallucinationDecisionInput(
-    val addition1: BlockingResult,
-    val addition2: AttributionResult,
-    val addition3: HallucinationDetectionResult,
-    val addition4: TemporalConsistencyResult,
-    val addition5: CrossSourceAgreementResult,
-    val addition6: SelfContradictionResult,
-    val addition7: FinalAnswerClaimCoverageResult
-)
+    val addition1: BlockingResult?,
+    val addition2: AttributionResult?,
+    val addition3: HallucinationDetectionResult?,
+    val addition4: TemporalConsistencyResult?,
+    val addition5: CrossSourceAgreementResult?,
+    val addition6: SelfContradictionResult?,
+    val addition7: FinalAnswerClaimCoverageResult?
+) {
+    fun missingAdditionNumbers(): List<Int> = buildList {
+        if (addition1 == null) add(1)
+        if (addition2 == null) add(2)
+        if (addition3 == null) add(3)
+        if (addition4 == null) add(4)
+        if (addition5 == null) add(5)
+        if (addition6 == null) add(6)
+        if (addition7 == null) add(7)
+    }
+}
 
 enum class FinalDecision {
     PASS,
@@ -85,6 +110,7 @@ enum class FinalDecision {
 }
 
 enum class FinalDecisionReason {
+    INSUFFICIENT_ADDITION_N_DATA,
     ADDITION_1_BLOCKED,
     ADDITION_2_ATTRIBUTION_FAILED,
     ADDITION_3_HALLUCINATION_DETECTED,
@@ -102,5 +128,6 @@ enum class FinalDecisionReason {
 
 data class FinalDecisionResult(
     val decision: FinalDecision,
-    val reason: FinalDecisionReason
+    val reason: FinalDecisionReason,
+    val missingAdditionNumbers: List<Int> = emptyList()
 )
