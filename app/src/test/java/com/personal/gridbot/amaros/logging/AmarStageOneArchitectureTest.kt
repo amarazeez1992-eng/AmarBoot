@@ -14,6 +14,8 @@ class AmarStageOneArchitectureTest {
         "app", "src", "main", "java"
     )
 
+    private fun kotlinFiles(path: Path): List<Path> = if (!Files.exists(path)) emptyList() else Files.walk(path).use { stream -> stream.filter { it.toString().endsWith(".kt") }.toList() }
+
     @Test
     fun criticalBoundaries_areIsolated_andAcyclic() {
         val files = mapOf(
