@@ -1,5 +1,8 @@
 package com.personal.gridbot.amaros.agent
 
+// Precondition: timestamps are validated by upstream Data Quality.
+// Addition 4 does not re-validate raw timestamps.
+
 data class TemporalEvidenceRecord(
     val claimId: String,
     val claimReferenceTimestamp: Long?,
@@ -56,11 +59,6 @@ object TemporalConsistencyCheck {
             val evidenceRetrievedAt = record.evidenceRetrievedAtEpochMs
 
             if (claimTime == null || evidenceEventTime == null || evidenceRetrievedAt == null) {
-                insufficient += claimId
-                return@forEach
-            }
-
-            if (claimTime < 0L || evidenceEventTime < 0L || evidenceRetrievedAt < 0L) {
                 insufficient += claimId
                 return@forEach
             }
