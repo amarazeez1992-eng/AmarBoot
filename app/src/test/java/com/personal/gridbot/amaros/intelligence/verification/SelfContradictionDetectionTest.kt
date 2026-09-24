@@ -49,6 +49,32 @@ class SelfContradictionDetectionTest {
     }
 
     @Test
+    fun Arabic_positive_and_negative_claims_are_detected() {
+        val result = detector.detect(
+            listOf(
+                "الذهب هو صاعد اليوم.",
+                "الذهب ليس صاعد اليوم."
+            )
+        )
+
+        assertEquals(SelfContradictionStatus.SELF_CONTRADICTION_DETECTED, result.status)
+        assertEquals(listOf(SelfContradictionPair(0, 1)), result.pairs)
+    }
+
+    @Test
+    fun Arabic_non_contradictory_claims_are_supported() {
+        val result = detector.detect(
+            listOf(
+                "الذهب هو صاعد اليوم.",
+                "الفضة هي مستقرة اليوم."
+            )
+        )
+
+        assertEquals(SelfContradictionStatus.NO_SELF_CONTRADICTION, result.status)
+        assertTrue(result.pairs.isEmpty())
+    }
+
+    @Test
     fun extraction_failure_fails_closed() {
         val result = detector.detect(
             listOf(
