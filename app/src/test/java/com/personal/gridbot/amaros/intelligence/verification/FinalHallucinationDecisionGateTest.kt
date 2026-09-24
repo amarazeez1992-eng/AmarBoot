@@ -134,7 +134,6 @@ class FinalHallucinationDecisionGateTest {
         assertEquals(FinalDecision.BLOCK, result.decision)
         assertEquals(FinalDecisionReason.INSUFFICIENT_ADDITION_N_DATA, result.reason)
         assertEquals(listOf(1), result.missingAdditionNumbers)
-}
 
 private object FinalDecisionInputFactory {
     fun allPassing() = FinalHallucinationDecisionInput(
