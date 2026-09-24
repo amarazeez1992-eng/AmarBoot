@@ -1,0 +1,367 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "3405603f83ef9f7648504d0f0b050f4f",
+    "entities": [
+      {
+        "tableName": "amar_bot_runtime",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`botNumber` INTEGER NOT NULL, `name` TEXT NOT NULL, `status` TEXT NOT NULL, `openPositions` INTEGER NOT NULL, `pendingOrders` INTEGER NOT NULL, `totalLots` REAL NOT NULL, `realizedPnl` REAL NOT NULL, `floatingPnl` REAL NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`botNumber`))",
+        "fields": [
+          {
+            "fieldPath": "botNumber",
+            "columnName": "botNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPositions",
+            "columnName": "openPositions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pendingOrders",
+            "columnName": "pendingOrders",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalLots",
+            "columnName": "totalLots",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "realizedPnl",
+            "columnName": "realizedPnl",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "floatingPnl",
+            "columnName": "floatingPnl",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "botNumber"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "amar_runtime_orders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `brokerOrderId` TEXT NOT NULL, `botNumber` INTEGER NOT NULL, `strategyNumber` INTEGER NOT NULL, `symbol` TEXT NOT NULL, `side` TEXT NOT NULL, `volume` REAL NOT NULL, `price` REAL NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "brokerOrderId",
+            "columnName": "brokerOrderId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "botNumber",
+            "columnName": "botNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strategyNumber",
+            "columnName": "strategyNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symbol",
+            "columnName": "symbol",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "side",
+            "columnName": "side",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volume",
+            "columnName": "volume",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "price",
+            "columnName": "price",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_amar_runtime_orders_brokerOrderId",
+            "unique": true,
+            "columnNames": [
+              "brokerOrderId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_amar_runtime_orders_brokerOrderId` ON `${TABLE_NAME}` (`brokerOrderId`)"
+          },
+          {
+            "name": "index_amar_runtime_orders_botNumber",
+            "unique": false,
+            "columnNames": [
+              "botNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_amar_runtime_orders_botNumber` ON `${TABLE_NAME}` (`botNumber`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "amar_runtime_positions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `brokerPositionId` TEXT NOT NULL, `botNumber` INTEGER NOT NULL, `strategyNumber` INTEGER NOT NULL, `symbol` TEXT NOT NULL, `side` TEXT NOT NULL, `volume` REAL NOT NULL, `openPrice` REAL NOT NULL, `currentPrice` REAL NOT NULL, `floatingPnl` REAL NOT NULL, `status` TEXT NOT NULL, `openedAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "brokerPositionId",
+            "columnName": "brokerPositionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "botNumber",
+            "columnName": "botNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "strategyNumber",
+            "columnName": "strategyNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symbol",
+            "columnName": "symbol",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "side",
+            "columnName": "side",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volume",
+            "columnName": "volume",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openPrice",
+            "columnName": "openPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentPrice",
+            "columnName": "currentPrice",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "floatingPnl",
+            "columnName": "floatingPnl",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "openedAt",
+            "columnName": "openedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_amar_runtime_positions_brokerPositionId",
+            "unique": true,
+            "columnNames": [
+              "brokerPositionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_amar_runtime_positions_brokerPositionId` ON `${TABLE_NAME}` (`brokerPositionId`)"
+          },
+          {
+            "name": "index_amar_runtime_positions_botNumber",
+            "unique": false,
+            "columnNames": [
+              "botNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_amar_runtime_positions_botNumber` ON `${TABLE_NAME}` (`botNumber`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "amar_runtime_commands",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `botNumber` INTEGER NOT NULL, `command` TEXT NOT NULL, `status` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `acknowledgedAt` INTEGER, `error` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "botNumber",
+            "columnName": "botNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "command",
+            "columnName": "command",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "acknowledgedAt",
+            "columnName": "acknowledgedAt",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "error",
+            "columnName": "error",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_amar_runtime_commands_botNumber",
+            "unique": false,
+            "columnNames": [
+              "botNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_amar_runtime_commands_botNumber` ON `${TABLE_NAME}` (`botNumber`)"
+          },
+          {
+            "name": "index_amar_runtime_commands_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_amar_runtime_commands_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3405603f83ef9f7648504d0f0b050f4f')"
+    ]
+  }
+}

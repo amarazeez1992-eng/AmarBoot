@@ -1,0 +1,150 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "5c87d327cca1a5dcf4e4c2560ae10dde",
+    "entities": [
+      {
+        "tableName": "bots",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `pair` TEXT NOT NULL, `investment` REAL NOT NULL, `gridCount` INTEGER NOT NULL, `gridSpacingPips` REAL NOT NULL, `takeProfitPct` REAL NOT NULL, `stopLossPct` REAL NOT NULL, `leverage` INTEGER NOT NULL, `trailingStopPips` REAL NOT NULL, `isActive` INTEGER NOT NULL, `currentProfit` REAL NOT NULL, `profitPercent` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pair",
+            "columnName": "pair",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "investment",
+            "columnName": "investment",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gridCount",
+            "columnName": "gridCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gridSpacingPips",
+            "columnName": "gridSpacingPips",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "takeProfitPct",
+            "columnName": "takeProfitPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stopLossPct",
+            "columnName": "stopLossPct",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "leverage",
+            "columnName": "leverage",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trailingStopPips",
+            "columnName": "trailingStopPips",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "isActive",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentProfit",
+            "columnName": "currentProfit",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profitPercent",
+            "columnName": "profitPercent",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "bot_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `botId` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `type` TEXT NOT NULL, `message` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "botId",
+            "columnName": "botId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5c87d327cca1a5dcf4e4c2560ae10dde')"
+    ]
+  }
+}
