@@ -33,6 +33,7 @@ android {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+// Room schemas are exported to app/schemas for future migration tests.
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.13.1'
