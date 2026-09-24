@@ -88,15 +88,19 @@ class SelfContradictionDetector {
     companion object {
         private val predicateMarkers = setOf(
             "is", "are", "was", "were", "be", "has", "have", "had",
-            "will", "can", "could", "should", "does", "do", "did"
+            "will", "can", "could", "should", "does", "do", "did",
+            "هو", "هي", "يكون", "تكون", "كان", "كانت", "لديه", "لديها",
+            "يمكن", "يستطيع", "تستطيع", "ليس", "ليست", "لا", "لم", "لن"
         )
         private val negationMarkers = setOf(
-            "not", "never", "no"
+            "not", "never", "no",
+            "ليس", "ليست", "لا", "لم", "لن", "ما", "غير"
         )
         private val negativePredicateMarkers = setOf(
             "isn't", "aren't", "wasn't", "weren't", "hasn't", "haven't",
             "hadn't", "won't", "can't", "couldn't", "shouldn't",
-            "doesn't", "don't", "didn't"
+            "doesn't", "don't", "didn't",
+            "ليس", "ليست", "لا", "لم", "لن", "ما"
         )
     }
 }
