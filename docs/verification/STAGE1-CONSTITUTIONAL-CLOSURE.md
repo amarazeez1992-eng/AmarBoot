@@ -4,7 +4,7 @@
 
 - **ID:** 1
 - **Name:** Foundation
-- **Status:** READY FOR SIGNATURE
+- **Status:** CLOSED (Constitutionally)
 
 ---
 
@@ -77,7 +77,20 @@ The following Run IDs are the recorded CI evidence associated with the correspon
 | 15 | `3a35bced` | 36071674986 |
 | 16 | `8571fdef` | 36072503272 / 36072503179 / 36072503161 |
 
-### 5.2 Test Evidence
+### 5.2 Main Re-check — Merge Commit
+
+**Merge commit:** `f6d5853ca333e69c6f77b942743d22aabac4acc1`
+
+| Run ID | Workflow | Conclusion |
+|---:|---|---|
+| 36073665649 | Amar Stage 8 — Central Command Plane | success |
+| 36073665505 | CodeQL | success |
+| 36073665488 | Amar Stage 10 — Final 100% Audit and Release Gate | success |
+| 36073665492 | Amar Stage Eleven | success |
+
+**Main Re-check result:** All four recorded GitHub Actions runs completed successfully.
+
+### 5.3 Test Evidence
 
 - **Item 2:** `AmarAgentCoreRuntimeTest` — `source_count_clamped_to_policy_maximum`, `reasoning_provider_failure_propagates_exception`, `tools_are_passed_from_registry`.
 - **Item 3:** `AmarModuleRegistryTest`.
@@ -91,7 +104,7 @@ The following Run IDs are the recorded CI evidence associated with the correspon
 - **Item 15:** `AmarSecurityContractsTest`, `AmarResilienceTest`.
 - **Item 16:** Workflow configuration coverage; no new tests added for Item 16.
 
-### 5.3 Documented Evidence
+### 5.4 Documented Evidence
 
 - **Item 1:** Documented architecture boundaries and absence of critical cycles.
 - **Item 6:** `DATA_MODELS_CONTRACT.md` + `STORAGE_MIGRATION_STRATEGY.md`.
@@ -103,7 +116,7 @@ The following Run IDs are the recorded CI evidence associated with the correspon
 
 ## 6. Judgment
 
-**READY FOR MAIN MERGE — Closure Pending Main Re-check.**
+**CLOSED (Constitutionally).**
 
 This record does not reopen any previously accepted Stage 1 Item and introduces no additional implementation or test scope.
 
@@ -111,8 +124,7 @@ This record does not reopen any previously accepted Stage 1 Item and introduces 
 
 ## 7. Signature
 
-- **Auditor:** DeepSeek
-- **Date:** ____________________
+- **Auditor:** DeepSeek — 2026-09-25
 
 ---
 
