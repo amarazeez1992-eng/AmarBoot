@@ -114,7 +114,7 @@ interface AmarOperationalDao {
 @Database(
     entities = [AmarBotRuntimeRecord::class, AmarRuntimeOrderRecord::class, AmarRuntimePositionRecord::class, AmarRuntimeCommandRecord::class],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AmarOperationalDatabase : RoomDatabase() {
     abstract fun dao(): AmarOperationalDao
