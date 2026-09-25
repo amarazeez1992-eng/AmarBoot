@@ -98,7 +98,7 @@ The exact old-to-new mapping is a **working consolidation map**, not a historica
 | # | Stage | Status |
 |---:|---|---|
 | 1 | Foundation | ✅ Closed |
-| 2 | Central AI | ⏸ Pending |
+| 2 | Central AI + Cognitive Intelligence | 🟡 Integration Document — Living — Editable |
 | 3 | Memory & Context | ⏸ Pending |
 | 4 | Search Engine | ⏸ Pending |
 | 5 | Knowledge Engine | ⏸ Pending |
@@ -130,6 +130,15 @@ The exact old-to-new mapping is a **working consolidation map**, not a historica
 | 31 | Trading UI | 🟡 Draft |
 | 32 | Alert Engine | 🟡 Draft |
 | 33 | Automation | 🟡 Draft |
+
+### Stage 2 Layering Note
+
+Stage 2 is represented as two integrated layers:
+
+1. **Layer 1 — Stage 2 Engine:** `AmarStageTwoEngine` (Multi-Role Deliberation) and `AmarStageTwoHardening`, with the existing Stage 2 tests. This layer is closed and preserved.
+2. **Layer 2 — Cognitive Intelligence:** 72 Capabilities, 14 Engines, and 3 Gates defined by `STAGE2-COGNITIVE-INTELLIGENCE.md`, with the 397-addition breakdown in `STAGE2-CAPABILITY-BREAKDOWN.md`. This layer is designed and remains editable.
+
+The integration is additive: Layer 2 sits above Layer 1; existing Layer 1 code and tests are not replaced or deleted. This map does not grant Layer 2 execution, authorization, broker, evidence-validation, or external-research authority owned by other stages.
 
 ### Status interpretation
 
