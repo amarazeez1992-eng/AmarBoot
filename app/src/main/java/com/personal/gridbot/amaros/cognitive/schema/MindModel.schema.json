@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MindModel",
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Schema placeholder for the Stage 2 mind-model contract. Implementation is pending.",
+  "properties": {
+    "modelVersion": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "values": { "type": "object" }
+  }
+}
