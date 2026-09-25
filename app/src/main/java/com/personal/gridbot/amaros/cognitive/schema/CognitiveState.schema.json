@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CognitiveState",
+  "type": "object",
+  "additionalProperties": false,
+  "description": "Schema placeholder for the Stage 2 cognitive state contract. Implementation is pending.",
+  "properties": {
+    "modelVersion": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "state": { "type": "object" }
+  }
+}
