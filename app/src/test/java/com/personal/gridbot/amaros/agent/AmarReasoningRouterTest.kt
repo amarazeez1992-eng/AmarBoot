@@ -5,46 +5,23 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AmarReasoningRouterTest {
-    private class FakeProvider(override val id: String) : AmarModelProvider {
-        override suspend fun load(modelPath: String) = AmarModelInfo(id, "test", 8192, 256, true)
-        override suspend fun generate(request: AmarGenerationRequest) = AmarGenerationResult("adaptive")
-        override suspend fun unload() = Unit
+    private class Local : AmarReasoningProvider {
+        var calls=0
+        override suspend fun respond(context: AmarAgentContext): AmarAgentResponse { calls++; return AmarAgentResponse("local") }
     }
-
-    @Test fun low_routes_to_local() = runBlocking {
-        val router = AmarReasoningRouter(
-            adaptive = AmarAdaptiveReasoningProvider(AmarModelProviderCatalog())
-        )
-        val response = router.respond(AmarAgentContext("hello", emptyList(), false, false))
-        assertEquals(AmarAgentResponse.Status.READY, response.status)
+    private class Model(override val id:String): AmarModelProvider {
+        var calls=0
+        override suspend fun load(modelPath:String)=AmarModelInfo(id,"test",8192,256,true)
+        override suspend fun generate(request:AmarGenerationRequest):AmarGenerationResult { calls++; return AmarGenerationResult("adaptive") }
+        override suspend fun unload()=Unit
     }
-
-    @Test fun high_without_provider_fails_closed() = runBlocking {
-        val router = AmarReasoningRouter(
-            adaptive = AmarAdaptiveReasoningProvider(AmarModelProviderCatalog())
-        )
-        val response = router.respond(
-            AmarAgentContext("compare multiple factors in detail", emptyList(), false, false)
-        )
-        assertEquals(AmarAgentResponse.Status.ERROR, response.status)
+    private fun router(local:Local, model:Model?=null):AmarReasoningRouter {
+        val audit=AmarModelRoutingAudit()
+        val catalog=if(model==null) AmarModelProviderCatalog() else AmarModelProviderCatalog(listOf(AmarModelProviderProfile(model,setOf(AmarModelCapability.MULTI_FACTOR_ANALYSIS),8192,256,AmarModelQuality.HIGH,AmarModelCost.LOW)))
+        return AmarReasoningRouter(local,AmarAdaptiveReasoningProvider(catalog,audit),AmarModelTaskClassifier(),AmarModelComplexityEstimator(),audit)
     }
-
-    @Test fun high_routes_to_adaptive_provider() = runBlocking {
-        val catalog = AmarModelProviderCatalog(
-            listOf(
-                AmarModelProviderProfile(
-                    provider = FakeProvider("adaptive"),
-                    capabilities = setOf(AmarModelCapability.MULTI_FACTOR_ANALYSIS),
-                    maxContextTokens = 8192,
-                    estimatedRamMb = 256,
-                    quality = AmarModelQuality.HIGH,
-                    cost = AmarModelCost.LOW
-                )
-            )
-        )
-        val response = AmarReasoningRouter(
-            adaptive = AmarAdaptiveReasoningProvider(catalog)
-        ).respond(AmarAgentContext("compare multiple factors in detail", emptyList(), false, false))
-        assertEquals("adaptive", response.answer)
-    }
+    @Test fun low_routes_to_injected_local()=runBlocking { val l=Local(); assertEquals("local",router(l).respond(AmarAgentContext("hello",emptyList(),false,false)).answer); assertEquals(1,l.calls) }
+    @Test fun high_without_provider_fails_closed()=runBlocking { assertEquals(AmarAgentResponse.Status.ERROR,router(Local()).respond(AmarAgentContext("compare multiple factors in detail",emptyList(),false,false)).status) }
+    @Test fun high_routes_to_adaptive_provider()=runBlocking { val p=Model("adaptive"); assertEquals("adaptive",router(Local(),p).respond(AmarAgentContext("compare multiple factors in detail",emptyList(),false,false)).answer); assertEquals(1,p.calls) }
+    @Test fun unknown_task_fails_closed()=runBlocking { assertEquals(AmarAgentResponse.Status.ERROR,router(Local()).respond(AmarAgentContext("",emptyList(),false,false)).status) }
 }

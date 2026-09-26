@@ -1,8 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
-enum class AmarModelComplexity {
-    LOW, MEDIUM, HIGH
-}
+enum class AmarModelComplexity { UNKNOWN, LOW, MEDIUM, HIGH }
 
 data class AmarModelComplexityContext(
     val text: String,
@@ -14,7 +12,7 @@ data class AmarModelComplexityContext(
 class AmarModelComplexityEstimator {
     fun estimate(task: AmarModelTask, context: AmarModelComplexityContext): AmarModelComplexity =
         when {
-            task == AmarModelTask.UNKNOWN -> AmarModelComplexity.HIGH
+            task == AmarModelTask.UNKNOWN -> AmarModelComplexity.UNKNOWN
             context.constraintCount >= 4 || context.evidenceCount >= 8 -> AmarModelComplexity.HIGH
             task == AmarModelTask.MULTI_FACTOR_ANALYSIS -> AmarModelComplexity.HIGH
             context.contextTokens >= 1800 || context.text.length >= 7200 -> AmarModelComplexity.MEDIUM

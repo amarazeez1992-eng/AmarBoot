@@ -96,6 +96,8 @@ class AmarAdaptiveReasoningProvider(
     }
 }
 
+internal data class AdaptiveGenerationOutcome(val response: AmarAgentResponse, val providerId: String?)
+
 data class AmarRoutingDecision(
     val selectedProvider: AmarModelProviderProfile?,
     val reason: String,

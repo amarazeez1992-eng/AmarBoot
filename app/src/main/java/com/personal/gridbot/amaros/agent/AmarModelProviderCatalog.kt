@@ -49,6 +49,7 @@ enum class AmarModelQuality {
 }
 
 enum class AmarModelCost {
+    UNKNOWN,
     LOW,
     MEDIUM,
     HIGH

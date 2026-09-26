@@ -16,6 +16,10 @@ import com.personal.gridbot.amaros.agent.AmarTradingTools
 import com.personal.gridbot.amaros.agent.AmarModelProviderCatalog
 import com.personal.gridbot.amaros.agent.AmarAdaptiveReasoningProvider
 import com.personal.gridbot.amaros.agent.AmarReasoningRouter
+import com.personal.gridbot.amaros.agent.AmarLocalReasoning
+import com.personal.gridbot.amaros.agent.AmarModelRoutingAudit
+import com.personal.gridbot.amaros.agent.AmarModelTaskClassifier
+import com.personal.gridbot.amaros.agent.AmarModelComplexityEstimator
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
@@ -40,7 +44,10 @@ class AmarAiAgentEngine(
         audit = routingAudit
     )
     private val reasoningProvider: AmarReasoningProvider = AmarReasoningRouter(
+        local = AmarLocalReasoning(),
         adaptive = adaptiveReasoning,
+        classifier = AmarModelTaskClassifier(),
+        complexity = AmarModelComplexityEstimator(),
         audit = routingAudit
     )
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
