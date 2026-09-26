@@ -176,7 +176,7 @@ class Item7AgentOrchestrationTest {
     @Test fun debug_local_agent_output() = runBlocking {
         val engine = com.personal.gridbot.amaros.ai.AmarAiAgentEngine()
         val result = engine.ask("", "", "Hello")
-        assertEquals("DEBUG_EXPECTED", result.answer)
+        throw AssertionError("ACTUAL=" + result.answer)
     }
 
 }
