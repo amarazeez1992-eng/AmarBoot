@@ -26,7 +26,10 @@ class AmarAgentOrchestrator(
     private val canonicalEvidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
     private val evidenceIntake: AmarEvidenceIntake = AmarEvidenceIntake(),
     private val findingToCandidateConverter: AmarFindingToCandidateConverter = AmarFindingToCandidateConverter(),
-    private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer()
+    private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer(),
+    private val engineSelector: EngineSelector = EngineSelector(),
+    private val failureRouter: FailureRouter = FailureRouter(),
+    private val resultAggregator: ResultAggregator = ResultAggregator()
 ) {
     suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
         val safeBudget = budget.normalized()
@@ -45,9 +48,48 @@ class AmarAgentOrchestrator(
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
         val plan = planner.plan(request, safeTools)
         val taskGraph = OrchestrationDependencyGraph(plan.tasks)
-        taskGraph.topologicalOrder()
+        val orderedTasks = taskGraph.topologicalOrder()
         session.transitionOrchestration(OrchestrationState.PLANNED)
         emit(AgentTaskState.PLANNING, "تخطيط مسار التحقق")
+        val orchestrationResults = mutableListOf<OrchestrationTaskResult>()
+        val rootContext = ContextEnvelope(session.sessionId, "root", mapOf("intent" to plan.intent.name), listOf("planner"))
+        var completedTaskIds = emptySet<String>()
+        for (task in orderedTasks) {
+            val context = rootContext.scoped(task.id, mapOf("taskKind" to task.kind.name))
+            try {
+                require(task.dependencies.all(completedTaskIds::contains)) {
+                    "Task dependency not completed: " + task.id
+                }
+                val selection = engineSelector.select(task)
+                session.record(AmarAgentStage.TASK_STATE, "TASK_EXECUTE=" + task.id + ";engine=" + selection.engineId + ";context=" + context.taskId)
+                orchestrationResults += OrchestrationTaskResult(
+                    taskId = task.id,
+                    status = TaskResultStatus.SUCCESS,
+                    value = selection.engineId,
+                    provenance = listOf(selection.engineId) + context.provenance
+                )
+                completedTaskIds += task.id
+            } catch (failure: Throwable) {
+                val decision = failureRouter.route(failure, retryAvailable = false, fallbackAvailable = false)
+                orchestrationResults += OrchestrationTaskResult(
+                    taskId = task.id,
+                    status = if (decision.route == FailureRoute.BLOCK || decision.route == FailureRoute.TERMINATE) TaskResultStatus.BLOCKED else TaskResultStatus.PARTIAL,
+                    value = decision.route.name,
+                    provenance = context.provenance,
+                    conflicts = listOf(decision.reason)
+                )
+                session.transitionOrchestration(
+                    if (decision.route == FailureRoute.BLOCK || decision.route == FailureRoute.TERMINATE) OrchestrationState.BLOCKED else OrchestrationState.RECOVERING,
+                    taskId = task.id,
+                    reason = decision.reason
+                )
+                error("Orchestration task failed: " + task.id + "; route=" + decision.route + "; reason=" + decision.reason)
+            }
+        }
+        val orchestrationResult = resultAggregator.aggregate(orchestrationResults)
+        require(orchestrationResult.results.size == orderedTasks.size) {
+            "Orchestration result count mismatch"
+        }
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.transitionOrchestration(OrchestrationState.RUNNING)
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
@@ -191,7 +233,7 @@ class AmarAgentOrchestrator(
         }
 
         session.transitionOrchestration(if (finalApproved) OrchestrationState.COMPLETED else OrchestrationState.BLOCKED, reason = if (finalApproved) null else "final_validation_failed")
-        return AmarAgentRunResult(response = finalResponse, plan = plan, orchestrationState = session.orchestrationState(), research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
+        return AmarAgentRunResult(response = finalResponse, plan = plan, orchestrationState = session.orchestrationState(), orchestrationResult = orchestrationResult, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
     }
 
     private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
@@ -227,6 +269,7 @@ data class AmarAgentRunResult(
     val response: AmarAgentResponse,
     val plan: AmarAgentPlan,
     val orchestrationState: OrchestrationStateSnapshot,
+    val orchestrationResult: AggregatedOrchestrationResult,
     val research: ResearchReport?,
     val sourceVerification: AmarSourceVerification?,
     val consensus: AmarConsensusReport?,
