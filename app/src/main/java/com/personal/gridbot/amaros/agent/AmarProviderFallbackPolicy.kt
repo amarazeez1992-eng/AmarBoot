@@ -140,6 +140,7 @@ class AmarProviderFallbackPolicy(
         operationId: String,
         providerId: String,
         attempt: Int,
+        retryAttempt: Int,
         error: Throwable,
         providers: List<AmarModelProviderProfile>,
         attempted: Set<String>,
@@ -149,7 +150,7 @@ class AmarProviderFallbackPolicy(
         health.recordFailure(providerId, failure)
         audit.record(
             operationId, providerId, "PROVIDER_FAILED", attempt, failure,
-            health.state(providerId), nextId(providers, attempted), false, failure.name
+            health.state(providerId), nextId(providers, attempted), false, "RETRY_ATTEMPT=$retryAttempt:${failure.name}"
         )
     }
 
