@@ -106,7 +106,7 @@ class AmarProviderFallbackPolicy(
             retryAttempt < runtimeConfig.maxRetries &&
             (failure == AmarProviderFailureClass.TRANSIENT ||
                 failure == AmarProviderFailureClass.TIMEOUT)
-    }
+
     private fun acceptResult(
         operationId: String,
         attempt: Int,
