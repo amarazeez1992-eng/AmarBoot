@@ -175,4 +175,12 @@ class Item7AgentOrchestrationTest {
         assertTrue(result.orchestrationResult.results.any { it.value is AuditTaskArtifact })
         assertEquals("الإجابة مبنية على الأدلة المتاحة.", result.response.answer)
     }
+    @Test fun debug_local_agent_output() = runBlocking {
+        val engine = com.personal.gridbot.amaros.ai.AmarAiAgentEngine()
+        listOf("Hello", "كيف حالك", "من أنت", "كم الوقت الآن").forEach {
+            val result = engine.ask("", "", it)
+            println("ITEM7_DEBUG[" + it + "]=" + result.answer)
+        }
+    }
+
 }
