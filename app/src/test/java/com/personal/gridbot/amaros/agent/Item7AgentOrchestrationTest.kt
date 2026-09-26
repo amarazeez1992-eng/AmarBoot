@@ -51,7 +51,7 @@ class Item7AgentOrchestrationTest {
     }
 
     @Test fun planner_builds_typed_dependency_graph() {
-        val plan = AmarAgentPlanner().plan(AmarAgentRequest("كيف أختبر استراتيجية ذهب؟"), emptyList())
+        val plan = AmarAgentPlanner().plan(AmarAgentRequest("ابحث عن مصادر لاختبار استراتيجية الذهب"), emptyList())
         assertEquals(plan.tasks.size, plan.tasks.map { it.id }.distinct().size)
         assertTrue(plan.tasks.any { it.kind == AmarTaskKind.EVIDENCE })
         assertEquals(plan.tasks.map { it.id }.toSet().size, plan.tasks.flatMap { it.dependencies }.count { it in plan.tasks.map { t -> t.id } } + 1)
