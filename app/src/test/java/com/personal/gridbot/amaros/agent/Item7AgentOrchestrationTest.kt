@@ -5,6 +5,51 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Item7AgentOrchestrationTest {
+    @Test fun engine_selector_resolves_every_task_kind() {
+        val selector = EngineSelector()
+        AmarTaskKind.values().forEach { kind ->
+            val selection = selector.select(AmarTaskUnit(kind.name, kind, "output", emptyList()))
+            assertTrue(selection.engineId.isNotBlank())
+        }
+    }
+
+    @Test fun execution_order_respects_dependencies() {
+        val tasks = listOf(
+            AmarTaskUnit("b", AmarTaskKind.REASON, "b", listOf("a")),
+            AmarTaskUnit("a", AmarTaskKind.CONTEXT, "a", emptyList()),
+            AmarTaskUnit("c", AmarTaskKind.AUDIT, "c", listOf("b"))
+        )
+        val executed = OrchestrationDependencyGraph(tasks).topologicalOrder().map { it.id }
+        assertEquals(listOf("a", "b", "c"), executed)
+    }
+
+    @Test fun context_envelope_propagates_parent_to_child_task() {
+        val root = ContextEnvelope("session", "root", mapOf("intent" to "RESEARCH"))
+        val parent = root.scoped("parent", mapOf("source" to "research"))
+        val child = parent.scoped("child", mapOf("phase" to "verify"))
+        assertEquals("research", child.values["source"])
+        assertEquals("verify", child.values["phase"])
+        assertEquals(listOf("root", "parent"), child.provenance)
+    }
+
+    @Test fun failure_router_supports_all_fail_closed_routes() {
+        val router = FailureRouter()
+        assertEquals(FailureRoute.RETRY, router.route(IllegalStateException("x"), true, true).route)
+        assertEquals(FailureRoute.FALLBACK, router.route(IllegalStateException("x"), false, true).route)
+        assertEquals(FailureRoute.TERMINATE, router.route(IllegalStateException("x"), false, false).route)
+        assertEquals(FailureRoute.BLOCK, router.route(IllegalArgumentException("bad"), true, true).route)
+        assertEquals(FailureRoute.BLOCK, router.route(IllegalStateException(), true, true).route)
+    }
+
+    @Test fun result_aggregation_blocks_when_any_task_is_blocked() {
+        val result = ResultAggregator().aggregate(listOf(
+            OrchestrationTaskResult("a", TaskResultStatus.SUCCESS, "ok"),
+            OrchestrationTaskResult("b", TaskResultStatus.BLOCKED, null, conflicts = listOf("blocked"))
+        ))
+        assertEquals(TaskResultStatus.BLOCKED, result.status)
+        assertTrue(result.conflicts.contains("blocked"))
+    }
+
     @Test fun planner_builds_typed_dependency_graph() {
         val plan = AmarAgentPlanner().plan(AmarAgentRequest("كيف أختبر استراتيجية ذهب؟"), emptyList())
         assertEquals(plan.tasks.size, plan.tasks.map { it.id }.distinct().size)
