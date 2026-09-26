@@ -106,6 +106,8 @@ class AmarAgentOrchestrator(
             roleOpinionEngine = roleOpinionEngine
         )
 
+        // executionAllowed = false
+        // brokerAccessAllowed = false
         var executionContext = ContextEnvelope(
             sessionId = session.sessionId,
             taskId = "root",
