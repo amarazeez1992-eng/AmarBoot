@@ -7,7 +7,13 @@ package com.personal.gridbot.amaros.agent
  */
 class AmarAdaptiveReasoningProvider(
     private val catalog: AmarModelProviderCatalog,
-    private val audit: AmarModelRoutingAudit = AmarModelRoutingAudit()
+    private val audit: AmarModelRoutingAudit = AmarModelRoutingAudit(),
+    private val resilience: AmarProviderFallbackPolicy = AmarProviderFallbackPolicy(
+        health = AmarProviderHealthMonitor(),
+        classifier = AmarProviderFailureClassifier(),
+        integrity = AmarProviderResultIntegrity(),
+        audit = AmarProviderRecoveryAudit()
+    )
 ) {
     fun matchCapabilities(
         task: AmarModelTask,
@@ -106,39 +112,33 @@ class AmarAdaptiveReasoningProvider(
                     .thenBy { it.provider.id }
             )
 
-        for (candidate in candidates) {
-            try {
-                val result = candidate.provider.generate(
-                    AmarGenerationRequest(
-                        systemPrompt = "AMAR adaptive reasoning. Do not invent unsupported facts.",
-                        userPrompt = context.userText,
-                        maxTokens = 512
-                    )
-                )
-                val response = AmarAgentResponse(
-                    result.text,
-                    AmarAgentResponse.Status.READY,
-                    context.tools.map { it.id }
-                )
-                audit.record(
-                    level = 2,
-                    authority = "ADAPTIVE_MODEL_ROUTING",
-                    complexity = complexity,
-                    selectedProvider = candidate.provider.id,
-                    decisionState = "SELECTED",
-                    reason = "PROVIDER_GENERATION_SUCCESS"
-                )
-                return AdaptiveGenerationOutcome(response, candidate.provider.id)
-            } catch (_: Throwable) {
-                audit.record(
-                    level = 2,
-                    authority = "ADAPTIVE_MODEL_ROUTING",
-                    complexity = complexity,
-                    selectedProvider = candidate.provider.id,
-                    decisionState = "FAILED",
-                    reason = "PROVIDER_GENERATION_FAILED"
-                )
-            }
+        val request = AmarGenerationRequest(
+            systemPrompt = "AMAR adaptive reasoning. Do not invent unsupported facts.",
+            userPrompt = context.userText,
+            maxTokens = 512
+        )
+        val recovery = resilience.generate(
+            operationId = "adaptive:" + task.name + ":" + context.userText.hashCode(),
+            providers = candidates,
+            request = request
+        )
+
+        if (recovery.decisionState == "SUCCESS" && recovery.result != null && !recovery.providerId.isNullOrBlank()) {
+            val providerId = recovery.providerId
+            val response = AmarAgentResponse(
+                recovery.result.text,
+                AmarAgentResponse.Status.READY,
+                context.tools.map { it.id }
+            )
+            audit.record(
+                level = 2,
+                authority = "ADAPTIVE_MODEL_ROUTING",
+                complexity = complexity,
+                selectedProvider = providerId,
+                decisionState = "SELECTED",
+                reason = "PROVIDER_GENERATION_SUCCESS"
+            )
+            return AdaptiveGenerationOutcome(response, providerId)
         }
 
         audit.record(

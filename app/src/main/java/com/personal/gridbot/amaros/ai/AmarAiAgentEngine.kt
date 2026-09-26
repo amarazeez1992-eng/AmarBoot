@@ -20,6 +20,11 @@ import com.personal.gridbot.amaros.agent.AmarLocalReasoning
 import com.personal.gridbot.amaros.agent.AmarModelRoutingAudit
 import com.personal.gridbot.amaros.agent.AmarModelTaskClassifier
 import com.personal.gridbot.amaros.agent.AmarModelComplexityEstimator
+import com.personal.gridbot.amaros.agent.AmarProviderFallbackPolicy
+import com.personal.gridbot.amaros.agent.AmarProviderHealthMonitor
+import com.personal.gridbot.amaros.agent.AmarProviderFailureClassifier
+import com.personal.gridbot.amaros.agent.AmarProviderResultIntegrity
+import com.personal.gridbot.amaros.agent.AmarProviderRecoveryAudit
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
@@ -27,7 +32,13 @@ import com.personal.gridbot.amaros.agent.Authority
 
 class AmarAiAgentEngine(
     private val context: Context? = null,
-    modelProviderCatalog: AmarModelProviderCatalog = AmarModelProviderCatalog()
+    modelProviderCatalog: AmarModelProviderCatalog = AmarModelProviderCatalog(),
+    providerResilience: AmarProviderFallbackPolicy = AmarProviderFallbackPolicy(
+        health = AmarProviderHealthMonitor(),
+        classifier = AmarProviderFailureClassifier(),
+        integrity = AmarProviderResultIntegrity(),
+        audit = AmarProviderRecoveryAudit()
+    )
 ) {
     data class Result(
         val answer: String,
@@ -41,7 +52,8 @@ class AmarAiAgentEngine(
     private val routingAudit = AmarModelRoutingAudit()
     private val adaptiveReasoning = AmarAdaptiveReasoningProvider(
         catalog = modelProviderCatalog,
-        audit = routingAudit
+        audit = routingAudit,
+        resilience = providerResilience
     )
     private val reasoningProvider: AmarReasoningProvider = AmarReasoningRouter(
         local = AmarLocalReasoning(),

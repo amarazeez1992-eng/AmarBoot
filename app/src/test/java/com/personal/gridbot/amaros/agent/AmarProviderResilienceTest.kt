@@ -127,6 +127,39 @@ class AmarProviderResilienceTest {
         assertEquals("valid", result.result?.text)
     }
 
+    @Test fun adaptiveProviderUsesResiliencePolicyAndRecordsFallbackDecisions() = runBlocking {
+        val recoveryAudit = AmarProviderRecoveryAudit { 99L }
+        val resilience = AmarProviderFallbackPolicy(
+            health = AmarProviderHealthMonitor(),
+            classifier = AmarProviderFailureClassifier(),
+            integrity = AmarProviderResultIntegrity(),
+            audit = recoveryAudit,
+            runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+        )
+        val first = profile(TestProvider("first") { throw IOException("transient") })
+        val second = profile(TestProvider("second") { AmarGenerationResult("fallback") })
+        val routingAudit = AmarModelRoutingAudit()
+        val adaptive = AmarAdaptiveReasoningProvider(
+            catalog = AmarModelProviderCatalog(listOf(first, second)),
+            audit = routingAudit,
+            resilience = resilience
+        )
+        val outcome = adaptive.generate(
+            context = AmarAgentContext("compare multiple factors in detail", emptyList(), false, false),
+            task = AmarModelTask.SIMPLE_EXPLANATION,
+            complexity = AmarModelComplexity.HIGH,
+            maxContextTokens = 4096,
+            maxRamMb = 4096,
+            minimumQuality = AmarModelQuality.STANDARD
+        )
+        assertEquals("fallback", outcome.answer)
+        val recovery = recoveryAudit.records()
+        assertTrue(recovery.any { it.providerId == "first" && it.event == "PROVIDER_FAILED" })
+        assertTrue(recovery.any { it.providerId == "second" && it.event == "RECOVERY_SUCCESS" })
+        assertTrue(routingAudit.records().any {
+            it.selectedProvider == "second" && it.decisionState == "SELECTED" && it.reason == "PROVIDER_GENERATION_SUCCESS"
+        })
+    }
     @Test fun auditRecordIsComplete() = runBlocking {
         val provider = profile(TestProvider("audit") { throw IllegalStateException("unknown") })
         val audit = AmarProviderRecoveryAudit { 42L }
