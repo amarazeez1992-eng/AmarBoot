@@ -225,9 +225,15 @@ class ReasonTaskExecutor : TaskExecutor {
         val stageTwo = if (decisionRelevant) {
             runtime.stageTwoEngine.deliberate(runtime.request.text, evidence.findings)
         } else null
+        val policy = runtime.queryPolicy.classify(runtime.plan, runtime.request)
+        val userText = if (policy.requiresResearch) {
+            runtime.request.text + "\n\n" + evidenceText(evidence) + stageTwoText(stageTwo)
+        } else {
+            runtime.request.text
+        }
         val answer = runtime.reasoningProvider.respond(
             AmarAgentContext(
-                userText = runtime.request.text + "\n\n" + evidenceText(evidence) + stageTwoText(stageTwo),
+                userText = userText,
                 tools = runtime.plannedTools,
                 executionAllowed = false,
                 brokerAccessAllowed = false,
