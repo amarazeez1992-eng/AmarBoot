@@ -1,2 +1,2 @@
 MetaTrader5>=5.0.45
-cryptography>=42.0.0
+cryptography>=50.0.1
