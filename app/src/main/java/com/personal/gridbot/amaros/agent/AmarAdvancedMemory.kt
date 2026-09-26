@@ -143,10 +143,10 @@ class AmarMemoryRelevanceScorer {
 
     private fun normalize(text: String): String =
         text.lowercase()
-            .replace(Regex("[\u064B-\u065F\u0670]"), "")
+            .replace(Regex("""[\u064B-\u065F\u0670]"""), "")
             .replace('أ', 'ا').replace('إ', 'ا').replace('آ', 'ا')
-            .replace(Regex("[^\p{L}\p{Nd}]+"), " ")
-            .replace(Regex("\s+"), " ")
+            .replace(Regex("""[^\p{L}\p{Nd}]+"""), " ")
+            .replace(Regex("""\s+"""), " ")
             .trim()
 }
 
