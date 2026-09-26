@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntake
+import com.personal.gridbot.amaros.agent.admission.EvidenceIntakeResult
 import com.personal.gridbot.amaros.agent.admission.AmarFindingToCandidateConverter
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
