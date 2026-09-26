@@ -15,7 +15,7 @@ class AmarReasoningRouter(
         val task = classifier.classify(context)
         val level = complexity.estimate(task, AmarModelComplexityContext(
             context.userText, (context.userText.length / 4).coerceAtLeast(1),
-            context.userText.count { it == '\n' }, context.tools.size
+            context.userText.count { it == '\n' }, 0
         ))
         if (level == AmarModelComplexity.UNKNOWN) {
             audit.record(1, "REASONING_PROVIDER", level, null, "FAIL_CLOSED", "UNKNOWN_TASK")
