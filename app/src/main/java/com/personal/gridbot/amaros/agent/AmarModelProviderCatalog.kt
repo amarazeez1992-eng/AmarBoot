@@ -52,3 +52,5 @@ enum class AmarModelCost {
     MEDIUM,
     HIGH
 }
+
+// CI trigger — Item 8 catalog verification
