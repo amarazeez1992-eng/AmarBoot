@@ -173,26 +173,4 @@ class Item7AgentOrchestrationTest {
         assertTrue(result.orchestrationResult.results.any { it.value is AuditTaskArtifact })
         assertEquals("الإجابة مبنية على الأدلة المتاحة.", result.response.answer)
     }
-    
-    @Test fun debug_local_agent_output() = runBlocking {
-        val orchestrator = AmarAgentOrchestrator(
-            planner = AmarAgentPlanner(),
-            researchEngine = object : AmarResearchEngine {
-                override suspend fun research(request: ResearchRequest) = ResearchReport(emptyList())
-            },
-            sourceVerifier = AmarSourceVerifier(),
-            consensusEngine = AmarAgentEvidenceConsensus(),
-            critic = AmarAgentCritic(),
-            verifier = AmarAgentVerifier(),
-            reasoningProvider = AmarLocalReasoning()
-        )
-        val result = orchestrator.run(AmarAgentRequest("Hello"), emptyList())
-        throw AssertionError(
-            "STATE=" + result.orchestrationState +
-                ";RESULT=" + result.orchestrationResult.status +
-                ";ANSWER=" + result.response.answer +
-                ";EVENTS=" + result.sessionEvents.joinToString(" || ") { it.stage.name + ":" + it.message }
-        )
-    }
 }
-
