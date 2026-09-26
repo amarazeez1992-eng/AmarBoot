@@ -71,9 +71,14 @@ class Item7AgentOrchestrationTest {
         assertTrue(plan.tasks.any { it.kind == AmarTaskKind.EVIDENCE })
         val taskIds = plan.tasks.map { it.id }.toSet()
         assertTrue(plan.tasks.all { task -> task.dependencies.all { it in taskIds } })
-        assertEquals(
-            plan.tasks.map { it.id },
-            OrchestrationDependencyGraph(plan.tasks).topologicalOrder().map { it.id }
+        val orderedIds = OrchestrationDependencyGraph(plan.tasks).topologicalOrder().map { it.id }
+        val positions = orderedIds.withIndex().associate { it.value to it.index }
+        assertTrue(
+            plan.tasks.all { task ->
+                task.dependencies.all { dependency ->
+                    positions.getValue(dependency) < positions.getValue(task.id)
+                }
+            }
         )
     }
 

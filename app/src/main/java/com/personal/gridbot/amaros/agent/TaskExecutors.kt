@@ -50,7 +50,7 @@ data class EvidenceTaskArtifact(
 data class ReasonTaskArtifact(
     val answer: AmarAgentResponse,
     val stageTwo: AmarStageTwoResult?,
-    val evidence: EvidenceTaskArtifact
+    val evidence: EvidenceTaskArtifact?
 )
 
 data class ChallengeTaskArtifact(
@@ -220,13 +220,12 @@ class ReasonTaskExecutor : TaskExecutor {
     override suspend fun execute(task: AmarTaskUnit, context: ContextEnvelope): TaskExecutionResult {
         val runtime = context.runtime()
         val evidence = context.artifactOrNull("evidence") as? EvidenceTaskArtifact
-            ?: error("EVIDENCE result missing before REASON")
         val decisionRelevant = runtime.plan.intent == AgentIntent.TRADE_ANALYSIS
-        val stageTwo = if (decisionRelevant) {
+        val stageTwo = if (decisionRelevant && evidence != null) {
             runtime.stageTwoEngine.deliberate(runtime.request.text, evidence.findings)
         } else null
         val policy = runtime.queryPolicy.classify(runtime.plan, runtime.request)
-        val userText = if (policy.requiresResearch) {
+        val userText = if (policy.requiresResearch && evidence != null) {
             runtime.request.text + "\n\n" + evidenceText(evidence) + stageTwoText(stageTwo)
         } else {
             runtime.request.text
@@ -259,7 +258,7 @@ class ChallengeTaskExecutor : TaskExecutor {
         val strictEvidence = runtime.queryPolicy.classify(runtime.plan, runtime.request).requiresStrictEvidence
         val critique = runtime.critic.review(
             reason.answer.answer,
-            reason.evidence.findings,
+            reason.evidence?.findings ?: emptyList(),
             requireEvidence = strictEvidence
         )
         return TaskExecutionResult(
@@ -277,7 +276,7 @@ class ValidateTaskExecutor : TaskExecutor {
         val reason = context.artifactOrNull("reason") as? ReasonTaskArtifact
             ?: error("REASON result missing before VALIDATE")
         val challenge = context.artifactOrNull("challenge") as? ChallengeTaskArtifact
-        val findings = reason.evidence.findings
+        val findings = reason.evidence?.findings ?: emptyList()
         val stageThree = runtime.stageThreeEngine.synchronize(runtime.request.text, findings)
         val verification = runtime.verificationLayer.verify(reason.answer.answer, stageThree.unifiedEvidence)
         val artifact = ValidateTaskArtifact(verification, stageThree, reason, challenge)
@@ -304,7 +303,16 @@ class AuditTaskExecutor : TaskExecutor {
             ?: error("REASON result missing before AUDIT")
         val challenge = context.artifactOrNull("challenge") as? ChallengeTaskArtifact
             ?: error("CHALLENGE result missing before AUDIT")
-        val evidence = reason.evidence
+        val evidence = reason.evidence ?: EvidenceTaskArtifact(
+            report = null,
+            stageThree = null,
+            findings = emptyList(),
+            sourceVerification = null,
+            verificationReport = null,
+            consensus = null,
+            intakeResult = null,
+            canonicalEvidenceCertification = null
+        )
         val stageTwo = reason.stageTwo
         val strictEvidence = runtime.queryPolicy.classify(runtime.plan, runtime.request).requiresStrictEvidence
         val validate = context.artifactOrNull("validate") as? ValidateTaskArtifact

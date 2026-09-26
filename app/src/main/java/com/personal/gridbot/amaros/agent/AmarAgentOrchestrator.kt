@@ -196,10 +196,15 @@ class AmarAgentOrchestrator(
                             orchestrationResults += OrchestrationTaskResult(
                                 taskId = task.id,
                                 status = TaskResultStatus.BLOCKED,
-                                value = null,
+                                value = result.value,
                                 provenance = context.provenance,
                                 conflicts = result.conflicts + decision.reason
                             )
+                            if (result.value != null) {
+                                executionContext = executionContext
+                                    .withArtifact(task.kind.name.lowercase(), result.value)
+                                    .withArtifact(task.id, result.value)
+                            }
                             session.transitionOrchestration(
                                 OrchestrationState.BLOCKED,
                                 taskId = task.id,

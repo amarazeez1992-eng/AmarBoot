@@ -11,5 +11,5 @@ data class TaskExecutionResult(
     val conflicts: List<String> = emptyList()
 ) {
     val failed: Boolean
-        get() = status == TaskResultStatus.FAILED || status == TaskResultStatus.BLOCKED
+        get() = status == TaskResultStatus.FAILED
 }
