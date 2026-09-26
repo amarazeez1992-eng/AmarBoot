@@ -58,8 +58,14 @@ class AmarProviderFallbackPolicy(
                 } catch (error: TimeoutCancellationException) {
                     val failure = AmarProviderFailureClass.TIMEOUT
                     recordFailure(
-                        operationId, candidate.provider.id, providerAttempt, retryAttempt,
-                        error, providers, attempted, failure
+                        operationId = operationId,
+                        providerId = candidate.provider.id,
+                        attempt = providerAttempt,
+                        retryAttempt = retryAttempt,
+                        error = error,
+                        providers = providers,
+                        attempted = attempted,
+                        classifiedFailure = failure
                     )
                     if (!canRetry(candidate.provider.id, failure, retryAttempt)) break
                     retryAttempt++
@@ -150,7 +156,7 @@ class AmarProviderFallbackPolicy(
         health.recordFailure(providerId, failure)
         audit.record(
             operationId, providerId, "PROVIDER_FAILED", attempt, failure,
-            health.state(providerId), nextId(providers, attempted), false, "RETRY_ATTEMPT=$retryAttempt:${failure.name}"
+            health.state(providerId), nextId(providers, attempted), false, failure.name
         )
     }
 
