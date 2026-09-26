@@ -42,6 +42,7 @@ enum class AmarModelCapability {
 }
 
 enum class AmarModelQuality {
+    UNKNOWN,
     BASIC,
     STANDARD,
     HIGH

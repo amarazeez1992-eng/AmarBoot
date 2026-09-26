@@ -13,19 +13,17 @@ import com.personal.gridbot.amaros.agent.AmarAgentEvidenceConsensus
 import com.personal.gridbot.amaros.agent.AmarAgentCritic
 import com.personal.gridbot.amaros.agent.AmarAgentVerifier
 import com.personal.gridbot.amaros.agent.AmarTradingTools
-import com.personal.gridbot.amaros.agent.AmarLocalReasoning
+import com.personal.gridbot.amaros.agent.AmarModelProviderCatalog
+import com.personal.gridbot.amaros.agent.AmarAdaptiveReasoningProvider
+import com.personal.gridbot.amaros.agent.AmarReasoningRouter
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.Authority
 
-/**
- * AMAR AI Agent boundary.
- * The UI enters the canonical Agent Orchestrator; no UI-level shortcut bypasses
- * planning, research/verification gates, critique, hierarchy and final validation.
- */
 class AmarAiAgentEngine(
-    private val context: Context? = null
+    private val context: Context? = null,
+    modelProviderCatalog: AmarModelProviderCatalog = AmarModelProviderCatalog()
 ) {
     data class Result(
         val answer: String,
@@ -36,7 +34,15 @@ class AmarAiAgentEngine(
         val elapsedMs: Long = 0L
     )
 
-    private val reasoningProvider: AmarReasoningProvider = AmarLocalReasoning()
+    private val routingAudit = AmarModelRoutingAudit()
+    private val adaptiveReasoning = AmarAdaptiveReasoningProvider(
+        catalog = modelProviderCatalog,
+        audit = routingAudit
+    )
+    private val reasoningProvider: AmarReasoningProvider = AmarReasoningRouter(
+        adaptive = adaptiveReasoning,
+        audit = routingAudit
+    )
     private val toolRegistry: AmarAgentToolRegistry = AmarTradingTools()
     private val externalResearch = AmarAiExternalResearch()
 
@@ -73,9 +79,6 @@ class AmarAiAgentEngine(
             ?.count()
             ?: 0
         val acceptedSources = runResult.sourceVerification?.totalSources ?: 0
-
-        // Final telemetry is emitted from the canonical run result, not from
-        // UI defaults. Counts are factual records returned/accepted by AMAR.
         progress?.invoke(
             com.personal.gridbot.amaros.agent.AmarAgentProgress(
                 state = com.personal.gridbot.amaros.agent.AgentTaskState.RESPONDING,
@@ -85,7 +88,6 @@ class AmarAiAgentEngine(
                 elapsedMs = elapsedMs
             )
         )
-
         return Result(
             answer = response.answer,
             proposedActions = response.actions,
@@ -96,10 +98,6 @@ class AmarAiAgentEngine(
         )
     }
 
-    /**
-     * Adapter keeps the canonical AmarResearchEngine contract intact while allowing
-     * the approved keyless public-web retrieval implementation to feed the orchestrator.
-     */
     private class ExternalResearchAdapter(
         private val external: AmarAiExternalResearch
     ) : AmarResearchEngine {
