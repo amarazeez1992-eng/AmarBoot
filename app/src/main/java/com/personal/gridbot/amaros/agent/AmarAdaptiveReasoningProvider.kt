@@ -28,12 +28,14 @@ class AmarAdaptiveReasoningProvider(
         complexity: AmarModelComplexity,
         maxContextTokens: Int,
         maxRamMb: Int,
-        minimumQuality: AmarModelQuality
+        minimumQuality: AmarModelQuality,
+        maxCost: AmarModelCost? = null
     ): AmarRoutingDecision {
         val candidates = matchCapabilities(task).filter { profile ->
             profile.maxContextTokens >= maxContextTokens &&
                 profile.estimatedRamMb <= maxRamMb &&
-                profile.quality.meets(minimumQuality)
+                profile.quality.meets(minimumQuality) &&
+                profile.cost.within(maxCost)
         }
 
         val selected = candidates.sortedWith(
@@ -77,22 +79,83 @@ class AmarAdaptiveReasoningProvider(
         maxContextTokens: Int,
         maxRamMb: Int,
         minimumQuality: AmarModelQuality
-    ): AmarAgentResponse {
-        val decision = selectProvider(task, complexity, maxContextTokens, maxRamMb, minimumQuality)
-        val provider = decision.selectedProvider?.provider
-            ?: return AmarAgentResponse(
-                answer = "لم يتوفر نموذج متوافق مع متطلبات هذه المهمة.",
-                status = AmarAgentResponse.Status.ERROR
+    ): AmarAgentResponse = generateWithProvider(
+        context, task, complexity, maxContextTokens, maxRamMb, minimumQuality, null
+    ).response
+
+    internal suspend fun generateWithProvider(
+        context: AmarAgentContext,
+        task: AmarModelTask,
+        complexity: AmarModelComplexity,
+        maxContextTokens: Int,
+        maxRamMb: Int,
+        minimumQuality: AmarModelQuality,
+        maxCost: AmarModelCost?
+    ): AdaptiveGenerationOutcome {
+        val candidates = matchCapabilities(task)
+            .filter { profile ->
+                profile.maxContextTokens >= maxContextTokens &&
+                    profile.estimatedRamMb <= maxRamMb &&
+                    profile.quality.meets(minimumQuality) &&
+                    profile.cost.within(maxCost)
+            }
+            .sortedWith(
+                compareByDescending<AmarModelProviderProfile> { it.quality.rank }
+                    .thenBy { it.cost.rank }
+                    .thenBy { it.estimatedRamMb }
+                    .thenBy { it.provider.id }
             )
 
-        val result = provider.generate(
-            AmarGenerationRequest(
-                systemPrompt = "AMAR adaptive reasoning. Do not invent unsupported facts.",
-                userPrompt = context.userText,
-                maxTokens = 512
-            )
+        for (candidate in candidates) {
+            try {
+                val result = candidate.provider.generate(
+                    AmarGenerationRequest(
+                        systemPrompt = "AMAR adaptive reasoning. Do not invent unsupported facts.",
+                        userPrompt = context.userText,
+                        maxTokens = 512
+                    )
+                )
+                val response = AmarAgentResponse(
+                    result.text,
+                    AmarAgentResponse.Status.READY,
+                    context.tools.map { it.id }
+                )
+                audit.record(
+                    level = 2,
+                    authority = "ADAPTIVE_MODEL_ROUTING",
+                    complexity = complexity,
+                    selectedProvider = candidate.provider.id,
+                    decisionState = "SELECTED",
+                    reason = "PROVIDER_GENERATION_SUCCESS"
+                )
+                return AdaptiveGenerationOutcome(response, candidate.provider.id)
+            } catch (_: Throwable) {
+                audit.record(
+                    level = 2,
+                    authority = "ADAPTIVE_MODEL_ROUTING",
+                    complexity = complexity,
+                    selectedProvider = candidate.provider.id,
+                    decisionState = "FAILED",
+                    reason = "PROVIDER_GENERATION_FAILED"
+                )
+            }
+        }
+
+        audit.record(
+            level = 2,
+            authority = "ADAPTIVE_MODEL_ROUTING",
+            complexity = complexity,
+            selectedProvider = null,
+            decisionState = "FAIL_CLOSED",
+            reason = "ALL_COMPATIBLE_PROVIDERS_FAILED"
         )
-        return AmarAgentResponse(result.text, AmarAgentResponse.Status.READY, context.tools.map { it.id })
+        return AdaptiveGenerationOutcome(
+            AmarAgentResponse(
+                answer = "لم يتوفر نموذج متوافق مع متطلبات هذه المهمة.",
+                status = AmarAgentResponse.Status.ERROR
+            ),
+            null
+        )
     }
 }
 
@@ -114,14 +177,25 @@ private val AmarModelQuality.rank: Int
     }
 
 private val AmarModelQuality.meets: (AmarModelQuality) -> Boolean
-    get() = { actual -> this.rank >= actual.rank }
+    get() = { actual ->
+        this != AmarModelQuality.UNKNOWN &&
+            actual != AmarModelQuality.UNKNOWN &&
+            this.rank >= actual.rank
+    }
 
 private val AmarModelCost.rank: Int
     get() = when (this) {
+        AmarModelCost.UNKNOWN -> 0
         AmarModelCost.LOW -> 1
         AmarModelCost.MEDIUM -> 2
         AmarModelCost.HIGH -> 3
     }
+
+private fun AmarModelCost.within(maxCost: AmarModelCost?): Boolean =
+    maxCost == null ||
+        (this != AmarModelCost.UNKNOWN &&
+            maxCost != AmarModelCost.UNKNOWN &&
+            this.rank <= maxCost.rank)
 
 enum class AmarModelTask {
     UNKNOWN,
