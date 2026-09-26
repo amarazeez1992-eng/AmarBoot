@@ -53,9 +53,12 @@ class AmarAgentOrchestrator(
         emit(AgentTaskState.PLANNING, "تخطيط مسار التحقق")
         val orchestrationResults = mutableListOf<OrchestrationTaskResult>()
         val rootContext = ContextEnvelope(session.sessionId, "root", mapOf("intent" to plan.intent.name), listOf("planner"))
+        val taskContexts = mutableMapOf<String, ContextEnvelope>()
         var completedTaskIds = emptySet<String>()
         for (task in orderedTasks) {
-            val context = rootContext.scoped(task.id, mapOf("taskKind" to task.kind.name))
+            val parentContext = task.dependencies.firstOrNull()?.let { taskContexts[it] } ?: rootContext
+            val context = parentContext.scoped(task.id, mapOf("taskKind" to task.kind.name))
+            taskContexts[task.id] = context
             try {
                 require(task.dependencies.all(completedTaskIds::contains)) {
                     "Task dependency not completed: " + task.id
