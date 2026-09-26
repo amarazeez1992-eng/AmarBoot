@@ -2,11 +2,37 @@ package com.personal.gridbot.amaros.agent
 
 /** Deterministic planning contract: typed task planning produces intent, never broker commands. */
 class AmarAgentPlanner(
-    private val understanding: AmarIntentUnderstanding = AmarIntentUnderstanding()
+    private val understanding: AmarIntentUnderstanding = AmarIntentUnderstanding(),
+    private val queryPolicy: AmarQueryPolicy = AmarQueryPolicy()
 ) {
     fun plan(request: AmarAgentRequest, availableTools: List<AmarAgentTool>): AmarAgentPlan {
         val analysis = understanding.understand(request.text)
         val intent = analysis.intent
+        val policy = queryPolicy.classify(
+            AmarAgentPlan(
+                intent = intent,
+                pipeline = AmarPipeline.LOCAL,
+                tasks = emptyList(),
+                steps = emptyList(),
+                requiredTools = emptyList(),
+                stopConditions = emptyList()
+            ),
+            request
+        )
+        val pipeline = when (intent) {
+            AgentIntent.RESEARCH,
+            AgentIntent.TRADE_ANALYSIS -> AmarPipeline.EVIDENCE_BACKED
+            AgentIntent.GENERAL,
+            AgentIntent.SMALL_TALK,
+            AgentIntent.SYSTEM_IDENTITY,
+            AgentIntent.SYSTEM_TIME -> AmarPipeline.LOCAL
+            AgentIntent.STRATEGY_DESIGN,
+            AgentIntent.SYSTEM_DATE -> if (policy.requiresResearch) {
+                AmarPipeline.EVIDENCE_BACKED
+            } else {
+                AmarPipeline.LOCAL
+            }
+        }
         val tools = availableTools
             .filter { tool ->
                 when (intent) {
@@ -34,6 +60,7 @@ class AmarAgentPlanner(
         val tasks = buildTypedTasks(intent, analysis, request)
         return AmarAgentPlan(
             intent = intent,
+            pipeline = pipeline,
             tasks = tasks,
             steps = listOf(
                 "normalize_request",
@@ -143,8 +170,14 @@ class AmarAgentPlanner(
     }
 }
 
+enum class AmarPipeline {
+    LOCAL,
+    EVIDENCE_BACKED
+}
+
 data class AmarAgentPlan(
     val intent: AgentIntent,
+    val pipeline: AmarPipeline,
     val tasks: List<AmarTaskUnit>,
     val steps: List<String>,
     val requiredTools: List<String>,

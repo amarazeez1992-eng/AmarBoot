@@ -4,7 +4,7 @@ import com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntake
 import com.personal.gridbot.amaros.agent.admission.AmarFindingToCandidateConverter
 import com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayer
 
-/** Central pipeline for high-confidence answers without execution authority. */
+/** Single task execution pipeline for high-confidence answers without execution authority. */
 class AmarAgentOrchestrator(
     private val planner: AmarAgentPlanner,
     private val researchEngine: AmarResearchEngine,
@@ -27,244 +27,299 @@ class AmarAgentOrchestrator(
     private val evidenceIntake: AmarEvidenceIntake = AmarEvidenceIntake(),
     private val findingToCandidateConverter: AmarFindingToCandidateConverter = AmarFindingToCandidateConverter(),
     private val verificationLayer: AmarVerificationLayer = AmarVerificationLayer(),
-    private val engineSelector: EngineSelector = EngineSelector(),
+    private val engineRegistry: EngineRegistry? = null,
     private val failureRouter: FailureRouter = FailureRouter(),
     private val resultAggregator: ResultAggregator = ResultAggregator()
 ) {
-    suspend fun run(request: AmarAgentRequest, availableTools: List<AmarAgentTool>, budget: AmarAgentBudget = AmarAgentBudget(), progress: ((AmarAgentProgress) -> Unit)? = null): AmarAgentRunResult {
+    private val registry: EngineRegistry = engineRegistry ?: defaultStage11EngineRegistry()
+    private val engineSelector = EngineSelector(registry)
+
+    suspend fun run(
+        request: AmarAgentRequest,
+        availableTools: List<AmarAgentTool>,
+        budget: AmarAgentBudget = AmarAgentBudget(),
+        progress: ((AmarAgentProgress) -> Unit)? = null
+    ): AmarAgentRunResult {
         val safeBudget = budget.normalized()
         val safeMaximumSources = request.maximumSourceCount.coerceIn(1, safeBudget.maxSources.coerceAtLeast(1))
         val safeRequestedSources = request.requestedSourceCount.coerceIn(1, safeMaximumSources)
-        val safeTools = availableTools.filter { it.scope != AmarToolScope.EXECUTION_FUTURE }.distinctBy { it.id }
+        val safeTools = availableTools
+            .filter { it.scope != AmarToolScope.EXECUTION_FUTURE }
+            .distinctBy { it.id }
+
         val session = AmarAgentSession(budget = safeBudget)
         val startedAt = System.currentTimeMillis()
         fun emit(state: AgentTaskState, message: String, searched: Int = 0, accepted: Int = 0) {
             session.state(state, message)
-            progress?.invoke(AmarAgentProgress(state, message, searched, accepted, System.currentTimeMillis() - startedAt))
+            progress?.invoke(
+                AmarAgentProgress(
+                    state,
+                    message,
+                    searched,
+                    accepted,
+                    System.currentTimeMillis() - startedAt
+                )
+            )
         }
+
         emit(AgentTaskState.UNDERSTANDING, "فهم الطلب")
         session.record(AmarAgentStage.INTAKE, request.text)
         val mandates = hierarchy.defaultMandates()
-        session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
+        session.record(AmarAgentStage.PLAN, "roles=" + mandates.joinToString(",") { it.role.name })
+
         val plan = planner.plan(request, safeTools)
         val taskGraph = OrchestrationDependencyGraph(plan.tasks)
         val orderedTasks = taskGraph.topologicalOrder()
         session.transitionOrchestration(OrchestrationState.PLANNED)
         emit(AgentTaskState.PLANNING, "تخطيط مسار التحقق")
-        val orchestrationResults = mutableListOf<OrchestrationTaskResult>()
-        val rootContext = ContextEnvelope(session.sessionId, "root", mapOf("intent" to plan.intent.name), listOf("planner"))
-        val taskContexts = mutableMapOf<String, ContextEnvelope>()
-        var completedTaskIds = emptySet<String>()
-        for (task in orderedTasks) {
-            val parentContext = task.dependencies.firstOrNull()?.let { taskContexts[it] } ?: rootContext
-            val context = parentContext.scoped(task.id, mapOf("taskKind" to task.kind.name))
-            taskContexts[task.id] = context
-            try {
-                require(task.dependencies.all(completedTaskIds::contains)) {
-                    "Task dependency not completed: " + task.id
-                }
-                val selection = engineSelector.select(task)
-                session.record(AmarAgentStage.TASK_STATE, "TASK_EXECUTE=" + task.id + ";engine=" + selection.engineId + ";context=" + context.taskId)
-                orchestrationResults += OrchestrationTaskResult(
-                    taskId = task.id,
-                    status = TaskResultStatus.SUCCESS,
-                    value = selection.engineId,
-                    provenance = listOf(selection.engineId) + context.provenance
-                )
-                completedTaskIds += task.id
-            } catch (failure: Throwable) {
-                val decision = failureRouter.route(failure, retryAvailable = false, fallbackAvailable = false)
-                orchestrationResults += OrchestrationTaskResult(
-                    taskId = task.id,
-                    status = if (decision.route == FailureRoute.BLOCK || decision.route == FailureRoute.TERMINATE) TaskResultStatus.BLOCKED else TaskResultStatus.PARTIAL,
-                    value = decision.route.name,
-                    provenance = context.provenance,
-                    conflicts = listOf(decision.reason)
-                )
-                session.transitionOrchestration(
-                    if (decision.route == FailureRoute.BLOCK || decision.route == FailureRoute.TERMINATE) OrchestrationState.BLOCKED else OrchestrationState.RECOVERING,
-                    taskId = task.id,
-                    reason = decision.reason
-                )
-                error("Orchestration task failed: " + task.id + "; route=" + decision.route + "; reason=" + decision.reason)
-            }
-        }
-        val orchestrationResult = resultAggregator.aggregate(orchestrationResults)
-        require(orchestrationResult.results.size == orderedTasks.size) {
-            "Orchestration result count mismatch"
-        }
-        val plannedTools = safeTools.filter { it.id in plan.requiredTools }
         session.transitionOrchestration(OrchestrationState.RUNNING)
-        session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
-        val queryPolicyDecision = queryPolicy.classify(plan, request)
-        session.record(AmarAgentStage.PLAN, "QUERY_POLICY: mode=${queryPolicyDecision.mode}, research=${queryPolicyDecision.requiresResearch}, strictEvidence=${queryPolicyDecision.requiresStrictEvidence}")
-        val needsResearch = queryPolicyDecision.requiresResearch
-        val strictEvidence = queryPolicyDecision.requiresStrictEvidence
-        val report = if (needsResearch) {
-            emit(AgentTaskState.RESEARCHING, "البحث في المصادر")
-            session.record(AmarAgentStage.RETRIEVE, "RESEARCHER: multi-source research")
-            researchEngine.research(ResearchRequest(request.text, safeRequestedSources, request.requireCrossValidation, minOf(safeBudget.targetIndependentSources, safeRequestedSources)))
-        } else null
+        val plannedTools = safeTools.filter { it.id in plan.requiredTools }
+        val runtime = TaskExecutionRuntime(
+            request = request,
+            budget = safeBudget,
+            plan = plan,
+            safeRequestedSources = safeRequestedSources,
+            safeMaximumSources = safeMaximumSources,
+            safeTools = safeTools,
+            plannedTools = plannedTools,
+            understanding = AmarIntentUnderstanding(),
+            queryPolicy = queryPolicy,
+            researchEngine = researchEngine,
+            sourceVerifier = sourceVerifier,
+            consensusEngine = consensusEngine,
+            critic = critic,
+            verifier = verifier,
+            reasoningProvider = reasoningProvider,
+            stageTwoEngine = stageTwoEngine,
+            stageThreeEngine = stageThreeEngine,
+            evidenceQualityEngine = evidenceQualityEngine,
+            claimVerificationEngine = claimVerificationEngine,
+            confidenceCalibrationEngine = confidenceCalibrationEngine,
+            canonicalEvidenceQuality = canonicalEvidenceQuality,
+            evidenceIntake = evidenceIntake,
+            findingToCandidateConverter = findingToCandidateConverter,
+            verificationLayer = verificationLayer,
+            hierarchy = hierarchy,
+            decisionCouncil = decisionCouncil,
+            directionEngine = directionEngine,
+            roleOpinionEngine = roleOpinionEngine
+        )
 
-        val stageThree = if (needsResearch) {
-            session.record(AmarAgentStage.RETRIEVE, "STAGE_3: memory + unified evidence + freshness")
-            stageThreeEngine.synchronize(request.text, report?.findings.orEmpty())
-        } else null
-        val unifiedFindings = stageThree?.unifiedEvidence ?: report?.findings.orEmpty()
+        // executionAllowed = false
+        // brokerAccessAllowed = false
+        var executionContext = ContextEnvelope(
+            sessionId = session.sessionId,
+            taskId = "root",
+            values = mapOf("intent" to plan.intent.name),
+            provenance = listOf("planner"),
+            artifacts = mapOf("runtime" to runtime)
+        )
+        val orchestrationResults = mutableListOf<OrchestrationTaskResult>()
+        var blocked = false
 
-        val intakeResult = if (needsResearch) {
-            val candidates = unifiedFindings.map { findingToCandidateConverter.toCandidate(it) }
-            evidenceIntake.intake(request.text, candidates)
-        } else null
-
-        val verification = report?.let {
-            emit(AgentTaskState.VERIFYING, "التحقق من جودة المصادر", unifiedFindings.size, 0)
-            session.record(AmarAgentStage.VERIFY, "RESEARCHER: source quality and independence")
-            sourceVerifier.verify(unifiedFindings)
-        }
-        val verificationReport = report?.let {
-            verificationLayer.verifyEvidenceOnly(unifiedFindings)
-        }
-        val consensus = report?.let { consensusEngine.summarize(unifiedFindings) }
-        val canonicalEvidenceCertification = verification?.let { verificationResult ->
-            intakeResult?.let { actualIntakeResult ->
-                canonicalEvidenceQuality.certify(
-                    findings = unifiedFindings,
-                    nowEpochMs = System.currentTimeMillis(),
-                    verification = verificationReport!!,
-                    intakeResult = actualIntakeResult
-                )
+        for (task in orderedTasks) {
+            val completed = session.orchestrationState().completedTasks
+            require(task.dependencies.all(completed::contains)) {
+                "Task dependency not completed: " + task.id
             }
-        }
-        if (canonicalEvidenceCertification != null) {
-            session.record(AmarAgentStage.VERIFY, "POINT10_EVIDENCE_QUALITY: certification=${canonicalEvidenceCertification.certificationScore}")
-        }
-        val evidenceText = buildString {
-            appendLine("Evidence summary:")
-            if (report == null) appendLine("No external research required.") else {
-                appendLine("newSources=${stageThree?.newEvidenceCount ?: report.findings.size}")
-                appendLine("unifiedEvidence=${unifiedFindings.size}")
-                appendLine("retrievedMemory=${stageThree?.retrievedMemoryCount ?: 0}")
-                appendLine("memorySize=${stageThree?.memorySize ?: 0}")
-                appendLine("independentSources=${stageThree?.independentSourceCount ?: 0}")
-                appendLine("verificationAccepted=${verification?.accepted ?: false}")
-                val confidencePercent = kotlin.math.round(((verification?.confidence ?: 0.0).coerceIn(0.0, 1.0)) * 100.0).toInt()
-                appendLine("مستوى الثقة: $confidencePercent%")
-                appendLine("consensus=${consensus?.consensusScore ?: 0.0}")
-                appendLine("supporting=${consensus?.supportingSources ?: 0}")
-                appendLine("opposing=${consensus?.opposingSources ?: 0}")
-                appendLine("unknown=${consensus?.unknownSources ?: 0}")
-                report.conflicts.take(20).forEach { appendLine("conflict=$it") }
-                unifiedFindings.take(20).forEachIndexed { index, finding ->
-                    appendLine("source=$index|title=${finding.sourceTitle}|authority=${finding.authority}|stance=${finding.stance}|publisher=${finding.publisher}|uri=${finding.sourceUri}")
-                    appendLine("evidence=${finding.evidence.take(1200)}")
+
+            val context = executionContext.scoped(
+                task.id,
+                mapOf("taskKind" to task.kind.name)
+            )
+            val selection = engineSelector.select(task)
+            val taskState = when (task.kind) {
+                AmarTaskKind.NORMALIZE, AmarTaskKind.UNDERSTAND, AmarTaskKind.CONTEXT, AmarTaskKind.CONSTRAINT -> AgentTaskState.UNDERSTANDING
+                AmarTaskKind.EVIDENCE -> AgentTaskState.RESEARCHING
+                AmarTaskKind.REASON -> AgentTaskState.REASONING
+                AmarTaskKind.CHALLENGE -> AgentTaskState.REASONING
+                AmarTaskKind.VALIDATE -> AgentTaskState.VERIFYING
+                AmarTaskKind.RESPONSE, AmarTaskKind.AUDIT -> AgentTaskState.RESPONDING
+            }
+            emit(taskState, "تنفيذ task=" + task.id)
+            session.record(
+                AmarAgentStage.TASK_STATE,
+                "TASK_EXECUTE=" + task.id + ";executor=" + selection.executor::class.simpleName + ";context=" + context.taskId
+            )
+
+            var executor: TaskExecutor = selection.executor
+            var attempt = 0
+            var completedByExecutor = false
+            while (!completedByExecutor) {
+                attempt += 1
+                try {
+                    val result = executor.execute(task, context)
+                    if (!result.failed) {
+                        orchestrationResults += OrchestrationTaskResult(
+                            taskId = task.id,
+                            status = result.status,
+                            value = result.value,
+                            provenance = result.provenance,
+                            conflicts = result.conflicts
+                        )
+                        executionContext = executionContext
+                            .withArtifact(task.kind.name.lowercase(), result.value)
+                            .withArtifact(task.id, result.value)
+                        session.markTaskCompleted(task.id)
+                        completedByExecutor = true
+                        continue
+                    }
+
+                    val retryAvailable = attempt < MAX_RETRIES
+                    val fallbackAvailable = registry.hasFallback(task.kind)
+                    val decision = failureRouter.route(
+                        IllegalStateException("Executor returned " + result.status + " for " + task.id),
+                        retryAvailable = retryAvailable,
+                        fallbackAvailable = fallbackAvailable
+                    )
+                    when (decision.route) {
+                        FailureRoute.RETRY -> {
+                            session.transitionOrchestration(
+                                OrchestrationState.RECOVERING,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            session.transitionOrchestration(OrchestrationState.RUNNING)
+                            session.record(AmarAgentStage.TASK_STATE, "TASK_RETRY=" + task.id + ";attempt=" + attempt)
+                        }
+                        FailureRoute.FALLBACK -> {
+                            executor = registry.getFallback(task.kind)
+                                ?: error("Fallback route selected without a registered fallback")
+                            session.transitionOrchestration(
+                                OrchestrationState.RECOVERING,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            session.transitionOrchestration(OrchestrationState.RUNNING)
+                            session.record(AmarAgentStage.TASK_STATE, "TASK_FALLBACK=" + task.id)
+                        }
+                        FailureRoute.BLOCK, FailureRoute.TERMINATE -> {
+                            orchestrationResults += OrchestrationTaskResult(
+                                taskId = task.id,
+                                status = TaskResultStatus.BLOCKED,
+                                value = result.value,
+                                provenance = context.provenance,
+                                conflicts = result.conflicts + decision.reason
+                            )
+                            if (result.value != null) {
+                                executionContext = executionContext
+                                    .withArtifact(task.kind.name.lowercase(), result.value)
+                                    .withArtifact(task.id, result.value)
+                            }
+                            session.transitionOrchestration(
+                                OrchestrationState.BLOCKED,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            blocked = true
+                            completedByExecutor = true
+                        }
+                    }
+                } catch (failure: Throwable) {
+                    val retryAvailable = attempt < MAX_RETRIES
+                    val fallbackAvailable = registry.hasFallback(task.kind)
+                    val decision = failureRouter.route(
+                        failure,
+                        retryAvailable = retryAvailable,
+                        fallbackAvailable = fallbackAvailable
+                    )
+                    when (decision.route) {
+                        FailureRoute.RETRY -> {
+                            session.transitionOrchestration(
+                                OrchestrationState.RECOVERING,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            session.transitionOrchestration(OrchestrationState.RUNNING)
+                            session.record(AmarAgentStage.TASK_STATE, "TASK_RETRY=" + task.id + ";attempt=" + attempt)
+                        }
+                        FailureRoute.FALLBACK -> {
+                            executor = registry.getFallback(task.kind)
+                                ?: error("Fallback route selected without a registered fallback")
+                            session.transitionOrchestration(
+                                OrchestrationState.RECOVERING,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            session.transitionOrchestration(OrchestrationState.RUNNING)
+                            session.record(AmarAgentStage.TASK_STATE, "TASK_FALLBACK=" + task.id)
+                        }
+                        FailureRoute.BLOCK, FailureRoute.TERMINATE -> {
+                            orchestrationResults += OrchestrationTaskResult(
+                                taskId = task.id,
+                                status = TaskResultStatus.BLOCKED,
+                                value = null,
+                                provenance = context.provenance,
+                                conflicts = listOf(
+                                    failure.message ?: failure::class.simpleName.orEmpty(),
+                                    decision.reason
+                                )
+                            )
+                            session.transitionOrchestration(
+                                OrchestrationState.BLOCKED,
+                                taskId = task.id,
+                                reason = decision.reason
+                            )
+                            blocked = true
+                            completedByExecutor = true
+                        }
+                    }
                 }
             }
+
+            if (blocked) break
         }
 
-        val decisionRelevant = plan.intent == AgentIntent.TRADE_ANALYSIS
-        val stageTwo = if (decisionRelevant) {
-            session.record(AmarAgentStage.REASON, "STAGE_2: ANALYST -> ADVISOR -> RISK_GUARD -> DECISION_CONFIRMATION")
-            stageTwoEngine.deliberate(request.text, unifiedFindings)
-        } else null
-
-        emit(AgentTaskState.REASONING, "تحليل الأدلة ومقارنتها", unifiedFindings.size, verification?.accepted?.let { if (it) unifiedFindings.size else 0 } ?: 0)
-        session.record(AmarAgentStage.REASON, "DIRECTOR: final synthesis with evidence and multi-role deliberation")
-        val answer = reasoningProvider.respond(AmarAgentContext(
-            userText = request.text + "\n\n" + evidenceText + buildStageTwoText(stageTwo),
-            tools = plannedTools,
-            executionAllowed = false,
-            brokerAccessAllowed = false,
-            requestedSourceCount = safeRequestedSources,
-            maximumSourceCount = safeMaximumSources,
-            requireCrossValidation = request.requireCrossValidation,
-            requireBacktestWhenApplicable = request.requireBacktestWhenApplicable
-        ))
-
-        session.record(AmarAgentStage.CHALLENGE, "ADVISOR/RISK_GUARD: adversarial critique")
-        val critique = critic.review(answer.answer, unifiedFindings, requireEvidence = strictEvidence)
-        val hardening = buildHardeningReport(answer.answer, unifiedFindings, verification, consensus, stageTwo)
-        val answerDirection = directionEngine.detect(answer.answer)
-        val stageDirection = stageTwo?.chosenDirection ?: AmarDecisionDirection.UNKNOWN
-        val directionMismatch = decisionRelevant && stageDirection != AmarDecisionDirection.UNKNOWN && answerDirection != AmarDecisionDirection.UNKNOWN && stageDirection != answerDirection
-
-        val councilReview = if (!decisionRelevant) {
-            AmarDecisionReview(emptyList(), 1.0, emptyList(), true, "hierarchy review not required for this response")
-        } else if (answerDirection != AmarDecisionDirection.UNKNOWN && !directionMismatch) {
-            val confidence = minOf(verification?.confidence ?: 0.0, consensus?.consensusScore ?: 0.0, stageTwo?.confidence ?: 0.0)
-            val opinions = roleOpinionEngine.buildOpinions(answer, answerDirection, confidence, unifiedFindings)
-            decisionCouncil.review(opinions)
-        } else {
-            AmarDecisionReview(emptyList(), 0.0, if (directionMismatch) listOf("final_answer_direction_mismatch") else emptyList(), false, if (directionMismatch) "final answer conflicts with Stage 2 consensus" else "explicit_direction_required")
-        }
-
-        session.record(AmarAgentStage.VALIDATE, "DECISION_CONFIRMATION: direction=${answerDirection.name}, stage2=${stageTwo?.approvedForSimulation ?: true}, calibrated=${hardening.calibratedConfidence}, consensus=${councilReview.consensusScore}, conflicts=${councilReview.conflicts.size}")
-        // General factual research may use a single authoritative source (such as Wikipedia) without
-        // inheriting the multi-source consensus threshold reserved for strict evidence/trading.
-        // Financial/trading paths still pass the full consensus and source-verification gates.
-        val finalConsensus = if (strictEvidence) consensus else null
-        val decisionVerification = verifier.verify(answer.answer, finalConsensus, critique, if (strictEvidence) verification else null)
-        val stageTwoApproved = !decisionRelevant || (stageTwo?.approvedForSimulation == true)
-        val canonicalEvidenceApproved = !strictEvidence || canonicalEvidenceCertification?.certificationScore == 1.0
-        val hardeningApproved = !needsResearch || !strictEvidence || (hardening.approved && canonicalEvidenceApproved)
-        val hierarchyApproved = stageTwoApproved && hardeningApproved && !directionMismatch && councilReview.approved && councilReview.conflicts.isEmpty()
-        val finalApproved = decisionVerification.approved && hierarchyApproved
-        session.record(if (finalApproved) AmarAgentStage.COMPLETE else AmarAgentStage.BLOCKED, if (finalApproved) "AUDITOR: final decision accepted" else "RISK_GUARD: final decision blocked")
-
-        val finalIssues = mutableListOf<String>()
-        finalIssues += decisionVerification.issues
-        finalIssues += hardening.issues
-        finalIssues += councilReview.conflicts
-        if (directionMismatch) finalIssues += "final_answer_direction_mismatch"
-        if (!stageTwoApproved) finalIssues += "stage_two_deliberation_not_approved"
-        if (strictEvidence && !canonicalEvidenceApproved) finalIssues += "point10_evidence_quality_not_verified"
-        if (!councilReview.approved && councilReview.conflicts.isEmpty()) finalIssues += councilReview.reason
-        emit(AgentTaskState.RESPONDING, "إعداد النتيجة الرسمية", unifiedFindings.size, if (finalApproved) unifiedFindings.size else 0)
-        val finalResponse = if (finalApproved) {
-            answer
-        } else {
-            val reasonCode = when {
-                unifiedFindings.isEmpty() -> "no_evidence"
-                verification != null && !verification.accepted -> "source_verification_failed"
-                else -> "final_validation_failed"
-            }
-            answer.copy(
-                status = AmarAgentResponse.Status.ERROR,
-                answer = "لم يتم اعتماد الإجابة بعد. لم أجد مصادر كافية ومرتبطة بسؤالك تسمح لي بتقديم إجابة موثوقة. [$reasonCode]"
+        val orchestrationResult = resultAggregator.aggregate(orchestrationResults)
+        val allTasksCompleted = session.orchestrationState().completedTasks.containsAll(orderedTasks.map { it.id })
+        if (!blocked && allTasksCompleted && orchestrationResult.status == TaskResultStatus.SUCCESS) {
+            session.transitionOrchestration(OrchestrationState.COMPLETED)
+        } else if (!blocked) {
+            session.transitionOrchestration(
+                OrchestrationState.BLOCKED,
+                reason = "task_execution_not_completed"
             )
         }
 
-        session.transitionOrchestration(if (finalApproved) OrchestrationState.COMPLETED else OrchestrationState.BLOCKED, reason = if (finalApproved) null else "final_validation_failed")
-        return AmarAgentRunResult(response = finalResponse, plan = plan, orchestrationState = session.orchestrationState(), orchestrationResult = orchestrationResult, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
+        val audit = executionContext.artifact("audit") as? AuditTaskArtifact
+        val evidence = audit?.evidence ?: (executionContext.artifact("evidence") as? EvidenceTaskArtifact)
+        val response = audit?.response ?: AmarAgentResponse(
+            answer = "لم يتم اعتماد الإجابة بعد. لم تكتمل سلسلة التنفيذ والتحقق.",
+            status = AmarAgentResponse.Status.ERROR
+        )
+        val critique = audit?.critique ?: AmarCritique(
+            accepted = false,
+            issues = listOf("audit_not_reached"),
+            recommendation = "BLOCK",
+            score = 0.0
+        )
+        val finalVerification = audit?.finalVerification ?: AmarDecisionVerification(
+            approved = false,
+            issues = listOf("audit_not_reached"),
+            evidenceConfidence = 0.0
+        )
+
+        return AmarAgentRunResult(
+            response = response,
+            plan = plan,
+            orchestrationState = session.orchestrationState(),
+            orchestrationResult = orchestrationResult,
+            research = evidence?.report,
+            sourceVerification = evidence?.sourceVerification,
+            consensus = evidence?.consensus,
+            critique = critique,
+            finalVerification = finalVerification,
+            stageTwo = audit?.stageTwo,
+            stageThree = audit?.stageThree,
+            hardening = audit?.hardening,
+            canonicalEvidenceCertification = audit?.canonicalEvidenceCertification,
+            sessionEvents = session.events()
+        )
     }
 
-    private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
-        val quality = evidenceQualityEngine.assess(findings)
-        val claims = claimVerificationEngine.verify(answer, findings)
-        val raw = listOfNotNull(verification?.confidence, consensus?.consensusScore, stageTwo?.confidence).minOrNull() ?: 0.0
-        val calibrated = confidenceCalibrationEngine.calibrate(raw, quality.score, claims, (stageTwo?.deliberation?.conflicts?.size ?: 0) + quality.duplicateEvidenceCount)
-        val issues = mutableListOf<String>()
-        if (findings.isNotEmpty() && quality.independentSourceCount < 2) issues += "insufficient_independent_sources"
-        if (quality.duplicateEvidenceCount > 0) issues += "duplicate_evidence_detected"
-        if (findings.isNotEmpty() && !claims.accepted) issues += "claim_verification_failed"
-        if (findings.isNotEmpty() && calibrated < .80) issues += "confidence_below_threshold"
-        return AmarStageTwoHardeningReport(quality, claims, calibrated, issues.isEmpty(), issues.distinct())
-    }
-
-    private fun buildStageTwoText(result: AmarStageTwoResult?): String = buildString {
-        if (result == null) return@buildString
-        appendLine()
-        appendLine("Stage 2 deliberation:")
-        appendLine("chosenDirection=${result.chosenDirection}")
-        val stageTwoConfidencePercent = kotlin.math.round(result.confidence.coerceIn(0.0, 1.0) * 100.0).toInt()
-        appendLine("مستوى ثقة التحليل: $stageTwoConfidencePercent%")
-        appendLine("approvedForSimulation=${result.approvedForSimulation}")
-        appendLine("consensusDirection=${result.deliberation.consensusDirection}")
-        appendLine("conflicts=${result.deliberation.conflicts.joinToString(" | ")}")
-        result.deliberation.reports.forEach { appendLine("role=${it.roleId};direction=${it.direction};confidence=${it.confidence};conclusion=${it.conclusion}") }
-        appendLine("executionAllowed=false")
-        appendLine("brokerAccessAllowed=false")
+    private companion object {
+        const val MAX_RETRIES = 2
     }
 }
 

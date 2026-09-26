@@ -24,6 +24,11 @@ class AmarAgentSession(
         record(AmarAgentStage.TASK_STATE, "ORCHESTRATION_STATE=" + next.name + (reason?.let { ":$it" } ?: ""))
     }
 
+    fun markTaskCompleted(taskId: String) {
+        orchestrationSnapshot = stateReducer.markCompleted(orchestrationSnapshot, taskId)
+        record(AmarAgentStage.TASK_STATE, "TASK_COMPLETED=" + taskId)
+    }
+
     fun orchestrationState(): OrchestrationStateSnapshot = orchestrationSnapshot
     fun events(): List<AmarAgentEvent> = events.toList()
 }
