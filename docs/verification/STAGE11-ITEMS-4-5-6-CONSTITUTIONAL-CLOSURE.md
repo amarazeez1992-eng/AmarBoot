@@ -80,15 +80,15 @@ Current Main CI evidence:
 
 ## Production file
 
-| File | Blob SHA | Size |
-|---|---|---:|
-| `AmarVerificationLayer.kt` | `4f56de19bcf159de4f54106973f0144719338a57` | 6,978 B |
+| File | Blob SHA | Size | Lines |
+|---|---|---:|---:|
+| `AmarVerificationLayer.kt` | `4f56de19bcf159de4f54106973f0144719338a57` | 6,976 B | 132 |
 
 ## Test file
 
 | File | Blob SHA | Size | Lines |
 |---|---|---:|---:|
-| `AmarVerificationLayerTest.kt` | `c249f95accde98d54d755b90dfee7986e6531d1b` | 4,196 B |  — |
+| `AmarVerificationLayerTest.kt` | `c249f95accde98d54d755b90dfee7986e6531d1b` | 4,196 B | 81 |
 
 **Production last-change commit:** `3b8b3a0080a6a4ba07257e74519dd15944142e4c`  
 **Test last-change commit:** `0153298dfc057f702be3fd6b2e109510facd2ad8`  
@@ -213,7 +213,7 @@ gradle :app:assembleRelease --stacktrace
 
 ---
 
-# 8. Five-Addition Hallucination Firewall Closure Evidence
+# 8. Eight-Addition Hallucination Firewall Closure Evidence
 
 Item 4's eight additions remain:
 
