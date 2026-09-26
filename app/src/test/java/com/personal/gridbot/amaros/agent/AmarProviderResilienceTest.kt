@@ -1,5 +1,6 @@
 package com.personal.gridbot.amaros.agent
 
+import com.personal.gridbot.amaros.ai.AmarAiAgentEngine
 import com.personal.gridbot.amaros.core.AmarRuntimeConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -36,7 +37,8 @@ class AmarProviderResilienceTest {
 
     @Test fun healthStateTransitions() {
         var now = 0L
-        val monitor = AmarProviderHealthMonitor(2, 1000L) { now }
+        val runtimeConfig = AmarRuntimeConfig(circuitFailureThreshold = 2, circuitOpenMs = 1000L)
+        val monitor = AmarProviderHealthMonitor(runtimeConfig) { now }
         assertEquals(AmarProviderHealthState.UNKNOWN, monitor.state("p"))
         monitor.recordSuccess("p")
         assertEquals(AmarProviderHealthState.HEALTHY, monitor.state("p"))
@@ -49,17 +51,124 @@ class AmarProviderResilienceTest {
     }
 
     @Test fun timeoutIsFailedAndFallsBack() = runBlocking {
-        val health = AmarProviderHealthMonitor()
+        val runtimeConfig = AmarRuntimeConfig(
+            operationTimeoutMs = 5L,
+            maxRetries = 0,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0
+        )
+        val health = AmarProviderHealthMonitor(runtimeConfig)
         val audit = AmarProviderRecoveryAudit { 7L }
         val policy = AmarProviderFallbackPolicy(
-            health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), audit,
-            AmarRuntimeConfig(operationTimeoutMs = 5L, maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            runtimeConfig, health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), audit
         )
         val slow = profile(TestProvider("slow") { delay(50); AmarGenerationResult("slow") })
         val good = profile(TestProvider("good") { AmarGenerationResult("ok") })
         val result = policy.generate("op-timeout", listOf(slow, good), request())
         assertEquals("good", result.providerId)
         assertEquals(AmarProviderFailureClass.TIMEOUT, health.snapshot("slow").lastFailure)
+    }
+
+
+    @Test fun timeoutIsRetriedWithinBound() = runBlocking {
+        var calls = 0
+        val runtimeConfig = AmarRuntimeConfig(
+            operationTimeoutMs = 5L,
+            maxRetries = 1,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0
+        )
+        val provider = profile(TestProvider("timeout-retry") {
+            calls++
+            if (calls == 1) {
+                delay(50)
+                AmarGenerationResult("late")
+            } else {
+                AmarGenerationResult("recovered")
+            }
+        })
+        val audit = AmarProviderRecoveryAudit { 8L }
+        val policy = AmarProviderFallbackPolicy(
+            runtimeConfig,
+            AmarProviderHealthMonitor(runtimeConfig),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit
+        )
+        val result = policy.generate("op-timeout-retry", listOf(provider), request())
+        assertEquals("timeout-retry", result.providerId)
+        assertEquals("recovered", result.result?.text)
+        assertEquals(2, calls)
+        assertTrue(audit.records().any {
+            it.providerId == "timeout-retry" &&
+                it.event == "PROVIDER_FAILED" &&
+                it.failureClass == AmarProviderFailureClass.TIMEOUT
+        })
+    }
+
+    @Test fun permanentFailureIsNotRetriedAndFallsBack() = runBlocking {
+        var calls = 0
+        val runtimeConfig = AmarRuntimeConfig(
+            maxRetries = 2,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0
+        )
+        val permanent = profile(TestProvider("permanent") {
+            calls++
+            throw IllegalArgumentException("invalid request")
+        })
+        val good = profile(TestProvider("good-permanent") { AmarGenerationResult("ok") })
+        val audit = AmarProviderRecoveryAudit()
+        val policy = AmarProviderFallbackPolicy(
+            runtimeConfig,
+            AmarProviderHealthMonitor(runtimeConfig),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit
+        )
+        val result = policy.generate("op-permanent", listOf(permanent, good), request())
+        assertEquals("good-permanent", result.providerId)
+        assertEquals(1, calls)
+        assertTrue(audit.records().any {
+            it.providerId == "permanent" &&
+                it.failureClass == AmarProviderFailureClass.PERMANENT
+        })
+    }
+
+    @Test fun retryReclassifiesEveryAttemptBeforeContinuing() = runBlocking {
+        var calls = 0
+        val runtimeConfig = AmarRuntimeConfig(
+            maxRetries = 2,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0
+        )
+        val mixed = profile(TestProvider("mixed") {
+            calls++
+            if (calls == 1) throw IOException("temporary")
+            throw IllegalArgumentException("permanent")
+        })
+        val good = profile(TestProvider("good-mixed") { AmarGenerationResult("fallback") })
+        val audit = AmarProviderRecoveryAudit()
+        val policy = AmarProviderFallbackPolicy(
+            runtimeConfig,
+            AmarProviderHealthMonitor(runtimeConfig),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit
+        )
+        val result = policy.generate("op-reclassify", listOf(mixed, good), request())
+        assertEquals("good-mixed", result.providerId)
+        assertEquals(2, calls)
+        assertTrue(audit.records().any {
+            it.providerId == "mixed" && it.failureClass == AmarProviderFailureClass.TRANSIENT
+        })
+        assertTrue(audit.records().any {
+            it.providerId == "mixed" && it.failureClass == AmarProviderFailureClass.PERMANENT
+        })
     }
 
     @Test fun failureClassification() {
@@ -70,11 +179,11 @@ class AmarProviderResilienceTest {
     }
 
     @Test fun fallbackSelectionValidAndInvalid() = runBlocking {
-        val health = AmarProviderHealthMonitor()
+        val runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+        val health = AmarProviderHealthMonitor(runtimeConfig)
         val audit = AmarProviderRecoveryAudit()
         val policy = AmarProviderFallbackPolicy(
-            health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), audit,
-            AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            runtimeConfig, health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), audit
         )
         val invalid = profile(TestProvider("invalid") { error("boom") }, available = false)
         val good = profile(TestProvider("good") { AmarGenerationResult("ok") })
@@ -83,16 +192,59 @@ class AmarProviderResilienceTest {
         assertTrue(audit.records().any { it.providerId == "good" && it.success })
     }
 
+
+    @Test fun circuitOpenStopsFurtherRetriesAndMovesToFallback() = runBlocking {
+        var calls = 0
+        val runtimeConfig = AmarRuntimeConfig(
+            maxRetries = 3,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0,
+            circuitFailureThreshold = 1,
+            circuitOpenMs = 1000L
+        )
+        val health = AmarProviderHealthMonitor(runtimeConfig)
+        val failing = profile(TestProvider("circuit-fail") {
+            calls++
+            throw IOException("transient")
+        })
+        val good = profile(TestProvider("circuit-good") { AmarGenerationResult("recovered") })
+        val audit = AmarProviderRecoveryAudit()
+        val policy = AmarProviderFallbackPolicy(
+            runtimeConfig,
+            health,
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit
+        )
+        val result = policy.generate("op-circuit-fallback", listOf(failing, good), request())
+        assertEquals("circuit-good", result.providerId)
+        assertEquals(1, calls)
+        assertFalse(health.isAvailable("circuit-fail"))
+        assertTrue(audit.records().any {
+            it.providerId == "circuit-fail" &&
+                it.failureClass == AmarProviderFailureClass.TRANSIENT
+        })
+    }
+
     @Test fun retryPolicyIsBounded() = runBlocking {
         var attempts = 0
+        val runtimeConfig = AmarRuntimeConfig(
+            maxRetries = 2,
+            initialBackoffMs = 0,
+            maxBackoffMs = 0,
+            jitterRatio = 0.0
+        )
         val provider = TestProvider("retry") {
             attempts++
             throw IOException("transient")
         }
         val policy = AmarProviderFallbackPolicy(
-            AmarProviderHealthMonitor(), AmarProviderFailureClassifier(), AmarProviderResultIntegrity(),
-            AmarProviderRecoveryAudit(),
-            AmarRuntimeConfig(maxRetries = 2, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            runtimeConfig,
+            AmarProviderHealthMonitor(runtimeConfig),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            AmarProviderRecoveryAudit()
         )
         val result = policy.generate("op-retry", listOf(profile(provider)), request())
         assertEquals("FAIL_CLOSED", result.decisionState)
@@ -101,7 +253,8 @@ class AmarProviderResilienceTest {
 
     @Test fun circuitBreakerThresholdAndRecoveryAreReused() {
         var now = 0L
-        val monitor = AmarProviderHealthMonitor(2, 100L) { now }
+        val runtimeConfig = AmarRuntimeConfig(circuitFailureThreshold = 2, circuitOpenMs = 100L)
+        val monitor = AmarProviderHealthMonitor(runtimeConfig) { now }
         monitor.recordFailure("p", AmarProviderFailureClass.TRANSIENT)
         assertTrue(monitor.isAvailable("p"))
         monitor.recordFailure("p", AmarProviderFailureClass.TRANSIENT)
@@ -113,12 +266,13 @@ class AmarProviderResilienceTest {
     }
 
     @Test fun malformedResultIsRejectedWithoutFabrication() = runBlocking {
+        val runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
         val bad = profile(TestProvider("bad") { AmarGenerationResult("") })
         val good = profile(TestProvider("good") { AmarGenerationResult("valid") })
-        val health = AmarProviderHealthMonitor()
+        val health = AmarProviderHealthMonitor(runtimeConfig)
         val policy = AmarProviderFallbackPolicy(
-            health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), AmarProviderRecoveryAudit(),
-            AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            runtimeConfig, health, AmarProviderFailureClassifier(), AmarProviderResultIntegrity(),
+            AmarProviderRecoveryAudit()
         )
         val result = policy.generate("op-integrity", listOf(bad, good), request())
         assertEquals("good", result.providerId)
@@ -128,13 +282,14 @@ class AmarProviderResilienceTest {
     }
 
     @Test fun adaptiveProviderUsesResiliencePolicyAndRecordsFallbackDecisions() = runBlocking {
+        val runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
         val recoveryAudit = AmarProviderRecoveryAudit { 99L }
         val resilience = AmarProviderFallbackPolicy(
-            health = AmarProviderHealthMonitor(),
+            runtimeConfig = runtimeConfig,
+            health = AmarProviderHealthMonitor(runtimeConfig),
             classifier = AmarProviderFailureClassifier(),
             integrity = AmarProviderResultIntegrity(),
-            audit = recoveryAudit,
-            runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            audit = recoveryAudit
         )
         val first = profile(TestProvider("first") { throw IOException("transient") })
         val second = profile(TestProvider("second") { AmarGenerationResult("fallback") })
@@ -160,12 +315,53 @@ class AmarProviderResilienceTest {
             it.selectedProvider == "second" && it.decisionState == "SELECTED" && it.reason == "PROVIDER_GENERATION_SUCCESS"
         })
     }
+
+    @Test fun fullEngineUsesInjectedResilienceAuthority() = runBlocking {
+        val runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+        val recoveryAudit = AmarProviderRecoveryAudit { 100L }
+        val resilience = AmarProviderFallbackPolicy(
+            runtimeConfig = runtimeConfig,
+            health = AmarProviderHealthMonitor(runtimeConfig),
+            classifier = AmarProviderFailureClassifier(),
+            integrity = AmarProviderResultIntegrity(),
+            audit = recoveryAudit
+        )
+        val first = profile(TestProvider("first-engine") { throw IOException("transient") })
+        val second = profile(TestProvider("second-engine") { AmarGenerationResult("engine-fallback") })
+        val engine = AmarAiAgentEngine(
+            modelProviderCatalog = AmarModelProviderCatalog(listOf(first, second)),
+            runtimeConfig = runtimeConfig,
+            providerResilience = resilience
+        )
+        val reasoningField = AmarAiAgentEngine::class.java.getDeclaredField("reasoningProvider")
+        reasoningField.isAccessible = true
+        val router = reasoningField.get(engine) as AmarReasoningRouter
+        val response = router.respond(
+            AmarAgentContext("compare multiple factors in detail", emptyList(), false, false)
+        )
+        assertEquals("engine-fallback", response.answer)
+        assertTrue(recoveryAudit.records().any {
+            it.providerId == "first-engine" &&
+                it.event == "PROVIDER_FAILED" &&
+                it.failureClass == AmarProviderFailureClass.TRANSIENT
+        })
+        assertTrue(recoveryAudit.records().any {
+            it.providerId == "second-engine" &&
+                it.event == "RECOVERY_SUCCESS" &&
+                it.success
+        })
+    }
+
     @Test fun auditRecordIsComplete() = runBlocking {
+        val runtimeConfig = AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
         val provider = profile(TestProvider("audit") { throw IllegalStateException("unknown") })
         val audit = AmarProviderRecoveryAudit { 42L }
         val policy = AmarProviderFallbackPolicy(
-            AmarProviderHealthMonitor(), AmarProviderFailureClassifier(), AmarProviderResultIntegrity(), audit,
-            AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+            runtimeConfig,
+            AmarProviderHealthMonitor(runtimeConfig),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit
         )
         val result = policy.generate("op-audit", listOf(provider), request())
         assertEquals("FAIL_CLOSED", result.decisionState)

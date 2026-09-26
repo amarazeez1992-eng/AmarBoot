@@ -25,6 +25,7 @@ import com.personal.gridbot.amaros.agent.AmarProviderHealthMonitor
 import com.personal.gridbot.amaros.agent.AmarProviderFailureClassifier
 import com.personal.gridbot.amaros.agent.AmarProviderResultIntegrity
 import com.personal.gridbot.amaros.agent.AmarProviderRecoveryAudit
+import com.personal.gridbot.amaros.core.AmarRuntimeConfig
 import com.personal.gridbot.amaros.agent.ResearchReport
 import com.personal.gridbot.amaros.agent.ResearchRequest
 import com.personal.gridbot.amaros.agent.ResearchFinding
@@ -33,8 +34,10 @@ import com.personal.gridbot.amaros.agent.Authority
 class AmarAiAgentEngine(
     private val context: Context? = null,
     modelProviderCatalog: AmarModelProviderCatalog = AmarModelProviderCatalog(),
+    runtimeConfig: AmarRuntimeConfig = AmarRuntimeConfig(),
     providerResilience: AmarProviderFallbackPolicy = AmarProviderFallbackPolicy(
-        health = AmarProviderHealthMonitor(),
+        runtimeConfig = runtimeConfig,
+        health = AmarProviderHealthMonitor(runtimeConfig),
         classifier = AmarProviderFailureClassifier(),
         integrity = AmarProviderResultIntegrity(),
         audit = AmarProviderRecoveryAudit()

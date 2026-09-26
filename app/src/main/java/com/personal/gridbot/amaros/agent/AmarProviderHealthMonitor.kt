@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.agent
 
 import com.personal.gridbot.amaros.core.AmarCircuitBreaker
+import com.personal.gridbot.amaros.core.AmarRuntimeConfig
 
 enum class AmarProviderHealthState { UNKNOWN, HEALTHY, DEGRADED, FAILED }
 
@@ -14,13 +15,12 @@ data class AmarProviderHealthSnapshot(
 )
 
 class AmarProviderHealthMonitor(
-    private val failureThreshold: Int = 3,
-    private val openDurationMs: Long = 30_000L,
+    private val runtimeConfig: AmarRuntimeConfig,
     private val clock: () -> Long = { System.currentTimeMillis() }
 ) {
     init {
-        require(failureThreshold > 0)
-        require(openDurationMs > 0)
+        require(runtimeConfig.circuitFailureThreshold > 0)
+        require(runtimeConfig.circuitOpenMs > 0)
     }
 
     private data class Entry(
@@ -38,7 +38,13 @@ class AmarProviderHealthMonitor(
     private fun entry(providerId: String): Entry {
         require(providerId.isNotBlank()) { "provider id must not be blank" }
         return entries.getOrPut(providerId) {
-            Entry(AmarCircuitBreaker(failureThreshold, openDurationMs, clock))
+            Entry(
+                AmarCircuitBreaker(
+                    runtimeConfig.circuitFailureThreshold,
+                    runtimeConfig.circuitOpenMs,
+                    clock
+                )
+            )
         }
     }
 

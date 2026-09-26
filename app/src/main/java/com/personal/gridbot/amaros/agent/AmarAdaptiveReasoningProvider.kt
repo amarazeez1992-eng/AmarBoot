@@ -8,12 +8,7 @@ package com.personal.gridbot.amaros.agent
 class AmarAdaptiveReasoningProvider(
     private val catalog: AmarModelProviderCatalog,
     private val audit: AmarModelRoutingAudit = AmarModelRoutingAudit(),
-    private val resilience: AmarProviderFallbackPolicy = AmarProviderFallbackPolicy(
-        health = AmarProviderHealthMonitor(),
-        classifier = AmarProviderFailureClassifier(),
-        integrity = AmarProviderResultIntegrity(),
-        audit = AmarProviderRecoveryAudit()
-    )
+    private val resilience: AmarProviderFallbackPolicy
 ) {
     fun matchCapabilities(
         task: AmarModelTask,
