@@ -1,26 +1,38 @@
 package com.personal.gridbot.amaros.agent
 
-/** Selects the bounded capability responsible for each orchestration task. */
 data class EngineSelection(
     val taskId: String,
-    val engineId: String
+    val executor: TaskExecutor
 )
 
-class EngineSelector {
-    fun select(task: AmarTaskUnit): EngineSelection {
-        val engine = when (task.kind) {
-            AmarTaskKind.NORMALIZE -> "INTENT_NORMALIZER"
-            AmarTaskKind.UNDERSTAND -> "INTENT_UNDERSTANDING"
-            AmarTaskKind.CONTEXT -> "CONTEXT_ENGINE"
-            AmarTaskKind.CONSTRAINT -> "CONSTRAINT_ENGINE"
-            AmarTaskKind.EVIDENCE -> "RESEARCH_ENGINE"
-            AmarTaskKind.REASON -> "REASONING_PROVIDER"
-            AmarTaskKind.CHALLENGE -> "CRITIC"
-            AmarTaskKind.VALIDATE -> "VERIFICATION_LAYER"
-            AmarTaskKind.RESPONSE -> "RESPONSE_ENGINE"
-            AmarTaskKind.AUDIT -> "DECISION_VERIFIER"
-        }
-        require(engine.isNotBlank()) { "No engine selected for task: " + task.id }
-        return EngineSelection(task.id, engine)
+class EngineRegistry {
+    private val executors = linkedMapOf<AmarTaskKind, TaskExecutor>()
+    private val fallbacks = linkedMapOf<AmarTaskKind, TaskExecutor>()
+
+    fun register(kind: AmarTaskKind, executor: TaskExecutor): EngineRegistry {
+        require(kind !in executors) { "Executor already registered for task kind: " + kind }
+        executors[kind] = executor
+        return this
     }
+
+    fun registerFallback(kind: AmarTaskKind, executor: TaskExecutor): EngineRegistry {
+        require(kind in executors) { "Primary executor must be registered before fallback: " + kind }
+        require(kind !in fallbacks) { "Fallback already registered for task kind: " + kind }
+        fallbacks[kind] = executor
+        return this
+    }
+
+    fun get(kind: AmarTaskKind): TaskExecutor =
+        executors[kind] ?: error("No executor registered for task kind: " + kind)
+
+    fun getFallback(kind: AmarTaskKind): TaskExecutor? = fallbacks[kind]
+
+    fun hasFallback(kind: AmarTaskKind): Boolean = fallbacks.containsKey(kind)
+
+    fun kinds(): Set<AmarTaskKind> = executors.keys.toSet()
+}
+
+class EngineSelector(private val registry: EngineRegistry) {
+    fun select(task: AmarTaskUnit): EngineSelection =
+        EngineSelection(task.id, registry.get(task.kind))
 }
