@@ -44,8 +44,12 @@ class AmarAgentOrchestrator(
         val mandates = hierarchy.defaultMandates()
         session.record(AmarAgentStage.PLAN, "roles=${mandates.joinToString(",") { it.role.name }}")
         val plan = planner.plan(request, safeTools)
+        val taskGraph = OrchestrationDependencyGraph(plan.tasks)
+        taskGraph.topologicalOrder()
+        session.transitionOrchestration(OrchestrationState.PLANNED)
         emit(AgentTaskState.PLANNING, "تخطيط مسار التحقق")
         val plannedTools = safeTools.filter { it.id in plan.requiredTools }
+        session.transitionOrchestration(OrchestrationState.RUNNING)
         session.record(AmarAgentStage.PLAN, plan.steps.joinToString(" -> "))
 
         val queryPolicyDecision = queryPolicy.classify(plan, request)
@@ -186,7 +190,8 @@ class AmarAgentOrchestrator(
             )
         }
 
-        return AmarAgentRunResult(response = finalResponse, plan = plan, research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
+        session.transitionOrchestration(if (finalApproved) OrchestrationState.COMPLETED else OrchestrationState.BLOCKED, reason = if (finalApproved) null else "final_validation_failed")
+        return AmarAgentRunResult(response = finalResponse, plan = plan, orchestrationState = session.orchestrationState(), research = report, sourceVerification = verification, consensus = consensus, critique = critique, finalVerification = decisionVerification, stageTwo = stageTwo, stageThree = stageThree, hardening = hardening, canonicalEvidenceCertification = canonicalEvidenceCertification, sessionEvents = session.events())
     }
 
     private fun buildHardeningReport(answer: String, findings: List<ResearchFinding>, verification: AmarSourceVerification?, consensus: AmarConsensusReport?, stageTwo: AmarStageTwoResult?): AmarStageTwoHardeningReport {
@@ -221,6 +226,7 @@ class AmarAgentOrchestrator(
 data class AmarAgentRunResult(
     val response: AmarAgentResponse,
     val plan: AmarAgentPlan,
+    val orchestrationState: OrchestrationStateSnapshot,
     val research: ResearchReport?,
     val sourceVerification: AmarSourceVerification?,
     val consensus: AmarConsensusReport?,
