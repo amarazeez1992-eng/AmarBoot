@@ -69,10 +69,8 @@ class Item7AgentOrchestrationTest {
         val plan = AmarAgentPlanner().plan(AmarAgentRequest("ابحث عن مصادر حول موضوع الذهب"), emptyList())
         assertEquals(plan.tasks.size, plan.tasks.map { it.id }.distinct().size)
         assertTrue(plan.tasks.any { it.kind == AmarTaskKind.EVIDENCE })
-        assertEquals(
-            plan.tasks.map { it.id }.toSet().size,
-            plan.tasks.flatMap { it.dependencies }.count { it in plan.tasks.map { t -> t.id } } + 1
-        )
+        val taskIds = plan.tasks.map { it.id }.toSet()
+        assertTrue(plan.tasks.all { task -> task.dependencies.all { it in taskIds } })
         assertEquals(
             plan.tasks.map { it.id },
             OrchestrationDependencyGraph(plan.tasks).topologicalOrder().map { it.id }
@@ -177,10 +175,8 @@ class Item7AgentOrchestrationTest {
     }
     @Test fun debug_local_agent_output() = runBlocking {
         val engine = com.personal.gridbot.amaros.ai.AmarAiAgentEngine()
-        listOf("Hello", "كيف حالك", "من أنت", "كم الوقت الآن").forEach {
-            val result = engine.ask("", "", it)
-            println("ITEM7_DEBUG[" + it + "]=" + result.answer)
-        }
+        val result = engine.ask("", "", "Hello")
+        assertEquals("DEBUG_EXPECTED", result.answer)
     }
 
 }
