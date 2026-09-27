@@ -1,7 +1,7 @@
 # AMARBOT — STAGE 11: MASTER INDEX
 
 ## Status: OFFICIAL REFERENCE DOCUMENT
-## Last Updated: 2026-09-23
+## Last Updated: 2026-09-27
 ## Owner: Ammar (amrazeez1992-eng)
 ## Supervisor: DeepSeek
 ## Executor: ChatGPT
@@ -42,8 +42,8 @@ Any developer, engineer, or contributor can read this file to know:
 | 6 | Reasoning Consistency | 7 | 🟦 DESIGN LOCKED |
 | 7 | Agent Orchestration 2.0 | 8 | 🟦 DESIGN LOCKED |
 | 8 | Adaptive Model Routing | 7 | 🟦 DESIGN LOCKED |
-| 9 | Provider Resilience & Fallback | 8 | ✅ CLOSED (Run 36250220449) |
-| 10 | Advanced Memory | 8 | ✅ CLOSED (Run 36250220449) |
+| 9 | Provider Resilience & Fallback | 8 | ✅ CLOSED (Run 36299900046) |
+| 10 | Advanced Memory | 8 | ✅ CLOSED (Run 36299900046) |
 | 11 | Memory Conflict Detection | 7 | 🟦 DESIGN LOCKED |
 | 12 | Research Engine | 8 | 🟦 DESIGN LOCKED |
 | 13 | Research Evidence Ranking | 8 | 🟦 DESIGN LOCKED |
@@ -428,7 +428,7 @@ Count verification:
 - Items 1-3: CLOSED.
 - Item 4: ✅ CLOSED.
 - Items 5-8 and 11-30: Design Locked.
-- Items 9-10: Closure evidence recorded for Run 36250220449.
+- Items 9-10: Functionally CLOSED with updated closure evidence recorded for Run 36299900046.
 - Approved additions documented.
 - Corrected design count: **210 + 24 = 234**.
 
@@ -437,7 +437,10 @@ Count verification:
 ## 4.1 Closure Evidence — Item 9 & Item 10
 
 ### Item 9 — Provider Resilience & Fallback
-- Commit: 7774b09bb0d2f29c55ff59bb37c1aab36f206df7
+- Status: ✅ CLOSED
+- Commit: 5a1c0920130a824a89f2c68b5c1aa69f374a6883
+- Tests: 13 / 0 / 0
+- Run: 36299900046
 - Files (6):
   - AmarProviderFallbackPolicy.kt (Blob: 0d79911d)
   - AmarProviderHealthMonitor.kt (Blob: 7f56edcc)
@@ -445,15 +448,21 @@ Count verification:
   - AmarProviderResultIntegrity.kt (Blob: 64eaa5d7)
   - AmarProviderRecoveryAudit.kt (Blob: c90ec046)
   - AmarProviderResilienceTest.kt (Blob: ff8db6ee)
-- Tests: 8 (0 failures, 0 errors)
-- Run: 36250220449 — success
+- Tests: 13 / 0 / 0
+- Run: 36299900046 — success
 
 ### Item 10 — Advanced Memory
+- Status: ✅ CLOSED
+- Commit: 5a1c0920130a824a89f2c68b5c1aa69f374a6883
+- Tests: 12 / 0 / 0
+- Run: 36299900046
+- Advanced Types: 5 (CONTEXT, LONG_TERM, TASK, PREFERENCE, FACT)
+- Isolation: Stage 3 isolated via AmarAdvancedMemoryType
 - Files (2):
   - intelligence/memory/AmarAdvancedMemory.kt (Blob: c5464c75)
   - intelligence/memory/AmarAdvancedMemoryTest.kt (Blob: f3ce840d)
-- Tests: 5 (0 failures, 0 errors)
-- Run: 36250220449 — success
+- Tests: 12 / 0 / 0
+- Run: 36299900046 — success
 - Test Coverage Mapping:
   | Addition | Test |
   |---|---|
@@ -505,13 +514,21 @@ Count verification:
 - Boundary: Item 7 = orchestration runtime; Stage 8 = Command Plane (authority).
 - Item 7 consumes Command Plane decisions.
 
+## 4.3 Known Infrastructure Issue
+
+Stage 2 workflow (amar-stage-two.yml) did not trigger on commit 5a1c0920.
+Path filter includes agent/** test paths, and AmarProviderResilienceTest.kt falls within it.
+Root cause investigation required — separate from Item 9/10 closure.
+
+---
+
 ## 11. Next Steps
 
 1. Item 4: CLOSED (Constitutionally). Main Re-check completed 7/7.
 2. Item 9: CLOSED with Run 36250220449 evidence.
 3. Item 10: CLOSED with Run 36250220449 evidence.
 4. Next: Item 5, subject to formal numbering reconciliation at implementation entry.
-3. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
+5. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
 
 ---
 
