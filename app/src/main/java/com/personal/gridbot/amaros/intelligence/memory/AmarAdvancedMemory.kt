@@ -18,6 +18,22 @@ class AmarAdvancedMemory(
         return repository.get(entry.id) ?: entry
     }
 
+    /**
+     * Saves an Item 10 semantic type without changing Stage 3's AmarMemoryType.
+     * The advanced type is encoded as a deterministic tag plus the existing
+     * repository type; LONG_TERM additionally enforces permanent=true.
+     */
+    fun remember(entry: AmarMemoryEntry, advancedType: AmarAdvancedMemoryType): AmarMemoryEntry {
+        val mappedType = advancedType.toBaseType()
+        val advancedTag = advancedType.tag()
+        val mapped = entry.copy(
+            type = mappedType,
+            tags = (entry.tags + advancedTag).distinct(),
+            permanent = entry.permanent || advancedType == AmarAdvancedMemoryType.LONG_TERM
+        )
+        return remember(mapped)
+    }
+
     fun recall(query: String, nowEpochMs: Long, type: AmarMemoryType? = null): List<AmarMemoryMatch> {
         require(nowEpochMs >= 0)
         val normalizedQuery = normalize(query)
@@ -31,6 +47,31 @@ class AmarAdvancedMemory(
             .take(policy.resultLimit)
             .toList()
     }
+
+    /** Recalls only records saved through the Item 10 advanced semantic type layer. */
+    fun recall(
+        query: String,
+        nowEpochMs: Long,
+        advancedType: AmarAdvancedMemoryType
+    ): List<AmarMemoryMatch> {
+        val mappedType = advancedType.toBaseType()
+        return recall(query, nowEpochMs, mappedType)
+            .filter { it.entry.tags.contains(advancedType.tag()) }
+            .filter { advancedType != AmarAdvancedMemoryType.LONG_TERM || it.entry.permanent }
+    }
+
+    private fun AmarAdvancedMemoryType.toBaseType(): AmarMemoryType = when (this) {
+        AmarAdvancedMemoryType.CONTEXT -> AmarMemoryType.CONVERSATION
+        AmarAdvancedMemoryType.LONG_TERM -> AmarMemoryType.FACT
+        AmarAdvancedMemoryType.TASK -> AmarMemoryType.PROJECT
+        AmarAdvancedMemoryType.PREFERENCE -> AmarMemoryType.PREFERENCE
+        AmarAdvancedMemoryType.FACT -> AmarMemoryType.FACT
+        AmarAdvancedMemoryType.PROJECT -> AmarMemoryType.PROJECT
+        AmarAdvancedMemoryType.STRATEGY -> AmarMemoryType.STRATEGY
+        AmarAdvancedMemoryType.RESEARCH -> AmarMemoryType.RESEARCH
+    }
+
+    private fun AmarAdvancedMemoryType.tag(): String = "adv:" + name.lowercase()
 
     /** Exact normalized duplicate consolidation is scoped by memory type; different semantic types are preserved. */
     fun consolidate(limit: Int = policy.consolidationLimit): AmarMemoryConsolidationReport {
