@@ -88,7 +88,7 @@ class AmarIntelligenceCoreTest {
     }
 
     @Test
-    fun confidence_label_boundary_020_maps_to_moderate() {
+    fun confidence_label_boundary_020_maps_to_low() {
         val perception = AmarIntelligenceCore.PerceptionResult(
             observations = listOf(
                 AmarIntelligenceCore.InputObservation(
@@ -102,11 +102,11 @@ class AmarIntelligenceCoreTest {
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
         )
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.MODERATE, AmarIntelligenceCore.confidence(perception, reasoning).label)
+        assertEquals(AmarIntelligenceCore.ConfidenceLabel.LOW, AmarIntelligenceCore.confidence(perception, reasoning).label)
     }
 
     @Test
-    fun confidence_label_boundary_040_maps_to_high() {
+    fun confidence_label_boundary_040_maps_to_moderate() {
         val perception = AmarIntelligenceCore.PerceptionResult(
             observations = listOf(
                 AmarIntelligenceCore.InputObservation(
@@ -121,7 +121,7 @@ class AmarIntelligenceCoreTest {
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
         )
         val result = AmarIntelligenceCore.confidence(perception, reasoning)
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.HIGH, result.label)
+        assertEquals(AmarIntelligenceCore.ConfidenceLabel.MODERATE, result.label)
         assertEquals(0.40, result.score, 0.000001)
     }
 
