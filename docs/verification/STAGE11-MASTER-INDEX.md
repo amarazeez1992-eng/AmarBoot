@@ -35,7 +35,7 @@ Any developer, engineer, or contributor can read this file to know:
 | # | Item | Additions | Status |
 |---|------|-----------|--------|
 | 1 | Intelligence Core | — | ✅ CLOSED |
-| 2 | Confidence Engine | 11 | ✅ CLOSED |
+| 2 | Confidence Engine | 11 | 🟡 CORRECTION IMPLEMENTED — CI PENDING |
 | 3 | Evidence Engine | 24 Points | ✅ CLOSED |
 | 4 | Hallucination Firewall | 8 | ✅ CLOSED |
 | 5 | Verification Layer | 8 | 🟦 DESIGN LOCKED |
@@ -79,26 +79,24 @@ Any developer, engineer, or contributor can read this file to know:
 - Reference: `STAGE11_ITEM1_INTELLIGENCE_CORE.md`
 
 ### Item 2 — Confidence Engine
-- Status: CLOSED
+- Status: CORRECTION IMPLEMENTED — CI PENDING
 - Additions: 11
-- Production Blob SHA: eeeaffdb6b26a230eb0eed3b660caba10579b6c7
+- Production Blob SHA: e9247713136fcf93b62371622a82212ee4617d79
 - Test Blob SHA: 14c88be17b7743b4ed65233589ee33a0708b0981
 - Tests: 25 / 0 / 0
 - Reference: `STAGE11_ITEM2_CONFIDENCE_ENGINE.md`
 - Contract: `AmarConfidenceConsumer`
 - Consumers: Item 13 + Stage 16
-- Additions:
-  1. Dedicated Engine
-  2. Five Dimensions
-  3. Finite [0,1] Validation
-  4. Deterministic Weighted Score
-  5. Stable Labels
-  6. Explainable Reasons
-  7. No Execution Authority
-  8. Critical Boundary Guards
-  9. Rejection Threshold (< 0.30 → REJECTED)
-  10. Staleness Ceiling
-  11. Production Consumer Contract
+- Integration: `AmarIntelligenceCore.confidence()` delegates to Item 2; duplicate confidence algorithm removed
+- Corrected Core Blob SHA: bce754f92f777f2d00a13622aa3e4b03e4a1baee
+- Corrected Core Test Blob SHA: e651f40e29f1be8fe04332199cf1b9e4b042cc3e
+- Corrected CI Run: pending
+- Label enum: REJECTED, LOW, MODERATE, HIGH, VERY_HIGH
+- Removed unreachable label: VERY_LOW
+- Staleness: maxAgeMs compared with ageMs; expiry forces score 0.0
+- Consumer contract: contract only; Item 13 and Stage 16 not wired in this correction
+- Authority: AmarConfidenceEngine
+
 
 ### Item 3 — Evidence Engine
 - Status: CLOSED (24/24 Points)

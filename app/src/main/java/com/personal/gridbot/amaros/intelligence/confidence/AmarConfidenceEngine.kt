@@ -8,7 +8,7 @@ package com.personal.gridbot.amaros.intelligence.confidence
  * and produces a reproducible score plus an explainable label.
  */
 object AmarConfidenceEngine {
-    enum class Label { REJECTED, VERY_LOW, LOW, MODERATE, HIGH, VERY_HIGH }
+    enum class Label { REJECTED, LOW, MODERATE, HIGH, VERY_HIGH }
 
     data class Evidence(
         val quality: Double,

@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.intelligence.core
 
+import com.personal.gridbot.amaros.intelligence.confidence.AmarConfidenceEngine
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,8 +29,8 @@ class AmarIntelligenceCoreTest {
         assertTrue(result.reasoning.assumptions.any { it.contains("malformed") })
         assertTrue(result.reasoning.requiresMoreInput)
         assertEquals(AmarIntelligenceCore.AnalysisState.BLOCKED, result.state)
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.VERY_LOW, result.confidence.label)
-        assertTrue(result.confidence.score < 0.20)
+        assertEquals(AmarConfidenceEngine.Label.REJECTED, result.confidence.label)
+        assertTrue(result.confidence.score < 0.30)
     }
 
     @Test
@@ -88,81 +90,24 @@ class AmarIntelligenceCoreTest {
     }
 
     @Test
-    fun confidence_label_boundary_020_maps_to_low() {
+    fun confidence_delegates_all_five_dimensions_to_item_two() {
         val perception = AmarIntelligenceCore.PerceptionResult(
             observations = listOf(
                 AmarIntelligenceCore.InputObservation(
-                    AmarIntelligenceCore.InputKind.TEXT, "x",
-                    freshnessScore = 0.0, qualityScore = 0.0
+                    AmarIntelligenceCore.InputKind.MARKET_DATA, "ohlc",
+                    sourceId = "source-a", freshnessScore = 0.6, qualityScore = 0.8
                 )
             ),
-            presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = (0.20 - 0.15 + 1e-9) / 0.30
+            presentCount = 1, missingCount = 0, malformedCount = 0, completeness = 1.0
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
-            "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
-        )
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.LOW, AmarIntelligenceCore.confidence(perception, reasoning).label)
-    }
-
-    @Test
-    fun confidence_label_boundary_040_maps_to_moderate() {
-        val perception = AmarIntelligenceCore.PerceptionResult(
-            observations = listOf(
-                AmarIntelligenceCore.InputObservation(
-                    AmarIntelligenceCore.InputKind.TEXT, "x",
-                    freshnessScore = 0.0, qualityScore = 0.0
-                )
-            ),
-            presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = (0.40 - 0.15 + 1e-9) / 0.30
-        )
-        val reasoning = AmarIntelligenceCore.ReasoningResult(
-            "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
+            "ready", listOf("MARKET_DATA:source-a"), emptyList(), emptyList(), false
         )
         val result = AmarIntelligenceCore.confidence(perception, reasoning)
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.MODERATE, result.label)
-        assertEquals(0.40, result.score, 0.000001)
-    }
-
-    @Test
-    fun confidence_label_boundary_065_maps_to_high() {
-        val perception = AmarIntelligenceCore.PerceptionResult(
-            observations = listOf(
-                AmarIntelligenceCore.InputObservation(
-                    AmarIntelligenceCore.InputKind.TEXT, "x",
-                    freshnessScore = 0.0, qualityScore = 0.0
-                )
-            ),
-            presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 5.0 / 3.0
+        val expected = AmarConfidenceEngine.evaluate(
+            AmarConfidenceEngine.Evidence(0.8, 1.0, 0.6, 1.0, 1.0)
         )
-        val reasoning = AmarIntelligenceCore.ReasoningResult(
-            "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
-        )
-        val result = AmarIntelligenceCore.confidence(perception, reasoning)
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.HIGH, result.label)
-        assertEquals(0.65, result.score, 0.000001)
-    }
-
-    @Test
-    fun confidence_label_boundary_085_maps_to_very_high() {
-        val perception = AmarIntelligenceCore.PerceptionResult(
-            observations = listOf(
-                AmarIntelligenceCore.InputObservation(
-                    AmarIntelligenceCore.InputKind.TEXT, "x",
-                    freshnessScore = 0.0, qualityScore = 0.0
-                )
-            ),
-            presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 7.0 / 3.0
-        )
-        val reasoning = AmarIntelligenceCore.ReasoningResult(
-            "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
-        )
-        val result = AmarIntelligenceCore.confidence(perception, reasoning)
-        assertEquals(AmarIntelligenceCore.ConfidenceLabel.VERY_HIGH, result.label)
-        assertEquals(0.85, result.score, 0.000001)
+        assertEquals(expected, result)
     }
 
     @Test
@@ -220,7 +165,7 @@ class AmarIntelligenceCoreTest {
             observations = listOf(
                 AmarIntelligenceCore.InputObservation(
                     AmarIntelligenceCore.InputKind.TEXT, "x",
-                    freshnessScore = 1.0, qualityScore = 1.0
+                    sourceId = "source-a", freshnessScore = 1.0, qualityScore = 1.0
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,

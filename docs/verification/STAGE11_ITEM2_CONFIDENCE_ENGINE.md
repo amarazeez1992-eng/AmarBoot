@@ -1,43 +1,56 @@
 # Stage 11 — Item 2: Confidence Engine
 
-**Status: CONSTITUTIONALLY CLOSED**
+**Status:** CORRECTION IMPLEMENTED — CI PENDING
 
-## Scope
+## 11 Additions
 
-Introduce a dedicated deterministic confidence layer that converts explicit evidence dimensions into a bounded, explainable confidence signal without granting trading or execution authority.
+1. Dedicated Engine
+2. Five Dimensions
+3. Finite [0,1] Validation
+4. Deterministic Weighted Score
+5. Stable Labels — REJECTED, LOW, MODERATE, HIGH, VERY_HIGH; unreachable VERY_LOW removed
+6. Explainable Reasons
+7. No Execution Authority
+8. Critical Boundary Guards
+9. Rejection Threshold (<0.30 → REJECTED)
+10. Staleness Ceiling
+11. Production Consumer Contract
 
-## Implemented
+## Production Evidence
 
-- Dedicated `AmarConfidenceEngine` isolated from the Item 1 compatibility confidence calculation.
-- Five explicit dimensions: evidence quality, completeness, freshness, agreement, and source reliability.
-- Strict finite `[0,1]` input validation with fail-closed rejection of invalid values.
-- Deterministic weighted score bounded to `[0,1]`.
-- Stable confidence labels: `VERY_LOW`, `LOW`, `MODERATE`, `HIGH`, `VERY_HIGH`.
-- Explainable degradation reasons for weak dimensions.
-- No model, network, broker, order, or execution authority.
+- Correction parent: da80466165de7c614018894038110c3ca0e03f63
+- AmarConfidenceEngine.kt corrected Blob: e9247713136fcf93b62371622a82212ee4617d79
+- AmarConfidenceEngineTest.kt Blob: 14c88be17b7743b4ed65233589ee33a0708b0981
+- Tests: 25 / 0 / 0
 
-## Tests
+## Item 1 ↔ Item 2 Resolution
 
-`AmarConfidenceEngineTest` covers:
+**Decision: REMOVE the duplicate confidence algorithm from Item 1.**
 
-1. bounded score and strong-evidence classification;
-2. weak evidence and explainable degradation reasons;
-3. sensitivity to independent confidence dimensions;
-4. invalid and non-finite input rejection;
-5. deterministic repeated evaluation.
+AmarIntelligenceCore.confidence() remains the Item 1 compatibility entry point. It prepares the five Item 2 dimensions, calls AmarConfidenceEngine.evaluate(), returns AmarConfidenceEngine.Result, and contains no independent weighting or label algorithm.
 
-## Constitutional Verification
+- AmarIntelligenceCore.kt corrected Blob: bce754f92f777f2d00a13622aa3e4b03e4a1baee
+- AmarIntelligenceCoreTest.kt corrected Blob: e651f40e29f1be8fe04332199cf1b9e4b042cc3e
+- Direct delegation test added.
 
-The dedicated Stage 11 verification run completed successfully with all required gates green: focused Intelligence Core regression, focused Confidence Engine test, existing focused intelligence tests, full unit test suite, debug build, architecture regression checks, and evidence upload.
+## Contract
 
-The successful verification was executed against the exact Item 2 source tree through PR #68 and merged into `main` as commit `c6f0f9c838c9c75fea5bdc7d5d0f7b60b1b63375`.
+interface AmarConfidenceConsumer {
+    fun requestConfidence(evidence: AmarConfidenceEngine.Evidence): AmarConfidenceEngine.Result
+}
 
-## Main-Branch Post-Closure Recheck
+**Consumers:** Item 13 + Stage 16.
 
-This commit intentionally triggers the complete Stage 11 workflow on `main` against the constitutionally closed Item 2 baseline. The recheck is required to independently validate the merged `main` state rather than infer verification from the PR run.
+No Item 13 or Stage 16 wiring is performed in this correction.
 
-## Closure Rule
+## CI Evidence
 
-Item 2 is constitutionally closed only after the complete verification gate succeeded. No closure is based on code changes or build success alone.
+- Required workflow: Amar Stage Eleven
+- Required head SHA: correction commit
+- Required conclusion: success
+- Artifact: amar-stage-eleven-evidence
+- Run ID: pending correction CI
 
-**Stage 11 Item 2: CLOSED.**
+## Authority
+
+AmarConfidenceEngine is the single Confidence Authority.

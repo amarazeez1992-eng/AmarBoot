@@ -1,5 +1,7 @@
 package com.personal.gridbot.amaros.intelligence.core
 
+import com.personal.gridbot.amaros.intelligence.confidence.AmarConfidenceEngine
+
 /**
  * Stage 11 / Item 1 — deterministic intelligence foundation.
  *
@@ -49,21 +51,10 @@ object AmarIntelligenceCore {
         val requiresMoreInput: Boolean
     )
 
-    data class ConfidenceResult(
-        val score: Double,
-        val evidenceQuality: Double,
-        val completeness: Double,
-        val freshness: Double,
-        val reasoningCoverage: Double,
-        val label: ConfidenceLabel
-    )
-
-    enum class ConfidenceLabel { VERY_LOW, LOW, MODERATE, HIGH, VERY_HIGH }
-
     data class CoreResult(
         val perception: PerceptionResult,
         val reasoning: ReasoningResult,
-        val confidence: ConfidenceResult,
+        val confidence: AmarConfidenceEngine.Result,
         val state: AnalysisState
     )
 
@@ -105,21 +96,31 @@ object AmarIntelligenceCore {
     }
 
     /**
-     * INTERNAL COMPATIBILITY SIGNAL ONLY.
-     * Not consumed externally. Not a Confidence Authority.
-     * Item 2 (AmarConfidenceEngine) is the sole Confidence Authority.
+     * Item 2 is the sole confidence authority.
+     * Item 1 prepares the five explicit dimensions and delegates scoring/labels
+     * to AmarConfidenceEngine; it contains no parallel confidence algorithm.
      */
-    fun confidence(perception: PerceptionResult, reasoning: ReasoningResult): ConfidenceResult {
+    fun confidence(perception: PerceptionResult, reasoning: ReasoningResult): AmarConfidenceEngine.Result {
         val present = perception.observations.filter { it.status == ObservationStatus.PRESENT }
         val quality = if (present.isEmpty()) 0.0 else present.map { it.qualityScore }.average()
         val freshness = if (present.isEmpty()) 0.0 else present.map { it.freshnessScore }.average()
-        val coverage = when {
+        val agreement = when {
+            present.isEmpty() -> 0.0
             reasoning.supportingObservations.isEmpty() -> 0.0
             reasoning.requiresMoreInput -> 0.6
             else -> 1.0
         }
-        val score = (quality * 0.35 + perception.completeness * 0.30 + freshness * 0.20 + coverage * 0.15).coerceIn(0.0, 1.0)
-        return ConfidenceResult(score, quality, perception.completeness, freshness, coverage, labelFor(score))
+        val sourceReliability = if (present.isEmpty()) 0.0
+        else present.count { it.sourceId != null }.toDouble() / present.size
+        return AmarConfidenceEngine.evaluate(
+            AmarConfidenceEngine.Evidence(
+                quality = quality,
+                completeness = perception.completeness.coerceIn(0.0, 1.0),
+                freshness = freshness,
+                agreement = agreement,
+                sourceReliability = sourceReliability
+            )
+        )
     }
 
     fun analyze(inputs: List<InputObservation>): CoreResult {
@@ -134,11 +135,4 @@ object AmarIntelligenceCore {
         return CoreResult(perception, reasoning, confidence, state)
     }
 
-    private fun labelFor(score: Double): ConfidenceLabel = when {
-        score < 0.20 -> ConfidenceLabel.VERY_LOW
-        score < 0.40 -> ConfidenceLabel.LOW
-        score < 0.65 -> ConfidenceLabel.MODERATE
-        score < 0.85 -> ConfidenceLabel.HIGH
-        else -> ConfidenceLabel.VERY_HIGH
-    }
 }
