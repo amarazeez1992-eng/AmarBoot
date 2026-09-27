@@ -42,8 +42,8 @@ Any developer, engineer, or contributor can read this file to know:
 | 6 | Reasoning Consistency | 7 | 🟦 DESIGN LOCKED |
 | 7 | Agent Orchestration 2.0 | 8 | 🟦 DESIGN LOCKED |
 | 8 | Adaptive Model Routing | 7 | 🟦 DESIGN LOCKED |
-| 9 | Provider Resilience & Fallback | 8 | 🟦 DESIGN LOCKED |
-| 10 | Advanced Memory | 8 | 🟦 DESIGN LOCKED |
+| 9 | Provider Resilience & Fallback | 8 | ✅ CLOSED (Run 36250220449) |
+| 10 | Advanced Memory | 8 | ✅ CLOSED (Run 36250220449) |
 | 11 | Memory Conflict Detection | 7 | 🟦 DESIGN LOCKED |
 | 12 | Research Engine | 8 | 🟦 DESIGN LOCKED |
 | 13 | Research Evidence Ranking | 8 | 🟦 DESIGN LOCKED |
@@ -97,7 +97,7 @@ Any developer, engineer, or contributor can read this file to know:
 
 ## 4. Design Locked Items (Approved, Not Implemented)
 
-Items 5–30 remain **Design Locked** according to the approved Stage 11 design. Item 4 is implemented, verified, Main Re-checked, and **CLOSED (Constitutionally)**.
+Items 5–8 and 11–30 remain **Design Locked** according to the approved Stage 11 design. Items 4, 9, and 10 are implemented and verified; Item 4 is constitutionally closed, while Items 9 and 10 have closure evidence recorded below.
 
 **Important:** Design Locked does not mean implemented, tested, audited, or constitutionally closed.
 
@@ -427,16 +427,53 @@ Count verification:
 
 - Items 1-3: CLOSED.
 - Item 4: ✅ CLOSED.
-- Items 5-30: Design Locked.
+- Items 5-8 and 11-30: Design Locked.
+- Items 9-10: Closure evidence recorded for Run 36250220449.
 - Approved additions documented.
 - Corrected design count: **210 + 24 = 234**.
+
+---
+
+## 4.1 Closure Evidence — Item 9 & Item 10
+
+### Item 9 — Provider Resilience & Fallback
+- Commit: 7774b09bb0d2f29c55ff59bb37c1aab36f206df7
+- Files (6):
+  - AmarProviderFallbackPolicy.kt (Blob: 0d79911d)
+  - AmarProviderHealthMonitor.kt (Blob: 7f56edcc)
+  - AmarProviderFailureClassifier.kt (Blob: bf28390a)
+  - AmarProviderResultIntegrity.kt (Blob: 64eaa5d7)
+  - AmarProviderRecoveryAudit.kt (Blob: c90ec046)
+  - AmarProviderResilienceTest.kt (Blob: ff8db6ee)
+- Tests: 8 (0 failures, 0 errors)
+- Run: 36250220449 — success
+
+### Item 10 — Advanced Memory
+- Files (2):
+  - intelligence/memory/AmarAdvancedMemory.kt (Blob: c5464c75)
+  - intelligence/memory/AmarAdvancedMemoryTest.kt (Blob: f3ce840d)
+- Tests: 5 (0 failures, 0 errors)
+- Run: 36250220449 — success
+- Test Coverage Mapping:
+  | Addition | Test |
+  |---|---|
+  | Context Memory | recall_ranks_relevant_memory_and_filters_unrelated_recent_records |
+  | Long-Term Memory | snapshot_is_reproducible_and_supersession_preserves_history |
+  | Task Memory | type_filter_and_fail_closed_empty_query_are_deterministic |
+  | Preference Memory | type_filter_and_fail_closed_empty_query_are_deterministic |
+  | Fact Memory | type_filter_and_fail_closed_empty_query_are_deterministic |
+  | Memory Relevance Scoring | recall_ranks_relevant_memory_and_filters_unrelated_recent_records |
+  | Memory Retrieval | recall_ranks_relevant_memory_and_filters_unrelated_recent_records |
+  | Memory Lifecycle | consolidation + snapshot + supersession |
 
 ---
 
 ## 11. Next Steps
 
 1. Item 4: CLOSED (Constitutionally). Main Re-check completed 7/7.
-2. Next: Item 5, subject to formal numbering reconciliation at implementation entry.
+2. Item 9: CLOSED with Run 36250220449 evidence.
+3. Item 10: CLOSED with Run 36250220449 evidence.
+4. Next: Item 5, subject to formal numbering reconciliation at implementation entry.
 3. Each Item: Inspect → Requirements → Architecture → Implement → Unit Test → Integration Test → Regression Test → Evidence → Audit → Build → Runtime/CI → Main Re-check → Constitutional Closure.
 
 ---
