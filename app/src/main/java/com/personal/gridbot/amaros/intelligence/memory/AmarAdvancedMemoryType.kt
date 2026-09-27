@@ -11,8 +11,5 @@ enum class AmarAdvancedMemoryType {
     LONG_TERM,
     TASK,
     PREFERENCE,
-    FACT,
-    PROJECT,
-    STRATEGY,
-    RESEARCH
+    FACT
 }
