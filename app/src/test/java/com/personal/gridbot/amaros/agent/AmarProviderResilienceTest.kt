@@ -210,6 +210,34 @@ class AmarProviderResilienceTest {
         assertEquals("VALID", valid.reason)
     }
 
+    @Test fun recoveryAudit_isolatesOperationsById() = runBlocking {
+        val audit = AmarProviderRecoveryAudit()
+        val policy = AmarProviderFallbackPolicy(
+            AmarProviderHealthMonitor(),
+            AmarProviderFailureClassifier(),
+            AmarProviderResultIntegrity(),
+            audit,
+            AmarRuntimeConfig(maxRetries = 0, initialBackoffMs = 0, maxBackoffMs = 0, jitterRatio = 0.0)
+        )
+        val failingA = profile(TestProvider("provider-a") { throw IllegalStateException("fail-a") })
+        val failingB = profile(TestProvider("provider-b") { throw IllegalStateException("fail-b") })
+
+        val resultA = policy.generate("op-A", listOf(failingA), request())
+        val resultB = policy.generate("op-B", listOf(failingB), request())
+
+        assertEquals("FAIL_CLOSED", resultA.decisionState)
+        assertEquals("FAIL_CLOSED", resultB.decisionState)
+
+        val opA = audit.records().filter { it.operationId == "op-A" }
+        val opB = audit.records().filter { it.operationId == "op-B" }
+        assertEquals(2, opA.size)
+        assertEquals(2, opB.size)
+        assertTrue(opA.all { it.operationId == "op-A" })
+        assertTrue(opB.all { it.operationId == "op-B" })
+        assertTrue(opA.none { it.providerId == "provider-b" })
+        assertTrue(opB.none { it.providerId == "provider-a" })
+    }
+
     @Test fun auditRecordIsComplete() = runBlocking {
         val provider = profile(TestProvider("audit") { throw IllegalStateException("unknown") })
         val audit = AmarProviderRecoveryAudit { 42L }
