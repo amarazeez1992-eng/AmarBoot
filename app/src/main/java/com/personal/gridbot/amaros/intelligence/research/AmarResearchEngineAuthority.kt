@@ -80,7 +80,7 @@ class AmarResearchEngineAuthority(
     }
 
     // Main orchestrator
-    fun run(
+    suspend fun run(
         rawQuery: String,
         stopping: StoppingCondition = StoppingCondition(2, 3, 2)
     ): ResearchReport {
