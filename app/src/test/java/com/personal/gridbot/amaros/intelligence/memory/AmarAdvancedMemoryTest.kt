@@ -75,7 +75,13 @@ class AmarAdvancedMemoryTest {
     }
     @Test
     fun taskMemory_isRetrievedAsTaskType() {
-        assertTrue(AmarMemoryType.values().none { it.name == "TASK" })
+        val repository = AmarInMemoryRepository()
+        val memory = AmarAdvancedMemory(repository)
+        memory.remember(entry("task", "Review pending trade task", 5_000L), AmarAdvancedMemoryType.TASK)
+        val results = memory.recall("pending trade task", 5_000L, AmarAdvancedMemoryType.TASK)
+        assertEquals(listOf("task"), results.map { it.entry.id })
+        assertEquals(AmarMemoryType.PROJECT, results.first().entry.type)
+        assertTrue(results.first().entry.tags.contains("adv:task"))
     }
 
     @Test
@@ -93,11 +99,12 @@ class AmarAdvancedMemoryTest {
     @Test
     fun contextMemory_isRetrievedAsContextType() {
         val repository = AmarInMemoryRepository()
-        repository.save(entry("context", "Current trading session context", 6_000L, type = AmarMemoryType.CONVERSATION))
         val memory = AmarAdvancedMemory(repository)
-        val results = memory.recall("trading session context", 6_000L, AmarMemoryType.CONVERSATION)
+        memory.remember(entry("context", "Current trading session context", 6_000L), AmarAdvancedMemoryType.CONTEXT)
+        val results = memory.recall("trading session context", 6_000L, AmarAdvancedMemoryType.CONTEXT)
         assertEquals(listOf("context"), results.map { it.entry.id })
         assertEquals(AmarMemoryType.CONVERSATION, results.first().entry.type)
+        assertTrue(results.first().entry.tags.contains("adv:context"))
     }
 
     @Test
@@ -113,16 +120,18 @@ class AmarAdvancedMemoryTest {
     }
 
     @Test
-    fun longTermMemory_survivesConsolidation() {
+    fun longTermMemory_isDistinctFromFacts() {
         val repository = AmarInMemoryRepository()
-        repository.save(entry("long-term", "Long term trading principle", 1_000L, type = AmarMemoryType.FACT))
-        repository.save(entry("other-1", "Temporary note one", 2_000L, type = AmarMemoryType.CONVERSATION))
-        repository.save(entry("other-2", "Temporary note two", 3_000L, type = AmarMemoryType.CONVERSATION))
         val memory = AmarAdvancedMemory(repository)
-        memory.consolidate()
-        val results = memory.recall("Long term trading principle", 3_000L, AmarMemoryType.FACT)
-        assertEquals(listOf("long-term"), results.map { it.entry.id })
-        assertEquals(AmarMemoryType.FACT, results.first().entry.type)
+        memory.remember(entry("long-term", "Long term trading principle", 1_000L), AmarAdvancedMemoryType.LONG_TERM)
+        memory.remember(entry("fact", "Long term trading principle", 2_000L), AmarAdvancedMemoryType.FACT)
+        val longTerm = memory.recall("Long term trading principle", 2_000L, AmarAdvancedMemoryType.LONG_TERM)
+        val facts = memory.recall("Long term trading principle", 2_000L, AmarAdvancedMemoryType.FACT)
+        assertEquals(listOf("long-term"), longTerm.map { it.entry.id })
+        assertEquals(listOf("fact"), facts.map { it.entry.id })
+        assertTrue(longTerm.first().entry.permanent)
+        assertTrue(longTerm.first().entry.tags.contains("adv:long_term"))
+        assertTrue(facts.first().entry.tags.contains("adv:fact").not())
     }
 
     @Test
