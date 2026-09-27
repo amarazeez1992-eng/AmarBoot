@@ -35,7 +35,7 @@ Any developer, engineer, or contributor can read this file to know:
 | # | Item | Additions | Status |
 |---|------|-----------|--------|
 | 1 | Intelligence Core | — | ✅ CLOSED |
-| 2 | Confidence Engine | 11 | 🟡 CORRECTION IMPLEMENTED — CI PENDING |
+| 2 | Confidence Engine | 11 | ✅ CLOSED |
 | 3 | Evidence Engine | 24 Points | ✅ CLOSED |
 | 4 | Hallucination Firewall | 8 | ✅ CLOSED |
 | 5 | Verification Layer | 8 | 🟦 DESIGN LOCKED |
@@ -79,18 +79,19 @@ Any developer, engineer, or contributor can read this file to know:
 - Reference: `STAGE11_ITEM1_INTELLIGENCE_CORE.md`
 
 ### Item 2 — Confidence Engine
-- Status: CORRECTION IMPLEMENTED — CI PENDING
+- Status: CLOSED
 - Additions: 11
 - Production Blob SHA: e9247713136fcf93b62371622a82212ee4617d79
 - Test Blob SHA: 14c88be17b7743b4ed65233589ee33a0708b0981
 - Tests: 25 / 0 / 0
+- Commit: 98accd2706259a5efc31c8d8edff0c34d91de821
 - Reference: `STAGE11_ITEM2_CONFIDENCE_ENGINE.md`
 - Contract: `AmarConfidenceConsumer`
 - Consumers: Item 13 + Stage 16
 - Integration: `AmarIntelligenceCore.confidence()` delegates to Item 2; duplicate confidence algorithm removed
 - Corrected Core Blob SHA: bce754f92f777f2d00a13622aa3e4b03e4a1baee
 - Corrected Core Test Blob SHA: e651f40e29f1be8fe04332199cf1b9e4b042cc3e
-- Corrected CI Run: pending
+- Corrected CI Run: 36309921454 — success
 - Label enum: REJECTED, LOW, MODERATE, HIGH, VERY_HIGH
 - Removed unreachable label: VERY_LOW
 - Staleness: maxAgeMs compared with ageMs; expiry forces score 0.0

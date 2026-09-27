@@ -167,6 +167,26 @@ class AmarConfidenceEngineTest {
     }
 
     @Test
+    fun no_execution_authority_module_has_no_broker_imports() {
+        val source = java.io.File(
+            "src/main/java/com/personal/gridbot/amaros/intelligence/confidence/AmarConfidenceEngine.kt"
+        ).readText()
+        assertFalse(Regex("""(?m)^\\s*import\\s+.*broker""").containsMatchIn(source))
+    }
+
+    @Test
+    fun consumer_contract_is_implementable() {
+        val consumer = object : AmarConfidenceConsumer {
+            override fun requestConfidence(evidence: AmarConfidenceEngine.Evidence): AmarConfidenceEngine.Result =
+                AmarConfidenceEngine.evaluate(evidence)
+        }
+        val result = consumer.requestConfidence(
+            AmarConfidenceEngine.Evidence(1.0, 1.0, 1.0, 1.0, 1.0)
+        )
+        assertEquals(AmarConfidenceEngine.Label.VERY_HIGH, result.label)
+    }
+
+    @Test
     fun staleness_ceiling_sets_score_to_zero_and_rejects() {
         val result = AmarConfidenceEngine.evaluate(
             AmarConfidenceEngine.Evidence(1.0, 1.0, 1.0, 1.0, 1.0),
