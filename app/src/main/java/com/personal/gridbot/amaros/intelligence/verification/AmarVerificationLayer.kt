@@ -1,36 +1,39 @@
 package com.personal.gridbot.amaros.intelligence.verification
 
+import com.personal.gridbot.amaros.agent.AmarCanonicalEvidenceQualityAssembler
+import com.personal.gridbot.amaros.agent.AmarCanonicalEvidenceQualityReport
 import com.personal.gridbot.amaros.agent.AmarClaimVerificationEngine
 import com.personal.gridbot.amaros.agent.AmarClaimVerificationReport
 import com.personal.gridbot.amaros.agent.AmarEvidence
-import com.personal.gridbot.amaros.agent.AmarEvidenceQualityEngine
-import com.personal.gridbot.amaros.agent.AmarEvidenceQualityReport
 import com.personal.gridbot.amaros.agent.EvidenceStance
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import java.net.URI
 
-/** Stage 11 / 2 — Verification Layer. */
+/**
+ * Stage 11 / Item 5 — Verification Layer.
+ * Consumes Item 3 canonical evidence quality (AmarCanonicalEvidenceQualityAssembler).
+ * No dependency on Stage 2 hardening engines.
+ */
 class AmarVerificationLayer(
-    private val evidenceQuality: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
+    private val evidenceQuality: AmarCanonicalEvidenceQualityAssembler = AmarCanonicalEvidenceQualityAssembler(),
     private val claimVerifier: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
     private val sourceRegistry: AmarVerificationSourceRegistry = AmarVerificationSourceRegistry()
 ) {
     fun verify(answer: String, findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarVerificationReport {
-        val quality = evidenceQuality.assess(findings, nowEpochMs)
+        val quality = evidenceQuality.assemble(findings, nowEpochMs)
         val sourceSnapshot = sourceRegistry.index(findings)
         return buildReport(findings, quality, sourceSnapshot, claimVerifier.verify(answer, findings))
     }
 
-    /** Evidence-only path: research evidence is verified without inventing a final answer claim. */
     fun verifyEvidenceOnly(findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarVerificationReport {
-        val quality = evidenceQuality.assess(findings, nowEpochMs)
+        val quality = evidenceQuality.assemble(findings, nowEpochMs)
         val sourceSnapshot = sourceRegistry.index(findings)
         return buildReport(findings, quality, sourceSnapshot, AmarClaimVerificationReport(emptyList(), accepted = true))
     }
 
     private fun buildReport(
         findings: List<ResearchFinding>,
-        quality: AmarEvidenceQualityReport,
+        quality: AmarCanonicalEvidenceQualityReport,
         sourceSnapshot: AmarVerificationSourceRegistrySnapshot,
         claimVerification: AmarClaimVerificationReport
     ): AmarVerificationReport {
@@ -43,7 +46,9 @@ class AmarVerificationLayer(
         } else {
             claimVerification.claims.count { it.accepted }.toDouble() / claimVerification.claims.size * 0.25
         }
-        val score = (quality.score * 0.45 + sourceSnapshot.integrityScore * 0.20 + claimScore + if (conflicts.isEmpty()) 0.10 else 0.0)
+        val qualityScore = if (quality.compatibilityItemScores.isEmpty()) 0.0
+            else quality.compatibilityItemScores.average()
+        val score = (qualityScore * 0.45 + sourceSnapshot.integrityScore * 0.20 + claimScore + if (conflicts.isEmpty()) 0.10 else 0.0)
             .coerceIn(0.0, 1.0)
         val status = when {
             findings.isEmpty() || usable == 0 -> AmarVerificationStatus.UNVERIFIABLE
@@ -60,7 +65,7 @@ enum class AmarVerificationStatus { VERIFIED, PARTIAL, REJECTED, UNVERIFIABLE }
 data class AmarVerificationReport(
     val status: AmarVerificationStatus,
     val score: Double,
-    val evidenceQuality: AmarEvidenceQualityReport,
+    val evidenceQuality: AmarCanonicalEvidenceQualityReport,
     val sourceRegistry: AmarVerificationSourceRegistrySnapshot,
     val claimVerification: AmarClaimVerificationReport,
     val conflicts: List<AmarConflict>,
@@ -85,7 +90,6 @@ class AmarVerificationSourceRegistry {
 data class AmarVerificationSourceRegistryEntry(val host: String, val sourceUri: String, val authority: String, val fingerprint: String)
 data class AmarVerificationSourceRegistrySnapshot(val entries: List<AmarVerificationSourceRegistryEntry>, val independentHosts: List<String>, val integrityScore: Double)
 
-/** Conflict is claim-scoped by semantic evidence overlap; unrelated support/opposition is not a conflict. */
 object AmarConflictDetector {
     fun detect(findings: List<ResearchFinding>): List<AmarConflict> {
         val support = findings.filter { it.stance == EvidenceStance.SUPPORTS || it.stance == EvidenceStance.MIXED }
@@ -103,8 +107,7 @@ object AmarConflictDetector {
             )
         )
     }
-
-    private fun tokens(text: String): Set<String> = text.lowercase().split(Regex("[^\\p{L}\\p{N}]+" )).filter { it.length >= 4 }.toSet()
+    private fun tokens(text: String): Set<String> = text.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length >= 4 }.toSet()
     private fun overlap(a: Set<String>, b: Set<String>): Double = if (a.isEmpty()) 0.0 else a.intersect(b).size.toDouble() / a.size
 }
 
