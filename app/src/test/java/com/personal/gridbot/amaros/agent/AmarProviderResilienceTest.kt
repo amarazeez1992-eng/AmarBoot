@@ -230,12 +230,18 @@ class AmarProviderResilienceTest {
 
         val opA = audit.records().filter { it.operationId == "op-A" }
         val opB = audit.records().filter { it.operationId == "op-B" }
-        assertEquals(2, opA.size)
-        assertEquals(2, opB.size)
+        assertTrue(opA.isNotEmpty())
+        assertTrue(opB.isNotEmpty())
         assertTrue(opA.all { it.operationId == "op-A" })
         assertTrue(opB.all { it.operationId == "op-B" })
         assertTrue(opA.none { it.providerId == "provider-b" })
         assertTrue(opB.none { it.providerId == "provider-a" })
+        assertTrue(opA.any { it.event == "PROVIDER_ATTEMPT" && it.providerId == "provider-a" })
+        assertTrue(opA.any { it.event == "PROVIDER_FAILED" && it.providerId == "provider-a" })
+        assertTrue(opA.any { it.event == "FAIL_CLOSED" && it.providerId == null })
+        assertTrue(opB.any { it.event == "PROVIDER_ATTEMPT" && it.providerId == "provider-b" })
+        assertTrue(opB.any { it.event == "PROVIDER_FAILED" && it.providerId == "provider-b" })
+        assertTrue(opB.any { it.event == "FAIL_CLOSED" && it.providerId == null })
     }
 
     @Test fun auditRecordIsComplete() = runBlocking {
