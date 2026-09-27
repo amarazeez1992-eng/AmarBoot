@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.006">
+  <properties/>
+  <testcase name="admission_contract_is_deterministic_across_repeated_state_construction" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.003"/>
+  <testcase name="admission_state_contains_only_admitted_and_rejected" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.0"/>
+  <testcase name="admission_result_rejects_wrong_state_in_either_partition" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.001"/>
+  <testcase name="admitted_finding_accepts_boundary_relevance_scores" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.0"/>
+  <testcase name="admission_result_enforces_state_invariants" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.0"/>
+  <testcase name="empty_admission_result_is_empty_on_both_sides" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.0"/>
+  <testcase name="admission_reason_must_be_non_blank" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.001"/>
+  <testcase name="admitted_finding_rejects_invalid_relevance_scores" classname="com.personal.gridbot.amaros.agent.admission.AdmissionContractsTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

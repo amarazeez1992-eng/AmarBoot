@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="same_content_from_different_sources_remains_unique_records" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.0"/>
+  <testcase name="missing_source_or_evidence_is_not_unique" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.0"/>
+  <testcase name="same_source_content_and_timestamp_collide" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.0"/>
+  <testcase name="per_finding_uniqueness_uses_the_same_canonical_record_identity" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.001"/>
+  <testcase name="analysis_is_deterministic_and_does_not_depend_on_supplied_fingerprint" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.0"/>
+  <testcase name="changed_retrieval_time_creates_a_distinct_record_identity" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceUniquenessAnalyzerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

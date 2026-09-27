@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="fail_closed_on_invalid_input" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.001"/>
+  <testcase name="missing_evidence_quality_returns_error" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="claim_verification_result_is_converted" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="no_recalculation_of_evidence_quality" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="output_is_downstream_ready_when_valid" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="adapter_uses_existing_calibration_authority" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="valid_input_returns_calibrated_confidence" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="result_preserves_input_summary" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="no_recalculation_of_claim_verification" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="missing_raw_confidence_returns_error" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="is_stateless" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="conflict_count_passed_to_engine" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.001"/>
+  <testcase name="valid_input_calls_existing_engine" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="is_deterministic" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <testcase name="missing_claim_verification_returns_error" classname="com.personal.gridbot.amaros.agent.confidence.AmarConfidenceCalibrationAdapterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

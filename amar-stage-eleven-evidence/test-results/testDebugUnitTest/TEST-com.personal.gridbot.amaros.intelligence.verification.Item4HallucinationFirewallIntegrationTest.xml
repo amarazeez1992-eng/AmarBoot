@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.005">
+  <properties/>
+  <testcase name="caseF_a7_coverage_incomplete_propagates_to_final_block" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.003"/>
+  <testcase name="caseB_a1_block_propagates_to_final_block" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseD_a5_disagreement_propagates_to_final_block" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseI_all_seven_blocking_signals_use_only_priority_one_reason" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseE_arabic_self_contradiction_is_proven_by_pair_indices" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.001"/>
+  <testcase name="caseC_a4_insufficient_temporal_data_propagates_to_final_block" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseH_missing_a1_result_blocks_with_missing_addition_reason" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseA_full_pass_propagates_through_all_eight_additions" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.0"/>
+  <testcase name="caseG_insufficient_a6_state_is_fail_closed" classname="com.personal.gridbot.amaros.intelligence.verification.Item4HallucinationFirewallIntegrationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

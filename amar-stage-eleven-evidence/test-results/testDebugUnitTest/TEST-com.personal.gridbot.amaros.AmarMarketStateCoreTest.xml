@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarMarketStateCoreTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="live_mt5_snapshot_is_usable" classname="com.personal.gridbot.amaros.AmarMarketStateCoreTest" time="0.001"/>
+  <testcase name="live_without_source_is_not_usable" classname="com.personal.gridbot.amaros.AmarMarketStateCoreTest" time="0.001"/>
+  <testcase name="empty_snapshot_is_not_usable" classname="com.personal.gridbot.amaros.AmarMarketStateCoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

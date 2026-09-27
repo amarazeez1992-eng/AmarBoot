@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="auditTrail_requiresMonotonicSequence" classname="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" time="0.001"/>
+  <testcase name="recovery_returnsToHealthyAfterRecovery" classname="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" time="0.0"/>
+  <testcase name="sandbox_deniesNetworkAndWrites" classname="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" time="0.0"/>
+  <testcase name="evidenceVerifier_failsUnknownOrUnsupportedEvidence" classname="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" time="0.001"/>
+  <testcase name="promptBoundary_rejectsInjectionMarkers" classname="com.personal.gridbot.amaros.ai.hardening.AmarAiProductionHardeningPhaseFiveTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="contractSizeIsAppliedToNotionalExposure" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.001"/>
+  <testcase name="aggregateProfitOverflowIsRejected" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="invalidContractSizeIsRejected" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="validPositionsProduceDeterministicTotals" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="invalidPositionIsRejectedWithoutGuessing" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="aggregateExposureOverflowIsRejected" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="untrustedRuntimeDataIsRejected" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.0"/>
+  <testcase name="exposureOverflowIsRejectedAtValidationBoundary" classname="com.personal.gridbot.amaros.tracking.AmarTrackingPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.016">
+  <properties/>
+  <testcase name="multiple_entries_ordered_by_timestamp" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.006"/>
+  <testcase name="chain_link_recorded" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.003"/>
+  <testcase name="audit_id_is_deterministic" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.001"/>
+  <testcase name="is_downstream_ready_when_valid" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="preserves_evidence" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.001"/>
+  <testcase name="no_recalculation_of_upstream" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="entries_are_immutable" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.001"/>
+  <testcase name="does_not_reuse_general_audit_log" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="lifecycle_transition_recorded" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.002"/>
+  <testcase name="is_stateless" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="single_entry_created" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.001"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="fail_closed_on_missing_upstream" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="provenance_consumed_not_rebuilt" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.0"/>
+  <testcase name="is_deterministic" classname="com.personal.gridbot.amaros.agent.audit.AmarEvidenceAuditTrailTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

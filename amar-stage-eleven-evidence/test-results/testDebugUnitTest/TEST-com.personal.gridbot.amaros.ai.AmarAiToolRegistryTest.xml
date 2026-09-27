@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.ai.AmarAiToolRegistryTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.0">
+  <properties/>
+  <testcase name="readOnlyToolIsRegisteredAndNeverExecutionCapable" classname="com.personal.gridbot.amaros.ai.AmarAiToolRegistryTest" time="0.0"/>
+  <testcase name="brokerExecutionToolCannotBecomeKnownByNamingConvention" classname="com.personal.gridbot.amaros.ai.AmarAiToolRegistryTest" time="0.0"/>
+  <testcase name="draftToolRequiresGovernedDraftAuthority" classname="com.personal.gridbot.amaros.ai.AmarAiToolRegistryTest" time="0.0"/>
+  <testcase name="unknownToolIsRejectedByRegistry" classname="com.personal.gridbot.amaros.ai.AmarAiToolRegistryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

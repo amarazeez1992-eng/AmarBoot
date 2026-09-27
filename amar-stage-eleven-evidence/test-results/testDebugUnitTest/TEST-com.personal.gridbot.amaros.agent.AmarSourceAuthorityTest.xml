@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.006">
+  <properties/>
+  <testcase name="per_finding_independence_uses_the_same_canonical_host_rule" classname="com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest" time="0.0"/>
+  <testcase name="authority_scoring_is_deterministic_and_matches_defined_scale" classname="com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest" time="0.005"/>
+  <testcase name="authority_score_exposes_the_existing_owner_scale_without_recalculation" classname="com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest" time="0.0"/>
+  <testcase name="higher_authority_produces_higher_score_without_changing_source_count" classname="com.personal.gridbot.amaros.agent.AmarSourceAuthorityTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

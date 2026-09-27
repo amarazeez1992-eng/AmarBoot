@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:17" hostname="runnervmtr4k5" time="0.01">
+  <properties/>
+  <testcase name="reconciliationDetectsMatchAndDrift" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.002"/>
+  <testcase name="lifecycleTransitionsAreClosedAndTerminal" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.001"/>
+  <testcase name="strategyCatalogHasTenIndependentSlots" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.005"/>
+  <testcase name="executionPolicyBlocksAnyFailedGate" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.0"/>
+  <testcase name="supervisorProposalCanNeverBecomeExecutable" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.001"/>
+  <testcase name="emergencyLockAlwaysBlocks" classname="com.personal.gridbot.amaros.AmarB34BotRuntimeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

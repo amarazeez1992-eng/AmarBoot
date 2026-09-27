@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="emergencyLockOverridesValidPermission" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.002"/>
+  <testcase name="explicitPermissionIsRequiredAndRevocationIsImmediate" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="devicePermissionsAreBoundedAndIndependent" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="decisionIdIsTheIdempotencyBoundary" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="unapprovedAgentDecisionIsRejectedEvenWithPermission" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="executionCannotBeRoutedThroughDeviceGateway" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="decisionExpiryIsFailClosed" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <testcase name="duplicateDecisionIdReturnsOriginalReceipt" classname="com.personal.gridbot.amaros.command.AmarCentralCommandPlaneTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

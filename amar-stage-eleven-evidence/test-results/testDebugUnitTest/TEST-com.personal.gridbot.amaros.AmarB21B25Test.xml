@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarB21B25Test" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:17" hostname="runnervmtr4k5" time="0.015">
+  <properties/>
+  <testcase name="gridEngine_buildsStableLevels" classname="com.personal.gridbot.amaros.AmarB21B25Test" time="0.001"/>
+  <testcase name="simulationEngine_neverUsesLiveMode" classname="com.personal.gridbot.amaros.AmarB21B25Test" time="0.007"/>
+  <testcase name="testingEngine_producesDeterministicReport" classname="com.personal.gridbot.amaros.AmarB21B25Test" time="0.002"/>
+  <testcase name="brokerAdapter_failClosed" classname="com.personal.gridbot.amaros.AmarB21B25Test" time="0.001"/>
+  <testcase name="api_isDemoOnly" classname="com.personal.gridbot.amaros.AmarB21B25Test" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.trading.AmarTradingKnowledgeLibraryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="governanceProtectsProprietaryBoundaries" classname="com.personal.gridbot.amaros.trading.AmarTradingKnowledgeLibraryTest" time="0.001"/>
+  <testcase name="searchFindsRelevantDomains" classname="com.personal.gridbot.amaros.trading.AmarTradingKnowledgeLibraryTest" time="0.001"/>
+  <testcase name="libraryHasBroadTradingDomains" classname="com.personal.gridbot.amaros.trading.AmarTradingKnowledgeLibraryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

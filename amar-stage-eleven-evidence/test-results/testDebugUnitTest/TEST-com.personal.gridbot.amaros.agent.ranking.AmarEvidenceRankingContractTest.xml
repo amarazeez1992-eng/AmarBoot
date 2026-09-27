@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.023">
+  <properties/>
+  <testcase name="single_evidence_gets_rank_1" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.01"/>
+  <testcase name="explanation_is_deterministic" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="ranking_does_not_recalculate_relevance" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="unranked_contains_conflicted" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="unranked_contains_insufficient" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="missing_signal_is_fail_closed" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="authority_breaks_relevance_tie" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="empty_input_returns_empty_ranking" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="ranking_signals_are_recorded" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.002"/>
+  <testcase name="complete_status_ranked_higher_than_partial" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="higher_relevance_score_ranked_first" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="is_downstream_ready_false_when_unranked" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="stale_evidence_ranked_lowest" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <testcase name="unranked_contains_unverified" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.0"/>
+  <testcase name="ranking_is_deterministic" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.002"/>
+  <testcase name="fingerprint_breaks_authority_tie" classname="com.personal.gridbot.amaros.agent.ranking.AmarEvidenceRankingContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

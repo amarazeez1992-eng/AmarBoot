@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.009">
+  <properties/>
+  <testcase name="entity_mention_mismatch_detected" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.004"/>
+  <testcase name="no_hallucination_when_clean" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.0"/>
+  <testcase name="confidence_inflation_detected" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.001"/>
+  <testcase name="certainty_language_mismatch_detected" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.0"/>
+  <testcase name="multiple_indicators_severity_high" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.0"/>
+  <testcase name="determinism" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.001"/>
+  <testcase name="numeric_claim_without_evidence_detected" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.001"/>
+  <testcase name="no_reverification" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.001"/>
+  <testcase name="repetition_suspicion_detected" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.001"/>
+  <testcase name="regression" classname="com.personal.gridbot.amaros.agent.HallucinationDetectionGuardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

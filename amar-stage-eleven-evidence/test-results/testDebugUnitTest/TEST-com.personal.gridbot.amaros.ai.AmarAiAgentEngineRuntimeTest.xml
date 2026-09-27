@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:19" hostname="runnervmtr4k5" time="1.182">
+  <properties/>
+  <testcase name="engine_accepts_request_and_returns_non_blank_answer" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.002"/>
+  <testcase name="final_progress_reports_real_elapsed_and_source_metadata" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.003"/>
+  <testcase name="time_question_returns_device_time_without_evidence_gate" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.008"/>
+  <testcase name="greeting_survives_orchestrator_evidence_enrichment" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.002"/>
+  <testcase name="arabic_small_talk_gets_a_dedicated_response" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.002"/>
+  <testcase name="engine_response_is_blocked_when_research_evidence_is_unavailable" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.59"/>
+  <testcase name="identity_question_returns_local_answer_without_evidence_gate" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.002"/>
+  <testcase name="ordinary_research_can_return_an_uncertain_answer_without_trading_strict_gate" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineRuntimeTest" time="0.573"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

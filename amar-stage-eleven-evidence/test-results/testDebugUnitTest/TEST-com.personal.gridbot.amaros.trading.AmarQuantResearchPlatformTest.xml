@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.008">
+  <properties/>
+  <testcase name="driftAndDnaAreDeterministic" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.002"/>
+  <testcase name="walkForwardKeepsOosSeparate" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.001"/>
+  <testcase name="rejectsFutureDataAndNonMonotonicTime" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.0"/>
+  <testcase name="fingerprintIsStable" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.004"/>
+  <testcase name="mutationRequiresLeakageStressSampleAndOos" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.001"/>
+  <testcase name="stressCanFailWhenCostsEraseEdge" classname="com.personal.gridbot.amaros.trading.AmarQuantResearchPlatformTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

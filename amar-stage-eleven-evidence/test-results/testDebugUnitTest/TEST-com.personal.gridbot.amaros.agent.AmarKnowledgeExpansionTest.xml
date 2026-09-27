@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarKnowledgeExpansionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.014">
+  <properties/>
+  <testcase name="fully_validated_capability_can_be_admitted" classname="com.personal.gridbot.amaros.agent.AmarKnowledgeExpansionTest" time="0.012"/>
+  <testcase name="rejected_capability_is_stored_without_trust_promotion" classname="com.personal.gridbot.amaros.agent.AmarKnowledgeExpansionTest" time="0.0"/>
+  <testcase name="incomplete_admission_gate_must_fail_closed" classname="com.personal.gridbot.amaros.agent.AmarKnowledgeExpansionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

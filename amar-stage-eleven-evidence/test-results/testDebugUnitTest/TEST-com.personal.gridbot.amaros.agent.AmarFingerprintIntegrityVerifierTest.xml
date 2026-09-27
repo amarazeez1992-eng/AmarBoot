@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="verification_is_deterministic" classname="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" time="0.001"/>
+  <testcase name="changing_source_or_evidence_breaks_integrity" classname="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" time="0.001"/>
+  <testcase name="modified_fingerprint_is_rejected" classname="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" time="0.0"/>
+  <testcase name="matching_fingerprint_is_intact" classname="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" time="0.0"/>
+  <testcase name="missing_fingerprint_is_rejected" classname="com.personal.gridbot.amaros.agent.AmarFingerprintIntegrityVerifierTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

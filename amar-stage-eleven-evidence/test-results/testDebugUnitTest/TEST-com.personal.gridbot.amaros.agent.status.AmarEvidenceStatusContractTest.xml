@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="overall_status_complete_when_all_complete" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.001"/>
+  <testcase name="status_preserves_evidence" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.001"/>
+  <testcase name="precedence_insufficient_before_partial" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="precedence_unverified_first" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="status_is_deterministic" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="status_result_partitions_correctly" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="fingerprint_canonical_order_is_deterministic" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="conflicted_status_when_conflict_is_supplied" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="is_downstream_ready_false_when_unclassified_present" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.001"/>
+  <testcase name="insufficient_status_when_below_context_minimum" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="complete_status_when_all_verified" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="stale_status_when_freshness_is_not_verified" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="unverified_status_when_not_admitted" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="overall_status_conflicted_when_any_conflicted" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <testcase name="partial_status_when_some_verified" classname="com.personal.gridbot.amaros.agent.status.AmarEvidenceStatusContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.005">
+  <properties/>
+  <testcase name="reasoning_fails_closed_to_insufficient_data_when_nothing_is_usable" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.002"/>
+  <testcase name="confidence_delegates_all_five_dimensions_to_item_two" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="whitespace_is_normalized_before_status_classification" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="infinite_freshness_is_rejected" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="image_and_external_signal_inputs_are_present" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="perception_classifies_present_missing_and_malformed_inputs" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="zero_and_one_quality_and_freshness_boundaries_are_accepted" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="analysis_is_deterministic_and_does_not_mutate_input_order" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="confidence_is_bounded_and_sensitive_to_quality_freshness_and_completeness" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="nan_quality_is_rejected" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="complete_input_reaches_ready_state" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.001"/>
+  <testcase name="confidence_score_is_clamped_to_valid_range" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="reasoning_exposes_supporting_observations_and_alternatives" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="empty_input_is_blocked_and_has_zero_completeness" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="partial_input_is_degraded_and_requires_more_input" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <testcase name="invalid_quality_or_freshness_is_rejected" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.001"/>
+  <testcase name="perception_snapshot_is_immutable_against_source_list_changes" classname="com.personal.gridbot.amaros.intelligence.core.AmarIntelligenceCoreTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:17" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="configurationDriftIsDetected" classname="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" time="0.0"/>
+  <testcase name="strategyIdentityDriftFailsClosed" classname="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" time="0.0"/>
+  <testcase name="staleHeartbeatFailsClosed" classname="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" time="0.0"/>
+  <testcase name="exactReadBackIsVerified" classname="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" time="0.0"/>
+  <testcase name="staleMarketFailsClosed" classname="com.personal.gridbot.amaros.AmarBot1VerifiedRuntimeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

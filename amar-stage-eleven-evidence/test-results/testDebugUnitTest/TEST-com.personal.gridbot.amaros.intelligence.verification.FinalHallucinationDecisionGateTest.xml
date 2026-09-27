@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="multiple_missing_additions_are_sorted_and_reported" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.002"/>
+  <testcase name="missing_result_wins_over_content_blocking_signal" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.0"/>
+  <testcase name="all_seven_blocking_signals_return_only_addition_one_reason" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.0"/>
+  <testcase name="insufficient_states_block_with_existing_reasons" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.001"/>
+  <testcase name="each_missing_addition_is_reported_and_blocks" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.0"/>
+  <testcase name="every_non_pass_signal_blocks" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.0"/>
+  <testcase name="passes_only_when_all_additions_pass" classname="com.personal.gridbot.amaros.intelligence.verification.FinalHallucinationDecisionGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

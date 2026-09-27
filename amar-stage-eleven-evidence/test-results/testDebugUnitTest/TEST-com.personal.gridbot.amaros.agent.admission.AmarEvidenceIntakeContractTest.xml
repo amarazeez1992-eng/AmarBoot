@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.006">
+  <properties/>
+  <testcase name="valid_unrelated_candidate_passes_intake" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="url_canonicalization_removes_fragment" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="different_urls_with_same_content_produce_same_fingerprint" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="fingerprint_is_sha256_hex_64_chars" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="intake_verified_is_false_when_no_candidates_are_accepted" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="text_normalization_trims_leading_trailing" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="url_canonicalization_lowercases_scheme_and_host" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="duplicate_url_is_rejected" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="text_normalization_collapses_whitespace" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="fingerprint_is_deterministic" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="intake_verified_is_false_when_a_candidate_is_rejected" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="invalid_url_is_rejected" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="intake_verified_is_true_when_candidates_are_accepted_without_rejections" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="url_canonicalization_removes_trailing_slash" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <testcase name="duplicate_fingerprint_is_rejected" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.001"/>
+  <testcase name="intake_verified_is_false_for_mixed_accepted_and_rejected_candidates" classname="com.personal.gridbot.amaros.agent.admission.AmarEvidenceIntakeContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

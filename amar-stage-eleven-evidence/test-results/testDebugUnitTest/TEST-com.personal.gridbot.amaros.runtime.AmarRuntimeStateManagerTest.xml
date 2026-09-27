@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="executedIsNotTerminalUntilVerified" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.001"/>
+  <testcase name="pendingCommandCanTerminateOnRejectOrFailure" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <testcase name="commandLifecycleMustFollowGovernedOrder" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <testcase name="terminalCommandCannotTransitionAgain" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <testcase name="invalidBotIsRejected" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <testcase name="botStateIsStoredAndRead" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <testcase name="initializationCannotBypassLifecycle" classname="com.personal.gridbot.amaros.runtime.AmarRuntimeStateManagerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

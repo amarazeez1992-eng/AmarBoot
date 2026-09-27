@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.009">
+  <properties/>
+  <testcase name="arabic_trade_question_is_understood_without_planner_keywords" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.001"/>
+  <testcase name="date_question_uses_local_system_intent" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.0"/>
+  <testcase name="small_talk_is_not_classified_as_greeting" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.001"/>
+  <testcase name="mixed_request_exposes_multiple_signals" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.001"/>
+  <testcase name="open_general_question_defaults_to_research" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.0"/>
+  <testcase name="greeting_normalization_handles_arabic_diacritics" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.0"/>
+  <testcase name="identity_question_uses_local_system_intent" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.0"/>
+  <testcase name="planner_exposes_understanding_and_entities" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.004"/>
+  <testcase name="time_question_uses_local_system_intent" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.0"/>
+  <testcase name="english_strategy_request_is_understood" classname="com.personal.gridbot.amaros.agent.AmarIntentUnderstandingTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

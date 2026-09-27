@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarSourceVerifierTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="authority_verified_is_true_when_all_findings_have_known_authority" classname="com.personal.gridbot.amaros.agent.AmarSourceVerifierTest" time="0.001"/>
+  <testcase name="authority_verified_is_boolean_owner_state_independent_of_numeric_score" classname="com.personal.gridbot.amaros.agent.AmarSourceVerifierTest" time="0.0"/>
+  <testcase name="authority_verified_is_false_for_empty_findings" classname="com.personal.gridbot.amaros.agent.AmarSourceVerifierTest" time="0.0"/>
+  <testcase name="authority_verified_is_false_when_any_finding_has_unknown_authority" classname="com.personal.gridbot.amaros.agent.AmarSourceVerifierTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

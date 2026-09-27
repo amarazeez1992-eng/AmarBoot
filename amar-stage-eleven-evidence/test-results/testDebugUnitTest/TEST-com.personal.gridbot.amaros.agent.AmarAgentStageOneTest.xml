@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.012">
+  <properties/>
+  <testcase name="task_state_machine_exposes_expected_operational_states_and_progress_metadata" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.001"/>
+  <testcase name="source_verifier_requires_independent_evidence_and_ignores_invalid_findings" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.003"/>
+  <testcase name="accuracy_first_default_budget_allows_120_seconds" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.0"/>
+  <testcase name="role_opinions_keep_execution_disabled_and_surface_opposition" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.003"/>
+  <testcase name="trading_tools_respect_capability_scopes_and_read_only_flags" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.001"/>
+  <testcase name="budget_normalization_keeps_limits_safe" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.0"/>
+  <testcase name="decision_council_blocks_direction_conflict" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.001"/>
+  <testcase name="direction_engine_rejects_negated_buy" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.002"/>
+  <testcase name="critic_requires_evidence_only_when_requested" classname="com.personal.gridbot.amaros.agent.AmarAgentStageOneTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

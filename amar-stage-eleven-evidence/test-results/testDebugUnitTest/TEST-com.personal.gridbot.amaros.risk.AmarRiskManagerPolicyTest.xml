@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="safeSnapshotPasses" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.001"/>
+  <testcase name="untrustedSnapshotFailsClosed" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <testcase name="exactPositiveLimitsAreBreaches" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <testcase name="nonFiniteSnapshotValuesFailClosed" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <testcase name="breachedLimitsFailClosed" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <testcase name="negativeSnapshotValuesFailClosed" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <testcase name="invalidLimitsFailClosed" classname="com.personal.gridbot.amaros.risk.AmarRiskManagerPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

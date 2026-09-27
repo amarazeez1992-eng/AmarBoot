@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="www_prefix_does_not_create_a_second_independent_source" classname="com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest" time="0.001"/>
+  <testcase name="distinct_hosts_are_independent_even_when_paths_differ" classname="com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest" time="0.0"/>
+  <testcase name="repeated_evaluation_is_deterministic" classname="com.personal.gridbot.amaros.agent.AmarSourceIndependenceBoundaryTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

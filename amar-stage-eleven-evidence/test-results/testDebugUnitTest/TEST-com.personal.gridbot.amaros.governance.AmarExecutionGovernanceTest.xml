@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="riskEvidenceAndSecurityAreIndependentGates" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.001"/>
+  <testcase name="reconciliationDetectsReadBackMismatch" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.001"/>
+  <testcase name="riskThresholdBoundaryIsInclusiveAtPointSeven" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="idempotencyReturnsTheOriginalReceipt" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="revocationAndExpiryFailClosed" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="emergencyLockBlocksVerificationOfAlreadyExecutedCommand" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="executionLifecycleRequiresAckThenExecutionThenVerification" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="emergencyLockOverridesValidDelegationAndInterruptsPendingExecution" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <testcase name="approvedExecutionRequiresExplicitDelegation" classname="com.personal.gridbot.amaros.governance.AmarExecutionGovernanceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

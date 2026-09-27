@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.004">
+  <properties/>
+  <testcase name="qualityGateRejectsMalformedAndNonMonotonicBars" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.001"/>
+  <testcase name="qualityGateAcceptsValidMonotonicBars" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.0"/>
+  <testcase name="repeatedBarsBelowLevelDoNotDuplicateSameSweep" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.002"/>
+  <testcase name="confluenceCountsIndependentSourceGroupsAndUsesStrongestPerGroup" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.001"/>
+  <testcase name="swingLowSweepProducesBullishReversal" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.0"/>
+  <testcase name="swingHighSweepProducesBearishReversal" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.0"/>
+  <testcase name="recrossArmsLevelForANewSweep" classname="com.personal.gridbot.amaros.intelligence.advanced.AmarLiquidityAndConfluenceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

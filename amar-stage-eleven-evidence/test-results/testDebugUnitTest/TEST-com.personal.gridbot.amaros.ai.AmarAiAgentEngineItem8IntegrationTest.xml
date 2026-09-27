@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.ai.AmarAiAgentEngineItem8IntegrationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.993">
+  <properties/>
+  <testcase name="reason_task_executor_reaches_router_adaptive_and_provider" classname="com.personal.gridbot.amaros.ai.AmarAiAgentEngineItem8IntegrationTest" time="0.993"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

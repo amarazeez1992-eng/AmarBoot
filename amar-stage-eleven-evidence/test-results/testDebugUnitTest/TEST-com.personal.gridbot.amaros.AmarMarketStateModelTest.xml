@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarMarketStateModelTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="direct_live_publish_is_fail_closed_for_invalid_prices" classname="com.personal.gridbot.amaros.AmarMarketStateModelTest" time="0.0"/>
+  <testcase name="valid_snapshot_becomes_live_normalized_state" classname="com.personal.gridbot.amaros.AmarMarketStateModelTest" time="0.001"/>
+  <testcase name="non_finite_snapshot_cannot_become_live" classname="com.personal.gridbot.amaros.AmarMarketStateModelTest" time="0.0"/>
+  <testcase name="default_state_is_not_live" classname="com.personal.gridbot.amaros.AmarMarketStateModelTest" time="0.0"/>
+  <testcase name="invalid_snapshot_cannot_become_live" classname="com.personal.gridbot.amaros.AmarMarketStateModelTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

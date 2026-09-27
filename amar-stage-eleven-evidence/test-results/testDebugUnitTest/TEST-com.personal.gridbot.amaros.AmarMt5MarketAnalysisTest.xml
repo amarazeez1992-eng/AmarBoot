@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarMt5MarketAnalysisTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="rising_candles_are_bullish" classname="com.personal.gridbot.amaros.AmarMt5MarketAnalysisTest" time="0.001"/>
+  <testcase name="falling_candles_are_bearish" classname="com.personal.gridbot.amaros.AmarMt5MarketAnalysisTest" time="0.0"/>
+  <testcase name="insufficient_data_is_neutral" classname="com.personal.gridbot.amaros.AmarMt5MarketAnalysisTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.explainability.AmarExplainabilityServiceTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="runtime_state_maps_to_explanation_correctly" classname="com.personal.gridbot.amaros.explainability.AmarExplainabilityServiceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

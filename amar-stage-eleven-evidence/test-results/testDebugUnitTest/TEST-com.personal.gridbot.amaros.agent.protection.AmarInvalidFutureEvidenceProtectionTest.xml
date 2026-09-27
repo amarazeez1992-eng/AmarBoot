@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="fingerprint_used_as_canonical_id" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="no_recalculation_of_freshness" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="fresh_evidence_is_protected" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="tampered_evidence_is_invalid" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.001"/>
+  <testcase name="fail_closed_on_missing_freshness_state" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="audit_trail_preserved_for_rejected" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="stale_evidence_is_protected" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="preserves_evidence" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="protection_is_stateless" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="is_downstream_ready_false_when_future_present" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="result_partitions_correctly" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="valid_evidence_passes" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="is_downstream_ready_false_when_invalid_present" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="claim_rejected_evidence_is_invalid" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.001"/>
+  <testcase name="conflicted_evidence_is_invalid" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="future_evidence_is_rejected_and_quarantined" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="protection_is_deterministic" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="no_recalculation_of_tampering" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <testcase name="no_recalculation_of_conflict" classname="com.personal.gridbot.amaros.agent.protection.AmarInvalidFutureEvidenceProtectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

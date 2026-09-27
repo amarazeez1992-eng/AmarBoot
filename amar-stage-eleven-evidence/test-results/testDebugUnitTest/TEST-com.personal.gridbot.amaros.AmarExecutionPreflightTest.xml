@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarExecutionPreflightTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="allows_exact_identity_and_symbol" classname="com.personal.gridbot.amaros.AmarExecutionPreflightTest" time="0.001"/>
+  <testcase name="blocks_unhealthy_runtime" classname="com.personal.gridbot.amaros.AmarExecutionPreflightTest" time="0.0"/>
+  <testcase name="blocks_symbol_mismatch" classname="com.personal.gridbot.amaros.AmarExecutionPreflightTest" time="0.0"/>
+  <testcase name="blocks_magic_mismatch" classname="com.personal.gridbot.amaros.AmarExecutionPreflightTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

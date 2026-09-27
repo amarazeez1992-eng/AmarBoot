@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageFourBacktestTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="deterministic_backtest_is_reproducible_and_reports_metrics" classname="com.personal.gridbot.amaros.agent.AmarStageFourBacktestTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="zeroPriceIsRejected" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.001"/>
+  <testcase name="nonFiniteThresholdsAreRejectedFailClosed" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="validSnapshotProducesExpectedAlerts" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="negativeInfinityMarginLevelIsRejected" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="negativeProfitDoesNotTriggerLossLimitAtExactDisabledBoundary" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="zeroMarginInfinityIsValidEvidence" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="invalidSnapshotAndThresholdsAreRejected" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="disabledThresholdsDoNotTrigger" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="thresholdBoundariesTriggerInclusively" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <testcase name="lossLimitTriggersOnNegativeProfit" classname="com.personal.gridbot.amaros.alerts.AmarAlertCenterPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

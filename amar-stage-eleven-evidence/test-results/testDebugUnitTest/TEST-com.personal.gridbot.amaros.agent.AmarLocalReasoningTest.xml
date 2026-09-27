@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarLocalReasoningTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.017">
+  <properties/>
+  <testcase name="local_reasoning_never_calls_external_ai_and_uses_supplied_evidence" classname="com.personal.gridbot.amaros.agent.AmarLocalReasoningTest" time="0.013"/>
+  <testcase name="local_reasoning_extracts_direct_fact_from_matching_evidence" classname="com.personal.gridbot.amaros.agent.AmarLocalReasoningTest" time="0.003"/>
+  <testcase name="local_reasoning_blocks_unsupported_external_claims" classname="com.personal.gridbot.amaros.agent.AmarLocalReasoningTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

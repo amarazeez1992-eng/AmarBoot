@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.005">
+  <properties/>
+  <testcase name="agreement_is_consumed_without_recalculation" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" time="0.001"/>
+  <testcase name="dependency_is_not_agreement" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" time="0.0"/>
+  <testcase name="disagreement_is_not_agreement" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" time="0.0"/>
+  <testcase name="deterministic_group_order_is_preserved" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" time="0.004"/>
+  <testcase name="insufficient_upstream_data_fails_closed" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceAgreementConsumerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

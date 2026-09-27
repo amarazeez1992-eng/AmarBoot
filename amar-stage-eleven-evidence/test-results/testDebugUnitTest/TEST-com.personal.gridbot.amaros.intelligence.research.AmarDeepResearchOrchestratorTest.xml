@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.029">
+  <properties/>
+  <testcase name="parallel_research_is_bounded_ranked_deduplicated_and_evidence_verified" classname="com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest" time="0.016"/>
+  <testcase name="conflicting_stances_are_preserved_and_conflict_is_not_duplicated" classname="com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest" time="0.003"/>
+  <testcase name="invalid_sources_are_filtered_before_global_verification" classname="com.personal.gridbot.amaros.intelligence.research.AmarDeepResearchOrchestratorTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

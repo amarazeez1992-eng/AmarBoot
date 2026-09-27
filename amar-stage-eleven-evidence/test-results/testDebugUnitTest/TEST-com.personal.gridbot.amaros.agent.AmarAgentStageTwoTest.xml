@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.02">
+  <properties/>
+  <testcase name="blank_fingerprints_do_not_collapse_distinct_evidence" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.008"/>
+  <testcase name="opposing_evidence_reduces_confidence_and_blocks_approval" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.001"/>
+  <testcase name="same_direction_high_confidence_requires_independent_mixed_evidence" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.002"/>
+  <testcase name="unknown_evidence_does_not_count_as_hold_support" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.002"/>
+  <testcase name="blank_role_id_is_a_hard_block_and_is_not_filtered_out" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.001"/>
+  <testcase name="unknown_direction_is_a_hard_block" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.002"/>
+  <testcase name="role_report_identity_mismatch_is_a_hard_block" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.001"/>
+  <testcase name="duplicate_role_ids_are_reported_instead_of_silently_dropped" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.0"/>
+  <testcase name="roles_never_receive_execution_authority" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.002"/>
+  <testcase name="coordinator_detects_direction_conflict_and_never_approves_it" classname="com.personal.gridbot.amaros.agent.AmarAgentStageTwoTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

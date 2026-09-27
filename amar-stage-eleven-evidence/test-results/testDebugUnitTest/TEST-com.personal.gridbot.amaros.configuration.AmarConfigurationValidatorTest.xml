@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="max_research_sources_too_high_throws" classname="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" time="0.0"/>
+  <testcase name="max_research_sources_zero_throws" classname="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" time="0.0"/>
+  <testcase name="valid_bounds_pass" classname="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" time="0.0"/>
+  <testcase name="minimum_evidence_confidence_below_zero_throws" classname="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" time="0.0"/>
+  <testcase name="minimum_evidence_confidence_above_one_throws" classname="com.personal.gridbot.amaros.configuration.AmarConfigurationValidatorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

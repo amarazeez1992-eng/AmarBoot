@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="calibrated_confidence_drops_with_conflicts" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.001"/>
+  <testcase name="claim_without_matching_support_is_rejected" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.0"/>
+  <testcase name="future_evidence_is_blocked_by_freshness_contract" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.001"/>
+  <testcase name="duplicate_evidence_is_counted_and_not_treated_as_independent" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.0"/>
+  <testcase name="same_host_sources_are_not_independent" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.0"/>
+  <testcase name="evidence_quality_penalizes_old_unknown_sources" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.001"/>
+  <testcase name="neutral_evidence_can_verify_a_factual_match_without_being_called_support" classname="com.personal.gridbot.amaros.agent.AmarStageTwoHardeningTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

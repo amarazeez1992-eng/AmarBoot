@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.0">
+  <properties/>
+  <testcase name="rejectsPublicHttpAndBlankEndpoints" classname="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" time="0.0"/>
+  <testcase name="rejectsBlankAndOversizedTokens" classname="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" time="0.0"/>
+  <testcase name="allowsExplicitPrivateLanHttpOnly" classname="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" time="0.0"/>
+  <testcase name="acceptsValidSyncConfiguration" classname="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" time="0.0"/>
+  <testcase name="allowsHttpsSyncEndpoints" classname="com.personal.gridbot.amaros.security.AmarSecurityContractsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.011">
+  <properties/>
+  <testcase name="recall_ranks_relevant_memory_and_filters_unrelated_recent_records" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.004"/>
+  <testcase name="longTermMemory_isDistinctFromFacts" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.001"/>
+  <testcase name="allAdvancedMemoryTypes_roundTripThroughIsolatedMapping" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.001"/>
+  <testcase name="factMemory_isDistinctFromOtherTypes" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.0"/>
+  <testcase name="snapshot_is_reproducible_and_supersession_preserves_history" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.002"/>
+  <testcase name="taskMemory_isRetrievedAsTaskType" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.0"/>
+  <testcase name="supersession_cannot_reuse_the_old_id" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.0"/>
+  <testcase name="allMemoryTypes_areStorable" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.001"/>
+  <testcase name="contextMemory_isRetrievedAsContextType" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.001"/>
+  <testcase name="type_filter_and_fail_closed_empty_query_are_deterministic" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.0"/>
+  <testcase name="consolidation_keeps_newest_duplicate_within_type" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.001"/>
+  <testcase name="preferenceMemory_isRetrievedAsPreferenceType" classname="com.personal.gridbot.amaros.intelligence.memory.AmarAdvancedMemoryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

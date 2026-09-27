@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.004">
+  <properties/>
+  <testcase name="evidence_only_verification_does_not_fabricate_a_claim" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.001"/>
+  <testcase name="opposing_overlapping_evidence_is_detected_and_prevents_verified_status" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.001"/>
+  <testcase name="malformed_source_or_empty_evidence_cannot_be_verified" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.0"/>
+  <testcase name="unrelated_opposing_evidence_is_not_a_false_positive_conflict" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.001"/>
+  <testcase name="verifies_clean_evidence_and_builds_provenance_chain" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.0"/>
+  <testcase name="provenance_is_deterministic_for_identical_inputs" classname="com.personal.gridbot.amaros.intelligence.verification.AmarVerificationLayerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

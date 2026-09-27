@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.006">
+  <properties/>
+  <testcase name="invalid_intake_fails_closed_without_empty_fallback" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.002"/>
+  <testcase name="converted_candidates_reach_real_evidence_intake" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.0"/>
+  <testcase name="real_intake_result_is_consumed_by_certify" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.002"/>
+  <testcase name="failed_intake_reaches_certify_as_failed_state" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.001"/>
+  <testcase name="research_finding_maps_to_evidence_candidate" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.001"/>
+  <testcase name="converter_is_deterministic_for_same_finding" classname="com.personal.gridbot.amaros.agent.migration.AmarEvidenceIntakeMigrationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

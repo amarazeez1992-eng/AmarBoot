@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.009">
+  <properties/>
+  <testcase name="invalid_fingerprint_rejected" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.001"/>
+  <testcase name="no_recalculation_of_relevance" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.002"/>
+  <testcase name="invalid_evidence_preserved" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="duplicate_fingerprint_detected_as_duplicate_canonical_key" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="is_downstream_ready_false_when_invalid_fingerprint" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.001"/>
+  <testcase name="canonical_order_is_deterministic" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="result_partitions_correctly" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="canonical_order_independent_of_input_order" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.001"/>
+  <testcase name="single_evidence_is_canonical" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="no_modification_of_evidence" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="future_evidence_preserved" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="multiple_evidences_sorted_by_fingerprint_asc" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="stateless_and_deterministic" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.0"/>
+  <testcase name="no_recalculation_of_ranking" classname="com.personal.gridbot.amaros.agent.deterministic.AmarDeterministicEvidenceHandlingTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

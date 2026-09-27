@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="opposite_polarity_same_subject_and_predicate_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.001"/>
+  <testcase name="extraction_failure_fails_closed" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <testcase name="same_polarity_is_not_a_contradiction" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <testcase name="contradiction_pairs_are_deterministically_ordered" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <testcase name="different_subject_or_predicate_is_not_a_contradiction" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <testcase name="Arabic_non_contradictory_claims_are_supported" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <testcase name="Arabic_positive_and_negative_claims_are_detected" classname="com.personal.gridbot.amaros.intelligence.verification.SelfContradictionDetectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

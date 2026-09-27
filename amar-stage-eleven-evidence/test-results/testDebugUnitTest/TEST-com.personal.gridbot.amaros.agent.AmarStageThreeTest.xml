@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageThreeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="expired_memory_is_removed_before_retrieval" classname="com.personal.gridbot.amaros.agent.AmarStageThreeTest" time="0.001"/>
+  <testcase name="memory_is_bounded_and_deduplicated" classname="com.personal.gridbot.amaros.agent.AmarStageThreeTest" time="0.0"/>
+  <testcase name="unrelated_memory_is_not_retrieved" classname="com.personal.gridbot.amaros.agent.AmarStageThreeTest" time="0.001"/>
+  <testcase name="stage_three_merges_new_and_memory_evidence_without_duplicates" classname="com.personal.gridbot.amaros.agent.AmarStageThreeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

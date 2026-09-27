@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="detects_content_modified" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.002"/>
+  <testcase name="detects_content_added" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="future_previous_snapshot_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="missing_previous_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="does_not_extract_symbol_from_content" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="mismatched_symbol_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="deterministic_for_same_input" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="missing_symbol_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="detects_content_removed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="future_current_snapshot_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="no_change_produces_no_action" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="duplicate_source_entries_fail_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="future_entry_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="blank_fingerprint_fails_closed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <testcase name="detects_source_changed" classname="com.personal.gridbot.amaros.agent.change.AmarEvidenceChangeDetectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

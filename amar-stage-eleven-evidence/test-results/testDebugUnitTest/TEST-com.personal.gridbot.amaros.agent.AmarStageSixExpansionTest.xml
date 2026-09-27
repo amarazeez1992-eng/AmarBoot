@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageSixExpansionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.005">
+  <properties/>
+  <testcase name="hub_can_host_multiple_independent_indicator_engines" classname="com.personal.gridbot.amaros.agent.AmarStageSixExpansionTest" time="0.002"/>
+  <testcase name="indicator_namespace_is_broad_and_not_limited_to_four" classname="com.personal.gridbot.amaros.agent.AmarStageSixExpansionTest" time="0.001"/>
+  <testcase name="open_source_gateway_fails_closed_without_license_and_repository_evidence" classname="com.personal.gridbot.amaros.agent.AmarStageSixExpansionTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

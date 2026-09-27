@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarMarketHealthGateTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="unavailable_market_is_blocked" classname="com.personal.gridbot.amaros.AmarMarketHealthGateTest" time="0.002"/>
+  <testcase name="live_market_is_executable_when_fresh" classname="com.personal.gridbot.amaros.AmarMarketHealthGateTest" time="0.0"/>
+  <testcase name="stale_market_is_blocked" classname="com.personal.gridbot.amaros.AmarMarketHealthGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

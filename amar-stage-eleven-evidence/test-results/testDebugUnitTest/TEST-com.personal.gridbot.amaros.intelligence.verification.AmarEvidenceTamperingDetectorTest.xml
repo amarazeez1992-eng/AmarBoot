@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.012">
+  <properties/>
+  <testcase name="changed_sequence_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="changed_recorded_chain_hash_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="changed_evidence_is_detected_as_tampering" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="chain_length_mutation_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="changed_previous_hash_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="changed_evidence_fingerprint_is_detected" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.01"/>
+  <testcase name="detection_is_deterministic" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.001"/>
+  <testcase name="changed_source_is_detected_as_tampering" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="unchanged_recorded_chain_is_intact" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <testcase name="changed_retrieval_time_is_detected_as_tampering" classname="com.personal.gridbot.amaros.intelligence.verification.AmarEvidenceTamperingDetectorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="evidence_inside_window_is_fresh_and_full_score" classname="com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest" time="0.0"/>
+  <testcase name="evidence_outside_window_is_stale_and_score_decays_deterministically" classname="com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest" time="0.0"/>
+  <testcase name="future_dated_evidence_is_rejected_as_future" classname="com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest" time="0.001"/>
+  <testcase name="repeated_evaluation_is_deterministic" classname="com.personal.gridbot.amaros.agent.AmarEvidenceFreshnessTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

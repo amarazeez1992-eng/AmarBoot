@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="empty_temporal_input_is_insufficient" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.001"/>
+  <testcase name="future_timestamp_is_not_inconsistency" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="negative_timestamp_is_not_revalidated_here" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="does_not_create_blocking_authority" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="missing_temporal_data_is_insufficient" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="no_temporal_match_is_insufficient" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="inconsistent_is_flag_only" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="consistent_when_evidence_event_precedes_claim_reference" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="consumes_addition3_output_without_recomputing_it" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <testcase name="deterministic_repeated_evaluation" classname="com.personal.gridbot.amaros.agent.TemporalConsistencyCheckTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

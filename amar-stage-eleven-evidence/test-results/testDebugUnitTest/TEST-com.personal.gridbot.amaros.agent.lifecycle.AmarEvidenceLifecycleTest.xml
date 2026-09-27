@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.005">
+  <properties/>
+  <testcase name="no_baseline_creates_initial_snapshot" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.001"/>
+  <testcase name="does_not_reimplement_change_detection" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="active_state_for_fresh_evidence" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="is_downstream_ready_when_valid" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="preserves_evidence" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="transitions_are_recorded" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="no_recalculation_of_upstream" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="uses_provenance_fingerprint_not_entity_id" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="fail_closed_on_missing_provenance" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.003"/>
+  <testcase name="expired_state_after_threshold" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="aged_state_after_threshold" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="fail_closed_on_future_timestamp" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="is_stateless" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <testcase name="is_deterministic" classname="com.personal.gridbot.amaros.agent.lifecycle.AmarEvidenceLifecycleTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

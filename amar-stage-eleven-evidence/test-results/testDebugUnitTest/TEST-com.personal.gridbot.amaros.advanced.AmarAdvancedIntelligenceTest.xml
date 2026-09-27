@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.advanced.AmarAdvancedIntelligenceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.009">
+  <properties/>
+  <testcase name="advancedLayerBoundariesWork" classname="com.personal.gridbot.amaros.advanced.AmarAdvancedIntelligenceTest" time="0.005"/>
+  <testcase name="memoryStressEvidenceAndExposureAreBounded" classname="com.personal.gridbot.amaros.advanced.AmarAdvancedIntelligenceTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

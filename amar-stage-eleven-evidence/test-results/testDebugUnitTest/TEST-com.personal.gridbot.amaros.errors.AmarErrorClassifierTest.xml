@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="securityException_maps_to_security" classname="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" time="0.001"/>
+  <testcase name="ioException_maps_to_network" classname="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" time="0.0"/>
+  <testcase name="illegalArgumentException_maps_to_validation" classname="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" time="0.0"/>
+  <testcase name="runtimeException_maps_to_unexpected" classname="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" time="0.0"/>
+  <testcase name="source_and_cause_are_preserved" classname="com.personal.gridbot.amaros.errors.AmarErrorClassifierTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

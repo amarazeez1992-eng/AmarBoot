@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="duplicate_detection_is_deterministic" classname="com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest" time="0.0"/>
+  <testcase name="different_content_is_not_duplicate_even_when_source_is_the_same" classname="com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest" time="0.0"/>
+  <testcase name="same_content_from_different_sources_is_one_duplicate_group" classname="com.personal.gridbot.amaros.agent.AmarDuplicateEvidenceDetectorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

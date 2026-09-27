@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.position.AmarPositionCommandCenterTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="unknownAndDuplicateTicketsAreRejected" classname="com.personal.gridbot.amaros.position.AmarPositionCommandCenterTest" time="0.001"/>
+  <testcase name="trailingUsesExplicitDistance" classname="com.personal.gridbot.amaros.position.AmarPositionCommandCenterTest" time="0.0"/>
+  <testcase name="batchStopLossPreviewIsAccepted" classname="com.personal.gridbot.amaros.position.AmarPositionCommandCenterTest" time="0.0"/>
+  <testcase name="partialCloseCannotConsumeWholePosition" classname="com.personal.gridbot.amaros.position.AmarPositionCommandCenterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

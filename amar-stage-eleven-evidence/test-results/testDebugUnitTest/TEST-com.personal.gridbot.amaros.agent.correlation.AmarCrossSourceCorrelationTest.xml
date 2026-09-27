@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.006">
+  <properties/>
+  <testcase name="fail_closed_on_missing_independence" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.004"/>
+  <testcase name="is_downstream_ready_when_valid" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="two_dependent_evidence_not_correlated" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="preserves_evidence" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.001"/>
+  <testcase name="disagreement_detected" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="single_evidence_no_correlation" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="two_independent_evidence_disagreeing" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="two_independent_evidence_agreeing" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="is_stateless" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="conflict_from_point14_propagated" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="no_recalculation_of_independence" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="agreement_relationship_is_deterministic" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="is_deterministic" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <testcase name="no_recalculation_of_conflict" classname="com.personal.gridbot.amaros.agent.correlation.AmarCrossSourceCorrelationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

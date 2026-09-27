@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.012">
+  <properties/>
+  <testcase name="fingerprint_used_as_canonical_id" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.004"/>
+  <testcase name="no_recalculation_of_freshness" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="empty_findings_returns_insufficient" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="no_recalculation_of_relevance" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="is_downstream_ready_false_when_insufficient" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="claim_verification_preserves_findings" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="multiple_claims_partition_correctly" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="structured_claims_override_answer_extraction" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="claim_verification_uses_conflict_awareness" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="single_claim_with_support_is_verified" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="no_llm_used" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="single_claim_with_opposition_is_rejected" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="no_recalculation_of_authority" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="claim_with_conflict_is_conflicted" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="claim_verification_is_deterministic" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="empty_answer_returns_empty_result" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="is_downstream_ready_false_when_conflicted" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="single_claim_neutral_evidence_is_insufficient" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.0"/>
+  <testcase name="no_recalculation_of_ranking" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <testcase name="claim_verification_uses_upstream_states" classname="com.personal.gridbot.amaros.agent.claim.AmarClaimVerificationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

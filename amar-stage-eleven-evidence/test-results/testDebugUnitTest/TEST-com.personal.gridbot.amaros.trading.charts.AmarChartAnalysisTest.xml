@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="derivesSupportResistanceFromSuppliedCandles" classname="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" time="0.001"/>
+  <testcase name="rejectsNonPositiveCandlePrices" classname="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" time="0.0"/>
+  <testcase name="trustedSeriesCannotBeEmpty" classname="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" time="0.0"/>
+  <testcase name="rejectsNonAscendingSeriesTimestamps" classname="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" time="0.0"/>
+  <testcase name="trustedSeriesCannotUseUnavailableSource" classname="com.personal.gridbot.amaros.trading.charts.AmarChartAnalysisTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

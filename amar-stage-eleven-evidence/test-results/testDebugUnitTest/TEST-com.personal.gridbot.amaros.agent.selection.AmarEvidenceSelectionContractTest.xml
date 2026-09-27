@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="highest_relevance_scores_are_selected_first" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.002"/>
+  <testcase name="more_than_n_candidates_selects_top_n" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="repeated_execution_is_deterministic" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="zero_or_negative_n_is_rejected" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="selection_does_not_recalculate_relevance" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_selection" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="equal_scores_have_deterministic_fingerprint_order" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.001"/>
+  <testcase name="exactly_n_candidates_all_selected" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="dropped_candidates_imply_selection_limit_reached_without_mutation" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="selected_candidates_preserve_original_relevance_score" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="fewer_than_n_candidates_all_selected" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <testcase name="dropped_candidates_are_preserved" classname="com.personal.gridbot.amaros.agent.selection.AmarEvidenceSelectionContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

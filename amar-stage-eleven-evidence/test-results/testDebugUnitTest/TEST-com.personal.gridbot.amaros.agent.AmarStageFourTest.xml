@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageFourTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.012">
+  <properties/>
+  <testcase name="crisis_engine_detects_spread_gap_range_and_stale_data" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.001"/>
+  <testcase name="crisis_engine_rejects_invalid_quote_at_contract_boundary_and_detects_future_data" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.001"/>
+  <testcase name="risk_gate_blocks_excessive_trade_risk" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.002"/>
+  <testcase name="contracts_reject_non_finite_simulation_inputs" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.001"/>
+  <testcase name="simulation_rejects_duplicate_timestamps_and_domain_contract_rejects_malformed_candle" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.0"/>
+  <testcase name="risk_gate_fails_closed_on_invalid_numbers" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.0"/>
+  <testcase name="audit_ledger_is_hash_chained_and_detects_tampering" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.006"/>
+  <testcase name="simulation_rejects_empty_data" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.0"/>
+  <testcase name="simulation_closes_on_reversal_and_calculates_pnl" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.0"/>
+  <testcase name="simulation_rejects_duplicate_and_orphan_signals" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.001"/>
+  <testcase name="risk_gate_blocks_daily_loss_and_open_position_limits" classname="com.personal.gridbot.amaros.agent.AmarStageFourTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.026">
+  <properties/>
+  <testcase name="engine_registry_resolves_real_executor_for_every_task_kind" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.001"/>
+  <testcase name="real_integration_executes_research_and_reasoning_through_task_executors" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.022"/>
+  <testcase name="failure_router_supports_all_fail_closed_routes" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <testcase name="execution_order_respects_dependencies" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <testcase name="context_envelope_propagates_parent_and_typed_artifacts_to_child_task" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <testcase name="planner_builds_typed_dependency_graph" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.001"/>
+  <testcase name="state_completed_tasks_are_single_source_of_truth" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <testcase name="dependency_graph_blocks_missing_dependency_and_cycles" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.001"/>
+  <testcase name="state_machine_rejects_terminal_revival" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <testcase name="result_aggregation_preserves_real_typed_results" classname="com.personal.gridbot.amaros.agent.Item7AgentOrchestrationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

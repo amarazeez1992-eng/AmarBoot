@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageFiveTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.008">
+  <properties/>
+  <testcase name="risk_role_rejects_missing_risk_rule_and_conflict_is_reported" classname="com.personal.gridbot.amaros.agent.AmarStageFiveTest" time="0.005"/>
+  <testcase name="compile_is_deterministic_and_approved_when_all_gates_are_satisfied" classname="com.personal.gridbot.amaros.agent.AmarStageFiveTest" time="0.001"/>
+  <testcase name="compiler_blocks_execution_requests_inside_strategy_compilation" classname="com.personal.gridbot.amaros.agent.AmarStageFiveTest" time="0.0"/>
+  <testcase name="compiler_fails_closed_when_direction_or_entry_is_missing" classname="com.personal.gridbot.amaros.agent.AmarStageFiveTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

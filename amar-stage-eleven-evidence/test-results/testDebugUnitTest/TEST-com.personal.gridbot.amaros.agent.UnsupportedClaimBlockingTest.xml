@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="deterministic_for_identical_input" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="mixed_claims_returns_mixed_reason_and_only_unsupported_claims" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="regression_verification_engine_contract_remains_usable" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.001"/>
+  <testcase name="all_claims_accepted_returns_passed" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="empty_claims_are_blocked" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="does_not_reverify_or_recalculate_evidence" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="one_unsupported_claim_returns_unsupported_reason" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <testcase name="multiple_unsupported_claims_are_all_audited" classname="com.personal.gridbot.amaros.agent.UnsupportedClaimBlockingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

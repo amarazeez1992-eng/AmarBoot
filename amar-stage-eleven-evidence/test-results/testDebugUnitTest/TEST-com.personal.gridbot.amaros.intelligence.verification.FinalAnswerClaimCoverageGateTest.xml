@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="insufficient_claim_state_is_incomplete" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.001"/>
+  <testcase name="empty_structured_claims_is_insufficient_data" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.0"/>
+  <testcase name="uncovered_ids_are_deterministically_sorted" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.0"/>
+  <testcase name="missing_result_is_incomplete_not_insufficient" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.0"/>
+  <testcase name="all_required_claims_with_non_insufficient_states_are_complete" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.0"/>
+  <testcase name="duplicate_structured_claim_ids_are_insufficient_data" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.001"/>
+  <testcase name="upstream_not_ready_is_insufficient_data" classname="com.personal.gridbot.amaros.intelligence.verification.FinalAnswerClaimCoverageGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

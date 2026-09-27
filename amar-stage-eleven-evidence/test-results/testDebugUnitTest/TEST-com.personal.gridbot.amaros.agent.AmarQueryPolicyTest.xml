@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarQueryPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.002">
+  <properties/>
+  <testcase name="system_requests_stay_local_without_evidence_gate" classname="com.personal.gridbot.amaros.agent.AmarQueryPolicyTest" time="0.001"/>
+  <testcase name="financial_analysis_keeps_strict_evidence_gate" classname="com.personal.gridbot.amaros.agent.AmarQueryPolicyTest" time="0.0"/>
+  <testcase name="general_factual_requests_research_without_financial_strict_gate" classname="com.personal.gridbot.amaros.agent.AmarQueryPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

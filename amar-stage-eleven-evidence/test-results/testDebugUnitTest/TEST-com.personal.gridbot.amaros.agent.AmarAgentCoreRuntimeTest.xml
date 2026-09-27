@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.011">
+  <properties/>
+  <testcase name="tools_are_passed_from_registry" classname="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" time="0.003"/>
+  <testcase name="disabled_agent_returns_explicit_blocked_response" classname="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" time="0.003"/>
+  <testcase name="source_count_clamped_to_policy_maximum" classname="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" time="0.001"/>
+  <testcase name="reasoning_provider_failure_propagates_exception" classname="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" time="0.001"/>
+  <testcase name="hello_reaches_reasoning_and_returns_response" classname="com.personal.gridbot.amaros.agent.AmarAgentCoreRuntimeTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

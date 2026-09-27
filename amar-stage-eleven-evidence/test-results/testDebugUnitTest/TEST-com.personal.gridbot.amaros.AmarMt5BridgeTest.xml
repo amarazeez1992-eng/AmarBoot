@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.AmarMt5BridgeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.0">
+  <properties/>
+  <testcase name="all_gates_are_required_for_live_state" classname="com.personal.gridbot.amaros.AmarMt5BridgeTest" time="0.0"/>
+  <testcase name="authenticated_but_not_explicitly_live_is_read_only" classname="com.personal.gridbot.amaros.AmarMt5BridgeTest" time="0.0"/>
+  <testcase name="unauthenticated_is_locked" classname="com.personal.gridbot.amaros.AmarMt5BridgeTest" time="0.0"/>
+  <testcase name="missing_connector_stays_read_only" classname="com.personal.gridbot.amaros.AmarMt5BridgeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

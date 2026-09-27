@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.modules.AmarModuleRegistryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.001">
+  <properties/>
+  <testcase name="resolve_unregistered_module_throws_exception" classname="com.personal.gridbot.amaros.modules.AmarModuleRegistryTest" time="0.001"/>
+  <testcase name="registering_again_replaces_previous_instance" classname="com.personal.gridbot.amaros.modules.AmarModuleRegistryTest" time="0.0"/>
+  <testcase name="register_and_resolve_returns_registered_instance" classname="com.personal.gridbot.amaros.modules.AmarModuleRegistryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

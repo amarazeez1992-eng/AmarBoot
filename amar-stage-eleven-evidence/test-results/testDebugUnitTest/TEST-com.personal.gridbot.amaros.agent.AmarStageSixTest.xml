@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.AmarStageSixTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.113">
+  <properties/>
+  <testcase name="aggregation_is_deterministic_and_bounded" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.007"/>
+  <testcase name="large_deterministic_dataset_completes_without_numeric_failure" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.087"/>
+  <testcase name="parallel_analysis_matches_sequential_analysis_for_same_inputs" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.016"/>
+  <testcase name="provenance_registry_accepts_verified_bsd_source_and_rejects_unapproved_or_incomplete_sources" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.0"/>
+  <testcase name="foundational_indicators_are_deterministic_and_finite" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.001"/>
+  <testcase name="licensed_adapter_cannot_return_a_different_provenance" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.0"/>
+  <testcase name="malformed_or_unsorted_market_data_fails_closed" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.0"/>
+  <testcase name="duplicate_source_id_with_changed_provenance_is_rejected" classname="com.personal.gridbot.amaros.agent.AmarStageSixTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

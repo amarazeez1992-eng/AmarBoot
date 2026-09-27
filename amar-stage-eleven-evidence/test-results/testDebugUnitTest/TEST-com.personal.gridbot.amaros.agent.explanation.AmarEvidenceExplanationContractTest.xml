@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.008">
+  <properties/>
+  <testcase name="explanation_is_deterministic" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.004"/>
+  <testcase name="explanation_works_for_partial_status" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_is_not_blank" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.001"/>
+  <testcase name="explanation_contains_status_info" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_does_not_recalculate_relevance" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_language_matches_context" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_contains_source_info" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_works_for_complete_status" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_preserves_evidence" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.001"/>
+  <testcase name="single_evidence_produces_explanation" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.001"/>
+  <testcase name="explanation_is_not_llm_generated" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_result_partitions_correctly" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_works_for_stale_status" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <testcase name="explanation_fail_closed_when_evidence_missing" classname="com.personal.gridbot.amaros.agent.explanation.AmarEvidenceExplanationContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

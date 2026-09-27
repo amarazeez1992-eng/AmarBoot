@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:18" hostname="runnervmtr4k5" time="0.003">
+  <properties/>
+  <testcase name="no_backtest_execution" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.001"/>
+  <testcase name="no_replay_execution" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="fail_closed_on_invalid_input" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="multiple_comparable_cases_identified" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="is_downstream_ready_when_valid" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="preserves_evidence" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="future_case_is_rejected_by_decision_cutoff" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="match_criteria_enforced" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="differences_listed" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="no_comparable_cases_returns_insufficient" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="result_partitions_correctly" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="no_recalculation_of_upstream" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="regime_mismatch_rejects" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="no_comparable_cases_returns_no_cases" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="single_comparable_case_identified" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.001"/>
+  <testcase name="frequency_counted" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="is_stateless" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="empty_input_returns_empty_result" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="outcome_summary_calculated" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <testcase name="is_deterministic" classname="com.personal.gridbot.amaros.agent.historical.AmarHistoricalValidationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

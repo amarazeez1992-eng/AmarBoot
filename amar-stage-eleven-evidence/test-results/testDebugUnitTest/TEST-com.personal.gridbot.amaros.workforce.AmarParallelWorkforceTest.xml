@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-27T09:58:21" hostname="runnervmtr4k5" time="0.072">
+  <properties/>
+  <testcase name="offlineNetworkWorkIsSkippedWithoutCallingWorker" classname="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" time="0.002"/>
+  <testcase name="timeoutRecoversOnSecondAttempt" classname="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" time="0.025"/>
+  <testcase name="aggregatesIndependentWorkersInDeterministicInputOrder" classname="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" time="0.01"/>
+  <testcase name="cancellationPropagatesToCaller" classname="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" time="0.025"/>
+  <testcase name="cacheIsBoundedAndSecondRunUsesCachedResults" classname="com.personal.gridbot.amaros.workforce.AmarParallelWorkforceTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
