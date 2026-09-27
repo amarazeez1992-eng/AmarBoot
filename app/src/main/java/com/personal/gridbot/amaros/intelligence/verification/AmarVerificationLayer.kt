@@ -13,7 +13,7 @@ import java.net.URI
 class AmarVerificationLayer(
     private val evidenceQuality: AmarEvidenceQualityEngine = AmarEvidenceQualityEngine(),
     private val claimVerifier: AmarClaimVerificationEngine = AmarClaimVerificationEngine(),
-    private val sourceRegistry: AmarSourceRegistry = AmarSourceRegistry()
+    private val sourceRegistry: AmarVerificationSourceRegistry = AmarVerificationSourceRegistry()
 ) {
     fun verify(answer: String, findings: List<ResearchFinding>, nowEpochMs: Long = System.currentTimeMillis()): AmarVerificationReport {
         val quality = evidenceQuality.assess(findings, nowEpochMs)
@@ -31,7 +31,7 @@ class AmarVerificationLayer(
     private fun buildReport(
         findings: List<ResearchFinding>,
         quality: AmarEvidenceQualityReport,
-        sourceSnapshot: AmarSourceRegistrySnapshot,
+        sourceSnapshot: AmarVerificationSourceRegistrySnapshot,
         claimVerification: AmarClaimVerificationReport
     ): AmarVerificationReport {
         val conflicts = AmarConflictDetector.detect(findings)
@@ -61,7 +61,7 @@ data class AmarVerificationReport(
     val status: AmarVerificationStatus,
     val score: Double,
     val evidenceQuality: AmarEvidenceQualityReport,
-    val sourceRegistry: AmarSourceRegistrySnapshot,
+    val sourceRegistry: AmarVerificationSourceRegistrySnapshot,
     val claimVerification: AmarClaimVerificationReport,
     val conflicts: List<AmarConflict>,
     val provenance: List<AmarProvenanceNode>,
@@ -69,21 +69,21 @@ data class AmarVerificationReport(
     val invalidEvidenceCount: Int
 )
 
-class AmarSourceRegistry {
-    fun index(findings: List<ResearchFinding>): AmarSourceRegistrySnapshot {
+class AmarVerificationSourceRegistry {
+    fun index(findings: List<ResearchFinding>): AmarVerificationSourceRegistrySnapshot {
         val entries = findings.mapNotNull { finding ->
             val host = runCatching { URI(finding.sourceUri).host?.lowercase()?.removePrefix("www.") }.getOrNull()
             if (host.isNullOrBlank() || finding.evidence.isBlank()) null
-            else AmarSourceRegistryEntry(host, finding.sourceUri.trim(), finding.authority.name, finding.fingerprint)
+            else AmarVerificationSourceRegistryEntry(host, finding.sourceUri.trim(), finding.authority.name, finding.fingerprint)
         }.distinctBy { "${it.host}|${it.fingerprint}" }
         val hosts = entries.map { it.host }.distinct()
         val integrity = if (findings.isEmpty()) 0.0 else entries.size.toDouble() / findings.size
-        return AmarSourceRegistrySnapshot(entries, hosts, integrity.coerceIn(0.0, 1.0))
+        return AmarVerificationSourceRegistrySnapshot(entries, hosts, integrity.coerceIn(0.0, 1.0))
     }
 }
 
-data class AmarSourceRegistryEntry(val host: String, val sourceUri: String, val authority: String, val fingerprint: String)
-data class AmarSourceRegistrySnapshot(val entries: List<AmarSourceRegistryEntry>, val independentHosts: List<String>, val integrityScore: Double)
+data class AmarVerificationSourceRegistryEntry(val host: String, val sourceUri: String, val authority: String, val fingerprint: String)
+data class AmarVerificationSourceRegistrySnapshot(val entries: List<AmarVerificationSourceRegistryEntry>, val independentHosts: List<String>, val integrityScore: Double)
 
 /** Conflict is claim-scoped by semantic evidence overlap; unrelated support/opposition is not a conflict. */
 object AmarConflictDetector {
