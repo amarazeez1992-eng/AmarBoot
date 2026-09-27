@@ -10,6 +10,16 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Frontend compatibility boundary: Next 14.2.x is kept on React 18 and
+    # the current TypeScript toolchain. Major upgrades require an explicit
+    # framework/toolchain migration and a fresh compatibility audit first.
+    ignore:
+      - dependency-name: "react"
+        versions: [">=19.0.0"]
+      - dependency-name: "react-dom"
+        versions: [">=19.0.0"]
+      - dependency-name: "typescript"
+        versions: [">=6.0.0"]
   - package-ecosystem: pip
     directory: "/bridge"
     schedule:
