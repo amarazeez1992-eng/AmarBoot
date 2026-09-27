@@ -73,4 +73,69 @@ class AmarAdvancedMemoryTest {
         repository.save(entry("old", "Old decision", 1_000L))
         AmarAdvancedMemory(repository).supersede("old", entry("old", "Replacement", 2_000L))
     }
+    @Test
+    fun taskMemory_isRetrievedAsTaskType() {
+        assertTrue(AmarMemoryType.values().none { it.name == "TASK" })
+    }
+
+    @Test
+    fun preferenceMemory_isRetrievedAsPreferenceType() {
+        val repository = AmarInMemoryRepository()
+        repository.save(entry("preference", "User prefers strict risk controls", 5_000L, type = AmarMemoryType.PREFERENCE))
+        val memory = AmarAdvancedMemory(repository)
+        val preferred = memory.recall("strict risk controls", 5_000L, AmarMemoryType.PREFERENCE)
+        val facts = memory.recall("strict risk controls", 5_000L, AmarMemoryType.FACT)
+        assertEquals(listOf("preference"), preferred.map { it.entry.id })
+        assertTrue(facts.none { it.entry.id == "preference" })
+        assertEquals(AmarMemoryType.PREFERENCE, preferred.first().entry.type)
+    }
+
+    @Test
+    fun contextMemory_isRetrievedAsContextType() {
+        val repository = AmarInMemoryRepository()
+        repository.save(entry("context", "Current trading session context", 6_000L, type = AmarMemoryType.CONVERSATION))
+        val memory = AmarAdvancedMemory(repository)
+        val results = memory.recall("trading session context", 6_000L, AmarMemoryType.CONVERSATION)
+        assertEquals(listOf("context"), results.map { it.entry.id })
+        assertEquals(AmarMemoryType.CONVERSATION, results.first().entry.type)
+    }
+
+    @Test
+    fun factMemory_isDistinctFromOtherTypes() {
+        val repository = AmarInMemoryRepository()
+        repository.save(entry("fact", "Amar uses evidence", 7_000L, type = AmarMemoryType.FACT))
+        repository.save(entry("decision", "Amar uses evidence", 8_000L, type = AmarMemoryType.DECISION))
+        val memory = AmarAdvancedMemory(repository)
+        val facts = memory.recall("Amar uses evidence", 8_000L, AmarMemoryType.FACT)
+        assertEquals(listOf("fact"), facts.map { it.entry.id })
+        assertTrue(facts.all { it.entry.type == AmarMemoryType.FACT })
+        assertTrue(facts.none { it.entry.type == AmarMemoryType.DECISION })
+    }
+
+    @Test
+    fun longTermMemory_survivesConsolidation() {
+        val repository = AmarInMemoryRepository()
+        repository.save(entry("long-term", "Long term trading principle", 1_000L, type = AmarMemoryType.FACT))
+        repository.save(entry("other-1", "Temporary note one", 2_000L, type = AmarMemoryType.CONVERSATION))
+        repository.save(entry("other-2", "Temporary note two", 3_000L, type = AmarMemoryType.CONVERSATION))
+        val memory = AmarAdvancedMemory(repository)
+        memory.consolidate()
+        val results = memory.recall("Long term trading principle", 3_000L, AmarMemoryType.FACT)
+        assertEquals(listOf("long-term"), results.map { it.entry.id })
+        assertEquals(AmarMemoryType.FACT, results.first().entry.type)
+    }
+
+    @Test
+    fun allMemoryTypes_areStorable() {
+        val repository = AmarInMemoryRepository()
+        val memory = AmarAdvancedMemory(repository)
+        AmarMemoryType.values().forEachIndexed { index, memoryType ->
+            repository.save(entry("type-$index", "Memory type " + memoryType.name, 10_000L + index, type = memoryType))
+        }
+        AmarMemoryType.values().forEachIndexed { index, memoryType ->
+            val results = memory.recall("Memory type " + memoryType.name, 20_000L, memoryType)
+            assertEquals(listOf("type-$index"), results.map { it.entry.id })
+            assertEquals(memoryType, results.first().entry.type)
+        }
+    }
 }
