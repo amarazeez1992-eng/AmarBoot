@@ -131,7 +131,9 @@ class AmarAdvancedMemoryTest {
         assertEquals(listOf("fact"), facts.map { it.entry.id })
         assertTrue(longTerm.first().entry.permanent)
         assertTrue(longTerm.first().entry.tags.contains("adv:long_term"))
-        assertTrue(facts.first().entry.tags.contains("adv:fact").not())
+        assertEquals(AmarMemoryType.FACT, longTerm.first().entry.type)
+        assertEquals(AmarMemoryType.FACT, facts.first().entry.type)
+        assertTrue(facts.first().entry.tags.contains("adv:fact"))
     }
 
 
