@@ -8,7 +8,7 @@ package com.personal.gridbot.amaros.intelligence.confidence
  * and produces a reproducible score plus an explainable label.
  */
 object AmarConfidenceEngine {
-    enum class Label { VERY_LOW, LOW, MODERATE, HIGH, VERY_HIGH }
+    enum class Label { REJECTED, VERY_LOW, LOW, MODERATE, HIGH, VERY_HIGH }
 
     data class Evidence(
         val quality: Double,
@@ -37,16 +37,29 @@ object AmarConfidenceEngine {
         val reasons: List<String>
     )
 
-    fun evaluate(evidence: Evidence): Result {
-        val score = (
-            evidence.quality * 0.25 +
-                evidence.completeness * 0.25 +
-                evidence.freshness * 0.15 +
-                evidence.agreement * 0.20 +
-                evidence.sourceReliability * 0.15
-            ).coerceIn(0.0, 1.0)
+    fun evaluate(
+        evidence: Evidence,
+        maxAgeMs: Long? = null,
+        ageMs: Long = 0L
+    ): Result {
+        require(maxAgeMs == null || maxAgeMs >= 0L)
+        require(ageMs >= 0L)
+
+        val staleByCeiling = maxAgeMs != null && ageMs >= maxAgeMs
+        val score = if (staleByCeiling) {
+            0.0
+        } else {
+            (
+                evidence.quality * 0.25 +
+                    evidence.completeness * 0.25 +
+                    evidence.freshness * 0.15 +
+                    evidence.agreement * 0.20 +
+                    evidence.sourceReliability * 0.15
+                ).coerceIn(0.0, 1.0)
+        }
 
         val reasons = buildList {
+            if (staleByCeiling) add("staleness_ceiling_exceeded")
             if (evidence.quality < 0.5) add("low_evidence_quality")
             if (evidence.completeness < 0.5) add("incomplete_input")
             if (evidence.freshness < 0.5) add("stale_input")
@@ -68,10 +81,14 @@ object AmarConfidenceEngine {
     }
 
     private fun labelFor(score: Double): Label = when {
-        score < 0.20 -> Label.VERY_LOW
+        score < 0.30 -> Label.REJECTED
         score < 0.40 -> Label.LOW
         score < 0.65 -> Label.MODERATE
         score < 0.85 -> Label.HIGH
         else -> Label.VERY_HIGH
     }
+}
+
+interface AmarConfidenceConsumer {
+    fun requestConfidence(evidence: AmarConfidenceEngine.Evidence): AmarConfidenceEngine.Result
 }

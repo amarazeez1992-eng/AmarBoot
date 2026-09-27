@@ -35,7 +35,7 @@ Any developer, engineer, or contributor can read this file to know:
 | # | Item | Additions | Status |
 |---|------|-----------|--------|
 | 1 | Intelligence Core | — | ✅ CLOSED |
-| 2 | Confidence Engine | — | ✅ CLOSED |
+| 2 | Confidence Engine | 11 | ✅ CLOSED |
 | 3 | Evidence Engine | 24 Points | ✅ CLOSED |
 | 4 | Hallucination Firewall | 8 | ✅ CLOSED |
 | 5 | Verification Layer | 8 | 🟦 DESIGN LOCKED |
@@ -80,7 +80,25 @@ Any developer, engineer, or contributor can read this file to know:
 
 ### Item 2 — Confidence Engine
 - Status: CLOSED
+- Additions: 11
+- Production Blob SHA: eeeaffdb6b26a230eb0eed3b660caba10579b6c7
+- Test Blob SHA: 14c88be17b7743b4ed65233589ee33a0708b0981
+- Tests: 25 / 0 / 0
 - Reference: `STAGE11_ITEM2_CONFIDENCE_ENGINE.md`
+- Contract: `AmarConfidenceConsumer`
+- Consumers: Item 13 + Stage 16
+- Additions:
+  1. Dedicated Engine
+  2. Five Dimensions
+  3. Finite [0,1] Validation
+  4. Deterministic Weighted Score
+  5. Stable Labels
+  6. Explainable Reasons
+  7. No Execution Authority
+  8. Critical Boundary Guards
+  9. Rejection Threshold (< 0.30 → REJECTED)
+  10. Staleness Ceiling
+  11. Production Consumer Contract
 
 ### Item 3 — Evidence Engine
 - Status: CLOSED (24/24 Points)
