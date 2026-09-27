@@ -6,9 +6,6 @@ import com.personal.gridbot.amaros.agent.BlockingResult
 import com.personal.gridbot.amaros.agent.HallucinationDetectionGuard
 import com.personal.gridbot.amaros.agent.HallucinationDetectionResult
 import com.personal.gridbot.amaros.agent.ResearchFinding
-import com.personal.gridbot.amaros.agent.SelfContradictionDetector
-import com.personal.gridbot.amaros.agent.SelfContradictionResult
-import com.personal.gridbot.amaros.agent.SelfContradictionStatus
 import com.personal.gridbot.amaros.agent.SourceAttributionEnforcer
 import com.personal.gridbot.amaros.agent.TemporalConsistencyCheck
 import com.personal.gridbot.amaros.agent.TemporalConsistencyResult
@@ -19,9 +16,7 @@ import com.personal.gridbot.amaros.agent.correlation.CrossSourceCorrelationResul
 
 /**
  * Stage 11 / Item 4 — Hallucination Firewall unified gate.
- *
- * Addition 8 coordination: consumes additions 1-7 in deterministic order
- * and produces the final decision. Delegates all logic to existing components.
+ * Coordinates additions 1-7 deterministically; delegates all logic to existing components.
  */
 class AmarHallucinationFirewallGate(
     private val blocking: UnsupportedClaimBlocking = UnsupportedClaimBlocking,
@@ -49,7 +44,7 @@ class AmarHallucinationFirewallGate(
         claims: List<String>,
         report: AmarClaimVerificationReport,
         findings: List<ResearchFinding>,
-        correlation: CrossSourceCorrelationResult?,
+        correlation: CrossSourceCorrelationResult,
         temporalEvidence: List<com.personal.gridbot.amaros.agent.TemporalEvidenceRecord> = emptyList(),
         coverage: FinalAnswerClaimCoverageResult? = null,
         nowEpochMs: Long = System.currentTimeMillis()
@@ -58,14 +53,7 @@ class AmarHallucinationFirewallGate(
         val attributionResult = attribution.evaluate(report, findings)
         val hallucinationResult = detection.evaluate(report, blockingResult, attributionResult, answer)
         val temporalResult = temporal.evaluate(report, temporalEvidence, hallucinationResult, nowEpochMs)
-        val agreementResult = correlation?.let { agreementConsumer.consume(it) }
-            ?: CrossSourceAgreementResult(
-                status = com.personal.gridbot.amaros.agent.correlation.CrossSourceAgreementStatus.INSUFFICIENT_AGREEMENT_DATA,
-                agreementGroups = emptyList(),
-                dependencyGroups = emptyList(),
-                disagreementGroups = emptyList(),
-                reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_CORRELATION_DATA
-            )
+        val agreementResult = agreementConsumer.consume(correlation)
         val scResult = selfContradiction.detect(claims)
         val coverageResult = coverage ?: FinalAnswerClaimCoverageResult(
             status = FinalAnswerClaimCoverageStatus.INSUFFICIENT_COVERAGE_DATA,
