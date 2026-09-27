@@ -104,6 +104,11 @@ object AmarIntelligenceCore {
         )
     }
 
+    /**
+     * INTERNAL COMPATIBILITY SIGNAL ONLY.
+     * Not consumed externally. Not a Confidence Authority.
+     * Item 2 (AmarConfidenceEngine) is the sole Confidence Authority.
+     */
     fun confidence(perception: PerceptionResult, reasoning: ReasoningResult): ConfidenceResult {
         val present = perception.observations.filter { it.status == ObservationStatus.PRESENT }
         val quality = if (present.isEmpty()) 0.0 else present.map { it.qualityScore }.average()
