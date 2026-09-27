@@ -468,6 +468,43 @@ Count verification:
 
 ---
 
+
+## 4.2 Boundaries with Other Stages
+
+### Item 9 ↔ Item 7
+- Boundary: Orchestration routes; Provider Resilience handles provider failure.
+- No file sharing.
+
+### Item 9 ↔ Item 8
+- Boundary: Routing selects provider; Resilience handles failure/recovery.
+- No file sharing.
+
+### Item 9 ↔ Item 29
+- Boundary: Item 9 = provider recovery; Item 29 = system self-healing.
+- Docs only. No implementation overlap.
+
+### Item 10 ↔ Item 11
+- Boundary: Advanced Memory manages functions; Item 11 handles conflicts.
+
+### Item 12/13 ↔ Stage 12
+- Boundary: Item 12/13 = Intelligence consumption layer; Stage 12 = External Research Authority.
+- To be formally defined before Stage 12 implementation.
+
+### Item 14 ↔ Stage 13
+- Boundary: Item 14 = Decision Intelligence (advice); Stage 13 = Decision Authority (binding).
+- To be formally defined before Stage 13 implementation.
+
+### Item 10 ↔ Stage 16
+- Boundary: Stage 16 consumes Memory capability; does not rebuild Authority.
+
+### Item 9 ↔ Stage 14
+- Boundary: Item 9 = provider fallback; Stage 14 = broker/execution fallback.
+- Independent.
+
+### Item 7 ↔ Stage 8
+- Boundary: Item 7 = orchestration runtime; Stage 8 = Command Plane (authority).
+- Item 7 consumes Command Plane decisions.
+
 ## 11. Next Steps
 
 1. Item 4: CLOSED (Constitutionally). Main Re-check completed 7/7.
