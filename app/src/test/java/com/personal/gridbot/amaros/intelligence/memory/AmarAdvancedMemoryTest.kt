@@ -134,6 +134,24 @@ class AmarAdvancedMemoryTest {
         assertTrue(facts.first().entry.tags.contains("adv:fact").not())
     }
 
+
+    @Test
+    fun allAdvancedMemoryTypes_roundTripThroughIsolatedMapping() {
+        val repository = AmarInMemoryRepository()
+        val memory = AmarAdvancedMemory(repository)
+        AmarAdvancedMemoryType.values().forEachIndexed { index, advancedType ->
+            memory.remember(
+                entry("advanced-$index", "Advanced memory " + advancedType.name, 30_000L + index),
+                advancedType
+            )
+        }
+        AmarAdvancedMemoryType.values().forEachIndexed { index, advancedType ->
+            val results = memory.recall("Advanced memory " + advancedType.name, 40_000L, advancedType)
+            assertEquals(listOf("advanced-$index"), results.map { it.entry.id })
+            assertTrue(results.first().entry.tags.contains("adv:" + advancedType.name.lowercase()))
+        }
+    }
+
     @Test
     fun allMemoryTypes_areStorable() {
         val repository = AmarInMemoryRepository()
