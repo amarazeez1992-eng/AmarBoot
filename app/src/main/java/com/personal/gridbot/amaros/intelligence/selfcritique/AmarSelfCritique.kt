@@ -52,7 +52,7 @@ class AmarSelfCritique {
     private fun shareKeyToken(a: String, b: String): Boolean {
         val ta = a.lowercase().split(" ").filter { it.length >= 4 }.toSet()
         val tb = b.lowercase().split(" ").filter { it.length >= 4 }.toSet()
-        return ta.intersect(tb).size >= 2
+        return ta.intersect(tb).size >= 1
     }
 
     private fun detectOverclaiming(draft: Draft): List<String> {
