@@ -97,7 +97,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 2.0 / 3.0
+            completeness = 1.0 / 6.0
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
@@ -115,7 +115,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 4.0 / 3.0
+            completeness = 5.0 / 6.0
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
@@ -135,7 +135,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 13.0 / 6.0
+            completeness = 5.0 / 3.0
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
@@ -155,7 +155,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 17.0 / 3.0
+            completeness = 7.0 / 3.0
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
