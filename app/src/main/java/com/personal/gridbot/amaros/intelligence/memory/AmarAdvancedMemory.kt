@@ -66,9 +66,6 @@ class AmarAdvancedMemory(
         AmarAdvancedMemoryType.TASK -> AmarMemoryType.PROJECT
         AmarAdvancedMemoryType.PREFERENCE -> AmarMemoryType.PREFERENCE
         AmarAdvancedMemoryType.FACT -> AmarMemoryType.FACT
-        AmarAdvancedMemoryType.PROJECT -> AmarMemoryType.PROJECT
-        AmarAdvancedMemoryType.STRATEGY -> AmarMemoryType.STRATEGY
-        AmarAdvancedMemoryType.RESEARCH -> AmarMemoryType.RESEARCH
     }
 
     private fun AmarAdvancedMemoryType.tag(): String = "adv:" + name.lowercase()
