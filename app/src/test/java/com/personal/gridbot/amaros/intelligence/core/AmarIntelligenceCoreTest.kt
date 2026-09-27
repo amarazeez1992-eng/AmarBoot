@@ -97,7 +97,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 1.0 / 6.0
+            completeness = (0.20 - 0.15 + 1e-9) / 0.30
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
@@ -115,7 +115,7 @@ class AmarIntelligenceCoreTest {
                 )
             ),
             presentCount = 1, missingCount = 0, malformedCount = 0,
-            completeness = 5.0 / 6.0
+            completeness = (0.40 - 0.15 + 1e-9) / 0.30
         )
         val reasoning = AmarIntelligenceCore.ReasoningResult(
             "x", listOf("TEXT:unspecified"), emptyList(), emptyList(), false
