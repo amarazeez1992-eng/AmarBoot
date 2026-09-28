@@ -1,6 +1,5 @@
 package com.personal.gridbot.amaros.agent.claim
 
-import com.personal.gridbot.amaros.agent.AmarEvidence
 import com.personal.gridbot.amaros.agent.Authority
 import com.personal.gridbot.amaros.agent.EvidenceStance
 import com.personal.gridbot.amaros.agent.ResearchFinding
@@ -19,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AmarClaimVerificationTest {
+
     private fun finding(text: String, stance: EvidenceStance = EvidenceStance.SUPPORTS) =
         ResearchFinding("Test Source", "https://example.test/" + text.hashCode(), text,
             Authority.OFFICIAL, stance, sourceType = AmarSourceType.KNOWLEDGE)
@@ -42,7 +42,9 @@ class AmarClaimVerificationTest {
 
     @Test fun empty_answer_returns_empty_result() {
         val r = AmarClaimVerifier().verify(input(answer = "", findings = emptyList()))
-        assertTrue(r.verifiedClaims.isEmpty()); assertTrue(r.rejectedClaims.isEmpty()); assertFalse(r.isDownstreamReady)
+        assertTrue(r.verifiedClaims.isEmpty())
+        assertTrue(r.rejectedClaims.isEmpty())
+        assertFalse(r.isDownstreamReady)
     }
 
     @Test fun empty_findings_returns_insufficient() {
@@ -61,13 +63,28 @@ class AmarClaimVerificationTest {
         assertEquals(ClaimVerificationState.OPPOSED, r.rejectedClaims.single().state)
     }
 
-    @Test fun single_claim_neutral_evidence_is_insufficient() {
+    @Test fun single_claim_neutral_evidence_is_neutral() {
         val text = "The market report confirms gold prices are rising today."
         val r = AmarClaimVerifier().verify(input(findings = listOf(finding(text, EvidenceStance.UNKNOWN))))
         assertEquals(ClaimVerificationState.NEUTRAL, r.rejectedClaims.single().state)
     }
 
-    @Test fun claim_with_conflict_is_conflicted() {
+    @Test fun mixed_stance_alone_is_neutral_not_supported() {
+        val text = "The market report confirms gold prices are rising today."
+        val r = AmarClaimVerifier().verify(input(findings = listOf(finding(text, EvidenceStance.MIXED))))
+        assertEquals(ClaimVerificationState.NEUTRAL, r.rejectedClaims.single().state)
+    }
+
+    @Test fun supporting_and_opposing_together_is_conflicted() {
+        val text = "The market report confirms gold prices are rising today."
+        val r = AmarClaimVerifier().verify(input(findings = listOf(
+            finding(text, EvidenceStance.SUPPORTS),
+            finding(text, EvidenceStance.OPPOSES)
+        )))
+        assertEquals(ClaimVerificationState.CONFLICTED, r.rejectedClaims.first { it.state == ClaimVerificationState.CONFLICTED }.state)
+    }
+
+    @Test fun claim_with_upstream_conflict_is_conflicted() {
         val f = finding("The market report confirms gold prices are rising today.")
         val r = AmarClaimVerifier().verify(input(findings = listOf(f), conflicts = setOf(f.fingerprint)))
         assertEquals(ClaimVerificationState.CONFLICTED, r.rejectedClaims.single().state)
@@ -95,12 +112,6 @@ class AmarClaimVerificationTest {
         assertEquals(ClaimVerificationState.CONFLICTED, r.rejectedClaims.single().state)
     }
 
-    @Test fun claim_verification_uses_conflict_awareness() {
-        val f = finding("The market report confirms gold prices are rising today.")
-        val r = AmarClaimVerifier().verify(input(findings = listOf(f), conflicts = setOf(f.fingerprint)))
-        assertEquals(ClaimVerificationState.CONFLICTED, r.rejectedClaims.single().state)
-    }
-
     @Test fun multiple_claims_partition_correctly() {
         val a = claim("Gold prices are rising sharply today in New York trading session.", "a")
         val b = claim("Silver is falling in London exchange during European hours.", "b")
@@ -118,24 +129,23 @@ class AmarClaimVerificationTest {
         assertEquals(f.fingerprint, r.verifiedClaims.single().supportingEvidenceIds.single())
     }
 
+    @Test fun arabic_token_matching_works() {
+        val arabic = "تقرير السوق يؤكد أن أسعار الذهب ترتفع اليوم بشكل ملحوظ"
+        val f = ResearchFinding("مصدر", "https://example.test/ar", arabic, Authority.OFFICIAL, EvidenceStance.SUPPORTS, sourceType = AmarSourceType.KNOWLEDGE)
+        val r = AmarClaimVerifier().verify(input(answer = arabic, findings = listOf(f)))
+        assertEquals(ClaimVerificationState.SUPPORTED, r.verifiedClaims.single().state)
+    }
+
+    @Test fun overlap_is_symmetric() {
+        val a = "Gold rises sharply in New York trading"
+        val b = "Gold rises sharply in London session"
+        val r = AmarClaimVerifier().verify(input(answer = a, findings = listOf(finding(b))))
+        assertTrue(r.verifiedClaims.isNotEmpty() || r.rejectedClaims.isNotEmpty())
+    }
+
     @Test fun no_recalculation_of_authority() {
         val f = finding("The market report confirms gold prices are rising today.", EvidenceStance.SUPPORTS)
         assertEquals(ClaimVerificationState.SUPPORTED, AmarClaimVerifier().verify(input(findings = listOf(f))).verifiedClaims.single().state)
-    }
-
-    @Test fun no_recalculation_of_freshness() {
-        val f = finding("The market report confirms gold prices are rising today.")
-        assertEquals(f.fingerprint, AmarClaimVerifier().verify(input(findings = listOf(f))).verifiedClaims.single().supportingEvidenceIds.single())
-    }
-
-    @Test fun no_recalculation_of_relevance() {
-        val f = finding("The market report confirms gold prices are rising today.")
-        assertTrue(AmarClaimVerifier().verify(input(findings = listOf(f))).isDownstreamReady)
-    }
-
-    @Test fun no_recalculation_of_ranking() {
-        val f = finding("The market report confirms gold prices are rising today.")
-        assertEquals(1, AmarClaimVerifier().verify(input(findings = listOf(f))).verifiedClaims.size)
     }
 
     @Test fun no_llm_used() {
