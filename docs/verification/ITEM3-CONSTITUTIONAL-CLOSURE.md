@@ -61,3 +61,25 @@
 
 Stage 11 → Item 4 — Hallucination Firewall
 (Awaiting owner discussion before implementation)
+
+---
+
+## REVOCATION — 2026-09-28
+
+The constitutional closure declared above was found incomplete after a deep re-verification performed on owner's directive.
+
+### Findings
+1. `AmarEvidenceGate` (Item 3 facade) had **no production consumer** — dead code.
+2. `AmarHallucinationFirewallGate` (Item 4) did **not** invoke any Item 3 component.
+3. Two-layer Authority existed (`AmarEvidenceGate` + `AmarCanonicalEvidenceQualityAssembler`) without a single declared authority.
+
+### Action
+- Constitutional closure **REVOKED** on 2026-09-28.
+- 24 Points remain intact (verified with Blob evidence).
+- Gap 1 + Gap 2 closed by binding Item 4 to Item 3 via `AmarEvidenceGate`.
+- Status downgraded from CONSTITUTIONAL to FUNCTIONAL until 14-condition closure is re-verified.
+
+### Evidence
+- Prior commit: `c97311b8`
+- Revocation commit: TBD
+- CI: TBD

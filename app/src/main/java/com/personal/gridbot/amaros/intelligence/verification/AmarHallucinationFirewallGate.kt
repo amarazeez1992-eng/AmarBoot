@@ -1,6 +1,7 @@
 package com.personal.gridbot.amaros.intelligence.verification
 
 import com.personal.gridbot.amaros.agent.AmarClaimVerificationReport
+import com.personal.gridbot.amaros.agent.AmarEvidenceGate
 import com.personal.gridbot.amaros.agent.AttributionResult
 import com.personal.gridbot.amaros.agent.BlockingResult
 import com.personal.gridbot.amaros.agent.HallucinationDetectionGuard
@@ -17,6 +18,7 @@ import com.personal.gridbot.amaros.agent.correlation.CrossSourceCorrelationResul
 /**
  * Stage 11 / Item 4 — Hallucination Firewall unified gate.
  * Coordinates additions 1-7 deterministically; delegates all logic to existing components.
+ * Bound to Item 3 Evidence Authority via AmarEvidenceGate (advisory evidence report).
  */
 class AmarHallucinationFirewallGate(
     private val blocking: UnsupportedClaimBlocking = UnsupportedClaimBlocking,
@@ -26,7 +28,8 @@ class AmarHallucinationFirewallGate(
     private val agreementConsumer: AmarCrossSourceAgreementConsumer = AmarCrossSourceAgreementConsumer(),
     private val selfContradiction: SelfContradictionDetector = SelfContradictionDetector(),
     private val coverageGate: FinalAnswerClaimCoverageGate = FinalAnswerClaimCoverageGate(),
-    private val decisionGate: FinalHallucinationDecisionGate = FinalHallucinationDecisionGate()
+    private val decisionGate: FinalHallucinationDecisionGate = FinalHallucinationDecisionGate(),
+    private val evidenceGate: AmarEvidenceGate = AmarEvidenceGate()
 ) {
     data class FirewallReport(
         val blocking: BlockingResult,
@@ -36,7 +39,8 @@ class AmarHallucinationFirewallGate(
         val agreement: CrossSourceAgreementResult,
         val selfContradiction: SelfContradictionResult,
         val coverage: FinalAnswerClaimCoverageResult,
-        val decision: FinalDecisionResult
+        val decision: FinalDecisionResult,
+        val evidence: AmarEvidenceGate.Report
     )
 
     fun evaluate(
@@ -59,6 +63,7 @@ class AmarHallucinationFirewallGate(
             status = FinalAnswerClaimCoverageStatus.INSUFFICIENT_COVERAGE_DATA,
             uncoveredClaimIds = emptyList()
         )
+        val evidenceResult = evidenceGate.evaluate(findings)
         val decision = decisionGate.evaluate(
             FinalHallucinationDecisionInput(
                 addition1 = blockingResult,
@@ -72,7 +77,8 @@ class AmarHallucinationFirewallGate(
         )
         return FirewallReport(
             blockingResult, attributionResult, hallucinationResult,
-            temporalResult, agreementResult, scResult, coverageResult, decision
+            temporalResult, agreementResult, scResult, coverageResult, decision,
+            evidenceResult
         )
     }
 }

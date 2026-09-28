@@ -6,12 +6,12 @@ import com.personal.gridbot.amaros.agent.Authority
 import com.personal.gridbot.amaros.agent.EvidenceStance
 import com.personal.gridbot.amaros.agent.ResearchFinding
 import com.personal.gridbot.amaros.agent.correlation.CrossSourceCorrelationResult
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AmarHallucinationFirewallGateTest {
-
     private fun gate() = AmarHallucinationFirewallGate()
 
     private fun claim(text: String, accepted: Boolean = true, matched: Int = 3) =
@@ -56,5 +56,21 @@ class AmarHallucinationFirewallGateTest {
             correlation = correlation, nowEpochMs = 42L
         )
         assertTrue(r.decision.decision == FinalDecision.PASS || r.decision.decision == FinalDecision.BLOCK)
+    }
+
+    @Test fun evaluate_invokes_item3_evidence_gate() {
+        val correlation = CrossSourceCorrelationResult(
+            correlatedGroups = emptyList(),
+            isDownstreamReady = false,
+            reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_DATA
+        )
+        val r = gate().evaluate(
+            answer = "X.", claims = listOf("X."), report = report(claim("X.")),
+            findings = listOf(finding("https://a.example/x", "x evidence")),
+            correlation = correlation, nowEpochMs = 42L
+        )
+        assertNotNull(r.evidence)
+        assertEquals(1, r.evidence.findingsCount)
+        assertEquals(42L, r.evidence.evaluatedAtEpochMs)
     }
 }
