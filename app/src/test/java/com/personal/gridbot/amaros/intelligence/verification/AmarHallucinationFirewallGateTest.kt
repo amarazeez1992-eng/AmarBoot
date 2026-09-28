@@ -29,7 +29,7 @@ class AmarHallucinationFirewallGateTest {
         val correlation = CrossSourceCorrelationResult(
             correlatedGroups = emptyList(),
             isDownstreamReady = false,
-            reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_CORRELATION_DATA
+            reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_DATA
         )
         val r = gate().evaluate(
             answer = "A well-supported factual statement.",
@@ -48,7 +48,7 @@ class AmarHallucinationFirewallGateTest {
         val correlation = CrossSourceCorrelationResult(
             correlatedGroups = emptyList(),
             isDownstreamReady = false,
-            reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_CORRELATION_DATA
+            reason = com.personal.gridbot.amaros.agent.correlation.CorrelationReason.INSUFFICIENT_DATA
         )
         val r = gate().evaluate(
             answer = "X.", claims = listOf("X."), report = report(claim("X.")),
