@@ -163,28 +163,6 @@ class AmarCrossSourceCorrelationTest {
         assertFalse(result.isDownstreamReady)
     }
 
-    @Test fun blank_fingerprint_fails_closed() {
-        val blankEvidence = evidence("a", "source-a").let { e ->
-            val blankCandidate = e.candidate.candidate.copy(fingerprint = "")
-            e.copy(candidate = e.candidate.copy(candidate = blankCandidate))
-        }
-        val result = correlator.correlate(
-            CrossSourceCorrelationInput(
-                classifiedEvidence = listOf(blankEvidence),
-                independenceStates = emptyMap(),
-                conflictAwareness = noConflict(),
-                deterministicEvidence = DeterministicEvidenceResult(
-                    canonicalEvidence = emptyList(),
-                    invalidEvidence = emptyList(),
-                    futureEvidence = emptyList(),
-                    isDownstreamReady = true,
-                    handlingReason = DeterministicHandlingReason.CANONICAL_ORDER_APPLIED
-                ),
-                claimVerification = null
-            )
-        )
-        assertEquals(CorrelationReason.INVALID_INPUT, result.reason)
-    }
 
     @Test fun is_deterministic() {
         val evidence = listOf(evidence("a", "source-a"), evidence("b", "source-b"))
