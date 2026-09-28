@@ -15,7 +15,7 @@ class AmarHallucinationFirewallGateTest {
     private fun gate() = AmarHallucinationFirewallGate()
 
     private fun claim(text: String, accepted: Boolean = true, matched: Int = 3) =
-        AmarClaimVerification(text, supportingEvidence = matched, opposingEvidence = 0, matchedEvidence = matched).copy(accepted = accepted)
+        AmarClaimVerification(claim = text, supportingEvidence = matched, opposingEvidence = 0, accepted = accepted, matchedEvidence = matched)
 
     private fun report(vararg claims: AmarClaimVerification) =
         AmarClaimVerificationReport(claims.toList(), accepted = claims.all { it.accepted })
