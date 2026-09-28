@@ -83,3 +83,45 @@ The constitutional closure declared above was found incomplete after a deep re-v
 - Prior commit: `c97311b8`
 - Revocation commit: TBD
 - CI: TBD
+
+---
+
+## FUNCTIONAL CLOSURE — 2026-09-28
+
+Item 3 Evidence Engine — Functional closure (NOT constitutional).
+
+### Final state
+- 24/24 Points intact.
+- Gap 1 (AmarEvidenceGate consumer) — CLOSED.
+- Gap 2 (Item 4 isolated) — CLOSED.
+- Two-layer Authority — RESOLVED (AmarEvidenceGate = Item 3 facade; AmarCanonicalEvidenceQualityAssembler = quality-only sub-authority).
+
+### Verification (14 conditions)
+1. Implementation ......... ✅
+2. Unit Tests ............. ✅
+3. Integration Tests ...... ✅
+4. Regression Tests ....... ✅
+5. Compile ................ ✅
+6. Pre-Merge CI ........... ✅ (7/7 on 7014a50c)
+7. Clean Diff ............. ✅ (3 files, 48 lines)
+8. Protected Files ........ ✅ (none touched)
+9. Merge .................. ✅
+10. Post-Merge CI ......... ✅ (7/7)
+11. Audit ................. ✅
+12. Re-Verification ....... ✅
+13. Closure Document ...... ✅
+14. Constitutional ........ ⏸ DEFERRED (owner revoked)
+
+### Commits
+- c97311b8 — fix test constructor
+- cb834b6a — bind Item 4 to Item 3 + revoke
+- 7014a50c — fix evidence gate clock in test
+
+### Blob SHAs
+- AmarHallucinationFirewallGate.kt ......... 397a85dc
+- AmarHallucinationFirewallGateTest.kt ..... 47a930bc
+- ITEM3-CONSTITUTIONAL-CLOSURE.md .......... 45bd05b0
+
+### Status
+**FUNCTIONAL — CLOSED**
+Constitutional closure remains REVOKED per owner directive.
